@@ -1,6 +1,7 @@
 modules = ["web", "nodejs-20"]
 [agent]
 expertMode = true
+integrations = ["javascript_database:1.0.0"]
 
 [nix]
 channel = "stable-25_05"
@@ -32,3 +33,8 @@ outputType = "webview"
 [[ports]]
 localPort = 5000
 externalPort = 80
+
+[userenv]
+
+[userenv.shared]
+JWT_SECRET = "08ce1b13b8bdac39beec172507667c3f79b55a733c1773ae990405dbd5e16742274887dc0d4065589ed3782ff31cc572"
