@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import Link from 'next/link';
 
 type ClassItem = { id: string; name: string; section: string };
 type StudentItem = {
@@ -84,8 +85,21 @@ export default function AdminStudentsPage() {
   return (
     <div className="space-y-4">
       <div className="rounded-xl bg-white border border-[#e2e8e8] p-6">
-        <h2 className="text-3xl font-bold text-[#1a1c1c]">Students</h2>
-        <p className="mt-1 text-sm text-[#6f7979]">Enroll, update, and manage learners.</p>
+        <div className="flex items-start justify-between gap-4">
+          <div>
+            <h2 className="text-3xl font-bold text-[#1a1c1c]">Students</h2>
+            <p className="mt-1 text-sm text-[#6f7979]">Enroll, update, and manage learners.</p>
+          </div>
+          <Link
+            href="/admin/students/enroll"
+            className="flex items-center gap-2 rounded-xl bg-[#004649] px-4 py-2.5 text-sm font-bold text-white hover:opacity-90 transition shrink-0"
+          >
+            <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
+            </svg>
+            Enroll Student
+          </Link>
+        </div>
 
         <form onSubmit={createStudent} className="mt-5 grid gap-3 sm:grid-cols-2">
           <input

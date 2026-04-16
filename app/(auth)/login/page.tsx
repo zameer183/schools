@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 
 export default function LoginPage() {
@@ -120,9 +121,9 @@ export default function LoginPage() {
                 <label htmlFor="password" className="block text-[11px] font-bold uppercase tracking-[0.15em] text-[#6f7979]">
                   Password
                 </label>
-                <button type="button" className="text-[11px] font-bold uppercase tracking-[0.15em] text-[#865300] hover:underline">
+                <Link href="/forgot-password" className="text-[11px] font-bold uppercase tracking-[0.15em] text-[#865300] hover:underline">
                   Forgot Password?
-                </button>
+                </Link>
               </div>
               <div className="relative">
                 <svg className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-[#6f7979]" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>

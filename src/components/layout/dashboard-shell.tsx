@@ -6,7 +6,7 @@ import { usePathname, useRouter } from 'next/navigation';
 import { useTransition } from 'react';
 import {
   BarChart3, Bell, BookOpen, CalendarCheck2, ChevronDown, DollarSign,
-  Home, LogOut, MessageSquare, Settings, Users
+  Home, LogOut, MessageSquare, Settings, Users, ClipboardList, Zap, ShieldCheck
 } from 'lucide-react';
 
 type NavItem = {
@@ -25,6 +25,9 @@ const navByRole: Record<UserRole, NavItem[]> = {
     { href: '/admin/finance', label: 'Finance', icon: DollarSign },
     { href: '/admin/reports', label: 'Reports', icon: BarChart3 },
     { href: '/admin/notifications', label: 'Notifications', icon: Bell },
+    { href: '/admin/roles', label: 'Role Management', icon: ShieldCheck },
+    { href: '/admin/audit-logs', label: 'Activity Logs', icon: ClipboardList },
+    { href: '/admin/automation', label: 'Automation', icon: Zap },
     { href: '/admin/settings', label: 'Settings', icon: Settings },
   ],
   TEACHER: [
