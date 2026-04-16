@@ -1,0 +1,265 @@
+<!DOCTYPE html>
+
+<html class="light" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Scholarly | Communications Hub</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;700;800&amp;family=Inter:wght@400;500;600;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    "colors": {
+                        "on-primary": "#ffffff",
+                        "on-surface": "#191c1d",
+                        "tertiary": "#214346",
+                        "inverse-primary": "#93d1d5",
+                        "on-secondary": "#ffffff",
+                        "tertiary-fixed": "#c5e9ec",
+                        "tertiary-fixed-dim": "#a9cdd0",
+                        "secondary-container": "#fdb24f",
+                        "on-background": "#191c1d",
+                        "secondary-fixed": "#ffddb8",
+                        "on-secondary-fixed-variant": "#653e00",
+                        "surface-container-low": "#f3f4f5",
+                        "on-tertiary-fixed": "#002022",
+                        "secondary-fixed-dim": "#ffb960",
+                        "on-tertiary-fixed-variant": "#2a4c4f",
+                        "error-container": "#ffdad6",
+                        "surface-tint": "#27676b",
+                        "surface-container": "#edeeef",
+                        "tertiary-container": "#395b5e",
+                        "primary-fixed-dim": "#93d1d5",
+                        "outline-variant": "#bfc8c9",
+                        "inverse-on-surface": "#f0f1f2",
+                        "on-tertiary-container": "#add1d5",
+                        "surface": "#f8f9fa",
+                        "on-primary-fixed-variant": "#004f53",
+                        "on-error-container": "#93000a",
+                        "on-primary-container": "#97d5d9",
+                        "on-secondary-container": "#704500",
+                        "outline": "#6f7979",
+                        "primary": "#004649",
+                        "surface-bright": "#f8f9fa",
+                        "on-secondary-fixed": "#2a1700",
+                        "surface-variant": "#e1e3e4",
+                        "primary-container": "#1b5e62",
+                        "on-primary-fixed": "#002022",
+                        "secondary": "#865300",
+                        "background": "#f8f9fa",
+                        "surface-container-high": "#e7e8e9",
+                        "on-error": "#ffffff",
+                        "surface-dim": "#d9dadb",
+                        "surface-container-lowest": "#ffffff",
+                        "error": "#ba1a1a",
+                        "on-tertiary": "#ffffff",
+                        "primary-fixed": "#afedf2",
+                        "on-surface-variant": "#3f4849",
+                        "inverse-surface": "#2e3132",
+                        "surface-container-highest": "#e1e3e4"
+                    },
+                    "borderRadius": {
+                        "DEFAULT": "0.25rem",
+                        "lg": "0.5rem",
+                        "xl": "0.75rem",
+                        "2xl": "1rem",
+                        "3xl": "1.5rem",
+                        "full": "9999px"
+                    },
+                    "fontFamily": {
+                        "headline": ["Manrope"],
+                        "body": ["Inter"],
+                        "label": ["Inter"]
+                    }
+                },
+            },
+        }
+    </script>
+<style>
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+        .active-dot {
+            box-shadow: 0 0 0 4px #ffffff;
+        }
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f8f9fa;
+        }
+        h1, h2, h3 {
+            font-family: 'Manrope', sans-serif;
+        }
+    </style>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+  </head>
+<body class="text-on-surface">
+<!-- TopAppBar -->
+<header class="fixed top-0 w-full z-50 bg-white/70 backdrop-blur-xl shadow-[0_4px_30px_rgba(0,70,73,0.04)]">
+<div class="flex justify-between items-center px-8 py-4 w-full max-w-screen-2xl mx-auto">
+<div class="flex items-center gap-4">
+<div class="w-10 h-10 rounded-full overflow-hidden border-2 border-primary-container">
+<img alt="User Profile" class="w-full h-full object-cover" data-alt="Close up portrait of a smiling male student in a bright modern academic setting with soft daylight" src="https://lh3.googleusercontent.com/aida-public/AB6AXuDrFQTns8m_hNJNn_T9Glr76nZoTA1adYtW4CvYrJZw25l-ni_7w0gjSmJmM9_XdoRC6L-bkqfqNqIMBViYPEi6WQZxJCU8IN_88QsGpo1FORT4QAADWSF9Zt1BFPcQnGm-E6SbCmDmALKAwTwczYlUglCsUYKZNJ3aGM0MKw-DcOwztH-qkZodAXwqxYyc-eu4EXkQ_IyL1CkaQn88g5d19-SsfAC8F635MRDU4--_ht3NW8IGH3Wlu6i7JVJumaF1Z7k1u64VXhM"/>
+</div>
+<span class="text-xl font-['Manrope'] font-black uppercase tracking-[0.1em] text-[#004649]">Scholarly</span>
+</div>
+<nav class="hidden md:flex gap-8">
+<a class="text-slate-400 font-semibold transition-colors duration-300 hover:bg-[#f8f9fa]" href="#">Dashboard</a>
+<a class="text-[#004649] border-b-2 border-[#865300] font-semibold transition-colors duration-300" href="#">Inbox</a>
+<a class="text-slate-400 font-semibold transition-colors duration-300 hover:bg-[#f8f9fa]" href="#">Alerts</a>
+<a class="text-slate-400 font-semibold transition-colors duration-300 hover:bg-[#f8f9fa]" href="#">Profile</a>
+</nav>
+<div class="flex items-center gap-2">
+<button class="p-2 rounded-full hover:bg-[#f8f9fa] transition-colors duration-300 text-[#004649]">
+<span class="material-symbols-outlined" data-icon="settings">settings</span>
+</button>
+</div>
+</div>
+</header>
+<main class="pt-24 pb-32 px-4 md:px-8 max-w-6xl mx-auto min-h-screen">
+<!-- Header Section -->
+<div class="mb-10 flex flex-col md:flex-row md:items-end justify-between gap-6">
+<div>
+<h1 class="text-4xl font-extrabold tracking-tight text-primary mb-2">Communications Hub</h1>
+<p class="text-on-surface-variant font-medium">Stay updated with your academic circle.</p>
+</div>
+<!-- Search Bar -->
+<div class="relative w-full md:w-80 group">
+<span class="material-symbols-outlined absolute left-4 top-1/2 -translate-y-1/2 text-outline">search</span>
+<input class="w-full pl-12 pr-4 py-4 bg-surface-container-low border-none rounded-2xl focus:ring-2 focus:ring-primary-container transition-all placeholder:text-outline font-medium text-sm" placeholder="Search conversations..." type="text"/>
+</div>
+</div>
+<!-- Messaging Layout -->
+<div class="grid grid-cols-1 lg:grid-cols-12 gap-8">
+<!-- Sidebar: Recent Threads/Filters (Editorial Style) -->
+<aside class="lg:col-span-4 space-y-8">
+<div class="bg-surface-container-lowest p-6 rounded-3xl shadow-[0_12px_40px_rgba(0,70,73,0.06)]">
+<h3 class="text-xs font-bold uppercase tracking-widest text-secondary mb-6">Pinned Faculty</h3>
+<div class="flex gap-4 overflow-x-auto pb-2 scrollbar-hide">
+<div class="flex-shrink-0 text-center space-y-2">
+<div class="w-14 h-14 rounded-2xl bg-primary-fixed overflow-hidden">
+<img class="w-full h-full object-cover" data-alt="Portrait of a professional female professor in a library setting with soft bookshelf background" src="https://lh3.googleusercontent.com/aida-public/AB6AXuDLMQNXGfkrw8-zDaVGeVfPfwzNxmOjFKHQAqK7CfRQtcq_lGojYehWGPxtqDDqkQXxqem-3p17XJNGFqBE9azsnlhPwhQAphpTzcsIRwO2VdmXEs8QdP1wVivoD_YtMAz63Qcv3hsf_PYrWTwW9jqTWDz66WSQbNGMs2NnkzLSbD5s1yjIq-sfERb8U3oI3iIkcpxlDgWK0AejYbqcExs_8HBIuAhdfAsCBVjeUmf5JpTYjlUqTtiK-38l12A-qQmAuzMElt0gSWQ"/>
+</div>
+<span class="text-[10px] font-bold text-on-surface-variant">Dr. Aris</span>
+</div>
+<div class="flex-shrink-0 text-center space-y-2">
+<div class="w-14 h-14 rounded-2xl bg-tertiary-fixed overflow-hidden">
+<img class="w-full h-full object-cover" data-alt="Corporate headshot of a male administrative officer with a friendly expression" src="https://lh3.googleusercontent.com/aida-public/AB6AXuBwobo8Fv4Ogn0myrThknB5J72zdRVg4YvUYgmTVKKFXvFRzqEWALylmNUSJ75-AEbeNHTJMxbIV_YTNFiUMLSxgTt30Dbb0y99nv_Lpl8XOuPG0aQvULyn62bTrtuPI5HR1saFbUe7S1phF5mReVFr4TsL8UEo27DVik2t8u9gD1LVxOnEQNoKnszPYZxF1cTU5DkxLntDR9K7aMteLGAMI8IJaPkNRZ8EGRMrRPonmOwfosR5GusRXh5Et6u8KGJeKpiwgOlwoCk"/>
+</div>
+<span class="text-[10px] font-bold text-on-surface-variant">Admin Lee</span>
+</div>
+<div class="flex-shrink-0 text-center space-y-2">
+<div class="w-14 h-14 rounded-2xl bg-secondary-fixed overflow-hidden relative">
+<img class="w-full h-full object-cover" data-alt="Confident female academic standing in a sunlit modern classroom" src="https://lh3.googleusercontent.com/aida-public/AB6AXuCzRxDm6QqIT1i40PRClYzCMvyZtwEPnU_2oFmHIGL_a8BlRCwePawx4hdE2-jJfjYozdPwmdt1Cy4UBgZYejshziJwEP2reuh4FywKtc7AF29Tjpd_hzlnhkE6BdcLuA9suMUH3nw8nvlka-OD1gXoPICM92WFSL979K2DkBX9iPHr7DBJi9553LmMmEZHz5v3Aon1yjQid9gBunLZ_5FTLej1cbHVFVoCH_dp01CB-MrKEz4rzxk7M7H71nBD8wa2Lz1XoP0Defo"/>
+<div class="absolute bottom-1 right-1 w-3 h-3 bg-[#004649] rounded-full active-dot"></div>
+</div>
+<span class="text-[10px] font-bold text-on-surface-variant">Prof. Sarah</span>
+</div>
+</div>
+</div>
+<div class="bg-surface-container-high p-6 rounded-3xl">
+<h3 class="text-xs font-bold uppercase tracking-widest text-primary mb-4">Categories</h3>
+<ul class="space-y-4">
+<li class="flex items-center justify-between text-sm font-semibold text-primary">
+<span class="flex items-center gap-3"><span class="material-symbols-outlined text-sm">inbox</span> All Messages</span>
+<span class="bg-primary-container text-on-primary-container px-2 py-0.5 rounded-full text-[10px]">12</span>
+</li>
+<li class="flex items-center justify-between text-sm font-semibold text-on-surface-variant opacity-70">
+<span class="flex items-center gap-3"><span class="material-symbols-outlined text-sm">school</span> Academic</span>
+<span>4</span>
+</li>
+<li class="flex items-center justify-between text-sm font-semibold text-on-surface-variant opacity-70">
+<span class="flex items-center gap-3"><span class="material-symbols-outlined text-sm">payments</span> Finance</span>
+</li>
+</ul>
+</div>
+</aside>
+<!-- Main Content: Message List -->
+<section class="lg:col-span-8 space-y-6">
+<!-- Unread Message Card -->
+<div class="bg-surface-container-lowest p-6 rounded-3xl shadow-[0_12px_40px_rgba(0,70,73,0.06)] border-l-4 border-primary hover:bg-surface-container transition-colors cursor-pointer group">
+<div class="flex items-start gap-5">
+<div class="relative flex-shrink-0">
+<div class="w-14 h-14 rounded-2xl overflow-hidden shadow-sm">
+<img class="w-full h-full object-cover" data-alt="Portrait of a female university professor in a professional blazer" src="https://lh3.googleusercontent.com/aida-public/AB6AXuCWm12GPNHJAbYJNV_WISeUQTs6eF9yWGNJr3OBMc__LubE8ER_bSq6t5DgwEHNCAvdHgkhGigWJR6h9hATfFGDL1A5zScHnDxfEmHnZ5eOSMxr3yIYE0Jw3w8DaSo2bK0b9cO6-Zdq8P9qvY1GXnDeGLI4RmUfmHIeJPTyr_nwSWAbpGGoDCTY-5Ib9DJwkSw3Chz80P1I0S2Ni4Tk6LZXbqYYAqh9CCN8wONXIGmaJ3Xr7Pw4e-UrovXkQ7d1_TNTtMNuK9AlCjk"/>
+</div>
+<div class="absolute -top-1 -right-1 w-4 h-4 bg-primary rounded-full flex items-center justify-center border-2 border-white">
+<div class="w-1.5 h-1.5 bg-white rounded-full"></div>
+</div>
+</div>
+<div class="flex-grow min-w-0">
+<div class="flex justify-between items-start mb-1">
+<h4 class="text-lg font-bold text-primary truncate">Prof. Sarah Jenkins</h4>
+<span class="text-xs font-bold text-primary whitespace-nowrap">10:45 AM</span>
+</div>
+<h5 class="text-sm font-bold text-on-surface mb-1">Advanced Calculus Syllabus Update</h5>
+<p class="text-on-surface-variant text-sm line-clamp-2 font-medium">Hello, I've just uploaded the revised syllabus for the upcoming semester. Please review the updated grading rubric and ensure you've noted the new deadline for the mid-term project...</p>
+</div>
+</div>
+</div>
+<!-- Regular Message Card -->
+<div class="bg-surface-container-lowest p-6 rounded-3xl shadow-[0_12px_40px_rgba(0,70,73,0.06)] hover:bg-surface-container transition-colors cursor-pointer">
+<div class="flex items-start gap-5">
+<div class="w-14 h-14 rounded-2xl overflow-hidden bg-surface-container flex-shrink-0">
+<img class="w-full h-full object-cover grayscale opacity-80" data-alt="Academic advisor in a clean office environment" src="https://lh3.googleusercontent.com/aida-public/AB6AXuDsLZMMvd08n-7Qds--cUpjhmqVpuNfwBFU7TW-HwR_0OB7E-asSdvvwL2jl3sHBxbc_8Yf43ecvLi4Fm6kD2QcFtMYwg_fBCoQ60NhgNx0YxE1AlTSve-vg5aUlcCBBdmMx9S-K1pRW1DNEzHRhHXEzKY76NT5iltoPtgEOlBuIELHZ3UwOmIjqZ0CcE7hwVzsSZUMJF8hEH3UTDk_Qrya7duhM2BlYrp5xZeUYvVaHIMC6If8qC5wxE5ysSqZYPpX0BZHOF6sza0"/>
+</div>
+<div class="flex-grow min-w-0">
+<div class="flex justify-between items-start mb-1">
+<h4 class="text-lg font-bold text-on-surface-variant truncate">Marcus Lee (Admin)</h4>
+<span class="text-xs font-medium text-outline whitespace-nowrap">Yesterday</span>
+</div>
+<h5 class="text-sm font-semibold text-on-surface-variant mb-1">Tuition Receipt Confirmation</h5>
+<p class="text-on-surface-variant text-sm line-clamp-1 font-medium">Your payment for Semester 2 has been processed successfully. You can download the full PDF receipt from your profile portal under the finance section.</p>
+</div>
+</div>
+</div>
+<!-- Regular Message Card -->
+<div class="bg-surface-container-lowest p-6 rounded-3xl shadow-[0_12px_40px_rgba(0,70,73,0.06)] hover:bg-surface-container transition-colors cursor-pointer">
+<div class="flex items-start gap-5">
+<div class="w-14 h-14 rounded-2xl overflow-hidden bg-surface-container flex-shrink-0">
+<img class="w-full h-full object-cover grayscale opacity-80" data-alt="Experienced woman academic with glasses smiling warmly" src="https://lh3.googleusercontent.com/aida-public/AB6AXuAFHCg1nCBQxdEwwauOnV_wtBo1ES2v30_s6fK-ZGx7B4LwfekijDsEMIefEk2feEXsilxEltfZqHvx1Ri2rwC6lIa9uZ83na-FlxEOqPyDwiYrBmMU4A5DT_3_HEx8gHt1UXyLnz-nKynqLEr-n8nJIQrdvlL8U-cVCFzRb_hXpxlQ9FYoZVpeAK7Qw_MvMnpqxbyJDHWaDou-dyyQWwDEWKury7NLW5p6j_Q4A2AcVcl7g6YKoJyBLrhwsVNs3_7w70bmfT5dKxI"/>
+</div>
+<div class="flex-grow min-w-0">
+<div class="flex justify-between items-start mb-1">
+<h4 class="text-lg font-bold text-on-surface-variant truncate">Dr. Aris Thorne</h4>
+<span class="text-xs font-medium text-outline whitespace-nowrap">Oct 24</span>
+</div>
+<h5 class="text-sm font-semibold text-on-surface-variant mb-1">Thesis Review Appointment</h5>
+<p class="text-on-surface-variant text-sm line-clamp-1 font-medium">I've reviewed your latest draft of the introduction. We should meet next Tuesday during office hours to discuss the methodology section...</p>
+</div>
+</div>
+</div>
+</section>
+</div>
+</main>
+<!-- Floating Action Button -->
+<button class="fixed bottom-28 right-8 md:bottom-12 md:right-12 bg-gradient-to-br from-primary to-primary-container text-white w-16 h-16 rounded-2xl shadow-[0_12px_40px_rgba(0,70,73,0.3)] flex items-center justify-center group active:scale-90 transition-all z-40">
+<span class="material-symbols-outlined text-3xl">edit_square</span>
+</button>
+<!-- BottomNavBar (Mobile Only) -->
+<nav class="md:hidden fixed bottom-0 left-0 w-full z-50 flex justify-around items-center px-6 pb-8 pt-4 bg-white/95 backdrop-blur-md rounded-t-[2.5rem] shadow-[0_-12px_40px_rgba(0,70,73,0.08)]">
+<div class="flex flex-col items-center justify-center text-slate-400">
+<span class="material-symbols-outlined">dashboard</span>
+<span class="font-['Inter'] text-[11px] font-semibold uppercase tracking-wider mt-1">Dashboard</span>
+</div>
+<div class="flex flex-col items-center justify-center text-[#004649] bg-[#e7e8e9]/50 rounded-2xl px-6 py-2">
+<span class="material-symbols-outlined">mail</span>
+<span class="font-['Inter'] text-[11px] font-semibold uppercase tracking-wider mt-1">Inbox</span>
+</div>
+<div class="flex flex-col items-center justify-center text-slate-400">
+<span class="material-symbols-outlined">notifications</span>
+<span class="font-['Inter'] text-[11px] font-semibold uppercase tracking-wider mt-1">Alerts</span>
+</div>
+<div class="flex flex-col items-center justify-center text-slate-400">
+<span class="material-symbols-outlined">person</span>
+<span class="font-['Inter'] text-[11px] font-semibold uppercase tracking-wider mt-1">Profile</span>
+</div>
+</nav>
+</body></html>

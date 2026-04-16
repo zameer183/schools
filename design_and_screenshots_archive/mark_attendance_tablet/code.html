@@ -1,0 +1,281 @@
+<!DOCTYPE html>
+
+<html lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Scholarly Editorial - Attendance Portal</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;600;700;800&amp;family=Inter:wght@400;500;600&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    "colors": {
+                        "tertiary-fixed": "#c5e9ec",
+                        "on-tertiary": "#ffffff",
+                        "secondary-container": "#fdb24f",
+                        "on-secondary-fixed-variant": "#653e00",
+                        "background": "#f8f9fa",
+                        "tertiary-fixed-dim": "#a9cdd0",
+                        "surface": "#f8f9fa",
+                        "inverse-on-surface": "#f0f1f2",
+                        "error-container": "#ffdad6",
+                        "inverse-surface": "#2e3132",
+                        "primary": "#004649",
+                        "on-secondary": "#ffffff",
+                        "surface-variant": "#e1e3e4",
+                        "on-primary-fixed-variant": "#004f53",
+                        "on-error": "#ffffff",
+                        "inverse-primary": "#93d1d5",
+                        "outline": "#6f7979",
+                        "primary-fixed": "#afedf2",
+                        "on-error-container": "#93000a",
+                        "surface-container-high": "#e7e8e9",
+                        "on-primary": "#ffffff",
+                        "on-secondary-container": "#704500",
+                        "surface-container-low": "#f3f4f5",
+                        "on-background": "#191c1d",
+                        "surface-container-lowest": "#ffffff",
+                        "surface-container": "#edeeef",
+                        "on-primary-container": "#97d5d9",
+                        "error": "#ba1a1a",
+                        "on-surface-variant": "#3f4849",
+                        "on-secondary-fixed": "#2a1700",
+                        "surface-tint": "#27676b",
+                        "secondary-fixed": "#ffddb8",
+                        "primary-container": "#1b5e62",
+                        "on-tertiary-fixed": "#002022",
+                        "tertiary": "#214346",
+                        "primary-fixed-dim": "#93d1d5",
+                        "outline-variant": "#bfc8c9",
+                        "surface-dim": "#d9dadb",
+                        "secondary-fixed-dim": "#ffb960",
+                        "surface-container-highest": "#e1e3e4",
+                        "on-tertiary-fixed-variant": "#2a4c4f",
+                        "surface-bright": "#f8f9fa",
+                        "on-primary-fixed": "#002022",
+                        "secondary": "#865300",
+                        "on-tertiary-container": "#add1d5",
+                        "tertiary-container": "#395b5e",
+                        "on-surface": "#191c1d"
+                    },
+                    "borderRadius": {
+                        "DEFAULT": "0.25rem",
+                        "lg": "0.5rem",
+                        "xl": "0.75rem",
+                        "full": "9999px"
+                    },
+                    "fontFamily": {
+                        "headline": ["Manrope"],
+                        "body": ["Inter"],
+                        "label": ["Inter"]
+                    }
+                },
+            },
+        }
+    </script>
+<style>
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+        .no-scrollbar::-webkit-scrollbar { display: none; }
+        .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+    </style>
+</head>
+<body class="bg-surface font-body text-on-surface">
+<!-- Top Navigation Shell -->
+<nav class="fixed top-0 w-full z-50 bg-white/80 dark:bg-slate-900/80 backdrop-blur-md shadow-sm dark:shadow-none flex items-center justify-between px-8 h-16 w-full">
+<div class="flex items-center gap-8">
+<span class="text-xl font-bold text-teal-900 dark:text-teal-500 font-headline tracking-tight">Scholarly Editorial</span>
+<div class="hidden md:flex gap-6">
+<a class="text-slate-500 dark:text-slate-400 font-medium hover:text-teal-700 dark:hover:text-teal-300 transition-colors duration-200 ease-in-out" href="#">Dashboard</a>
+<a class="text-teal-900 dark:text-teal-400 font-bold border-b-2 border-teal-900 dark:border-teal-400 pb-1 hover:text-teal-700 dark:hover:text-teal-300 transition-colors duration-200 ease-in-out" href="#">Attendance</a>
+<a class="text-slate-500 dark:text-slate-400 font-medium hover:text-teal-700 dark:hover:text-teal-300 transition-colors duration-200 ease-in-out" href="#">Grades</a>
+<a class="text-slate-500 dark:text-slate-400 font-medium hover:text-teal-700 dark:hover:text-teal-300 transition-colors duration-200 ease-in-out" href="#">Schedule</a>
+</div>
+</div>
+<div class="flex items-center gap-4">
+<button class="material-symbols-outlined text-on-surface-variant">notifications</button>
+<button class="material-symbols-outlined text-on-surface-variant">settings</button>
+<div class="w-8 h-8 rounded-full bg-primary overflow-hidden">
+<img alt="Teacher Profile" class="w-full h-full object-cover" data-alt="professional headshot of a female educator with a warm smile in a brightly lit modern office setting" src="https://lh3.googleusercontent.com/aida-public/AB6AXuCsjgqA9PjyPz3LwX8_V9nPoy1-hqsmQr-REdnBSSRtSBMZopjU5Rhsa9ucj-IOSJC_-ARafU2d8qFt-CSYraI8cqMQdbwbfATnRUEXZK9EqXb2mvUQ8x20eBfQSTI9XBP-v8FP2wdO5bYR5d3a1nQu3lMhyS_kcyk_k9wXtfFiKelCyIN6_BhzgeaA2GhPkyEZQcyVwyOz_die_RE6TO87b8KjgRWbw7FTSMrT1gyVuEts2Hf2Ln0jPNLrbrjrrX8mo07Yeh5ae9c"/>
+</div>
+</div>
+</nav>
+<!-- Sidebar Shell (Collapsed for Tablet View) -->
+<aside class="h-screen w-20 fixed left-0 top-0 bg-slate-50 dark:bg-slate-950 flex flex-col items-center py-6 pt-20 z-40 hidden lg:flex">
+<div class="flex flex-col gap-8 flex-1">
+<button class="w-12 h-12 flex items-center justify-center text-slate-600 dark:text-slate-400 hover:bg-teal-50/50 rounded-xl transition-all"><span class="material-symbols-outlined">school</span></button>
+<button class="w-12 h-12 flex items-center justify-center bg-white dark:bg-slate-900 text-teal-900 dark:text-teal-400 rounded-xl shadow-sm"><span class="material-symbols-outlined">checklist_rtl</span></button>
+<button class="w-12 h-12 flex items-center justify-center text-slate-600 dark:text-slate-400 hover:bg-teal-50/50 rounded-xl transition-all"><span class="material-symbols-outlined">person_search</span></button>
+<button class="w-12 h-12 flex items-center justify-center text-slate-600 dark:text-slate-400 hover:bg-teal-50/50 rounded-xl transition-all"><span class="material-symbols-outlined">analytics</span></button>
+</div>
+<div class="flex flex-col gap-6">
+<button class="material-symbols-outlined text-slate-400">help</button>
+<button class="material-symbols-outlined text-slate-400">logout</button>
+</div>
+</aside>
+<!-- Main Content Canvas -->
+<main class="pt-24 pb-12 px-6 lg:ml-20">
+<div class="max-w-6xl mx-auto">
+<!-- Editorial Header & Controls -->
+<header class="mb-10 flex flex-col md:flex-row md:items-end justify-between gap-6">
+<div>
+<h1 class="text-4xl font-extrabold font-headline tracking-tight text-primary mb-2">Class Attendance</h1>
+<p class="text-on-surface-variant font-medium">History of Art • Section A-2</p>
+</div>
+<div class="flex flex-wrap gap-4">
+<!-- Custom Select Dropdowns -->
+<div class="relative min-w-[180px]">
+<label class="block text-[10px] uppercase tracking-widest font-bold text-primary/60 mb-1 ml-2">Active Class</label>
+<div class="flex items-center justify-between bg-surface-container-low px-4 py-3 rounded-xl cursor-pointer">
+<span class="font-semibold text-sm">Grade 11 - Art</span>
+<span class="material-symbols-outlined text-sm">expand_more</span>
+</div>
+</div>
+<div class="relative min-w-[180px]">
+<label class="block text-[10px] uppercase tracking-widest font-bold text-primary/60 mb-1 ml-2">Date</label>
+<div class="flex items-center justify-between bg-surface-container-low px-4 py-3 rounded-xl cursor-pointer">
+<span class="font-semibold text-sm">Oct 24, 2023</span>
+<span class="material-symbols-outlined text-sm">calendar_today</span>
+</div>
+</div>
+</div>
+</header>
+<!-- Stats Tonal Layering (Summary) -->
+<section class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-10">
+<div class="bg-surface-container-lowest p-6 rounded-2xl shadow-[0_12px_40px_rgba(0,70,73,0.04)] flex flex-col">
+<span class="text-xs font-bold text-slate-400 uppercase tracking-widest mb-1">Total Enrolled</span>
+<span class="text-3xl font-black text-primary">32</span>
+</div>
+<div class="bg-surface-container-lowest p-6 rounded-2xl shadow-[0_12px_40px_rgba(0,70,73,0.04)] flex flex-col">
+<span class="text-xs font-bold text-slate-400 uppercase tracking-widest mb-1">Present</span>
+<span class="text-3xl font-black text-teal-600">28</span>
+</div>
+<div class="bg-surface-container-lowest p-6 rounded-2xl shadow-[0_12px_40px_rgba(0,70,73,0.04)] flex flex-col">
+<span class="text-xs font-bold text-slate-400 uppercase tracking-widest mb-1">Absent</span>
+<span class="text-3xl font-black text-error">04</span>
+</div>
+<div class="bg-secondary p-6 rounded-2xl shadow-[0_12px_40px_rgba(134,83,0,0.1)] flex flex-col justify-center items-center text-center">
+<button class="font-bold text-white text-sm flex items-center gap-2">
+<span class="material-symbols-outlined">send</span>
+                        Submit Record
+                    </button>
+</div>
+</section>
+<!-- Student List - No Borders Policy -->
+<section class="space-y-4">
+<div class="flex items-center px-6 py-2">
+<div class="w-12 mr-6"></div>
+<div class="flex-1"><span class="text-[10px] font-black uppercase tracking-widest text-slate-400">Student Identity</span></div>
+<div class="hidden md:block w-32 text-center"><span class="text-[10px] font-black uppercase tracking-widest text-slate-400">Performance</span></div>
+<div class="w-48 text-center"><span class="text-[10px] font-black uppercase tracking-widest text-slate-400">Action</span></div>
+</div>
+<!-- Student Row 1 -->
+<div class="bg-surface-container-lowest p-4 rounded-2xl flex items-center hover:shadow-md transition-all duration-300">
+<div class="w-12 h-12 rounded-full overflow-hidden mr-6 ring-2 ring-slate-100 ring-offset-2">
+<img alt="Student Profile" class="w-full h-full object-cover" data-alt="portrait of a teenage boy with curly hair looking directly at camera with a neutral expression" src="https://lh3.googleusercontent.com/aida-public/AB6AXuC_PQv6wiojgKQ-p-sfQfdxZcATAg0LNwbCMDRtLYAXxLiL5DeJgNlP4aY3ZoiG0e7bpA01Z3uzz4xoGpg-kz_Ho57y_4XxIBge3tTwt8uDFN0THGrMxAAXJZ_AMfmz9wUhaCmPhlNw6BP5vyZXuLxsJ9CyryFmdA7MHbMs3Cx6ZyQmp6wL95shBST6JL29TE9GGv6JDpodrtTwl3GgpTSjSTQfSnS6o-kGJx0kQlqt-JBI_-pTbv7ymY73DZcBM6j962zAxHgkXZg"/>
+</div>
+<div class="flex-1">
+<h3 class="font-bold text-primary font-headline">Adrian Sterling</h3>
+<p class="text-xs text-on-surface-variant font-medium">ID: 2023-0142</p>
+</div>
+<div class="hidden md:block w-32 px-4">
+<div class="w-full bg-surface-container-low h-1.5 rounded-full overflow-hidden">
+<div class="bg-secondary h-full w-[92%]"></div>
+</div>
+</div>
+<div class="flex gap-2 w-48 justify-end">
+<button class="px-5 py-3 rounded-full bg-teal-50 text-teal-900 font-bold text-sm hover:bg-teal-100 transition-colors flex-1 md:flex-none">Present</button>
+<button class="px-5 py-3 rounded-full text-slate-400 font-bold text-sm hover:bg-error-container hover:text-error transition-all flex-1 md:flex-none">Absent</button>
+</div>
+</div>
+<!-- Student Row 2 -->
+<div class="bg-surface-container-lowest p-4 rounded-2xl flex items-center hover:shadow-md transition-all duration-300 border-l-4 border-error">
+<div class="w-12 h-12 rounded-full overflow-hidden mr-6 ring-2 ring-slate-100 ring-offset-2">
+<img alt="Student Profile" class="w-full h-full object-cover" data-alt="close-up of a high school girl with glasses smiling warmly against a blurred outdoor background" src="https://lh3.googleusercontent.com/aida-public/AB6AXuD-XQ62lDx0MJRYtU_1ty2nXQjSgydkVbAsdh-zem1PpTM_VoP3kwTz2XxyRatWoFlVp9nhDZwdVpEQg5qsUpbZQCcNNiz4_nruMVUaEJNe8ZkkzwMYieH8kg0XIdjTNJHOOeOsGdVtyAZN1lBra_9jAhl3m_tfKRYaXtRHmH2NPKl1RgW7p2x3yhGN0UT-7fNuxuL6ISGvREMBqrbS9F8j2DoGEQrHbQ579-BMUyjF4QFFPCxm4euBU4T2OBMQfiWSvnC4MYuUsSQ"/>
+</div>
+<div class="flex-1">
+<h3 class="font-bold text-primary font-headline">Elena Rodriguez</h3>
+<p class="text-xs text-on-surface-variant font-medium">ID: 2023-0145</p>
+</div>
+<div class="hidden md:block w-32 px-4">
+<div class="w-full bg-surface-container-low h-1.5 rounded-full overflow-hidden">
+<div class="bg-secondary h-full w-[78%]"></div>
+</div>
+</div>
+<div class="flex gap-2 w-48 justify-end">
+<button class="px-5 py-3 rounded-full text-slate-400 font-bold text-sm hover:bg-teal-50 hover:text-teal-900 transition-all flex-1 md:flex-none">Present</button>
+<button class="px-5 py-3 rounded-full bg-error-container text-error font-bold text-sm hover:bg-error/20 transition-colors flex-1 md:flex-none">Absent</button>
+</div>
+</div>
+<!-- Student Row 3 -->
+<div class="bg-surface-container-lowest p-4 rounded-2xl flex items-center hover:shadow-md transition-all duration-300">
+<div class="w-12 h-12 rounded-full overflow-hidden mr-6 ring-2 ring-slate-100 ring-offset-2">
+<img alt="Student Profile" class="w-full h-full object-cover" data-alt="portrait of a young boy with dark skin and a confident smile wearing a casual denim shirt" src="https://lh3.googleusercontent.com/aida-public/AB6AXuCO04dHxGbPMod5xPhVwXUxVwe-fLJ99kxPctbDSJgrfBzLaSSQvHAqEd9JwJxsDUVqW6jlxXwnx8n0GOgOHU5ZtqQWoopJGv4FudyTMSl5Hxu0XThpWrrnUGS24rOEt07vBwodZQ_gagU8CHG_wDeIPvtY73-yNH04RiJ8VMZvHLb3TT30PMivfbROgiKBV2xZfWteZT57YRL9b8x-xKzhFaq_e60r7fptXv0O1h0AEhbiNPCHPSQzevNNvqZtDSaGTsQd5CN0XRc"/>
+</div>
+<div class="flex-1">
+<h3 class="font-bold text-primary font-headline">Marcus Chen</h3>
+<p class="text-xs text-on-surface-variant font-medium">ID: 2023-0149</p>
+</div>
+<div class="hidden md:block w-32 px-4">
+<div class="w-full bg-surface-container-low h-1.5 rounded-full overflow-hidden">
+<div class="bg-secondary h-full w-[85%]"></div>
+</div>
+</div>
+<div class="flex gap-2 w-48 justify-end">
+<button class="px-5 py-3 rounded-full bg-teal-50 text-teal-900 font-bold text-sm hover:bg-teal-100 transition-colors flex-1 md:flex-none">Present</button>
+<button class="px-5 py-3 rounded-full text-slate-400 font-bold text-sm hover:bg-error-container hover:text-error transition-all flex-1 md:flex-none">Absent</button>
+</div>
+</div>
+<!-- Student Row 4 -->
+<div class="bg-surface-container-lowest p-4 rounded-2xl flex items-center hover:shadow-md transition-all duration-300">
+<div class="w-12 h-12 rounded-full overflow-hidden mr-6 ring-2 ring-slate-100 ring-offset-2">
+<img alt="Student Profile" class="w-full h-full object-cover" data-alt="close up of a student girl with freckles and bright eyes looking thoughtfully slightly off camera" src="https://lh3.googleusercontent.com/aida-public/AB6AXuBcdnSsJcUE7G_Kq9oroJnObvxIcBuy4iTNTd6M6mDEIypLXUnoFrbFvIfdURLs6RC6FZnQ7dEyIETaL0bGSm1v8eldJ-dzqMxWfm4hS9GBfjNxW15pBH6mbyjCcZK6POaSe2EhtQQYlCstChS5gGUvayPZ5yN5VbLx_h1u6-W8vB6e9VUb8REBd-DbsF0_2NsWkdbpiRHHEDrKOVtWsMn9dLsgrQUMEpA3HpzRCzLdoMQPRLhOdgUnoEzvh0n93_BunztIIB_VsXw"/>
+</div>
+<div class="flex-1">
+<h3 class="font-bold text-primary font-headline">Sasha Vovk</h3>
+<p class="text-xs text-on-surface-variant font-medium">ID: 2023-0152</p>
+</div>
+<div class="hidden md:block w-32 px-4">
+<div class="w-full bg-surface-container-low h-1.5 rounded-full overflow-hidden">
+<div class="bg-secondary h-full w-[95%]"></div>
+</div>
+</div>
+<div class="flex gap-2 w-48 justify-end">
+<button class="px-5 py-3 rounded-full bg-teal-50 text-teal-900 font-bold text-sm hover:bg-teal-100 transition-colors flex-1 md:flex-none">Present</button>
+<button class="px-5 py-3 rounded-full text-slate-400 font-bold text-sm hover:bg-error-container hover:text-error transition-all flex-1 md:flex-none">Absent</button>
+</div>
+</div>
+</section>
+</div>
+</main>
+<!-- Floating Quick Actions for Tablet -->
+<div class="fixed bottom-6 right-6 md:hidden">
+<button class="w-16 h-16 bg-primary text-white rounded-full shadow-xl flex items-center justify-center">
+<span class="material-symbols-outlined text-3xl">save</span>
+</button>
+</div>
+<!-- Mobile Bottom Navigation (Responsive Pivot) -->
+<nav class="md:hidden fixed bottom-0 left-0 right-0 bg-white shadow-2xl h-16 flex items-center justify-around z-50">
+<button class="flex flex-col items-center gap-1 text-slate-400">
+<span class="material-symbols-outlined">dashboard</span>
+<span class="text-[10px] font-bold">Home</span>
+</button>
+<button class="flex flex-col items-center gap-1 text-teal-900">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">checklist_rtl</span>
+<span class="text-[10px] font-bold">Attendance</span>
+</button>
+<button class="flex flex-col items-center gap-1 text-slate-400">
+<span class="material-symbols-outlined">analytics</span>
+<span class="text-[10px] font-bold">Reports</span>
+</button>
+<button class="flex flex-col items-center gap-1 text-slate-400">
+<span class="material-symbols-outlined">person</span>
+<span class="text-[10px] font-bold">Profile</span>
+</button>
+</nav>
+</body></html>

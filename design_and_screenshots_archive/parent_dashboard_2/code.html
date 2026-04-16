@@ -1,0 +1,266 @@
+<!DOCTYPE html>
+
+<html class="light" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Scholarly Parent - Manarah Institute Dashboard</title>
+<!-- Fonts: Manrope & Inter -->
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&amp;family=Manrope:wght@400;500;600;700;800&amp;display=swap" rel="stylesheet"/>
+<!-- Material Symbols -->
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<script id="tailwind-config">
+      tailwind.config = {
+        darkMode: "class",
+        theme: {
+          extend: {
+            "colors": {
+                    "surface": "#f8f9fa",
+                    "primary-container": "#1b5e62",
+                    "tertiary-fixed-dim": "#a9cdd0",
+                    "inverse-surface": "#2e3132",
+                    "tertiary": "#214346",
+                    "on-error": "#ffffff",
+                    "on-tertiary-fixed-variant": "#2a4c4f",
+                    "surface-bright": "#f8f9fa",
+                    "on-background": "#191c1d",
+                    "on-tertiary-fixed": "#002022",
+                    "tertiary-container": "#395b5e",
+                    "on-tertiary-container": "#add1d5",
+                    "surface-dim": "#d9dadb",
+                    "secondary-container": "#fdb24f",
+                    "on-secondary-fixed-variant": "#653e00",
+                    "error-container": "#ffdad6",
+                    "secondary": "#865300",
+                    "on-surface-variant": "#3f4849",
+                    "surface-container": "#edeeef",
+                    "inverse-on-surface": "#f0f1f2",
+                    "surface-container-low": "#f3f4f5",
+                    "primary-fixed-dim": "#93d1d5",
+                    "on-surface": "#191c1d",
+                    "error": "#ba1a1a",
+                    "on-primary-fixed-variant": "#004f53",
+                    "primary": "#004649",
+                    "on-tertiary": "#ffffff",
+                    "inverse-primary": "#93d1d5",
+                    "on-secondary-container": "#704500",
+                    "on-primary-fixed": "#002022",
+                    "tertiary-fixed": "#c5e9ec",
+                    "surface-container-lowest": "#ffffff",
+                    "background": "#f8f9fa",
+                    "outline": "#6f7979",
+                    "secondary-fixed-dim": "#ffb960",
+                    "on-primary": "#ffffff",
+                    "outline-variant": "#bfc8c9",
+                    "surface-container-highest": "#e1e3e4",
+                    "on-primary-container": "#97d5d9",
+                    "on-secondary": "#ffffff",
+                    "secondary-fixed": "#ffddb8",
+                    "surface-variant": "#e1e3e4",
+                    "surface-container-high": "#e7e8e9",
+                    "surface-tint": "#27676b",
+                    "primary-fixed": "#afedf2",
+                    "on-secondary-fixed": "#2a1700",
+                    "on-error-container": "#93000a"
+            },
+            "borderRadius": {
+                    "DEFAULT": "0.25rem",
+                    "lg": "0.5rem",
+                    "xl": "0.75rem",
+                    "full": "9999px"
+            },
+            "fontFamily": {
+                    "headline": ["Manrope"],
+                    "body": ["Inter"],
+                    "label": ["Inter"]
+            }
+          },
+        },
+      }
+    </script>
+<style>
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+        .tonal-layer {
+            box-shadow: 0 12px 40px rgba(0, 70, 73, 0.06);
+        }
+    </style>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+  </head>
+<body class="bg-surface font-body text-on-surface">
+<!-- TopAppBar Execution -->
+<header class="fixed top-0 w-full z-50 bg-white/80 dark:bg-slate-900/80 backdrop-blur-md shadow-sm flex items-center justify-between px-6 py-4">
+<div class="flex items-center gap-4">
+<div class="h-10 w-10 rounded-full bg-primary-container flex items-center justify-center text-white overflow-hidden">
+<img alt="Parent Profile" class="w-full h-full object-cover" data-alt="Close up portrait of a professional woman with a warm smile in an academic office setting, soft natural lighting" src="https://lh3.googleusercontent.com/aida-public/AB6AXuC2cJSxYyXQ-HwAVzQxkljxWweE04sRT-Ut64k8aH6Vrsqzzy5LFy8Kbjzdwr3-23usiP07327b6xETAFOTpRn_nJY6GgCBFjD0G5bGeNoBGB2ct2DK02uZu5D9088SUTWHfRb6mr_VNCAUvEaY5_adAun3qMy1ID0Uw7Dv435Ivfo_rn0RTW0h3RXt3U4_mi5zZGbm2P_9Ko9ek9xqWC5zjNi2Z6jWiq3sHaTWTsqwOjUxiyO7Jsi5MQm3VJaBbJ3bcdZdfXlo30Q"/>
+</div>
+<h1 class="font-headline text-lg font-bold tracking-tight text-teal-900">Scholarly Parent</h1>
+</div>
+<div class="flex items-center gap-2">
+<button class="p-2 rounded-full hover:bg-slate-100 transition-all active:opacity-80">
+<span class="material-symbols-outlined text-teal-900">notifications_active</span>
+</button>
+<div class="hidden md:flex gap-6 ml-8 items-center">
+<span class="font-headline text-sm font-bold text-teal-800">Dashboard</span>
+<span class="font-headline text-sm font-medium text-slate-500 hover:text-teal-700 transition-colors">Alerts</span>
+<span class="font-headline text-sm font-medium text-slate-500 hover:text-teal-700 transition-colors">Results</span>
+<span class="font-headline text-sm font-medium text-slate-500 hover:text-teal-700 transition-colors">Fees</span>
+</div>
+</div>
+</header>
+<main class="pt-24 pb-32 px-6 max-w-7xl mx-auto">
+<!-- Dashboard Welcome -->
+<section class="mb-10">
+<h2 class="font-headline text-3xl font-extrabold text-primary mb-1">Welcome back, Sarah Jenkins</h2>
+<p class="text-on-surface-variant font-medium">Viewing academic progress for <span class="text-primary font-bold">Zaid Jenkins</span></p>
+</section>
+<!-- Bento Grid Layout -->
+<div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+<!-- Academic Stats Card (GPA) -->
+<div class="md:col-span-1 bg-surface-container-lowest rounded-3xl p-8 tonal-layer flex flex-col justify-between">
+<div>
+<div class="flex items-center justify-between mb-6">
+<span class="text-label-md font-bold text-slate-400 uppercase tracking-widest">Cumulative GPA</span>
+<div class="h-10 w-10 rounded-xl bg-teal-50 flex items-center justify-center">
+<span class="material-symbols-outlined text-primary">grade</span>
+</div>
+</div>
+<div class="flex items-baseline gap-2">
+<span class="font-headline text-6xl font-black text-primary">3.84</span>
+<span class="text-on-surface-variant font-semibold">/ 4.00</span>
+</div>
+</div>
+<div class="mt-8">
+<div class="w-full bg-surface-container-high h-2 rounded-full overflow-hidden">
+<div class="bg-primary h-full rounded-full" style="width: 96%"></div>
+</div>
+<p class="mt-3 text-sm font-medium text-on-surface-variant">Top 5% of Class of 2024</p>
+</div>
+</div>
+<!-- Attendance Card -->
+<div class="md:col-span-1 bg-surface-container-lowest rounded-3xl p-8 tonal-layer flex flex-col justify-between">
+<div>
+<div class="flex items-center justify-between mb-6">
+<span class="text-label-md font-bold text-slate-400 uppercase tracking-widest">Attendance</span>
+<div class="h-10 w-10 rounded-xl bg-teal-50 flex items-center justify-center">
+<span class="material-symbols-outlined text-primary">calendar_today</span>
+</div>
+</div>
+<div class="flex items-baseline gap-2">
+<span class="font-headline text-6xl font-black text-primary">96</span>
+<span class="font-headline text-2xl font-bold text-primary">%</span>
+</div>
+</div>
+<div class="mt-8 flex items-center gap-3">
+<span class="px-3 py-1 bg-teal-50 text-primary text-xs font-bold rounded-full">Consistent</span>
+<span class="text-sm font-medium text-on-surface-variant">2 days absent this term</span>
+</div>
+</div>
+<!-- Fees Outstanding Card -->
+<div class="md:col-span-1 bg-secondary text-white rounded-3xl p-8 tonal-layer flex flex-col justify-between relative overflow-hidden group">
+<!-- Abstract decorative element -->
+<div class="absolute -right-10 -top-10 w-40 h-40 bg-white/10 rounded-full transition-transform group-hover:scale-110"></div>
+<div class="relative z-10">
+<div class="flex items-center justify-between mb-6">
+<span class="text-label-md font-bold text-white/70 uppercase tracking-widest">Outstanding Fees</span>
+<div class="h-10 w-10 rounded-xl bg-white/20 backdrop-blur-sm flex items-center justify-center">
+<span class="material-symbols-outlined text-white">payments</span>
+</div>
+</div>
+<div class="flex items-baseline gap-1">
+<span class="font-headline text-5xl font-black">$1,250</span>
+</div>
+</div>
+<div class="relative z-10 mt-8">
+<button class="w-full bg-white text-secondary font-headline font-bold py-3 px-6 rounded-xl shadow-lg active:scale-95 transition-all">
+                        Pay Tuition Now
+                    </button>
+<p class="mt-4 text-xs font-medium text-white/80 text-center">Due Date: October 15, 2023</p>
+</div>
+</div>
+<!-- Recent Activity Section -->
+<div class="md:col-span-2 bg-surface-container-lowest rounded-3xl p-8 tonal-layer">
+<div class="flex items-center justify-between mb-8">
+<h3 class="font-headline text-xl font-bold text-primary">Recent Activity</h3>
+<button class="text-secondary font-bold text-sm hover:underline">View All Records</button>
+</div>
+<div class="space-y-6">
+<!-- Activity Item 1 -->
+<div class="flex items-center gap-6 p-4 rounded-2xl hover:bg-surface-container-low transition-colors">
+<div class="h-14 w-14 rounded-2xl bg-teal-50 flex items-center justify-center shrink-0">
+<span class="material-symbols-outlined text-primary" style="font-variation-settings: 'FILL' 1;">description</span>
+</div>
+<div class="flex-grow">
+<h4 class="font-headline font-bold text-teal-900">Math Midterm result</h4>
+<p class="text-on-surface-variant text-sm font-medium">Advanced Calculus • Grade: A (94%)</p>
+</div>
+<div class="text-right">
+<span class="block text-xs font-bold text-slate-400 uppercase tracking-wider">Yesterday</span>
+<span class="material-symbols-outlined text-slate-300">chevron_right</span>
+</div>
+</div>
+<!-- Activity Item 2 -->
+<div class="flex items-center gap-6 p-4 rounded-2xl hover:bg-surface-container-low transition-colors">
+<div class="h-14 w-14 rounded-2xl bg-orange-50 flex items-center justify-center shrink-0">
+<span class="material-symbols-outlined text-orange-600" style="font-variation-settings: 'FILL' 1;">event_repeat</span>
+</div>
+<div class="flex-grow">
+<h4 class="font-headline font-bold text-teal-900">Fee Reminder</h4>
+<p class="text-on-surface-variant text-sm font-medium">Term 2 Library &amp; Activity Fees</p>
+</div>
+<div class="text-right">
+<span class="block text-xs font-bold text-slate-400 uppercase tracking-wider">3 days ago</span>
+<span class="material-symbols-outlined text-slate-300">chevron_right</span>
+</div>
+</div>
+</div>
+</div>
+<!-- Academic Policy / Quick Links -->
+<div class="md:col-span-1 bg-surface-container-low rounded-3xl p-8 border border-white/50">
+<h3 class="font-headline text-xl font-bold text-primary mb-6">Parent Resources</h3>
+<div class="space-y-4">
+<a class="flex items-center gap-3 p-4 bg-white rounded-2xl shadow-sm hover:translate-x-1 transition-transform group" href="#">
+<span class="material-symbols-outlined text-primary">policy</span>
+<span class="font-medium text-teal-900">Academic Policy</span>
+<span class="material-symbols-outlined text-slate-300 ml-auto group-hover:text-primary transition-colors">open_in_new</span>
+</a>
+<a class="flex items-center gap-3 p-4 bg-white rounded-2xl shadow-sm hover:translate-x-1 transition-transform group" href="#">
+<span class="material-symbols-outlined text-primary">support_agent</span>
+<span class="font-medium text-teal-900">Contact Office</span>
+<span class="material-symbols-outlined text-slate-300 ml-auto group-hover:text-primary transition-colors">chat_bubble</span>
+</a>
+<a class="flex items-center gap-3 p-4 bg-white rounded-2xl shadow-sm hover:translate-x-1 transition-transform group" href="#">
+<span class="material-symbols-outlined text-primary">calendar_month</span>
+<span class="font-medium text-teal-900">School Calendar</span>
+<span class="material-symbols-outlined text-slate-300 ml-auto group-hover:text-primary transition-colors">event</span>
+</a>
+</div>
+</div>
+</div>
+</main>
+<!-- BottomNavBar Execution -->
+<nav class="md:hidden fixed bottom-0 left-0 w-full h-20 bg-white shadow-[0_-8px_30px_rgba(0,70,73,0.06)] flex justify-around items-center px-4 pb-safe z-50 rounded-t-3xl">
+<div class="flex flex-col items-center justify-center bg-teal-50 text-teal-900 rounded-2xl px-5 py-2 active:scale-90 transition-transform duration-200">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">dashboard</span>
+<span class="font-inter text-[11px] font-semibold tracking-wide uppercase">Dashboard</span>
+</div>
+<div class="flex flex-col items-center justify-center text-slate-400 px-5 py-2 active:scale-90 transition-transform duration-200">
+<span class="material-symbols-outlined">notifications</span>
+<span class="font-inter text-[11px] font-semibold tracking-wide uppercase">Alerts</span>
+</div>
+<div class="flex flex-col items-center justify-center text-slate-400 px-5 py-2 active:scale-90 transition-transform duration-200">
+<span class="material-symbols-outlined">grade</span>
+<span class="font-inter text-[11px] font-semibold tracking-wide uppercase">Results</span>
+</div>
+<div class="flex flex-col items-center justify-center text-slate-400 px-5 py-2 active:scale-90 transition-transform duration-200">
+<span class="material-symbols-outlined">payments</span>
+<span class="font-inter text-[11px] font-semibold tracking-wide uppercase">Fees</span>
+</div>
+</nav>
+</body></html>

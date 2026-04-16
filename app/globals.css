@@ -1,0 +1,65 @@
+﻿@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --background: #f8f9fa;
+  --surface: #ffffff;
+  --surface-low: #f3f4f5;
+  --surface-high: #e7e8e9;
+  --text: #191c1d;
+  --muted: #3f4849;
+  --primary: #004649;
+  --primary-container: #1b5e62;
+  --secondary: #865300;
+  --secondary-container: #fdb24f;
+  --border: #d8ddde;
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+body {
+  font-family: Inter, 'Segoe UI', system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
+  background: var(--background);
+  color: var(--text);
+  overflow-x: hidden;
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+}
+
+.font-headline {
+  font-family: Manrope, Inter, 'Segoe UI', system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
+}
+
+.card {
+  border-radius: 1rem;
+  border: 1px solid color-mix(in srgb, var(--border) 70%, white 30%);
+  background: var(--surface);
+  box-shadow: 0 12px 40px rgba(0, 70, 73, 0.06);
+}
+
+.tonal-button {
+  background: linear-gradient(135deg, var(--primary) 0%, var(--primary-container) 100%);
+}
+
+.tonal-bg {
+  background: linear-gradient(160deg, rgba(147, 209, 213, 0.15) 0%, transparent 55%), var(--background);
+}
+
+.surface-card {
+  border-radius: 1.5rem;
+  background: var(--surface);
+  box-shadow: 0 12px 40px rgba(0, 70, 73, 0.06);
+}
+
+.editorial-gradient {
+  background: linear-gradient(135deg, var(--primary) 0%, var(--primary-container) 100%);
+}
+
+.editorial-pill {
+  border-radius: 9999px;
+  background: rgba(255, 255, 255, 0.8);
+  box-shadow: 0 8px 24px rgba(0, 70, 73, 0.05);
+}

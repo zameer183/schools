@@ -1,0 +1,235 @@
+<!DOCTYPE html>
+
+<html class="light" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Manarah Institute - Students</title>
+<!-- Google Fonts -->
+<link href="https://fonts.googleapis.com" rel="preconnect"/>
+<link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;family=Manrope:wght@700;800&amp;display=swap" rel="stylesheet"/>
+<!-- Material Symbols -->
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<!-- Tailwind CSS -->
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<script id="tailwind-config">
+      tailwind.config = {
+        darkMode: "class",
+        theme: {
+          extend: {
+            "colors": {
+                    "surface-dim": "#d9dada",
+                    "surface-container": "#edeeee",
+                    "surface-bright": "#f9f9f9",
+                    "on-primary-fixed": "#002022",
+                    "on-error-container": "#93000a",
+                    "surface-container-low": "#f3f4f3",
+                    "outline-variant": "#c0c8c9",
+                    "error": "#ba1a1a",
+                    "on-primary-container": "#a2d0d4",
+                    "surface": "#f9f9f9",
+                    "secondary-fixed-dim": "#ffb86c",
+                    "on-primary": "#ffffff",
+                    "on-tertiary-container": "#b2cdcf",
+                    "on-error": "#ffffff",
+                    "on-tertiary": "#ffffff",
+                    "secondary-container": "#fead51",
+                    "tertiary-container": "#3f585a",
+                    "primary-container": "#2d5a5e",
+                    "secondary": "#895100",
+                    "surface-variant": "#e2e3e2",
+                    "surface-tint": "#396569",
+                    "primary": "#124346",
+                    "surface-container-highest": "#e2e3e2",
+                    "tertiary-fixed": "#cce8ea",
+                    "background": "#f9f9f9",
+                    "inverse-primary": "#a1cfd3",
+                    "on-surface": "#1a1c1c",
+                    "on-tertiary-fixed-variant": "#324b4d",
+                    "on-primary-fixed-variant": "#1f4d51",
+                    "tertiary-fixed-dim": "#b1cbce",
+                    "inverse-surface": "#2e3131",
+                    "tertiary": "#284143",
+                    "secondary-fixed": "#ffdcbd",
+                    "inverse-on-surface": "#f0f1f0",
+                    "on-secondary-fixed": "#2c1600",
+                    "on-background": "#1a1c1c",
+                    "error-container": "#ffdad6",
+                    "on-secondary": "#ffffff",
+                    "outline": "#707979",
+                    "on-surface-variant": "#404849",
+                    "surface-container-lowest": "#ffffff",
+                    "primary-fixed": "#bcebef",
+                    "on-tertiary-fixed": "#051f21",
+                    "primary-fixed-dim": "#a1cfd3",
+                    "on-secondary-fixed-variant": "#683c00",
+                    "surface-container-high": "#e7e8e8",
+                    "on-secondary-container": "#714200"
+            },
+            "borderRadius": {
+                    "DEFAULT": "0.125rem",
+                    "lg": "0.25rem",
+                    "xl": "0.5rem",
+                    "full": "0.75rem"
+            },
+            "fontFamily": {
+                    "headline": ["Manrope"],
+                    "body": ["Inter"],
+                    "label": ["Inter"]
+            }
+          },
+        },
+      }
+    </script>
+<style>
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+        body { font-family: 'Inter', sans-serif; }
+        h1, h2, h3 { font-family: 'Manrope', sans-serif; }
+    </style>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+</head>
+<body class="bg-surface text-on-surface min-h-screen pb-32">
+<!-- TopAppBar Shell -->
+<header class="fixed top-0 left-0 w-full z-50 flex justify-between items-center px-6 h-16 bg-[#f9f9f9] dark:bg-slate-950">
+<div class="flex items-center gap-4">
+<span class="material-symbols-outlined text-[#124346] dark:text-teal-400">menu</span>
+<img alt="Manarah Institute Logo" class="h-10 w-auto" src="https://lh3.googleusercontent.com/aida/ADBb0ugS93ixky9Hrwk3Lu4M6_TiPkBRA87BCMrXCDoYrNYGCyGK_IUUKl5gGMnM_c9oDK4OU-wer1BhDwF73zlZqnnv7SLurT5VR4tOsnzE61oOr2cEoomB2grf-Q_T5AwBrG8l25ybiL7xxVKo58FYf-4evOQpADITZNjeBFJa4Ci-zg8AAmEMFgzWVKc2CmnpUu-_853TNiOwAZDZLXgbE4nH_tB6OnGD0Hw7t0HyO6YHh-GcRgI4-VZxpfFLzrrcOy0SLWNkd2i6TQ"/>
+</div>
+<div class="w-8 h-8 rounded-full bg-primary-container overflow-hidden">
+<img alt="Admin Profile" data-alt="A professional studio headshot of a dignified academic administrator with a warm smile, wearing professional business attire in front of a soft-focus library background." src="https://lh3.googleusercontent.com/aida-public/AB6AXuDXlIPRz_3VzSc71jOqZfzoDr0s_jptJjjPJEcga_9PSsiVsVG4mka89pweCiVrF9yC5n7F4ARWeKkWUe2VOP8UA5ZxXYtbWf7iBTKgCzzoOyiLu6Yaq8Syifp3wRPH8j2PKAI_mb7n7Kk6WO4ct3zYIK1SQgkrvXgSolMaIEg9Affwn_U0pGgA8OFEgDD2e0Mb1Fx88-qdus_u6fZfyeJWXdXKcsKpdzd8aAWSnoIybYXhe1tgBL-WJ35ZzBK6eTWnBffImTPAdCI"/>
+</div>
+</header>
+<!-- Main Content Canvas -->
+<main class="mt-20 px-6">
+<!-- Header Section -->
+<section class="mb-8">
+<h2 class="text-3xl font-extrabold text-primary tracking-tight mb-2">Student Registry</h2>
+<p class="text-on-surface-variant font-medium">Managing 124 active students</p>
+</section>
+<!-- Search Bar: Modern Tonal Container -->
+<div class="mb-10 group">
+<div class="relative flex items-center bg-surface-container-low rounded-xl px-4 py-3 border border-outline-variant/15 transition-all focus-within:bg-surface-container-lowest focus-within:shadow-lg">
+<span class="material-symbols-outlined text-outline mr-3">search</span>
+<input class="bg-transparent border-none focus:ring-0 w-full text-on-surface placeholder:text-outline-variant font-medium" placeholder="Search by name, ID or grade..." type="text"/>
+<span class="material-symbols-outlined text-primary-fixed-dim bg-primary px-1.5 py-1.5 rounded-lg text-sm">tune</span>
+</div>
+</div>
+<!-- Students List: Asymmetric Editorial Layout -->
+<div class="space-y-4">
+<!-- Student Card 1 -->
+<div class="bg-surface-container-lowest p-5 rounded-xl shadow-[0px_12px_32px_rgba(26,28,28,0.06)] flex items-center justify-between group hover:bg-surface-container-high transition-colors duration-200">
+<div class="flex items-center gap-4">
+<div class="relative">
+<img class="w-14 h-14 rounded-xl object-cover" data-alt="Close-up portrait of a young male student with a bright, curious expression, soft cinematic lighting, studio setting with warm teal highlights." src="https://lh3.googleusercontent.com/aida-public/AB6AXuDfwkG-WafUpkiAlUEi1TrfLv24SNWXMpWB5g66jE8Z5qhq3pDEkJDzTXjLi-prh55-PLD_OjMpliYKFpNynY0ArjhqC2_BbXy6FoNKCgGC8ixkjDwYhAJ2YqxaqRIQzvzQCSEeGsHiPiwfRQ6K66WXrslkxJ-cbqJ5fu89BpO_4kzAQGw4bzETUYO4T_zktvxOamnuRyOe8eenAjAZAh_Is5OxzoDdoZY_OedRIc4Uw-zvOJcopcgXz0kkP4AfXZrkwGqwKKTa-FA"/>
+<div class="absolute -bottom-1 -right-1 w-4 h-4 bg-primary rounded-full border-2 border-white"></div>
+</div>
+<div>
+<h3 class="text-lg font-bold text-on-surface leading-tight">Ahmed Mansoor</h3>
+<p class="text-sm text-outline font-medium">ID: #MN-2024-081</p>
+<div class="mt-2 inline-flex items-center gap-1.5 bg-primary-fixed text-primary px-2.5 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider">
+                            Grade 11-A
+                        </div>
+</div>
+</div>
+<div class="text-right">
+<span class="block text-2xl font-extrabold text-primary mb-1">A+</span>
+<span class="text-[10px] font-bold uppercase tracking-widest text-secondary bg-secondary-fixed px-2 py-0.5 rounded-full">ACTIVE</span>
+</div>
+</div>
+<!-- Student Card 2 -->
+<div class="bg-surface-container-lowest p-5 rounded-xl shadow-[0px_12px_32px_rgba(26,28,28,0.06)] flex items-center justify-between group hover:bg-surface-container-high transition-colors duration-200">
+<div class="flex items-center gap-4">
+<div class="relative">
+<img class="w-14 h-14 rounded-xl object-cover" data-alt="Close-up portrait of a young female student wearing a traditional headscarf, confident gaze, soft natural window light, blurred educational interior background." src="https://lh3.googleusercontent.com/aida-public/AB6AXuBme8HadPgFzcWABAyPJxO1Xre38YGVWC4y4iiguviwsYBjzzcoYRsI1b7vcyodi9RS0ZvzhKAsrL8fHgcr1adMu9njqeCEk1fC6iQIxp-uVFlzqIYINfmc_18qxjrbkIok4TfXhFYCzB04LpO19RyIDAEYitYq6LHy2Su4zLP_QFE-oz59o9OvSadrD5T_Nm6xVRzFpFU-ZEOwMV8bxmhQ63nWbPnb1Mfu9OpTzRgRXdN4UFGQOcUnyCa44e1UoAnex0MbESnp1eI"/>
+<div class="absolute -bottom-1 -right-1 w-4 h-4 bg-primary rounded-full border-2 border-white"></div>
+</div>
+<div>
+<h3 class="text-lg font-bold text-on-surface leading-tight">Zainab Sultan</h3>
+<p class="text-sm text-outline font-medium">ID: #MN-2024-042</p>
+<div class="mt-2 inline-flex items-center gap-1.5 bg-primary-fixed text-primary px-2.5 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider">
+                            Grade 10-B
+                        </div>
+</div>
+</div>
+<div class="text-right">
+<span class="block text-2xl font-extrabold text-primary mb-1">B</span>
+<span class="text-[10px] font-bold uppercase tracking-widest text-secondary bg-secondary-fixed px-2 py-0.5 rounded-full">ACTIVE</span>
+</div>
+</div>
+<!-- Student Card 3: Pending/Warning State -->
+<div class="bg-surface-container-lowest p-5 rounded-xl shadow-[0px_12px_32px_rgba(26,28,28,0.06)] flex items-center justify-between group hover:bg-surface-container-high transition-colors duration-200">
+<div class="flex items-center gap-4">
+<div class="relative">
+<img class="w-14 h-14 rounded-xl object-cover" data-alt="Professional profile photo of a focused teenage boy, neutral background, sharp detail on eyes, balanced warm studio lighting." src="https://lh3.googleusercontent.com/aida-public/AB6AXuAcooCoqGVDKoXd8Dj6Iga7TpmcsOLTX-1FUeBMwYa--G01cD2bmsvfz7dpwwJifyGkTzUIlPSFJX-ZIwkuFJHd4l772Wf13mXF0pCK9zXYatXWTct-uS1UbT_foEqkjSo3XXKv7RurOhoVn__-zcUrEuJrWr3SQA9-2HtRH_Xc9yCzAJOTdQA0tdzUZRfgefKf6ZsISTvHhKX6EWt84KAh91RoWlE4MOV8PoO7XHCITX4OpxTPc4KbAx6K-YSRCEysTOi7hAKPYaU"/>
+<div class="absolute -bottom-1 -right-1 w-4 h-4 bg-secondary-container rounded-full border-2 border-white"></div>
+</div>
+<div>
+<h3 class="text-lg font-bold text-on-surface leading-tight">Omar Khalid</h3>
+<p class="text-sm text-outline font-medium">ID: #MN-2024-115</p>
+<div class="mt-2 inline-flex items-center gap-1.5 bg-surface-container text-outline px-2.5 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider">
+                            Grade 12-C
+                        </div>
+</div>
+</div>
+<div class="text-right">
+<span class="block text-2xl font-extrabold text-surface-dim mb-1">—</span>
+<span class="text-[10px] font-bold uppercase tracking-widest text-on-secondary-container bg-secondary-container px-2 py-0.5 rounded-full">PENDING</span>
+</div>
+</div>
+<!-- Student Card 4 -->
+<div class="bg-surface-container-lowest p-5 rounded-xl shadow-[0px_12px_32px_rgba(26,28,28,0.06)] flex items-center justify-between group hover:bg-surface-container-high transition-colors duration-200">
+<div class="flex items-center gap-4">
+<div class="relative">
+<img class="w-14 h-14 rounded-xl object-cover" data-alt="Portrait of a young woman with a pleasant smile, soft aesthetic, high-key lighting, professional photography style, minimalist background." src="https://lh3.googleusercontent.com/aida-public/AB6AXuCvY73dqtRyG3_abAb68wV0ALKqNrn_DlKADNMSWc_0zOHFDKBWHBC8NRiybafQIurz0M84I9XxcVh2J-uzyd3GMMgFiLaqr5oXtAHRbNVey-F_3Q5nNItyYRzU9hvmoheuMNGG682T1Zz1jlE6MBUCV0_t-2qaiGL9eTF9qkdT47-r-ekVAFzTFyvKtA_qkP6X43zaSGfhEkI6vH-MoWhkitHkxsd9oAfgiyTGwTFpvbbqbnPTa-bYoHIY2Uaed9-iHUa7nQeZgfM"/>
+<div class="absolute -bottom-1 -right-1 w-4 h-4 bg-primary rounded-full border-2 border-white"></div>
+</div>
+<div>
+<h3 class="text-lg font-bold text-on-surface leading-tight">Layla Amin</h3>
+<p class="text-sm text-outline font-medium">ID: #MN-2024-019</p>
+<div class="mt-2 inline-flex items-center gap-1.5 bg-primary-fixed text-primary px-2.5 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider">
+                            Grade 11-A
+                        </div>
+</div>
+</div>
+<div class="text-right">
+<span class="block text-2xl font-extrabold text-primary mb-1">A</span>
+<span class="text-[10px] font-bold uppercase tracking-widest text-secondary bg-secondary-fixed px-2 py-0.5 rounded-full">ACTIVE</span>
+</div>
+</div>
+</div>
+</main>
+<!-- Floating Action Button (FAB) -->
+<button class="fixed bottom-28 right-6 w-16 h-16 bg-primary rounded-2xl shadow-xl flex items-center justify-center text-white active:scale-95 transition-transform duration-150 z-50">
+<span class="material-symbols-outlined text-3xl" style="font-variation-settings: 'FILL' 1;">person_add</span>
+</button>
+<!-- BottomNavBar Shell -->
+<nav class="fixed bottom-0 left-0 w-full z-50 flex justify-around items-center px-4 pb-6 pt-3 bg-white/80 dark:bg-slate-900/80 backdrop-blur-xl rounded-t-3xl shadow-[0px_-12px_32px_rgba(26,28,28,0.06)]">
+<!-- Dashboard -->
+<a class="flex flex-col items-center justify-center text-slate-500 dark:text-slate-400 px-5 py-2 hover:text-[#124346]" href="#">
+<span class="material-symbols-outlined mb-1">dashboard</span>
+<span class="font-['Inter'] text-[11px] font-semibold uppercase tracking-wider">Dashboard</span>
+</a>
+<!-- Students (Active) -->
+<a class="flex flex-col items-center justify-center bg-[#bcebef] dark:bg-teal-900/40 text-[#124346] dark:text-teal-100 rounded-2xl px-5 py-2" href="#">
+<span class="material-symbols-outlined mb-1" style="font-variation-settings: 'FILL' 1;">group</span>
+<span class="font-['Inter'] text-[11px] font-semibold uppercase tracking-wider">Students</span>
+</a>
+<!-- Attendance -->
+<a class="flex flex-col items-center justify-center text-slate-500 dark:text-slate-400 px-5 py-2 hover:text-[#124346]" href="#">
+<span class="material-symbols-outlined mb-1">fact_check</span>
+<span class="font-['Inter'] text-[11px] font-semibold uppercase tracking-wider">Attendance</span>
+</a>
+<!-- Classes -->
+<a class="flex flex-col items-center justify-center text-slate-500 dark:text-slate-400 px-5 py-2 hover:text-[#124346]" href="#">
+<span class="material-symbols-outlined mb-1">calendar_view_day</span>
+<span class="font-['Inter'] text-[11px] font-semibold uppercase tracking-wider">Classes</span>
+</a>
+</nav>
+</body></html>

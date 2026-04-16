@@ -1,0 +1,285 @@
+<!DOCTYPE html>
+
+<html class="light" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Report Export | The Scholarly Editorial</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;family=Manrope:wght@400;500;700;800&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    "colors": {
+                        "surface-tint": "#27676b",
+                        "secondary-container": "#fdb24f",
+                        "on-tertiary-fixed-variant": "#2a4c4f",
+                        "tertiary": "#214346",
+                        "on-tertiary": "#ffffff",
+                        "secondary-fixed": "#ffddb8",
+                        "on-tertiary-container": "#add1d5",
+                        "on-error-container": "#93000a",
+                        "tertiary-fixed-dim": "#a9cdd0",
+                        "secondary": "#865300",
+                        "primary": "#004649",
+                        "on-background": "#191c1d",
+                        "on-surface-variant": "#3f4849",
+                        "on-primary-fixed-variant": "#004f53",
+                        "surface-bright": "#f8f9fa",
+                        "outline-variant": "#bfc8c9",
+                        "on-primary": "#ffffff",
+                        "surface": "#f8f9fa",
+                        "error-container": "#ffdad6",
+                        "on-secondary-fixed": "#2a1700",
+                        "on-error": "#ffffff",
+                        "primary-fixed-dim": "#93d1d5",
+                        "surface-variant": "#e1e3e4",
+                        "surface-container-low": "#f3f4f5",
+                        "on-primary-container": "#97d5d9",
+                        "on-secondary-fixed-variant": "#653e00",
+                        "surface-container": "#edeeef",
+                        "inverse-primary": "#93d1d5",
+                        "surface-container-highest": "#e1e3e4",
+                        "primary-container": "#1b5e62",
+                        "error": "#ba1a1a",
+                        "background": "#f8f9fa",
+                        "on-secondary": "#ffffff",
+                        "on-secondary-container": "#704500",
+                        "primary-fixed": "#afedf2",
+                        "on-surface": "#191c1d",
+                        "surface-dim": "#d9dadb",
+                        "on-primary-fixed": "#002022",
+                        "outline": "#6f7979",
+                        "on-tertiary-fixed": "#002022",
+                        "tertiary-fixed": "#c5e9ec",
+                        "tertiary-container": "#395b5e",
+                        "surface-container-lowest": "#ffffff",
+                        "inverse-surface": "#2e3132",
+                        "secondary-fixed-dim": "#ffb960",
+                        "inverse-on-surface": "#f0f1f2",
+                        "surface-container-high": "#e7e8e9"
+                    },
+                    "borderRadius": {
+                        "DEFAULT": "0.25rem",
+                        "lg": "0.5rem",
+                        "xl": "0.75rem",
+                        "full": "9999px"
+                    },
+                    "fontFamily": {
+                        "headline": ["Manrope"],
+                        "body": ["Inter"],
+                        "label": ["Inter"]
+                    }
+                },
+            },
+        }
+    </script>
+<style>
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+        body { font-family: 'Inter', sans-serif; }
+        h1, h2, h3 { font-family: 'Manrope', sans-serif; }
+    </style>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+  </head>
+<body class="bg-surface text-on-surface min-h-screen pb-24 md:pb-0">
+<!-- TopAppBar Shell -->
+<header class="fixed top-0 w-full z-50 bg-white/80 dark:bg-slate-950/80 backdrop-blur-md shadow-sm dark:shadow-none flex justify-between items-center px-6 h-16 w-full">
+<div class="flex items-center gap-3">
+<span class="font-manrope font-black text-teal-900 dark:text-teal-200 tracking-wider">The Scholarly Editorial</span>
+</div>
+<div class="flex items-center gap-4">
+<div class="hidden md:flex gap-6 items-center mr-8">
+<a class="text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors px-3 py-1 rounded-lg" href="#">Dashboard</a>
+<a class="text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors px-3 py-1 rounded-lg" href="#">Academics</a>
+<a class="text-teal-800 dark:text-teal-300 font-bold px-3 py-1 rounded-lg" href="#">Reports</a>
+<a class="text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors px-3 py-1 rounded-lg" href="#">Profile</a>
+</div>
+<div class="flex items-center gap-3">
+<span class="material-symbols-outlined text-teal-900 dark:text-teal-400" data-icon="notifications">notifications</span>
+<div class="w-8 h-8 rounded-full overflow-hidden border border-outline-variant">
+<img class="w-full h-full object-cover" data-alt="professional portrait of a senior academic administrator with a warm and authoritative expression" src="https://lh3.googleusercontent.com/aida-public/AB6AXuBHWkUaB1LHFZ4_IILZ_KMTyFCmqbr4Yeg5lDZupnsDxD5s4bFK90Rs-RZ_v9Qb5QBjOCBraO4tsX76n7eqBlTKKrQz0QtZkz8koirsQnR3zfAiC1vpbqO8liyS4JiE6yY2dkx-T4SsZrLACd3uUx7wTdsjqx6z-bkT5kYU_mwIHvA4krpU_rZedYhrp6wqN0bcz9RMSshKp__8-_SLZpodGV3FDbDuMHHqN9qI3UmIVrhxAmVyMJ90mG8WDFxTh-56DXHVpKM_0TU"/>
+</div>
+</div>
+</div>
+</header>
+<main class="pt-24 px-6 max-w-7xl mx-auto mb-12">
+<!-- Editorial Header -->
+<div class="mb-12">
+<span class="text-secondary font-semibold tracking-widest text-xs uppercase mb-2 block">Archive &amp; Intelligence</span>
+<h1 class="text-4xl font-extrabold text-primary tracking-tight md:text-5xl">Report Export Engine</h1>
+<p class="text-on-surface-variant mt-4 max-w-2xl leading-relaxed">Synthesize institutional data into curated professional dossiers. Select your parameters below to generate high-fidelity administrative insights.</p>
+</div>
+<div class="grid grid-cols-1 lg:grid-cols-12 gap-8">
+<!-- Configuration Panel (Bento Style) -->
+<div class="lg:col-span-8 space-y-8">
+<div class="bg-surface-container-lowest rounded-xl p-8 shadow-[0_12px_40px_rgba(0,70,73,0.06)]">
+<h2 class="text-xl font-bold mb-6 text-primary flex items-center gap-2">
+<span class="material-symbols-outlined">tune</span> Report Parameters
+                    </h2>
+<div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+<!-- Report Type Selection -->
+<div class="space-y-4">
+<label class="block text-[10px] font-bold text-outline uppercase tracking-[0.1em]">Select Report Category</label>
+<div class="space-y-3">
+<button class="w-full flex items-center justify-between p-4 rounded-xl bg-primary-container/10 border-2 border-primary text-primary transition-all">
+<div class="flex items-center gap-4">
+<span class="material-symbols-outlined">school</span>
+<span class="font-semibold">Academic Excellence</span>
+</div>
+<span class="material-symbols-outlined text-sm">check_circle</span>
+</button>
+<button class="w-full flex items-center justify-between p-4 rounded-xl bg-surface-container-low text-on-surface-variant hover:bg-surface-variant transition-all">
+<div class="flex items-center gap-4">
+<span class="material-symbols-outlined">payments</span>
+<span class="font-semibold">Financial Audit</span>
+</div>
+</button>
+<button class="w-full flex items-center justify-between p-4 rounded-xl bg-surface-container-low text-on-surface-variant hover:bg-surface-variant transition-all">
+<div class="flex items-center gap-4">
+<span class="material-symbols-outlined">assignment_ind</span>
+<span class="font-semibold">Attendance Analytics</span>
+</div>
+</button>
+</div>
+</div>
+<!-- Date & Format Configuration -->
+<div class="space-y-8">
+<div class="space-y-4">
+<label class="block text-[10px] font-bold text-outline uppercase tracking-[0.1em]">Temporal Scope</label>
+<div class="grid grid-cols-2 gap-4">
+<div class="bg-surface-container-low p-3 rounded-xl">
+<span class="text-[10px] text-outline block mb-1">Start Date</span>
+<span class="font-bold text-sm">Oct 01, 2023</span>
+</div>
+<div class="bg-surface-container-low p-3 rounded-xl">
+<span class="text-[10px] text-outline block mb-1">End Date</span>
+<span class="font-bold text-sm">Dec 31, 2023</span>
+</div>
+</div>
+</div>
+<div class="space-y-4">
+<label class="block text-[10px] font-bold text-outline uppercase tracking-[0.1em]">Export Format</label>
+<div class="flex gap-4">
+<div class="flex-1 p-4 rounded-xl border-2 border-primary bg-primary-container/10 text-center cursor-pointer">
+<span class="material-symbols-outlined block mb-1">picture_as_pdf</span>
+<span class="text-xs font-bold">PDF Dossier</span>
+</div>
+<div class="flex-1 p-4 rounded-xl bg-surface-container-low text-on-surface-variant text-center cursor-pointer hover:bg-surface-variant">
+<span class="material-symbols-outlined block mb-1">table_view</span>
+<span class="text-xs font-bold">Excel Sheet</span>
+</div>
+</div>
+</div>
+</div>
+</div>
+<div class="mt-12">
+<button class="w-full bg-gradient-to-r from-primary to-primary-container text-white py-5 rounded-xl font-bold tracking-widest uppercase text-sm shadow-lg active:scale-95 transition-transform flex items-center justify-center gap-3">
+<span class="material-symbols-outlined">download_for_offline</span>
+                            Compile &amp; Export Report
+                        </button>
+</div>
+</div>
+<!-- Feature Illustration Card -->
+<div class="relative overflow-hidden h-48 rounded-xl bg-primary">
+<img class="w-full h-full object-cover opacity-40 mix-blend-overlay" data-alt="a high-end minimalist library with a single focused spotlight on a desk representing academic research and excellence" src="https://lh3.googleusercontent.com/aida-public/AB6AXuCWNkRn18-cBglKJhaO059bUte9FOufxGBxDyAhw-04ei4VhBmQyrpWOt9Z-JrP7J5p25g9OD27d_eoQ-we9uLR1lyWsaPkFWSyK9gJQPFBxUNiQnQrqWlzL_Z7GlHAt5vXo9TGTDfKzrHSI50SkfAAFOIYvcA9xvUN9Gy2HFcsFejIzpDFfQSDWY95aSEstbwIn_tTya8TF-2zcIuOexhf20eS-QruToyELjU0OaHkWQaDII3srU7GclOTlWFd-n2LN4-KiuL5fWQ"/>
+<div class="absolute inset-0 flex flex-col justify-center px-12">
+<h3 class="text-white text-2xl font-bold">Automated Synthesis</h3>
+<p class="text-primary-fixed-dim text-sm max-w-sm mt-2">Our engine cross-references 12 unique data points to ensure 99.9% accuracy in every generated audit.</p>
+</div>
+</div>
+</div>
+<!-- Recently Generated Sidebar -->
+<div class="lg:col-span-4">
+<div class="bg-surface-container rounded-xl p-6 sticky top-24">
+<h3 class="text-lg font-bold text-primary mb-6 flex items-center gap-2">
+<span class="material-symbols-outlined">history</span> Recently Archived
+                    </h3>
+<div class="space-y-4">
+<!-- Report Item -->
+<div class="bg-surface-container-lowest p-4 rounded-xl group hover:shadow-md transition-shadow">
+<div class="flex items-start justify-between">
+<div class="flex items-center gap-3">
+<div class="w-10 h-10 rounded-lg bg-error-container flex items-center justify-center text-error">
+<span class="material-symbols-outlined">picture_as_pdf</span>
+</div>
+<div>
+<p class="text-sm font-bold text-on-surface">Q3 Academic Summary</p>
+<p class="text-[10px] text-outline">Generated: 2h ago • 4.2 MB</p>
+</div>
+</div>
+<button class="text-primary hover:bg-primary-container/10 p-2 rounded-full transition-colors">
+<span class="material-symbols-outlined">download</span>
+</button>
+</div>
+</div>
+<!-- Report Item -->
+<div class="bg-surface-container-lowest p-4 rounded-xl group hover:shadow-md transition-shadow">
+<div class="flex items-start justify-between">
+<div class="flex items-center gap-3">
+<div class="w-10 h-10 rounded-lg bg-secondary-fixed flex items-center justify-center text-on-secondary-fixed">
+<span class="material-symbols-outlined">table_view</span>
+</div>
+<div>
+<p class="text-sm font-bold text-on-surface">Staff Payroll Audit</p>
+<p class="text-[10px] text-outline">Generated: Yesterday • 1.1 MB</p>
+</div>
+</div>
+<button class="text-primary hover:bg-primary-container/10 p-2 rounded-full transition-colors">
+<span class="material-symbols-outlined">download</span>
+</button>
+</div>
+</div>
+<!-- Report Item -->
+<div class="bg-surface-container-lowest p-4 rounded-xl group hover:shadow-md transition-shadow">
+<div class="flex items-start justify-between">
+<div class="flex items-center gap-3">
+<div class="w-10 h-10 rounded-lg bg-tertiary-fixed flex items-center justify-center text-on-tertiary-fixed">
+<span class="material-symbols-outlined">analytics</span>
+</div>
+<div>
+<p class="text-sm font-bold text-on-surface">Attendance Heatmap</p>
+<p class="text-[10px] text-outline">Generated: Dec 12 • 8.4 MB</p>
+</div>
+</div>
+<button class="text-primary hover:bg-primary-container/10 p-2 rounded-full transition-colors">
+<span class="material-symbols-outlined">download</span>
+</button>
+</div>
+</div>
+</div>
+<button class="w-full mt-6 py-3 border border-outline-variant text-outline text-xs font-bold uppercase tracking-widest rounded-xl hover:bg-surface-container-highest transition-colors">
+                        View Full Archive
+                    </button>
+</div>
+</div>
+</div>
+</main>
+<!-- BottomNavBar Shell (Mobile Only) -->
+<nav class="md:hidden fixed bottom-0 left-0 w-full flex justify-around items-center px-4 py-3 bg-white dark:bg-slate-950 shadow-[0_-12px_40px_rgba(0,70,73,0.06)] z-50 rounded-t-3xl">
+<div class="flex flex-col items-center justify-center text-slate-400 dark:text-slate-500 active:scale-90 transition-transform">
+<span class="material-symbols-outlined">dashboard</span>
+<span class="font-inter text-[10px] font-semibold tracking-wide uppercase mt-1">Dashboard</span>
+</div>
+<div class="flex flex-col items-center justify-center text-slate-400 dark:text-slate-500 active:scale-90 transition-transform">
+<span class="material-symbols-outlined">school</span>
+<span class="font-inter text-[10px] font-semibold tracking-wide uppercase mt-1">Academics</span>
+</div>
+<div class="flex flex-col items-center justify-center bg-teal-50 dark:bg-teal-900/30 text-teal-900 dark:text-teal-200 rounded-xl px-4 py-1 active:scale-90 transition-transform">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">analytics</span>
+<span class="font-inter text-[10px] font-semibold tracking-wide uppercase mt-1">Reports</span>
+</div>
+<div class="flex flex-col items-center justify-center text-slate-400 dark:text-slate-500 active:scale-90 transition-transform">
+<span class="material-symbols-outlined">person</span>
+<span class="font-inter text-[10px] font-semibold tracking-wide uppercase mt-1">Profile</span>
+</div>
+</nav>
+</body></html>

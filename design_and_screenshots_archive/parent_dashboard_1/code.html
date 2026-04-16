@@ -1,0 +1,299 @@
+<!DOCTYPE html>
+
+<html class="light" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>The Scholarly Editorial | Parent Dashboard</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&amp;family=Manrope:wght@400;500;600;700;800&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    "colors": {
+                        "surface-tint": "#27676b",
+                        "secondary-container": "#fdb24f",
+                        "on-tertiary-fixed-variant": "#2a4c4f",
+                        "tertiary": "#214346",
+                        "on-tertiary": "#ffffff",
+                        "secondary-fixed": "#ffddb8",
+                        "on-tertiary-container": "#add1d5",
+                        "on-error-container": "#93000a",
+                        "tertiary-fixed-dim": "#a9cdd0",
+                        "secondary": "#865300",
+                        "primary": "#004649",
+                        "on-background": "#191c1d",
+                        "on-surface-variant": "#3f4849",
+                        "on-primary-fixed-variant": "#004f53",
+                        "surface-bright": "#f8f9fa",
+                        "outline-variant": "#bfc8c9",
+                        "on-primary": "#ffffff",
+                        "surface": "#f8f9fa",
+                        "error-container": "#ffdad6",
+                        "on-secondary-fixed": "#2a1700",
+                        "on-error": "#ffffff",
+                        "primary-fixed-dim": "#93d1d5",
+                        "surface-variant": "#e1e3e4",
+                        "surface-container-low": "#f3f4f5",
+                        "on-primary-container": "#97d5d9",
+                        "on-secondary-fixed-variant": "#653e00",
+                        "surface-container": "#edeeef",
+                        "inverse-primary": "#93d1d5",
+                        "surface-container-highest": "#e1e3e4",
+                        "primary-container": "#1b5e62",
+                        "error": "#ba1a1a",
+                        "background": "#f8f9fa",
+                        "on-secondary": "#ffffff",
+                        "on-secondary-container": "#704500",
+                        "primary-fixed": "#afedf2",
+                        "on-surface": "#191c1d",
+                        "surface-dim": "#d9dadb",
+                        "on-primary-fixed": "#002022",
+                        "outline": "#6f7979",
+                        "on-tertiary-fixed": "#002022",
+                        "tertiary-fixed": "#c5e9ec",
+                        "tertiary-container": "#395b5e",
+                        "surface-container-lowest": "#ffffff",
+                        "inverse-surface": "#2e3132",
+                        "secondary-fixed-dim": "#ffb960",
+                        "inverse-on-surface": "#f0f1f2",
+                        "surface-container-high": "#e7e8e9"
+                    },
+                    "borderRadius": {
+                        "DEFAULT": "0.25rem",
+                        "lg": "0.5rem",
+                        "xl": "0.75rem",
+                        "full": "9999px"
+                    },
+                    "fontFamily": {
+                        "headline": ["Manrope"],
+                        "body": ["Inter"],
+                        "label": ["Inter"]
+                    }
+                },
+            },
+        }
+    </script>
+<style>
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+        body { font-family: 'Inter', sans-serif; }
+        h1, h2, h3, .headline { font-family: 'Manrope', sans-serif; }
+        .tonal-gradient {
+            background: linear-gradient(135deg, #004649 0%, #1b5e62 100%);
+        }
+    </style>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+  </head>
+<body class="bg-surface text-on-surface">
+<!-- TopAppBar -->
+<header class="fixed top-0 w-full z-50 bg-white/80 dark:bg-slate-950/80 backdrop-blur-md shadow-sm dark:shadow-none h-16 flex justify-between items-center px-6">
+<div class="flex items-center gap-3">
+<div class="w-10 h-10 rounded-full overflow-hidden border-2 border-primary-fixed">
+<img alt="User Profile" class="w-full h-full object-cover" data-alt="Close up portrait of a professional man in his 40s wearing glasses, smiling gently, soft office lighting background" src="https://lh3.googleusercontent.com/aida-public/AB6AXuBzOvIgcd7SSLhC0ZODsWWaKdnvnKAuQ5M2PED9_UfVV59-29oEDbpqhmwUg8DHIq0wY-xx3ogy11mis5wcMWkM7-K505HOQmlinUp_xG5J-F375C2oHRJ5patm2hVl_hQqq3uaHhjIZrerJkvRPDqH-y2h9gSkmQe42-h0HYrym4tHY0jBv47txTUMZ85WaaU5BW0hBW80Mzr3oHuhHpdW3otGKenoqjMoPxJtMZ1RUkcmQWup-Tb3eh9BnGLeBT4GHEURL1GQ_TU"/>
+</div>
+<span class="font-manrope font-black text-teal-900 dark:text-teal-200 tracking-wider">The Scholarly Editorial</span>
+</div>
+<div class="flex items-center gap-4">
+<button class="material-symbols-outlined text-teal-900 dark:text-teal-400 p-2 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors rounded-full">notifications</button>
+</div>
+</header>
+<main class="pt-24 pb-32 px-6 max-w-7xl mx-auto">
+<!-- Hero Welcome -->
+<section class="mb-12">
+<div class="flex flex-col md:flex-row md:items-end justify-between gap-6">
+<div>
+<h1 class="text-4xl font-extrabold text-primary tracking-tight mb-2">Welcome back, Mr. Anderson</h1>
+<p class="text-on-surface-variant max-w-xl">Monitor your children's progress and stay updated with the latest academic achievements at The Scholarly Academy.</p>
+</div>
+<button class="bg-primary hover:primary-container text-on-primary px-6 py-3 rounded-xl font-semibold flex items-center gap-2 transition-all active:scale-95 tonal-gradient">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">campaign</span>
+                    View School Notices
+                </button>
+</div>
+</section>
+<!-- Bento Grid Dashboard -->
+<div class="grid grid-cols-1 md:grid-cols-12 gap-6">
+<!-- Child Profile Card (Primary Focus) -->
+<div class="md:col-span-8 bg-surface-container-lowest rounded-xl p-8 shadow-[0_12px_40px_rgba(0,70,73,0.06)] flex flex-col md:flex-row gap-8 items-start relative overflow-hidden">
+<div class="absolute top-0 right-0 w-64 h-64 bg-primary-fixed/10 rounded-full -mr-20 -mt-20 blur-3xl"></div>
+<div class="z-10 shrink-0">
+<div class="w-32 h-32 rounded-2xl overflow-hidden shadow-lg border-4 border-surface-container">
+<img alt="Student Avatar" class="w-full h-full object-cover" data-alt="A focused young student girl with braided hair reading a book in a library, warm natural light, soft bokeh" src="https://lh3.googleusercontent.com/aida-public/AB6AXuCEFjjrNm81ETTIvRvdBQtJa91Kx4kOb9ZlEITgtc9Z2T_bMKs4JmoWC_2Mhn46egIpkkMxQQF5yRhbdBwAMuKKffn5SrrpxeIQYtmoOgHtFGlQWgy0kjskVA4yRTmxOjKpw8yf2zKjshAtlCTpMiOUa1LLKdG02sa8fqGjip8DL9iosO2b8KTXIE_-2pBmTsH7IGgP_EA0cIcwRTRVrOodMDj42irgz2ee8Uml64jWKbLlwW_onsX9Hfjyw8VjB2g3bBKL-4VSCMc"/>
+</div>
+</div>
+<div class="z-10 flex-1">
+<div class="flex items-center justify-between mb-4">
+<div>
+<h2 class="text-2xl font-bold text-primary">Julianne Anderson</h2>
+<p class="text-secondary font-semibold tracking-wide">Grade 11 - Honors Stream</p>
+</div>
+<span class="bg-secondary-container/20 text-on-secondary-container px-4 py-1 rounded-full text-xs font-bold uppercase tracking-widest">Active</span>
+</div>
+<div class="grid grid-cols-2 lg:grid-cols-4 gap-4 mt-8">
+<div class="bg-surface-container-low p-4 rounded-xl">
+<span class="text-xs font-bold text-outline uppercase tracking-wider block mb-1">Attendance</span>
+<div class="text-2xl font-black text-primary">98.2%</div>
+</div>
+<div class="bg-surface-container-low p-4 rounded-xl">
+<span class="text-xs font-bold text-outline uppercase tracking-wider block mb-1">Current GPA</span>
+<div class="text-2xl font-black text-primary">3.92</div>
+</div>
+<div class="bg-surface-container-low p-4 rounded-xl">
+<span class="text-xs font-bold text-outline uppercase tracking-wider block mb-1">Rank</span>
+<div class="text-2xl font-black text-primary">#4/120</div>
+</div>
+<div class="bg-surface-container-low p-4 rounded-xl">
+<span class="text-xs font-bold text-outline uppercase tracking-wider block mb-1">Credits</span>
+<div class="text-2xl font-black text-primary">24/30</div>
+</div>
+</div>
+</div>
+</div>
+<!-- Upcoming Fees (Urgent Section) -->
+<div class="md:col-span-4 bg-surface-container-high rounded-xl p-6 flex flex-col">
+<div class="flex items-center justify-between mb-6">
+<h3 class="text-lg font-bold text-primary flex items-center gap-2">
+<span class="material-symbols-outlined text-secondary">payments</span>
+                        Pending Dues
+                    </h3>
+<button class="text-xs font-bold text-secondary uppercase hover:underline">View All</button>
+</div>
+<div class="space-y-4">
+<div class="bg-surface-container-lowest p-4 rounded-xl border-l-4 border-secondary shadow-sm">
+<div class="flex justify-between items-start">
+<div>
+<h4 class="font-bold text-on-surface">Term 3 Tuition</h4>
+<p class="text-xs text-on-surface-variant">Due: Oct 15, 2023</p>
+</div>
+<span class="text-lg font-black text-primary">$1,250</span>
+</div>
+</div>
+<div class="bg-surface-container-lowest p-4 rounded-xl border-l-4 border-outline-variant shadow-sm opacity-80">
+<div class="flex justify-between items-start">
+<div>
+<h4 class="font-bold text-on-surface">Science Lab Fee</h4>
+<p class="text-xs text-on-surface-variant">Due: Nov 02, 2023</p>
+</div>
+<span class="text-lg font-black text-primary">$85</span>
+</div>
+</div>
+</div>
+<div class="mt-auto pt-6">
+<button class="w-full py-4 rounded-xl font-bold bg-secondary text-on-secondary transition-all active:scale-95">
+                        Settle All Balances
+                    </button>
+</div>
+</div>
+<!-- Recent Grades (Asymmetric Detailed View) -->
+<div class="md:col-span-7 bg-surface-container-lowest rounded-xl p-8 shadow-[0_12px_40px_rgba(0,70,73,0.06)]">
+<div class="flex items-center justify-between mb-8">
+<h3 class="text-xl font-bold text-primary">Recent Academic Grades</h3>
+<button class="text-secondary font-bold text-sm">Download Report</button>
+</div>
+<div class="space-y-6">
+<div class="flex items-center gap-6">
+<div class="w-14 h-14 rounded-xl bg-primary-fixed/30 flex items-center justify-center">
+<span class="material-symbols-outlined text-primary text-3xl">functions</span>
+</div>
+<div class="flex-1">
+<h4 class="font-bold text-on-surface">Advanced Mathematics</h4>
+<p class="text-xs text-on-surface-variant">Differential Equations Quiz</p>
+</div>
+<div class="text-right">
+<div class="text-xl font-black text-primary">A+</div>
+<div class="text-[10px] font-bold text-on-tertiary-fixed-variant uppercase tracking-widest">98/100</div>
+</div>
+</div>
+<div class="flex items-center gap-6">
+<div class="w-14 h-14 rounded-xl bg-secondary-fixed/30 flex items-center justify-center">
+<span class="material-symbols-outlined text-secondary text-3xl">experiment</span>
+</div>
+<div class="flex-1">
+<h4 class="font-bold text-on-surface">Molecular Chemistry</h4>
+<p class="text-xs text-on-surface-variant">Lab Report #4</p>
+</div>
+<div class="text-right">
+<div class="text-xl font-black text-primary">A-</div>
+<div class="text-[10px] font-bold text-on-tertiary-fixed-variant uppercase tracking-widest">91/100</div>
+</div>
+</div>
+<div class="flex items-center gap-6">
+<div class="w-14 h-14 rounded-xl bg-tertiary-fixed/30 flex items-center justify-center">
+<span class="material-symbols-outlined text-tertiary text-3xl">history_edu</span>
+</div>
+<div class="flex-1">
+<h4 class="font-bold text-on-surface">World Literature</h4>
+<p class="text-xs text-on-surface-variant">Post-Modernism Essay</p>
+</div>
+<div class="text-right">
+<div class="text-xl font-black text-primary">B+</div>
+<div class="text-[10px] font-bold text-on-tertiary-fixed-variant uppercase tracking-widest">88/100</div>
+</div>
+</div>
+</div>
+</div>
+<!-- Student Growth Chart (Placeholder Style) -->
+<div class="md:col-span-5 bg-surface-container-lowest rounded-xl p-8 shadow-[0_12px_40px_rgba(0,70,73,0.06)] overflow-hidden">
+<h3 class="text-xl font-bold text-primary mb-6">Academic Growth</h3>
+<div class="h-48 w-full relative flex items-end justify-between gap-2 px-2">
+<!-- Faux Chart Bars/Lines -->
+<div class="w-1/6 bg-primary-fixed rounded-t-lg h-[40%] transition-all hover:bg-primary"></div>
+<div class="w-1/6 bg-primary-fixed rounded-t-lg h-[65%] transition-all hover:bg-primary"></div>
+<div class="w-1/6 bg-primary-fixed rounded-t-lg h-[55%] transition-all hover:bg-primary"></div>
+<div class="w-1/6 bg-primary-fixed rounded-t-lg h-[85%] transition-all hover:bg-primary"></div>
+<div class="w-1/6 bg-primary-fixed rounded-t-lg h-[75%] transition-all hover:bg-primary"></div>
+<div class="w-1/6 bg-primary rounded-t-lg h-[95%] shadow-lg shadow-primary/20"></div>
+</div>
+<div class="flex justify-between mt-4 text-[10px] font-bold text-outline uppercase tracking-tighter">
+<span>Term 1</span>
+<span>Term 2</span>
+<span>Term 3</span>
+<span>Term 4</span>
+<span>Term 5</span>
+<span class="text-primary">Current</span>
+</div>
+<div class="mt-8 p-4 bg-tertiary-fixed/20 rounded-xl">
+<p class="text-sm text-on-tertiary-fixed-variant italic">"Julianne shows consistent improvement in analytical subjects this term." - Academic Mentor</p>
+</div>
+</div>
+</div>
+</main>
+<!-- BottomNavBar -->
+<nav class="fixed bottom-0 left-0 w-full flex justify-around items-center px-4 py-3 bg-white dark:bg-slate-950 shadow-[0_-12px_40px_rgba(0,70,73,0.06)] z-50 rounded-t-3xl md:hidden">
+<a class="flex flex-col items-center justify-center bg-teal-50 dark:bg-teal-900/30 text-teal-900 dark:text-teal-200 rounded-xl px-4 py-1 active:scale-90 transition-transform" href="#">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">dashboard</span>
+<span class="font-inter text-[10px] font-semibold tracking-wide uppercase mt-1">Dashboard</span>
+</a>
+<a class="flex flex-col items-center justify-center text-slate-400 dark:text-slate-500 active:scale-90 transition-transform" href="#">
+<span class="material-symbols-outlined">school</span>
+<span class="font-inter text-[10px] font-semibold tracking-wide uppercase mt-1">Academics</span>
+</a>
+<a class="flex flex-col items-center justify-center text-slate-400 dark:text-slate-500 active:scale-90 transition-transform" href="#">
+<span class="material-symbols-outlined">analytics</span>
+<span class="font-inter text-[10px] font-semibold tracking-wide uppercase mt-1">Reports</span>
+</a>
+<a class="flex flex-col items-center justify-center text-slate-400 dark:text-slate-500 active:scale-90 transition-transform" href="#">
+<span class="material-symbols-outlined">person</span>
+<span class="font-inter text-[10px] font-semibold tracking-wide uppercase mt-1">Profile</span>
+</a>
+</nav>
+<!-- Desktop Navigation (Integrated into AppBar or Side) -->
+<div class="hidden md:flex fixed left-0 top-0 h-full w-20 bg-surface-container-low flex-col items-center py-20 gap-8 z-40">
+<a class="material-symbols-outlined text-primary p-3 bg-primary-fixed/40 rounded-2xl" href="#" style="font-variation-settings: 'FILL' 1;">dashboard</a>
+<a class="material-symbols-outlined text-outline p-3 hover:text-primary transition-colors" href="#">school</a>
+<a class="material-symbols-outlined text-outline p-3 hover:text-primary transition-colors" href="#">analytics</a>
+<a class="material-symbols-outlined text-outline p-3 hover:text-primary transition-colors" href="#">receipt_long</a>
+<div class="mt-auto mb-6">
+<a class="material-symbols-outlined text-outline p-3 hover:text-primary transition-colors" href="#">settings</a>
+</div>
+</div>
+</body></html>

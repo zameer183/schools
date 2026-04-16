@@ -1,0 +1,293 @@
+<!DOCTYPE html>
+
+<html class="light" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;600;700;800&amp;family=Inter:wght@400;500;600;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    "colors": {
+                        "surface-container-lowest": "#ffffff",
+                        "error": "#ba1a1a",
+                        "on-tertiary": "#ffffff",
+                        "background": "#f8f9fa",
+                        "surface-dim": "#d9dadb",
+                        "surface-container-high": "#e7e8e9",
+                        "on-error": "#ffffff",
+                        "surface-container-highest": "#e1e3e4",
+                        "primary-fixed": "#afedf2",
+                        "on-surface-variant": "#3f4849",
+                        "inverse-surface": "#2e3132",
+                        "on-primary-container": "#97d5d9",
+                        "outline": "#6f7979",
+                        "on-secondary-container": "#704500",
+                        "on-primary-fixed-variant": "#004f53",
+                        "on-error-container": "#93000a",
+                        "primary-container": "#1b5e62",
+                        "on-primary-fixed": "#002022",
+                        "surface-variant": "#e1e3e4",
+                        "secondary": "#865300",
+                        "surface-bright": "#f8f9fa",
+                        "primary": "#004649",
+                        "on-secondary-fixed": "#2a1700",
+                        "surface-tint": "#27676b",
+                        "on-tertiary-fixed-variant": "#2a4c4f",
+                        "error-container": "#ffdad6",
+                        "on-tertiary-container": "#add1d5",
+                        "surface": "#f8f9fa",
+                        "surface-container": "#edeeef",
+                        "primary-fixed-dim": "#93d1d5",
+                        "outline-variant": "#bfc8c9",
+                        "inverse-on-surface": "#f0f1f2",
+                        "tertiary-container": "#395b5e",
+                        "on-secondary": "#ffffff",
+                        "tertiary-fixed-dim": "#a9cdd0",
+                        "secondary-container": "#fdb24f",
+                        "on-background": "#191c1d",
+                        "tertiary-fixed": "#c5e9ec",
+                        "on-primary": "#ffffff",
+                        "tertiary": "#214346",
+                        "inverse-primary": "#93d1d5",
+                        "on-surface": "#191c1d",
+                        "secondary-fixed-dim": "#ffb960",
+                        "secondary-fixed": "#ffddb8",
+                        "surface-container-low": "#f3f4f5",
+                        "on-tertiary-fixed": "#002022",
+                        "on-secondary-fixed-variant": "#653e00"
+                    },
+                    "borderRadius": {
+                        "DEFAULT": "0.25rem",
+                        "lg": "0.5rem",
+                        "xl": "0.75rem",
+                        "2xl": "1rem",
+                        "3xl": "1.5rem",
+                        "full": "9999px"
+                    },
+                    "fontFamily": {
+                        "headline": ["Manrope"],
+                        "body": ["Inter"],
+                        "label": ["Inter"]
+                    }
+                },
+            },
+        }
+    </script>
+<style>
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+        body { font-family: 'Inter', sans-serif; }
+        h1, h2, h3 { font-family: 'Manrope', sans-serif; }
+    </style>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+  </head>
+<body class="bg-background text-on-surface min-h-screen pb-24 md:pb-0 md:pl-72">
+<!-- Top Navigation Bar -->
+<header class="fixed top-0 right-0 left-0 md:left-72 z-50 bg-white/80 backdrop-blur-md shadow-[0_12px_40px_rgba(0,70,73,0.06)] h-16 flex justify-between items-center px-6">
+<div class="flex items-center gap-4">
+<div class="w-10 h-10 rounded-full bg-primary-container flex items-center justify-center overflow-hidden">
+<img class="w-full h-full object-cover" data-alt="University crest with classic heraldic symbols in deep teal and gold" src="https://lh3.googleusercontent.com/aida-public/AB6AXuDWyz9sWqCjzGLAGCCbBGX_rtkTo8ENdphQvY_1gEifFESQO83_f9r49HO1taY2L6u7ku-CuCdVYARgyLLMv70XVKv-vnn2eDGs0HUA-J24JmFZDwV8PfM5HLco6rIIuxG8UyQ939Cgq3-GW0BAdBjDsftLC_QVdw_gKJdlQ3gzaM6JFBxPte1yYVtZqMIUe83uOwmq2575Rq3LWNUhWKlmulCBvVTsh0l5tqrZNv0UCaK4aOO8C5RsmljKQNgXy-juHHSLK-AmeDY"/>
+</div>
+<h1 class="text-teal-900 font-headline tracking-tight font-bold text-xl">The Scholarly Editorial</h1>
+</div>
+<div class="flex items-center gap-4">
+<button class="p-2 text-slate-500 hover:bg-teal-50 rounded-xl transition-colors">
+<span class="material-symbols-outlined">notifications</span>
+</button>
+<div class="hidden md:block text-right">
+<p class="text-xs font-bold text-teal-900 uppercase tracking-widest">Academic Registrar</p>
+<p class="text-[10px] text-slate-500">Scholarly Administration</p>
+</div>
+</div>
+</header>
+<!-- Sidebar / Navigation Drawer (Desktop) -->
+<aside class="hidden md:flex fixed left-0 top-0 h-full w-72 bg-slate-50 flex-col gap-2 p-4 z-50 shadow-2xl rounded-r-3xl">
+<div class="mb-8 p-4">
+<div class="flex items-center gap-3">
+<div class="w-12 h-12 rounded-2xl bg-primary flex items-center justify-center text-white">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">school</span>
+</div>
+<div>
+<h2 class="text-teal-900 font-black tracking-tight">SCHOLARLY</h2>
+<p class="text-[10px] uppercase font-bold tracking-widest text-slate-400">Institutional Portal</p>
+</div>
+</div>
+</div>
+<nav class="flex flex-col gap-2">
+<a class="text-teal-900 font-headline text-sm font-bold uppercase tracking-wider bg-white rounded-xl shadow-sm p-4 flex items-center gap-3 transition-transform hover:translate-x-1" href="#">
+<span class="material-symbols-outlined">calendar_view_week</span>
+<span>Schedule</span>
+</a>
+<a class="text-slate-500 font-headline text-sm font-semibold uppercase tracking-wider p-4 flex items-center gap-3 hover:translate-x-1 transition-transform" href="#">
+<span class="material-symbols-outlined">groups</span>
+<span>Faculty</span>
+</a>
+<a class="text-slate-500 font-headline text-sm font-semibold uppercase tracking-wider p-4 flex items-center gap-3 hover:translate-x-1 transition-transform" href="#">
+<span class="material-symbols-outlined">account_tree</span>
+<span>Departments</span>
+</a>
+<a class="text-slate-500 font-headline text-sm font-semibold uppercase tracking-wider p-4 flex items-center gap-3 hover:translate-x-1 transition-transform" href="#">
+<span class="material-symbols-outlined">settings</span>
+<span>Settings</span>
+</a>
+</nav>
+<div class="mt-auto p-4 bg-white/50 rounded-2xl">
+<div class="flex items-center gap-3">
+<img class="w-10 h-10 rounded-full object-cover" data-alt="Portrait of a distinguished academic professor with grey hair and glasses in a library setting" src="https://lh3.googleusercontent.com/aida-public/AB6AXuAohlxgqmpIF7eTqY95RoxpS7qR0dsarOxo7PbGsdGiWiR-7xGJmdC9t0ftN-H4kS7qCRqHjwY1KAuX9JAmd7zR-VjPmwct4GWGHKX7T5SkjyQ6v4aLaoeW1kCMg31VJ663kG-eeHH6F5D4nfd3_5qHVYsXcG9Ef57KBICX5BVEaD3DamdhUoZouLC_IlJEcMaOC_r7IWUH6oP8gAk_FaaJClaVrov57pxSaiEcH5nO6IN55zEYbpUeiNP-Pp-oYPam8cZIxD9A8Y0"/>
+<div>
+<p class="text-xs font-bold text-teal-900">Dr. Julian Vance</p>
+<p class="text-[10px] text-slate-500">Dean of Sciences</p>
+</div>
+</div>
+</div>
+</aside>
+<!-- Main Content Canvas -->
+<main class="pt-24 px-6 max-w-6xl mx-auto w-full">
+<!-- Header & Day Selector -->
+<header class="mb-10">
+<div class="flex flex-col md:flex-row md:items-end justify-between gap-6">
+<div>
+<h2 class="text-4xl font-headline font-extrabold text-teal-900 tracking-tight mb-2">Weekly Class Schedule</h2>
+<p class="text-slate-500 max-w-md leading-relaxed">Your curated academic journey for the Semester of 2024. Plan your intellectual pursuits with precision.</p>
+</div>
+<!-- Day Selector -->
+<div class="flex p-1.5 bg-surface-container-high rounded-2xl">
+<button class="px-6 py-2.5 rounded-xl text-xs font-bold uppercase tracking-widest text-slate-500 transition-all">Mon</button>
+<button class="px-6 py-2.5 rounded-xl text-xs font-bold uppercase tracking-widest bg-primary text-white shadow-lg shadow-primary/20 transition-all">Tue</button>
+<button class="px-6 py-2.5 rounded-xl text-xs font-bold uppercase tracking-widest text-slate-500 transition-all">Wed</button>
+<button class="px-6 py-2.5 rounded-xl text-xs font-bold uppercase tracking-widest text-slate-500 transition-all">Thu</button>
+<button class="px-6 py-2.5 rounded-xl text-xs font-bold uppercase tracking-widest text-slate-500 transition-all">Fri</button>
+</div>
+</div>
+</header>
+<!-- Bento Grid Timetable View -->
+<div class="grid grid-cols-1 md:grid-cols-12 gap-6 mb-12">
+<!-- Featured Morning Class (Large Card) -->
+<div class="md:col-span-8 bg-surface-container-lowest rounded-3xl p-8 shadow-[0_12px_40px_rgba(0,70,73,0.06)] relative overflow-hidden group">
+<div class="absolute top-0 right-0 w-32 h-32 bg-primary/5 rounded-bl-full -mr-8 -mt-8 transition-transform group-hover:scale-110"></div>
+<div class="flex flex-col md:flex-row gap-8 items-start md:items-center">
+<div class="flex-1">
+<div class="flex items-center gap-3 mb-4">
+<span class="px-3 py-1 bg-secondary-container text-on-secondary-container text-[10px] font-black uppercase tracking-widest rounded-full">Core Requirement</span>
+<span class="text-slate-400 text-xs font-medium">09:00 AM - 10:30 AM</span>
+</div>
+<h3 class="text-3xl font-headline font-bold text-teal-900 mb-2">Advanced Mathematics III</h3>
+<p class="text-slate-500 mb-6 max-w-sm leading-relaxed">Exploring complex variable theory and its applications in contemporary theoretical physics.</p>
+<div class="flex items-center gap-6">
+<div class="flex items-center gap-2">
+<span class="material-symbols-outlined text-teal-600 text-lg">meeting_room</span>
+<span class="text-sm font-bold text-teal-900">Lab 402</span>
+</div>
+<div class="flex items-center gap-3">
+<img class="w-8 h-8 rounded-full object-cover" data-alt="Close up portrait of a professional female professor with a warm expression and analytical gaze" src="https://lh3.googleusercontent.com/aida-public/AB6AXuBOTzqdJJTImBl0vSouk2Ltb9VsfE0d2b51aUHebyMtkfvNCKWzPZHjTIcVUOI_86Yhox1pdQoRW_a8q23TYWdbWCoxyQDcpLgKbVknzjth6biNs-NUahoUqtG2AYf9s8zIdg5Xcz4y4JyQghT87fXkmN_8HuE37PRqxZQbvGHoBshqXbtiuG-kaQeHRw8D5_-cbDTwdyEHiH8XWBPqxE8WNzVmcnylYm5ZNGbqSOycT8Jg20ONcPrSermiqu64uAMYN1NJWAOXlBg"/>
+<span class="text-sm font-semibold text-teal-900">Prof. Sarah Jenkins</span>
+</div>
+</div>
+</div>
+<button class="bg-primary text-white px-8 py-4 rounded-xl font-bold text-sm tracking-wide shadow-lg hover:shadow-primary/30 transition-all active:scale-95">
+                        Join Lecture
+                    </button>
+</div>
+</div>
+<!-- Side Card: Quick Note/Reminder -->
+<div class="md:col-span-4 bg-teal-900 rounded-3xl p-8 text-white flex flex-col justify-between shadow-xl">
+<div>
+<span class="material-symbols-outlined text-secondary-container text-4xl mb-6">lightbulb</span>
+<h4 class="text-xl font-headline font-bold mb-3">Academic Milestone</h4>
+<p class="text-teal-100/70 text-sm leading-relaxed mb-6">Don't forget to submit your research proposal for the "Fluid Dynamics" project before the end of Tuesday.</p>
+</div>
+<a class="flex items-center gap-2 text-secondary-container font-bold text-sm hover:underline" href="#">
+                    View Deadlines <span class="material-symbols-outlined text-sm">arrow_forward</span>
+</a>
+</div>
+<!-- Class Row 2 -->
+<div class="md:col-span-4 bg-white rounded-3xl p-6 shadow-[0_8px_30px_rgba(0,0,0,0.02)] transition-transform hover:-translate-y-1">
+<div class="flex justify-between items-start mb-4">
+<span class="text-[10px] font-black text-slate-400 uppercase tracking-widest">11:00 AM - 12:30 PM</span>
+<span class="material-symbols-outlined text-slate-300">more_horiz</span>
+</div>
+<h3 class="text-xl font-headline font-bold text-teal-900 mb-1">Modern Literature</h3>
+<p class="text-xs text-slate-400 font-medium mb-6">Seminar Room B</p>
+<div class="flex items-center gap-3 mt-auto">
+<img class="w-8 h-8 rounded-full object-cover" data-alt="Portrait of a creative writing professor with a thoughtful look in a workspace with books" src="https://lh3.googleusercontent.com/aida-public/AB6AXuA13kxdoc8pXaFXqLD3wan-xwdl6sfw8g61bkwGyv_Burb-24qjAExKawYoEH_T0trNAlpfSUliBGKs3mjvVCxJMMSYNhrRFxE49AGOyWZv_QVGVqTTchG3fOPHdZfDsKdul2SjDrIab_iQ6mloW_rXqxT36a2kkZTEYfO_U1dDPMtkHYsu7bsVt6nT3IZ9-D7K_RCXS60LbzG8oRe4mtydoYDQcNmnFRByMzPQHqph2FC2guqOz3gXA-x-pRYiqnJUs1ovxdzyJFs"/>
+<span class="text-xs font-bold text-teal-900">Dr. Robert Thorne</span>
+</div>
+</div>
+<div class="md:col-span-4 bg-white rounded-3xl p-6 shadow-[0_8px_30px_rgba(0,0,0,0.02)] transition-transform hover:-translate-y-1">
+<div class="flex justify-between items-start mb-4">
+<span class="text-[10px] font-black text-slate-400 uppercase tracking-widest">01:30 PM - 03:00 PM</span>
+<span class="material-symbols-outlined text-slate-300">more_horiz</span>
+</div>
+<h3 class="text-xl font-headline font-bold text-teal-900 mb-1">Neural Networks</h3>
+<p class="text-xs text-slate-400 font-medium mb-6">Computing Center 01</p>
+<div class="flex items-center gap-3 mt-auto">
+<img class="w-8 h-8 rounded-full object-cover" data-alt="Tech-savvy female professor smiling in a high-tech laboratory environment" src="https://lh3.googleusercontent.com/aida-public/AB6AXuDvf0vo1Wo7RtErM0LHESW-qYsQMqNQnfyPutf3JZNIQEFC8SbronrU-nNdggbWjtzFp7ytr_Amzg507GR2Txg8SxoalE8s-S8henVsV7GI2A2NAiyzgL4fRDvhEnwmMy34ZPbg8yC3AkhsCFqkYPFIA8KrK20j_KpR5czSJTC1jrfYFTSMeYRnZyj7jw3bSR_WN_UeYfEdPN2rQR_ivieHMc2iCtCUhtDHq4MTSX285D-othD4uvfdYDWnMfNdezbUjbgAlx3Iqds"/>
+<span class="text-xs font-bold text-teal-900">Prof. Elena Kovic</span>
+</div>
+</div>
+<div class="md:col-span-4 bg-white rounded-3xl p-6 shadow-[0_8px_30px_rgba(0,0,0,0.02)] transition-transform hover:-translate-y-1">
+<div class="flex justify-between items-start mb-4">
+<span class="text-[10px] font-black text-slate-400 uppercase tracking-widest">03:30 PM - 05:00 PM</span>
+<span class="material-symbols-outlined text-slate-300">more_horiz</span>
+</div>
+<h3 class="text-xl font-headline font-bold text-teal-900 mb-1">Macroeconomics</h3>
+<p class="text-xs text-slate-400 font-medium mb-6">Auditorium C</p>
+<div class="flex items-center gap-3 mt-auto">
+<img class="w-8 h-8 rounded-full object-cover" data-alt="Distinguished economics professor in a formal suit with a neutral professional expression" src="https://lh3.googleusercontent.com/aida-public/AB6AXuDTnHhDrXL30JNQOD1gqGHmkQsirWBhLa1Npj-O0zBi7WAzEgn_5xsEZbPIHAk1-zRYtb14xjkICpAxL6fEdvq_t2qYeTK2ZmdIcNWAiIrSwSm1NJvVH6-vtvyplgnOprAJz0giDNsm76cB647Oq30QoZuTBdcwsSMzc_ndHAW9NKByDqX64V40mh41e8jiheM4Z2lc5SSFnERvmX78v5tQussIxeTGUp6pKchmFyNRi_fmLx4lCdw-WBUoeSmvk3GFGczZVj1zmDw"/>
+<span class="text-xs font-bold text-teal-900">Dr. Marcus Webb</span>
+</div>
+</div>
+</div>
+<!-- Weekly Summary Section -->
+<section class="bg-surface-container-high rounded-[2.5rem] p-10 mb-12">
+<h4 class="text-sm font-black uppercase tracking-widest text-teal-900/40 mb-8 text-center">Semester Progress Overview</h4>
+<div class="grid grid-cols-2 md:grid-cols-4 gap-8">
+<div class="text-center">
+<p class="text-3xl font-headline font-black text-teal-900">18</p>
+<p class="text-[10px] font-bold text-slate-500 uppercase tracking-widest mt-1">Contact Hours</p>
+</div>
+<div class="text-center">
+<p class="text-3xl font-headline font-black text-secondary">94%</p>
+<p class="text-[10px] font-bold text-slate-500 uppercase tracking-widest mt-1">Attendance Rate</p>
+</div>
+<div class="text-center">
+<p class="text-3xl font-headline font-black text-teal-900">4</p>
+<p class="text-[10px] font-bold text-slate-500 uppercase tracking-widest mt-1">Active Projects</p>
+</div>
+<div class="text-center">
+<p class="text-3xl font-headline font-black text-teal-900">A-</p>
+<p class="text-[10px] font-bold text-slate-500 uppercase tracking-widest mt-1">Current Standing</p>
+</div>
+</div>
+</section>
+</main>
+<!-- Mobile Navigation Bar -->
+<nav class="md:hidden fixed bottom-0 left-0 w-full h-20 z-50 flex justify-around items-center px-4 pb-2 bg-white/90 backdrop-blur-lg shadow-[0_-8px_30px_rgba(0,0,0,0.04)] rounded-t-[2rem]">
+<a class="flex flex-col items-center justify-center bg-teal-900 text-white rounded-full w-14 h-14 -mt-6 shadow-lg shadow-teal-900/20 scale-110" href="#">
+<span class="material-symbols-outlined">event_note</span>
+<span class="text-[8px] font-bold uppercase tracking-tighter mt-0.5">Schedule</span>
+</a>
+<a class="flex flex-col items-center justify-center text-slate-400 p-2 hover:text-teal-700" href="#">
+<span class="material-symbols-outlined">badge</span>
+<span class="text-[10px] font-bold uppercase tracking-tighter">Staff</span>
+</a>
+<a class="flex flex-col items-center justify-center text-slate-400 p-2 hover:text-teal-700" href="#">
+<span class="material-symbols-outlined">assessment</span>
+<span class="text-[10px] font-bold uppercase tracking-tighter">Reports</span>
+</a>
+<a class="flex flex-col items-center justify-center text-slate-400 p-2 hover:text-teal-700" href="#">
+<span class="material-symbols-outlined">person</span>
+<span class="text-[10px] font-bold uppercase tracking-tighter">Profile</span>
+</a>
+</nav>
+</body></html>

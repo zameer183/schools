@@ -1,0 +1,268 @@
+<!DOCTYPE html>
+
+<html class="light" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Faculty Hub | Manarah Admin</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;700;800&amp;family=Inter:wght@400;500;600;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+      tailwind.config = {
+        darkMode: "class",
+        theme: {
+          extend: {
+            "colors": {
+                    "tertiary": "#284143",
+                    "primary": "#124346",
+                    "on-secondary-container": "#714200",
+                    "primary-fixed": "#bcebef",
+                    "surface-container": "#edeeee",
+                    "on-tertiary-fixed": "#051f21",
+                    "on-background": "#1a1c1c",
+                    "surface-container-lowest": "#ffffff",
+                    "surface-tint": "#396569",
+                    "on-tertiary-fixed-variant": "#324b4d",
+                    "error-container": "#ffdad6",
+                    "on-primary-container": "#a2d0d4",
+                    "error": "#ba1a1a",
+                    "tertiary-container": "#3f585a",
+                    "surface-container-highest": "#e2e3e2",
+                    "inverse-on-surface": "#f0f1f0",
+                    "surface": "#f9f9f9",
+                    "secondary-container": "#fead51",
+                    "tertiary-fixed-dim": "#b1cbce",
+                    "secondary-fixed-dim": "#ffb86c",
+                    "primary-container": "#2d5a5e",
+                    "on-surface-variant": "#404849",
+                    "surface-bright": "#f9f9f9",
+                    "outline": "#707979",
+                    "on-tertiary": "#ffffff",
+                    "on-primary-fixed": "#002022",
+                    "surface-container-high": "#e7e8e8",
+                    "inverse-surface": "#2e3131",
+                    "on-primary-fixed-variant": "#1f4d51",
+                    "primary-fixed-dim": "#a1cfd3",
+                    "on-tertiary-container": "#b2cdcf",
+                    "on-secondary-fixed": "#2c1600",
+                    "on-surface": "#1a1c1c",
+                    "surface-variant": "#e2e3e2",
+                    "secondary": "#895100",
+                    "on-secondary-fixed-variant": "#683c00",
+                    "secondary-fixed": "#ffdcbd",
+                    "inverse-primary": "#a1cfd3",
+                    "on-secondary": "#ffffff",
+                    "on-primary": "#ffffff",
+                    "surface-container-low": "#f3f4f3",
+                    "on-error": "#ffffff",
+                    "surface-dim": "#d9dada",
+                    "outline-variant": "#c0c8c9",
+                    "background": "#f9f9f9",
+                    "tertiary-fixed": "#cce8ea",
+                    "on-error-container": "#93000a"
+            },
+            "borderRadius": {
+                    "DEFAULT": "0.125rem",
+                    "lg": "0.25rem",
+                    "xl": "0.5rem",
+                    "full": "0.75rem"
+            },
+            "spacing": {},
+            "fontFamily": {
+                    "headline": ["Manrope"],
+                    "body": ["Inter"],
+                    "label": ["Inter"]
+            }
+          },
+        },
+      }
+    </script>
+<style>
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+        .editorial-shadow {
+            box-shadow: 0px 12px 32px rgba(26, 28, 28, 0.06);
+        }
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f9f9f9;
+        }
+        h1, h2, h3 {
+            font-family: 'Manrope', sans-serif;
+        }
+    </style>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+  </head>
+<body class="text-on-surface antialiased pb-32">
+<!-- TopAppBar -->
+<header class="bg-neutral-50/80 dark:bg-neutral-900/80 backdrop-blur-xl docked full-width top-0 sticky z-50 shadow-[0px_12px_32px_rgba(26,28,28,0.06)] flex items-center justify-between px-6 py-4 w-full max-w-full">
+<div class="flex items-center gap-4">
+<button class="text-teal-900 dark:text-teal-500 scale-95 active:opacity-80 transition-all">
+<span class="material-symbols-outlined" data-icon="menu">menu</span>
+</button>
+<h1 class="font-['Manrope'] font-bold text-2xl tracking-tight text-teal-900 dark:text-teal-500">Faculty Hub</h1>
+</div>
+<div class="relative scale-95 active:opacity-80 transition-all">
+<img alt="Admin User Profile" class="w-10 h-10 rounded-full object-cover border-2 border-primary-fixed" data-alt="Close-up professional portrait of a male academic administrator with a friendly expression in a brightly lit modern office" src="https://lh3.googleusercontent.com/aida-public/AB6AXuCCok3wA6vxU4bR3z1wGfFZ26KkRJCu-U9jpo5Mf4F1D9N7ujZi5maJFLUtwH0FJfnSfu6nukDkhg3RHRAxV2eoQ0l5K2E65Xjgz9rach-uX-et9yjW59ei4fGyeJin_LmPYwoy60GLtikGL5oxvRP1k530eDEBTF7jNIPiw9V-3PyX2kP3-caIXjRI7PdPIY4TOkjBqN9bZ_RMu4vq1w1CMykrayru0IyQCyDNp08gArqTYS9oJC17lX_1jvtadM5gLAxaClUQiNU"/>
+</div>
+</header>
+<main class="px-6 pt-6 space-y-8">
+<!-- Hero Search Section (The Academic Curator Style) -->
+<section class="space-y-4">
+<div class="bg-primary-container rounded-[2rem] p-8 relative overflow-hidden text-on-primary">
+<div class="relative z-10">
+<p class="font-label text-primary-fixed text-xs font-bold tracking-widest uppercase mb-2">Academic Directory</p>
+<h2 class="text-3xl font-extrabold leading-tight tracking-tight mb-6">Manage your institution's finest educators</h2>
+<div class="relative group">
+<div class="absolute inset-y-0 left-4 flex items-center pointer-events-none text-on-primary/60">
+<span class="material-symbols-outlined" data-icon="search">search</span>
+</div>
+<input class="w-full bg-white/10 border-none rounded-2xl py-4 pl-12 pr-4 text-white placeholder-white/60 focus:ring-2 focus:ring-secondary-container transition-all backdrop-blur-sm" placeholder="Search faculty by name or department..." type="text"/>
+</div>
+</div>
+<!-- Subtle Texture/Background Element -->
+<div class="absolute -right-12 -bottom-12 w-48 h-48 bg-secondary-container opacity-20 rounded-full blur-3xl"></div>
+</div>
+</section>
+<!-- Department Filter (Insight Chips) -->
+<section class="flex gap-3 overflow-x-auto pb-2 -mx-6 px-6 no-scrollbar">
+<button class="flex-shrink-0 px-6 py-2.5 rounded-full bg-primary text-on-primary font-semibold text-sm transition-all active:scale-95">All Staff</button>
+<button class="flex-shrink-0 px-6 py-2.5 rounded-full bg-surface-container-high text-on-surface-variant font-medium text-sm hover:bg-neutral-200 transition-all active:scale-95">Theology</button>
+<button class="flex-shrink-0 px-6 py-2.5 rounded-full bg-surface-container-high text-on-surface-variant font-medium text-sm hover:bg-neutral-200 transition-all active:scale-95">Arabic</button>
+<button class="flex-shrink-0 px-6 py-2.5 rounded-full bg-surface-container-high text-on-surface-variant font-medium text-sm hover:bg-neutral-200 transition-all active:scale-95">Science</button>
+<button class="flex-shrink-0 px-6 py-2.5 rounded-full bg-surface-container-high text-on-surface-variant font-medium text-sm hover:bg-neutral-200 transition-all active:scale-95">History</button>
+</section>
+<!-- Faculty List (Editorial Bento Grid-ish) -->
+<section class="space-y-6">
+<div class="flex items-center justify-between">
+<h3 class="text-lg font-bold text-on-surface flex items-center gap-2">
+                    Active Faculty
+                    <span class="inline-flex items-center justify-center w-6 h-6 bg-primary-fixed text-primary text-[10px] font-black rounded-full">24</span>
+</h3>
+<button class="text-secondary font-bold text-sm hover:underline">View All</button>
+</div>
+<!-- List Items using Tonal Layering (No Borders) -->
+<div class="space-y-4">
+<!-- Teacher Card 1 -->
+<div class="group bg-surface-container-low rounded-[1.5rem] p-4 flex items-center gap-4 hover:bg-surface-container-high transition-all active:scale-[0.98]">
+<div class="relative">
+<img alt="Faculty Portrait" class="w-16 h-16 rounded-2xl object-cover editorial-shadow" data-alt="Portrait of a female professor with glasses, wearing a modest hijab and professional attire, soft neutral background" src="https://lh3.googleusercontent.com/aida-public/AB6AXuD33NPBMk31S3ZluWDhv9nFfMaO6w28yled-2olDUz3cDzeXQUCJzOZA-MqGu_D8ErL_L6Wikzxt4Xg4Kigkwjv-kpiqwLs30Xfh0Z3BHVIdkFzsrG_QF0TWQVAyWdrBtLmsZ4ppDmeEB7hRUQCP46qeDdKGVVoq_6aWzVJF7ZyU2vDhQcGpHsVeF8vqm-jj3Ge-R_slQQfszYSu6gqozLJ05rI5a2KtjDIkY7wg6kvxNaznFKHnLC3lYMMGTScNQY2imCCnJuChH4"/>
+<div class="absolute -bottom-1 -right-1 w-5 h-5 bg-primary-fixed border-4 border-surface-container-low rounded-full group-hover:border-surface-container-high transition-all"></div>
+</div>
+<div class="flex-1 min-w-0">
+<h4 class="font-bold text-on-surface text-base truncate">Dr. Sarah Al-Farsi</h4>
+<p class="text-on-surface-variant text-sm font-medium">Head of Theology</p>
+</div>
+<div class="flex flex-col items-end gap-1">
+<span class="px-3 py-1 bg-primary-fixed text-primary font-bold text-[10px] rounded-full uppercase tracking-wider">Active</span>
+<button class="p-2 text-outline-variant hover:text-primary transition-colors">
+<span class="material-symbols-outlined" data-icon="more_vert">more_vert</span>
+</button>
+</div>
+</div>
+<!-- Teacher Card 2 -->
+<div class="group bg-surface-container-low rounded-[1.5rem] p-4 flex items-center gap-4 hover:bg-surface-container-high transition-all active:scale-[0.98]">
+<div class="relative">
+<img alt="Faculty Portrait" class="w-16 h-16 rounded-2xl object-cover editorial-shadow" data-alt="Close up portrait of a senior male professor with a gray beard and professional glasses in a university setting" src="https://lh3.googleusercontent.com/aida-public/AB6AXuDgPARdjSH_uTd8mI_J1w-Cd8PIpGFryph2C0EXdY59FcXFEz2eQugwJl0xpJkic5SuzkB98iZYtt7Ow24NCILj3cFJjxPzsH09aWZ5a02BXHgH4NetQHaBEJfDpQR4F6-3QxsnBRGcqwR5g3B4dl1xcMwrv-Lj3kWBmXtjAGoY99Fzu2SZONq2jeCaiq_ilc4W3ER26iU_446xQHmQSipkfMioR0oMozzo-AoTzl-KJBmVwrjtvrcqoEBpYqj98xkq5sEDIgK7s2c"/>
+<div class="absolute -bottom-1 -right-1 w-5 h-5 bg-primary-fixed border-4 border-surface-container-low rounded-full group-hover:border-surface-container-high transition-all"></div>
+</div>
+<div class="flex-1 min-w-0">
+<h4 class="font-bold text-on-surface text-base truncate">Prof. Omar Qureshi</h4>
+<p class="text-on-surface-variant text-sm font-medium">Arabic Linguistics</p>
+</div>
+<div class="flex flex-col items-end gap-1">
+<span class="px-3 py-1 bg-primary-fixed text-primary font-bold text-[10px] rounded-full uppercase tracking-wider">Active</span>
+<button class="p-2 text-outline-variant hover:text-primary transition-colors">
+<span class="material-symbols-outlined" data-icon="more_vert">more_vert</span>
+</button>
+</div>
+</div>
+<!-- Teacher Card 3 -->
+<div class="group bg-surface-container-low rounded-[1.5rem] p-4 flex items-center gap-4 hover:bg-surface-container-high transition-all active:scale-[0.98]">
+<div class="relative">
+<img alt="Faculty Portrait" class="w-16 h-16 rounded-2xl object-cover editorial-shadow" data-alt="Portrait of a young female science teacher with a friendly smile, natural lighting in a contemporary academic environment" src="https://lh3.googleusercontent.com/aida-public/AB6AXuAtt7vQuAtmrFRE0aYOZKhhWuus8QyyWU5tI7R-IJtalyxJiAFqIj3e4bYObuIjry_kMyLLNJUef2T7sm0RLpyzcUZlmQ-NY356EFrIhJO41AyEwy5PVMlbkL_k70AWp_8KpDiLGAxmlz7WQcA5lh3laoRnSw0QdjaETx3t8DLJyjQIGaP9hjSbzmcyCq5-w6KdddaD2MxA5q_luml_e8_hgI-P4UAHDCse3kirExuGQUaMFCrV94azEBrdDWKy8WE8qj85IvY8LWE"/>
+<div class="absolute -bottom-1 -right-1 w-5 h-5 bg-secondary-container border-4 border-surface-container-low rounded-full group-hover:border-surface-container-high transition-all"></div>
+</div>
+<div class="flex-1 min-w-0">
+<h4 class="font-bold text-on-surface text-base truncate">Huda Mansour</h4>
+<p class="text-on-surface-variant text-sm font-medium">General Science</p>
+</div>
+<div class="flex flex-col items-end gap-1">
+<span class="px-3 py-1 bg-secondary-fixed-dim text-on-secondary-container font-bold text-[10px] rounded-full uppercase tracking-wider">Leave</span>
+<button class="p-2 text-outline-variant hover:text-primary transition-colors">
+<span class="material-symbols-outlined" data-icon="more_vert">more_vert</span>
+</button>
+</div>
+</div>
+<!-- Teacher Card 4 -->
+<div class="group bg-surface-container-low rounded-[1.5rem] p-4 flex items-center gap-4 hover:bg-surface-container-high transition-all active:scale-[0.98]">
+<div class="relative">
+<img alt="Faculty Portrait" class="w-16 h-16 rounded-2xl object-cover editorial-shadow" data-alt="Professional studio headshot of a middle-aged male teacher with a warm, encouraging smile" src="https://lh3.googleusercontent.com/aida-public/AB6AXuA5_U7uqUIKgQAT8e3prJgf6tE4ZV-661VHohfjqdNvUoxUoWViXw_PMlb6teTcL_SDtgHaeMvf21kd_0bkfhKKVPSczcW3W8c86Iyg1zjnb-u7tS0kivkjXgz9lPTbyAD01cikeeKF39gnIEi6rAdqJgDTYr8p5uYn-1HiYv5zkFmYQFyYU6GS_xIupZno7LRqvDvIRzcmS68BwapzsYP0AonZLYIbUEqdtIbGQohAjEHt_MxOKPA9NmBP4DEZX0BjZKL0Q6bdqD4"/>
+<div class="absolute -bottom-1 -right-1 w-5 h-5 bg-primary-fixed border-4 border-surface-container-low rounded-full group-hover:border-surface-container-high transition-all"></div>
+</div>
+<div class="flex-1 min-w-0">
+<h4 class="font-bold text-on-surface text-base truncate">Zaid Ibrahim</h4>
+<p class="text-on-surface-variant text-sm font-medium">Modern History</p>
+</div>
+<div class="flex flex-col items-end gap-1">
+<span class="px-3 py-1 bg-primary-fixed text-primary font-bold text-[10px] rounded-full uppercase tracking-wider">Active</span>
+<button class="p-2 text-outline-variant hover:text-primary transition-colors">
+<span class="material-symbols-outlined" data-icon="more_vert">more_vert</span>
+</button>
+</div>
+</div>
+</div>
+</section>
+<!-- Quick Insight Rail -->
+<section class="bg-tertiary-fixed rounded-[2rem] p-6 space-y-4">
+<h3 class="font-bold text-on-tertiary-fixed flex items-center gap-2">
+<span class="material-symbols-outlined text-primary" data-icon="analytics">analytics</span>
+                Staffing Overview
+            </h3>
+<div class="grid grid-cols-2 gap-4">
+<div class="bg-surface-container-lowest p-4 rounded-2xl">
+<p class="text-[10px] font-bold text-outline uppercase tracking-tighter mb-1">Attendance</p>
+<p class="text-2xl font-black text-primary">94%</p>
+<div class="w-full h-1 bg-primary-fixed rounded-full mt-2">
+<div class="w-[94%] h-full bg-primary rounded-full"></div>
+</div>
+</div>
+<div class="bg-surface-container-lowest p-4 rounded-2xl">
+<p class="text-[10px] font-bold text-outline uppercase tracking-tighter mb-1">Open Positions</p>
+<p class="text-2xl font-black text-secondary">03</p>
+<p class="text-[10px] text-on-secondary-fixed-variant mt-2 font-medium">Science, Arts, IT</p>
+</div>
+</div>
+</section>
+</main>
+<!-- Quick Add FAB -->
+<button class="fixed bottom-28 right-6 w-16 h-16 bg-secondary-container text-on-secondary-container rounded-full flex items-center justify-center editorial-shadow z-40 active:scale-90 transition-transform">
+<span class="material-symbols-outlined text-3xl" data-icon="person_add">person_add</span>
+</button>
+<!-- BottomNavBar -->
+<nav class="fixed bottom-0 left-0 w-full z-50 bg-white/90 dark:bg-neutral-950/90 backdrop-blur-md rounded-t-[2rem] shadow-[0_-8px_24px_rgba(0,0,0,0.04)] px-4 pb-6 pt-3 flex justify-around items-center">
+<!-- Staff Active Tab -->
+<div class="flex flex-col items-center justify-center bg-teal-100/50 dark:bg-teal-900/40 text-teal-900 dark:text-teal-100 rounded-full px-5 py-1 active:scale-90 transition-transform duration-200">
+<span class="material-symbols-outlined" data-icon="badge" style="font-variation-settings: 'FILL' 1;">badge</span>
+<span class="font-['Inter'] text-[11px] font-semibold tracking-wide uppercase">Staff</span>
+</div>
+<div class="flex flex-col items-center justify-center text-neutral-400 dark:text-neutral-500 hover:text-teal-700 dark:hover:text-teal-300 active:scale-90 transition-transform duration-200">
+<span class="material-symbols-outlined" data-icon="construction">construction</span>
+<span class="font-['Inter'] text-[11px] font-semibold tracking-wide uppercase">Tools</span>
+</div>
+<div class="flex flex-col items-center justify-center text-neutral-400 dark:text-neutral-500 hover:text-teal-700 dark:hover:text-teal-300 active:scale-90 transition-transform duration-200">
+<span class="material-symbols-outlined" data-icon="analytics">analytics</span>
+<span class="font-['Inter'] text-[11px] font-semibold tracking-wide uppercase">Reports</span>
+</div>
+<div class="flex flex-col items-center justify-center text-neutral-400 dark:text-neutral-500 hover:text-teal-700 dark:hover:text-teal-300 active:scale-90 transition-transform duration-200">
+<span class="material-symbols-outlined" data-icon="account_circle">account_circle</span>
+<span class="font-['Inter'] text-[11px] font-semibold tracking-wide uppercase">Profile</span>
+</div>
+</nav>
+</body></html>

@@ -1,0 +1,260 @@
+<!DOCTYPE html>
+
+<html class="light" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Assignment Submission | The Scholarly Editorial</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&amp;family=Manrope:wght@400;500;600;700;800&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    "colors": {
+                        "surface-tint": "#27676b",
+                        "secondary-container": "#fdb24f",
+                        "on-tertiary-fixed-variant": "#2a4c4f",
+                        "tertiary": "#214346",
+                        "on-tertiary": "#ffffff",
+                        "secondary-fixed": "#ffddb8",
+                        "on-tertiary-container": "#add1d5",
+                        "on-error-container": "#93000a",
+                        "tertiary-fixed-dim": "#a9cdd0",
+                        "secondary": "#865300",
+                        "primary": "#004649",
+                        "on-background": "#191c1d",
+                        "on-surface-variant": "#3f4849",
+                        "on-primary-fixed-variant": "#004f53",
+                        "surface-bright": "#f8f9fa",
+                        "outline-variant": "#bfc8c9",
+                        "on-primary": "#ffffff",
+                        "surface": "#f8f9fa",
+                        "error-container": "#ffdad6",
+                        "on-secondary-fixed": "#2a1700",
+                        "on-error": "#ffffff",
+                        "primary-fixed-dim": "#93d1d5",
+                        "surface-variant": "#e1e3e4",
+                        "surface-container-low": "#f3f4f5",
+                        "on-primary-container": "#97d5d9",
+                        "on-secondary-fixed-variant": "#653e00",
+                        "surface-container": "#edeeef",
+                        "inverse-primary": "#93d1d5",
+                        "surface-container-highest": "#e1e3e4",
+                        "primary-container": "#1b5e62",
+                        "error": "#ba1a1a",
+                        "background": "#f8f9fa",
+                        "on-secondary": "#ffffff",
+                        "on-secondary-container": "#704500",
+                        "primary-fixed": "#afedf2",
+                        "on-surface": "#191c1d",
+                        "surface-dim": "#d9dadb",
+                        "on-primary-fixed": "#002022",
+                        "outline": "#6f7979",
+                        "on-tertiary-fixed": "#002022",
+                        "tertiary-fixed": "#c5e9ec",
+                        "tertiary-container": "#395b5e",
+                        "surface-container-lowest": "#ffffff",
+                        "inverse-surface": "#2e3132",
+                        "secondary-fixed-dim": "#ffb960",
+                        "inverse-on-surface": "#f0f1f2",
+                        "surface-container-high": "#e7e8e9"
+                    },
+                    "borderRadius": {
+                        "DEFAULT": "0.25rem",
+                        "lg": "0.5rem",
+                        "xl": "0.75rem",
+                        "full": "9999px"
+                    },
+                    "fontFamily": {
+                        "headline": ["Manrope"],
+                        "body": ["Inter"],
+                        "label": ["Inter"]
+                    }
+                },
+            },
+        }
+    </script>
+<style>
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+        body { font-family: 'Inter', sans-serif; }
+        h1, h2, h3 { font-family: 'Manrope', sans-serif; }
+    </style>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+  </head>
+<body class="bg-surface text-on-surface min-h-screen pb-24 md:pb-0 md:pt-16">
+<!-- TopAppBar -->
+<header class="fixed top-0 w-full z-50 bg-white/80 dark:bg-slate-950/80 backdrop-blur-md shadow-sm dark:shadow-none flex justify-between items-center px-6 h-16 w-full">
+<div class="flex items-center gap-4">
+<div class="w-10 h-10 rounded-full bg-primary-container flex items-center justify-center overflow-hidden">
+<img alt="User Profile" class="w-full h-full object-cover" data-alt="minimalist 3D avatar of a young male student with glasses and a friendly expression, soft lighting" src="https://lh3.googleusercontent.com/aida-public/AB6AXuDrH6PwNZtVelDuMk0wRaoQ8Oh_WVK75fUjRj2JyxjeDT7lppeZfI7bAjf_kXzYOQ4F0jwwqm0Uyl0lG3geDzXxCDD4Y09Dg_m11CxmzyEiKl7eaReM1w4mZ-K7xiJjUgTMWGYRixBYm5j6Sic5zG4tOy7ZNqDx7HlkSRgdfrD_aMJ3OnBpnqqzje5VVWWQZDdR3yDNiE098JmcuPPvXkb9aIqhfT4dj_zcludhnBZBCI1LIbax_-H8lqavc0VUFV9PPABo92EyVsU"/>
+</div>
+<span class="font-manrope font-black text-teal-900 dark:text-teal-200 tracking-wider">The Scholarly Editorial</span>
+</div>
+<div class="flex items-center gap-2">
+<button class="p-2 text-teal-900 dark:text-teal-400 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors rounded-xl active:scale-95 duration-200">
+<span class="material-symbols-outlined">notifications</span>
+</button>
+</div>
+</header>
+<!-- Main Content Canvas -->
+<main class="max-w-7xl mx-auto px-6 pt-24 pb-12">
+<!-- Header Section with Asymmetric Layout -->
+<div class="flex flex-col md:flex-row justify-between items-start gap-8 mb-12">
+<div class="flex-1">
+<nav class="flex items-center gap-2 text-outline mb-4">
+<span class="text-sm font-medium">Academics</span>
+<span class="material-symbols-outlined text-sm">chevron_right</span>
+<span class="text-sm font-medium">Mathematics</span>
+<span class="material-symbols-outlined text-sm">chevron_right</span>
+<span class="text-sm font-bold text-primary">Assignment Details</span>
+</nav>
+<h1 class="text-4xl md:text-5xl font-extrabold text-primary tracking-tight mb-4">Advanced Calculus Problem Set 4</h1>
+<div class="flex flex-wrap gap-4 items-center">
+<span class="px-4 py-1.5 bg-secondary-container text-on-secondary-container rounded-full text-xs font-bold tracking-widest uppercase">
+                        Pending Submission
+                    </span>
+<div class="flex items-center gap-2 text-on-surface-variant font-medium">
+<span class="material-symbols-outlined text-xl">event</span>
+<span class="text-sm tracking-tight">Due: Oct 24, 2023 · 11:59 PM</span>
+</div>
+</div>
+</div>
+<!-- Quick Stats Card (Tonal Layering) -->
+<div class="w-full md:w-64 bg-surface-container-lowest p-6 rounded-xl shadow-[0_12px_40px_rgba(0,70,73,0.06)] flex flex-col gap-4 border border-outline-variant/10">
+<div class="flex flex-col">
+<span class="text-[10px] font-bold uppercase tracking-widest text-outline">Weightage</span>
+<span class="text-2xl font-bold text-primary">15% of Grade</span>
+</div>
+<div class="h-[2px] w-full bg-surface-variant"></div>
+<div class="flex flex-col">
+<span class="text-[10px] font-bold uppercase tracking-widest text-outline">Max Points</span>
+<span class="text-2xl font-bold text-primary">100 pts</span>
+</div>
+</div>
+</div>
+<div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+<!-- Left Column: Details & Instructions -->
+<div class="lg:col-span-2 space-y-8">
+<!-- Description Card -->
+<section class="bg-surface-container-low p-8 rounded-xl">
+<h3 class="text-xl font-bold text-primary mb-6 flex items-center gap-3">
+<span class="material-symbols-outlined">description</span>
+                        Instructions
+                    </h3>
+<div class="prose prose-teal max-w-none text-on-surface-variant font-body leading-relaxed space-y-4">
+<p>This assignment focuses on the application of Stokes' Theorem and Divergence Theorem in multi-dimensional space. Please ensure all proofs are clearly stated and intermediate steps are visible.</p>
+<p>Key areas to focus on:</p>
+<ul class="list-disc pl-5 space-y-2">
+<li>Parametrization of complex surfaces</li>
+<li>Orientation of boundary curves</li>
+<li>Physical interpretation of flux across manifolds</li>
+</ul>
+<p class="font-semibold text-secondary pt-2 italic">Note: Late submissions will incur a 10% penalty per day unless prior arrangements have been made with the department.</p>
+</div>
+</section>
+<!-- Resources Bento Grid -->
+<section>
+<h3 class="text-xl font-bold text-primary mb-6 flex items-center gap-3">
+<span class="material-symbols-outlined">attach_file</span>
+                        Study Resources
+                    </h3>
+<div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+<div class="group bg-surface-container-lowest p-5 rounded-xl flex items-center gap-4 hover:shadow-lg transition-all border border-outline-variant/10 cursor-pointer">
+<div class="w-12 h-12 bg-primary-container/10 text-primary rounded-lg flex items-center justify-center group-hover:bg-primary group-hover:text-white transition-colors">
+<span class="material-symbols-outlined">picture_as_pdf</span>
+</div>
+<div class="flex flex-col">
+<span class="text-sm font-bold text-primary">Vector_Calculus_Reference.pdf</span>
+<span class="text-xs text-outline">Reference Guide · 4.2 MB</span>
+</div>
+</div>
+<div class="group bg-surface-container-lowest p-5 rounded-xl flex items-center gap-4 hover:shadow-lg transition-all border border-outline-variant/10 cursor-pointer">
+<div class="w-12 h-12 bg-secondary-container/10 text-secondary rounded-lg flex items-center justify-center group-hover:bg-secondary group-hover:text-white transition-colors">
+<span class="material-symbols-outlined">video_library</span>
+</div>
+<div class="flex flex-col">
+<span class="text-sm font-bold text-primary">Lecture_Recap_04.mp4</span>
+<span class="text-xs text-outline">Video Lesson · 15 mins</span>
+</div>
+</div>
+<div class="group bg-surface-container-lowest p-5 rounded-xl flex items-center gap-4 hover:shadow-lg transition-all border border-outline-variant/10 cursor-pointer">
+<div class="w-12 h-12 bg-primary-container/10 text-primary rounded-lg flex items-center justify-center group-hover:bg-primary group-hover:text-white transition-colors">
+<span class="material-symbols-outlined">book</span>
+</div>
+<div class="flex flex-col">
+<span class="text-sm font-bold text-primary">Chapter_7_Practice_Sets</span>
+<span class="text-xs text-outline">External Link · Web</span>
+</div>
+</div>
+</div>
+</section>
+</div>
+<!-- Right Column: Submission Zone -->
+<div class="lg:col-span-1">
+<div class="sticky top-24 space-y-6">
+<section class="bg-surface-container-highest p-8 rounded-2xl border border-primary/5 shadow-xl">
+<h3 class="text-xl font-bold text-primary mb-6 flex items-center gap-3">
+<span class="material-symbols-outlined">upload_file</span>
+                            Your Submission
+                        </h3>
+<!-- Drag & Drop Zone -->
+<div class="border-2 border-dashed border-outline-variant rounded-xl p-8 flex flex-col items-center justify-center text-center bg-white/50 hover:bg-white hover:border-primary transition-all group cursor-pointer">
+<div class="w-16 h-16 bg-primary/5 text-primary rounded-full flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
+<span class="material-symbols-outlined text-3xl">cloud_upload</span>
+</div>
+<p class="text-sm font-bold text-primary mb-1">Click to upload or drag &amp; drop</p>
+<p class="text-[10px] text-outline uppercase tracking-widest">PDF, DOCX, or ZIP (Max 50MB)</p>
+</div>
+<!-- Manual Entry (Optional) -->
+<div class="mt-8">
+<label class="text-[10px] font-bold uppercase tracking-widest text-outline mb-2 block">Submission Notes (Optional)</label>
+<textarea class="w-full bg-surface p-4 rounded-xl border-none focus:ring-2 focus:ring-primary/20 text-sm font-body text-on-surface-variant min-h-[100px]" placeholder="Add a comment for the professor..."></textarea>
+</div>
+<!-- Action Button -->
+<button class="w-full mt-8 bg-gradient-to-br from-primary to-primary-container text-white py-4 px-6 rounded-xl font-manrope font-bold text-sm tracking-wide shadow-lg hover:shadow-primary/20 active:scale-95 transition-all flex items-center justify-center gap-2">
+<span>Submit Assignment</span>
+<span class="material-symbols-outlined text-lg">send</span>
+</button>
+</section>
+<!-- Help Card -->
+<div class="bg-secondary/5 p-6 rounded-xl flex items-start gap-4">
+<span class="material-symbols-outlined text-secondary">help_outline</span>
+<div>
+<h4 class="text-sm font-bold text-secondary mb-1">Need help with the portal?</h4>
+<p class="text-xs text-on-surface-variant font-medium">Contact technical support or view our submission guide for formatting tips.</p>
+</div>
+</div>
+</div>
+</div>
+</div>
+</main>
+<!-- BottomNavBar (Mobile only) -->
+<nav class="md:hidden fixed bottom-0 left-0 w-full flex justify-around items-center px-4 py-3 bg-white dark:bg-slate-950 shadow-[0_-12px_40px_rgba(0,70,73,0.06)] z-50 rounded-t-3xl">
+<a class="flex flex-col items-center justify-center text-slate-400 dark:text-slate-500 hover:text-teal-700 active:scale-90 transition-transform" href="#">
+<span class="material-symbols-outlined">dashboard</span>
+<span class="font-inter text-[10px] font-semibold tracking-wide uppercase mt-1">Dashboard</span>
+</a>
+<a class="flex flex-col items-center justify-center bg-teal-50 dark:bg-teal-900/30 text-teal-900 dark:text-teal-200 rounded-xl px-4 py-1 active:scale-90 transition-transform" href="#">
+<span class="material-symbols-outlined">school</span>
+<span class="font-inter text-[10px] font-semibold tracking-wide uppercase mt-1">Academics</span>
+</a>
+<a class="flex flex-col items-center justify-center text-slate-400 dark:text-slate-500 hover:text-teal-700 active:scale-90 transition-transform" href="#">
+<span class="material-symbols-outlined">analytics</span>
+<span class="font-inter text-[10px] font-semibold tracking-wide uppercase mt-1">Reports</span>
+</a>
+<a class="flex flex-col items-center justify-center text-slate-400 dark:text-slate-500 hover:text-teal-700 active:scale-90 transition-transform" href="#">
+<span class="material-symbols-outlined">person</span>
+<span class="font-inter text-[10px] font-semibold tracking-wide uppercase mt-1">Profile</span>
+</a>
+</nav>
+<!-- Floating Action Button Suppression (Hidden on Details Screen per rules) -->
+</body></html>

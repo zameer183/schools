@@ -1,0 +1,280 @@
+<!DOCTYPE html>
+
+<html class="light" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Manarah Institute Dashboard</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;700;800&amp;family=Inter:wght@400;500;600&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+      tailwind.config = {
+        darkMode: "class",
+        theme: {
+          extend: {
+            "colors": {
+                    "surface-dim": "#d9dada",
+                    "surface-container": "#edeeee",
+                    "surface-bright": "#f9f9f9",
+                    "on-primary-fixed": "#002022",
+                    "on-error-container": "#93000a",
+                    "surface-container-low": "#f3f4f3",
+                    "outline-variant": "#c0c8c9",
+                    "error": "#ba1a1a",
+                    "on-primary-container": "#a2d0d4",
+                    "surface": "#f9f9f9",
+                    "secondary-fixed-dim": "#ffb86c",
+                    "on-primary": "#ffffff",
+                    "on-tertiary-container": "#b2cdcf",
+                    "on-error": "#ffffff",
+                    "on-tertiary": "#ffffff",
+                    "secondary-container": "#fead51",
+                    "tertiary-container": "#3f585a",
+                    "primary-container": "#2d5a5e",
+                    "secondary": "#895100",
+                    "surface-variant": "#e2e3e2",
+                    "surface-tint": "#396569",
+                    "primary": "#124346",
+                    "surface-container-highest": "#e2e3e2",
+                    "tertiary-fixed": "#cce8ea",
+                    "background": "#f9f9f9",
+                    "inverse-primary": "#a1cfd3",
+                    "on-surface": "#1a1c1c",
+                    "on-tertiary-fixed-variant": "#324b4d",
+                    "on-primary-fixed-variant": "#1f4d51",
+                    "tertiary-fixed-dim": "#b1cbce",
+                    "inverse-surface": "#2e3131",
+                    "tertiary": "#284143",
+                    "secondary-fixed": "#ffdcbd",
+                    "inverse-on-surface": "#f0f1f0",
+                    "on-secondary-fixed": "#2c1600",
+                    "on-background": "#1a1c1c",
+                    "error-container": "#ffdad6",
+                    "on-secondary": "#ffffff",
+                    "outline": "#707979",
+                    "on-surface-variant": "#404849",
+                    "surface-container-lowest": "#ffffff",
+                    "primary-fixed": "#bcebef",
+                    "on-tertiary-fixed": "#051f21",
+                    "primary-fixed-dim": "#a1cfd3",
+                    "on-secondary-fixed-variant": "#683c00",
+                    "surface-container-high": "#e7e8e8",
+                    "on-secondary-container": "#714200"
+            },
+            "borderRadius": {
+                    "DEFAULT": "0.125rem",
+                    "lg": "0.25rem",
+                    "xl": "0.5rem",
+                    "full": "0.75rem"
+            },
+            "fontFamily": {
+                    "headline": ["Manrope"],
+                    "body": ["Inter"],
+                    "label": ["Inter"]
+            }
+          },
+        },
+      }
+    </script>
+<style>
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+        body { font-family: 'Inter', sans-serif; }
+        h1, h2, h3 { font-family: 'Manrope', sans-serif; }
+    </style>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+</head>
+<body class="bg-surface-container-low text-on-surface min-h-screen pb-32">
+<!-- TopAppBar -->
+<header class="fixed top-0 left-0 w-full z-50 flex justify-between items-center px-6 h-16 bg-[#f9f9f9] dark:bg-slate-950 transition-colors">
+<div class="flex items-center gap-3">
+<span class="material-symbols-outlined text-[#124346] dark:text-teal-400 p-2 hover:bg-slate-200 dark:hover:bg-slate-800 rounded-full transition-all active:scale-95 duration-150 ease-in-out">menu</span>
+<div class="flex items-center gap-2">
+<img class="w-8 h-8 object-contain h-10 w-auto" data-alt="Official logo of Manarah Institute featuring elegant deep teal and warm gold academic crest design with minimalist lines" src="https://lh3.googleusercontent.com/aida/ADBb0ugS93ixky9Hrwk3Lu4M6_TiPkBRA87BCMrXCDoYrNYGCyGK_IUUKl5gGMnM_c9oDK4OU-wer1BhDwF73zlZqnnv7SLurT5VR4tOsnzE61oOr2cEoomB2grf-Q_T5AwBrG8l25ybiL7xxVKo58FYf-4evOQpADITZNjeBFJa4Ci-zg8AAmEMFgzWVKc2CmnpUu-_853TNiOwAZDZLXgbE4nH_tB6OnGD0Hw7t0HyO6YHh-GcRgI4-VZxpfFLzrrcOy0SLWNkd2i6TQ"/>
+<span class="text-xl font-extrabold text-[#124346] dark:text-teal-400 tracking-tighter">Manarah Institute</span>
+</div>
+</div>
+<div class="flex items-center gap-2">
+<div class="w-10 h-10 rounded-full bg-primary-container flex items-center justify-center text-on-primary-container font-bold overflow-hidden border-2 border-primary/10">
+<img alt="Admin Profile" class="w-full h-full object-cover h-10 w-auto" src="https://lh3.googleusercontent.com/aida/ADBb0ugS93ixky9Hrwk3Lu4M6_TiPkBRA87BCMrXCDoYrNYGCyGK_IUUKl5gGMnM_c9oDK4OU-wer1BhDwF73zlZqnnv7SLurT5VR4tOsnzE61oOr2cEoomB2grf-Q_T5AwBrG8l25ybiL7xxVKo58FYf-4evOQpADITZNjeBFJa4Ci-zg8AAmEMFgzWVKc2CmnpUu-_853TNiOwAZDZLXgbE4nH_tB6OnGD0Hw7t0HyO6YHh-GcRgI4-VZxpfFLzrrcOy0SLWNkd2i6TQ"/>
+</div>
+</div>
+</header>
+<main class="mt-20 px-4 max-w-lg mx-auto">
+<!-- Dashboard Header -->
+<section class="mb-8 mt-6">
+<div class="flex justify-between items-end">
+<div>
+<span class="text-secondary font-semibold text-sm tracking-wider uppercase mb-1 block">Administrative Portal</span>
+<h1 class="text-3xl font-extrabold tracking-tight text-primary leading-tight">Academic Overview</h1>
+</div>
+<div class="bg-primary-fixed px-3 py-1 rounded-full flex items-center gap-1">
+<span class="w-2 h-2 rounded-full bg-primary animate-pulse"></span>
+<span class="text-[10px] font-bold uppercase tracking-widest text-primary">Live</span>
+</div>
+</div>
+</section>
+<!-- Bento Grid Stats -->
+<div class="grid grid-cols-2 gap-4 mb-8">
+<!-- Total Students -->
+<div class="bg-surface-container-lowest p-5 rounded-full shadow-[0px_12px_32px_rgba(26,28,28,0.04)] flex flex-col justify-between h-40 relative overflow-hidden">
+<div class="flex justify-between items-start z-10">
+<span class="material-symbols-outlined text-primary bg-primary-fixed p-2 rounded-xl">group</span>
+</div>
+<div class="z-10">
+<p class="text-3xl font-extrabold text-primary">3</p>
+<p class="text-xs font-semibold text-outline tracking-wide uppercase mt-1">Total Students</p>
+</div>
+<div class="absolute -right-4 -bottom-4 opacity-10">
+<span class="material-symbols-outlined text-8xl" style="font-variation-settings: 'FILL' 1;">group</span>
+</div>
+</div>
+<!-- Total Staff -->
+<div class="bg-surface-container-lowest p-5 rounded-full shadow-[0px_12px_32px_rgba(26,28,28,0.04)] flex flex-col justify-between h-40 relative overflow-hidden">
+<div class="flex justify-between items-start z-10">
+<span class="material-symbols-outlined text-secondary bg-secondary-fixed p-2 rounded-xl">school</span>
+</div>
+<div class="z-10">
+<p class="text-3xl font-extrabold text-on-surface">3</p>
+<p class="text-xs font-semibold text-outline tracking-wide uppercase mt-1">Total Staff</p>
+</div>
+<div class="absolute -right-4 -bottom-4 opacity-5">
+<span class="material-symbols-outlined text-8xl" style="font-variation-settings: 'FILL' 1;">school</span>
+</div>
+</div>
+<!-- Total Classes -->
+<div class="bg-surface-container-lowest p-5 rounded-full shadow-[0px_12px_32px_rgba(26,28,28,0.04)] flex flex-col justify-between h-40 relative overflow-hidden">
+<div class="flex justify-between items-start z-10">
+<span class="material-symbols-outlined text-tertiary bg-tertiary-fixed p-2 rounded-xl">calendar_view_day</span>
+</div>
+<div class="z-10">
+<p class="text-3xl font-extrabold text-on-surface">2</p>
+<p class="text-xs font-semibold text-outline tracking-wide uppercase mt-1">Total Classes</p>
+</div>
+<div class="absolute -right-4 -bottom-4 opacity-5">
+<span class="material-symbols-outlined text-8xl" style="font-variation-settings: 'FILL' 1;">calendar_view_day</span>
+</div>
+</div>
+<!-- Revenue -->
+<div class="bg-primary p-5 rounded-full shadow-[0px_12px_32px_rgba(18,67,70,0.2)] flex flex-col justify-between h-40 relative overflow-hidden">
+<div class="flex justify-between items-start z-10">
+<span class="material-symbols-outlined text-on-primary bg-primary-container p-2 rounded-xl">payments</span>
+</div>
+<div class="z-10">
+<p class="text-3xl font-extrabold text-on-primary">$100</p>
+<p class="text-xs font-semibold text-on-primary/60 tracking-wide uppercase mt-1">Revenue</p>
+</div>
+<div class="absolute inset-0 bg-gradient-to-br from-primary to-primary-container opacity-50"></div>
+</div>
+</div>
+<!-- Enrollment Trend Chart Card -->
+<section class="mb-8">
+<div class="bg-surface-container-lowest p-6 rounded-full shadow-[0px_12px_32px_rgba(26,28,28,0.04)] border border-outline-variant/10">
+<div class="flex justify-between items-center mb-6">
+<h2 class="text-lg font-bold text-primary">Enrollment Trend</h2>
+<span class="text-[10px] font-bold text-secondary-fixed-dim bg-secondary/10 px-2 py-1 rounded-full uppercase">+12.5%</span>
+</div>
+<div class="h-40 w-full flex items-end justify-between gap-2 px-1">
+<div class="flex flex-col items-center flex-1 gap-2">
+<div class="w-full bg-surface-container rounded-t-lg h-12"></div>
+<span class="text-[10px] font-medium text-outline">JAN</span>
+</div>
+<div class="flex flex-col items-center flex-1 gap-2">
+<div class="w-full bg-surface-container rounded-t-lg h-20"></div>
+<span class="text-[10px] font-medium text-outline">FEB</span>
+</div>
+<div class="flex flex-col items-center flex-1 gap-2">
+<div class="w-full bg-primary-fixed rounded-t-lg h-32 relative">
+<div class="absolute -top-6 left-1/2 -translate-x-1/2 text-[9px] font-bold text-primary">32</div>
+</div>
+<span class="text-[10px] font-bold text-primary">MAR</span>
+</div>
+<div class="flex flex-col items-center flex-1 gap-2">
+<div class="w-full bg-surface-container rounded-t-lg h-16"></div>
+<span class="text-[10px] font-medium text-outline">APR</span>
+</div>
+<div class="flex flex-col items-center flex-1 gap-2">
+<div class="w-full bg-surface-container rounded-t-lg h-24"></div>
+<span class="text-[10px] font-medium text-outline">MAY</span>
+</div>
+<div class="flex flex-col items-center flex-1 gap-2">
+<div class="w-full bg-surface-container rounded-t-lg h-28"></div>
+<span class="text-[10px] font-medium text-outline">JUN</span>
+</div>
+</div>
+</div>
+</section>
+<!-- Attendance Overview Widget -->
+<section class="mb-8">
+<div class="bg-surface-container-lowest p-6 rounded-full shadow-[0px_12px_32px_rgba(26,28,28,0.04)]">
+<div class="flex items-center gap-3 mb-6">
+<div class="w-10 h-10 rounded-full bg-tertiary-fixed flex items-center justify-center">
+<span class="material-symbols-outlined text-tertiary">fact_check</span>
+</div>
+<div>
+<h2 class="text-lg font-bold text-primary leading-none mb-1">Attendance Overview</h2>
+<p class="text-xs text-outline font-medium">Daily average for current term</p>
+</div>
+</div>
+<div class="space-y-6">
+<div>
+<div class="flex justify-between items-center mb-2">
+<span class="text-xs font-bold text-on-surface tracking-tight">Grade 10 - Advanced Arabic</span>
+<span class="text-xs font-bold text-primary">94%</span>
+</div>
+<div class="h-1.5 w-full bg-primary-fixed rounded-full overflow-hidden">
+<div class="h-full bg-primary rounded-full" style="width: 94%"></div>
+</div>
+</div>
+<div>
+<div class="flex justify-between items-center mb-2">
+<span class="text-xs font-bold text-on-surface tracking-tight">Grade 11 - Islamic History</span>
+<span class="text-xs font-bold text-secondary">82%</span>
+</div>
+<div class="h-1.5 w-full bg-secondary-fixed rounded-full overflow-hidden">
+<div class="h-full bg-secondary rounded-full" style="width: 82%"></div>
+</div>
+</div>
+<div>
+<div class="flex justify-between items-center mb-2">
+<span class="text-xs font-bold text-on-surface tracking-tight">Grade 09 - Ethics &amp; Values</span>
+<span class="text-xs font-bold text-tertiary">88%</span>
+</div>
+<div class="h-1.5 w-full bg-tertiary-fixed rounded-full overflow-hidden">
+<div class="h-full bg-tertiary rounded-full" style="width: 88%"></div>
+</div>
+</div>
+</div>
+<button class="w-full mt-6 py-3 bg-surface-container-high rounded-xl text-xs font-bold text-primary tracking-wide uppercase hover:bg-surface-dim transition-colors">
+                    View Detailed Report
+                </button>
+</div>
+</section>
+</main>
+<!-- BottomNavBar -->
+<nav class="fixed bottom-0 left-0 w-full z-50 flex justify-around items-center px-4 pb-6 pt-3 bg-white/80 dark:bg-slate-900/80 backdrop-blur-xl rounded-t-3xl shadow-[0px_-12px_32px_rgba(26,28,28,0.06)] border-t border-[#c0c8c9]/15">
+<a class="flex flex-col items-center justify-center bg-[#bcebef] dark:bg-teal-900/40 text-[#124346] dark:text-teal-100 rounded-2xl px-5 py-2 transition-transform duration-200 active:scale-90" href="#">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">dashboard</span>
+<span class="font-['Inter'] text-[11px] font-semibold uppercase tracking-wider mt-1">Dashboard</span>
+</a>
+<a class="flex flex-col items-center justify-center text-slate-500 dark:text-slate-400 px-5 py-2 hover:text-[#124346] dark:hover:text-teal-300" href="#">
+<span class="material-symbols-outlined">group</span>
+<span class="font-['Inter'] text-[11px] font-semibold uppercase tracking-wider mt-1">Students</span>
+</a>
+<a class="flex flex-col items-center justify-center text-slate-500 dark:text-slate-400 px-5 py-2 hover:text-[#124346] dark:hover:text-teal-300" href="#">
+<span class="material-symbols-outlined">fact_check</span>
+<span class="font-['Inter'] text-[11px] font-semibold uppercase tracking-wider mt-1">Attendance</span>
+</a>
+<a class="flex flex-col items-center justify-center text-slate-500 dark:text-slate-400 px-5 py-2 hover:text-[#124346] dark:hover:text-teal-300" href="#">
+<span class="material-symbols-outlined">calendar_view_day</span>
+<span class="font-['Inter'] text-[11px] font-semibold uppercase tracking-wider mt-1">Classes</span>
+</a>
+</nav>
+<!-- Floating Action Button (Supressed for Dashboard Overview depth) -->
+</body></html>
