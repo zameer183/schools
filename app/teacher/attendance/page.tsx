@@ -169,13 +169,14 @@ export default function TeacherAttendancePage() {
 
   return (
     <div className="space-y-6">
-      <div className="rounded-3xl bg-white p-8 shadow-[0_10px_30px_rgba(15,89,84,0.08)]">
-        <h2 className="font-headline text-4xl font-extrabold tracking-tight text-slate-900">Attendance Marking</h2>
-        <p className="mt-2 text-slate-600">Mark daily attendance for students in your assigned classes.</p>
+      <div className="rounded-[1.75rem] bg-white p-8 shadow-[0_12px_40px_rgba(0,70,73,0.06)]">
+        <p className="text-[10px] font-semibold uppercase tracking-[0.32em] text-[#6e7778]">Teacher Hub</p>
+        <h2 className="font-headline mt-2 text-4xl font-extrabold tracking-[-0.03em] text-[#004649]">Attendance Marking</h2>
+        <p className="mt-2 text-[#5c6668]">Mark daily attendance for students in your assigned classes.</p>
 
         <div className="mt-6 grid gap-4 md:grid-cols-3">
           <select
-            className="h-11 rounded-xl border border-slate-300 px-3"
+            className="h-11 rounded-xl border border-[#c0c8c9] bg-[#f9fafa] px-3 text-sm text-[#1a1c1c] focus:border-[#004649] focus:outline-none"
             value={selectedClassId}
             onChange={(e) => setSelectedClassId(e.target.value)}
           >
@@ -187,7 +188,7 @@ export default function TeacherAttendancePage() {
 
           <input
             type="date"
-            className="h-11 rounded-xl border border-slate-300 px-3"
+            className="h-11 rounded-xl border border-[#c0c8c9] bg-[#f9fafa] px-3 text-sm text-[#1a1c1c] focus:border-[#004649] focus:outline-none"
             value={date}
             onChange={(e) => setDate(e.target.value)}
           />
@@ -195,21 +196,21 @@ export default function TeacherAttendancePage() {
           <button
             type="button"
             onClick={markAllPresent}
-            className="h-11 rounded-xl border border-teal-700 px-4 font-semibold text-teal-800 hover:bg-teal-50"
+            className="h-11 rounded-xl border border-[#004649] px-4 font-semibold text-[#004649] hover:bg-[#f0f7f7]"
           >
             Mark All Present
           </button>
         </div>
       </div>
 
-      <div className="rounded-3xl bg-white p-8 shadow-[0_10px_30px_rgba(15,89,84,0.08)]">
-        <div className="mb-4 flex items-center justify-between">
-          <h3 className="font-headline text-2xl font-bold text-slate-900">Students ({classStudents.length})</h3>
+      <div className="rounded-[1.75rem] bg-white p-8 shadow-[0_12px_40px_rgba(0,70,73,0.06)]">
+        <div className="mb-5 flex items-center justify-between">
+          <h3 className="font-headline text-2xl font-bold tracking-[-0.02em] text-[#004649]">Students ({classStudents.length})</h3>
           <button
             type="button"
             onClick={saveAttendance}
             disabled={saving || loading}
-            className="h-11 rounded-xl bg-[#0f5954] px-5 font-semibold text-white disabled:cursor-not-allowed disabled:opacity-60"
+            className="h-11 rounded-xl bg-[#004649] px-6 font-semibold text-white hover:bg-[#005a5e] disabled:cursor-not-allowed disabled:opacity-60"
           >
             {saving ? 'Saving...' : 'Save Attendance'}
           </button>
@@ -217,22 +218,22 @@ export default function TeacherAttendancePage() {
 
         <div className="overflow-x-auto">
           <table className="min-w-full text-sm">
-            <thead className="bg-slate-50 text-slate-600">
+            <thead className="bg-[#f3f4f3] text-[#596364]">
               <tr>
-                <th className="px-3 py-2 text-left">Student</th>
-                <th className="px-3 py-2 text-left">Admission #</th>
-                <th className="px-3 py-2 text-left">Status</th>
-                <th className="px-3 py-2 text-left">Remarks</th>
+                <th className="px-3 py-3 text-left text-[10px] font-bold uppercase tracking-[0.18em]">Student</th>
+                <th className="px-3 py-3 text-left text-[10px] font-bold uppercase tracking-[0.18em]">Admission #</th>
+                <th className="px-3 py-3 text-left text-[10px] font-bold uppercase tracking-[0.18em]">Status</th>
+                <th className="px-3 py-3 text-left text-[10px] font-bold uppercase tracking-[0.18em]">Remarks</th>
               </tr>
             </thead>
             <tbody>
               {classStudents.map((student) => (
-                <tr key={student.id} className="border-b border-slate-100">
-                  <td className="px-3 py-2 font-medium text-slate-900">{student.user.fullName}</td>
-                  <td className="px-3 py-2">{student.admissionNo}</td>
-                  <td className="px-3 py-2">
+                <tr key={student.id} className="border-b border-[#eef1f1]">
+                  <td className="px-3 py-3 font-semibold text-[#1a1c1c]">{student.user.fullName}</td>
+                  <td className="px-3 py-3 text-[#596364]">{student.admissionNo}</td>
+                  <td className="px-3 py-3">
                     <select
-                      className="h-10 rounded-lg border border-slate-300 px-2"
+                      className="h-10 rounded-lg border border-[#c0c8c9] bg-white px-2 text-sm focus:border-[#004649] focus:outline-none"
                       value={records[student.id]?.status ?? 'PRESENT'}
                       onChange={(e) => updateStatus(student.id, e.target.value as AttendanceStatus)}
                     >
@@ -241,9 +242,9 @@ export default function TeacherAttendancePage() {
                       ))}
                     </select>
                   </td>
-                  <td className="px-3 py-2">
+                  <td className="px-3 py-3">
                     <input
-                      className="h-10 w-full rounded-lg border border-slate-300 px-2"
+                      className="h-10 w-full rounded-lg border border-[#c0c8c9] bg-white px-2 text-sm focus:border-[#004649] focus:outline-none"
                       placeholder="Optional remark"
                       value={records[student.id]?.remarks ?? ''}
                       onChange={(e) => updateRemarks(student.id, e.target.value)}
@@ -255,8 +256,8 @@ export default function TeacherAttendancePage() {
           </table>
         </div>
 
-        {classStudents.length === 0 ? <p className="mt-4 text-sm text-slate-600">No students in selected class.</p> : null}
-        {message ? <p className="mt-4 text-sm text-slate-700">{message}</p> : null}
+        {classStudents.length === 0 ? <p className="mt-4 text-sm text-[#5c6668]">No students in selected class.</p> : null}
+        {message ? <p className="mt-4 rounded-xl bg-[#f3f4f3] px-4 py-3 text-sm text-[#1a1c1c]">{message}</p> : null}
       </div>
     </div>
   );

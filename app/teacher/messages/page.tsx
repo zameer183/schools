@@ -82,61 +82,62 @@ export default async function TeacherMessagesPage() {
 
   return (
     <div className="space-y-6">
-      <section className="rounded-3xl bg-white p-8 shadow-[0_10px_30px_rgba(15,89,84,0.08)]">
-        <h2 className="font-headline text-4xl font-extrabold tracking-tight text-slate-900">Messages</h2>
-        <p className="mt-2 text-slate-600">Send updates to your class students and review incoming messages.</p>
+      <section className="rounded-[1.75rem] bg-white p-8 shadow-[0_12px_40px_rgba(0,70,73,0.06)]">
+        <p className="text-[10px] font-semibold uppercase tracking-[0.32em] text-[#6e7778]">Teacher Hub</p>
+        <h2 className="font-headline mt-2 text-4xl font-extrabold tracking-[-0.03em] text-[#004649]">Messages</h2>
+        <p className="mt-2 text-[#5c6668]">Send updates to your class students and review incoming messages.</p>
 
         <form action={sendMessageAction} className="mt-6 grid gap-4">
           <input
             name="subject"
             required
-            className="h-11 rounded-xl border border-slate-300 px-3"
+            className="h-11 rounded-xl border border-[#c0c8c9] bg-[#f9fafa] px-3 text-sm text-[#1a1c1c] placeholder:text-[#6e7778] focus:border-[#004649] focus:outline-none"
             placeholder="Message subject"
           />
           <textarea
             name="body"
             required
-            className="min-h-28 rounded-xl border border-slate-300 p-3"
+            className="min-h-28 rounded-xl border border-[#c0c8c9] bg-[#f9fafa] p-3 text-sm text-[#1a1c1c] placeholder:text-[#6e7778] focus:border-[#004649] focus:outline-none"
             placeholder="Write your message"
           />
-          <div className="rounded-xl border border-slate-200 p-4">
-            <p className="text-sm font-semibold text-slate-700">Recipients (your students)</p>
-            <div className="mt-3 grid gap-2 md:grid-cols-2">
+          <div className="rounded-2xl border border-[#d4dee7] p-5">
+            <p className="text-[10px] font-bold uppercase tracking-[0.18em] text-[#6e7778]">Recipients — Your Students</p>
+            <div className="mt-4 grid gap-2 md:grid-cols-2">
               {uniqueRecipients.length === 0 ? (
-                <p className="text-sm text-slate-500">No students found in your assigned classes.</p>
+                <p className="text-sm text-[#5c6668]">No students found in your assigned classes.</p>
               ) : (
                 uniqueRecipients.map((recipient) => (
-                  <label key={recipient.userId} className="flex items-center gap-2 rounded-lg border border-slate-200 px-3 py-2 text-sm">
-                    <input type="checkbox" name="recipientIds" value={recipient.userId} />
-                    <span>{recipient.fullName}</span>
-                    <span className="text-slate-500">({recipient.className})</span>
+                  <label key={recipient.userId} className="flex cursor-pointer items-center gap-2 rounded-xl border border-[#d4dee7] px-3 py-2.5 text-sm hover:bg-[#f3f4f3]">
+                    <input type="checkbox" name="recipientIds" value={recipient.userId} className="accent-[#004649]" />
+                    <span className="font-medium text-[#1a1c1c]">{recipient.fullName}</span>
+                    <span className="text-[#6e7778]">({recipient.className})</span>
                   </label>
                 ))
               )}
             </div>
           </div>
           <div>
-            <button className="h-11 rounded-xl bg-[#0f5954] px-5 font-semibold text-white">Send Message</button>
+            <button className="h-11 rounded-xl bg-[#004649] px-6 font-semibold text-white hover:bg-[#005a5e]">Send Message</button>
           </div>
         </form>
       </section>
 
-      <section className="rounded-3xl bg-white p-8 shadow-[0_10px_30px_rgba(15,89,84,0.08)]">
-        <h3 className="font-headline text-2xl font-bold text-slate-900">Inbox</h3>
-        <div className="mt-4 space-y-3">
+      <section className="rounded-[1.75rem] bg-white p-8 shadow-[0_12px_40px_rgba(0,70,73,0.06)]">
+        <h3 className="font-headline text-2xl font-bold tracking-[-0.02em] text-[#004649]">Inbox</h3>
+        <div className="mt-5 space-y-3">
           {inbox.length === 0 ? (
-            <p className="rounded-xl bg-slate-50 p-4 text-sm text-slate-600">No messages received yet.</p>
+            <div className="rounded-2xl bg-[#f3f4f3] p-5 text-sm text-[#596364]">No messages received yet.</div>
           ) : (
             inbox.map((item) => (
-              <article key={item.id} className="rounded-xl border border-slate-200 p-4">
-                <div className="flex items-center justify-between gap-3">
-                  <h4 className="font-semibold text-slate-900">{item.message.subject}</h4>
-                  <span className="text-xs text-slate-500">{item.message.createdAt.toISOString().slice(0, 10)}</span>
+              <article key={item.id} className="rounded-2xl border border-[#d4dee7] p-5">
+                <div className="flex items-start justify-between gap-3">
+                  <h4 className="font-semibold text-[#1a1c1c]">{item.message.subject}</h4>
+                  <span className="shrink-0 text-xs text-[#6e7778]">{item.message.createdAt.toISOString().slice(0, 10)}</span>
                 </div>
-                <p className="mt-1 text-xs uppercase tracking-[0.12em] text-slate-500">
-                  From: {item.message.sender.fullName} ({item.message.sender.role})
+                <p className="mt-1 text-[10px] font-bold uppercase tracking-[0.14em] text-[#6e7778]">
+                  From: {item.message.sender.fullName} · {item.message.sender.role}
                 </p>
-                <p className="mt-2 text-sm text-slate-700">{item.message.body}</p>
+                <p className="mt-2 text-sm text-[#596364]">{item.message.body}</p>
               </article>
             ))
           )}

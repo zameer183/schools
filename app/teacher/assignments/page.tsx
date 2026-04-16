@@ -152,34 +152,35 @@ export default function TeacherAssignmentsPage() {
 
   return (
     <div className="space-y-6">
-      <div className="rounded-3xl bg-white p-8 shadow-[0_10px_30px_rgba(15,89,84,0.08)]">
-        <h2 className="font-headline text-4xl font-extrabold tracking-tight text-slate-900">Assignments</h2>
-        <p className="mt-2 text-slate-600">Create and manage assignments for your classes.</p>
+      <div className="rounded-[1.75rem] bg-white p-8 shadow-[0_12px_40px_rgba(0,70,73,0.06)]">
+        <p className="text-[10px] font-semibold uppercase tracking-[0.32em] text-[#6e7778]">Teacher Hub</p>
+        <h2 className="font-headline mt-2 text-4xl font-extrabold tracking-[-0.03em] text-[#004649]">Assignments</h2>
+        <p className="mt-2 text-[#5c6668]">Create and manage assignments for your classes.</p>
 
         <form onSubmit={submit} className="mt-6 grid gap-4 md:grid-cols-2">
           <input
-            className="h-11 rounded-xl border border-slate-300 px-3"
+            className="h-11 rounded-xl border border-[#c0c8c9] bg-[#f9fafa] px-3 text-sm text-[#1a1c1c] placeholder:text-[#6e7778] focus:border-[#004649] focus:outline-none"
             placeholder="Assignment title"
             value={form.title}
             onChange={(e) => setForm((s) => ({ ...s, title: e.target.value }))}
             required
           />
           <input
-            className="h-11 rounded-xl border border-slate-300 px-3"
+            className="h-11 rounded-xl border border-[#c0c8c9] bg-[#f9fafa] px-3 text-sm text-[#1a1c1c] focus:border-[#004649] focus:outline-none"
             type="date"
             value={form.dueDate}
             onChange={(e) => setForm((s) => ({ ...s, dueDate: e.target.value }))}
             required
           />
           <textarea
-            className="min-h-28 rounded-xl border border-slate-300 p-3 md:col-span-2"
+            className="min-h-28 rounded-xl border border-[#c0c8c9] bg-[#f9fafa] p-3 text-sm text-[#1a1c1c] placeholder:text-[#6e7778] focus:border-[#004649] focus:outline-none md:col-span-2"
             placeholder="Assignment description"
             value={form.description}
             onChange={(e) => setForm((s) => ({ ...s, description: e.target.value }))}
             required
           />
           <select
-            className="h-11 rounded-xl border border-slate-300 px-3"
+            className="h-11 rounded-xl border border-[#c0c8c9] bg-[#f9fafa] px-3 text-sm text-[#1a1c1c] focus:border-[#004649] focus:outline-none"
             value={form.classId}
             onChange={(e) => {
               const classId = e.target.value;
@@ -195,7 +196,7 @@ export default function TeacherAssignmentsPage() {
             ))}
           </select>
           <select
-            className="h-11 rounded-xl border border-slate-300 px-3"
+            className="h-11 rounded-xl border border-[#c0c8c9] bg-[#f9fafa] px-3 text-sm text-[#1a1c1c] focus:border-[#004649] focus:outline-none"
             value={form.subjectId}
             onChange={(e) => setForm((s) => ({ ...s, subjectId: e.target.value }))}
             required
@@ -206,10 +207,11 @@ export default function TeacherAssignmentsPage() {
             ))}
           </select>
           <input
-            className="h-11 rounded-xl border border-slate-300 px-3"
+            className="h-11 rounded-xl border border-[#c0c8c9] bg-[#f9fafa] px-3 text-sm text-[#1a1c1c] focus:border-[#004649] focus:outline-none"
             type="number"
             min={1}
             max={1000}
+            placeholder="Max marks"
             value={form.maxMarks}
             onChange={(e) => setForm((s) => ({ ...s, maxMarks: e.target.value }))}
             required
@@ -217,45 +219,49 @@ export default function TeacherAssignmentsPage() {
           <div className="md:col-span-2">
             <button
               disabled={saving || loading}
-              className="h-11 rounded-xl bg-[#0f5954] px-5 font-semibold text-white disabled:cursor-not-allowed disabled:opacity-60"
+              className="h-11 rounded-xl bg-[#004649] px-6 font-semibold text-white hover:bg-[#005a5e] disabled:cursor-not-allowed disabled:opacity-60"
             >
               {saving ? 'Publishing...' : 'Publish Assignment'}
             </button>
           </div>
         </form>
 
-        {message ? <p className="mt-3 text-sm text-slate-700">{message}</p> : null}
+        {message ? <p className="mt-3 rounded-xl bg-[#f3f4f3] px-4 py-3 text-sm text-[#1a1c1c]">{message}</p> : null}
       </div>
 
-      <div className="rounded-3xl bg-white p-8 shadow-[0_10px_30px_rgba(15,89,84,0.08)]">
-        <h3 className="font-headline text-2xl font-bold text-slate-900">Published Assignments</h3>
+      <div className="rounded-[1.75rem] bg-white p-8 shadow-[0_12px_40px_rgba(0,70,73,0.06)]">
+        <h3 className="font-headline text-2xl font-bold tracking-[-0.02em] text-[#004649]">Published Assignments</h3>
         <div className="mt-4 overflow-x-auto">
           <table className="min-w-full text-sm">
-            <thead className="bg-slate-50 text-slate-600">
+            <thead className="bg-[#f3f4f3] text-[#596364]">
               <tr>
-                <th className="px-3 py-2 text-left">Title</th>
-                <th className="px-3 py-2 text-left">Class</th>
-                <th className="px-3 py-2 text-left">Subject</th>
-                <th className="px-3 py-2 text-left">Due Date</th>
-                <th className="px-3 py-2 text-left">Submissions</th>
-                <th className="px-3 py-2 text-left">Status</th>
+                <th className="px-3 py-3 text-left text-[10px] font-bold uppercase tracking-[0.18em]">Title</th>
+                <th className="px-3 py-3 text-left text-[10px] font-bold uppercase tracking-[0.18em]">Class</th>
+                <th className="px-3 py-3 text-left text-[10px] font-bold uppercase tracking-[0.18em]">Subject</th>
+                <th className="px-3 py-3 text-left text-[10px] font-bold uppercase tracking-[0.18em]">Due Date</th>
+                <th className="px-3 py-3 text-left text-[10px] font-bold uppercase tracking-[0.18em]">Submissions</th>
+                <th className="px-3 py-3 text-left text-[10px] font-bold uppercase tracking-[0.18em]">Status</th>
               </tr>
             </thead>
             <tbody>
               {assignments.map((assignment) => (
-                <tr key={assignment.id} className="border-b border-slate-100">
-                  <td className="px-3 py-2 font-medium text-slate-900">{assignment.title}</td>
-                  <td className="px-3 py-2">{assignment.class.name} - {assignment.class.section}</td>
-                  <td className="px-3 py-2">{assignment.subject.name}</td>
-                  <td className="px-3 py-2">{new Date(assignment.dueDate).toLocaleDateString()}</td>
-                  <td className="px-3 py-2">{assignment.submissions.length}</td>
-                  <td className="px-3 py-2">{assignment.status}</td>
+                <tr key={assignment.id} className="border-b border-[#eef1f1]">
+                  <td className="px-3 py-3 font-semibold text-[#1a1c1c]">{assignment.title}</td>
+                  <td className="px-3 py-3 text-[#596364]">{assignment.class.name} - {assignment.class.section}</td>
+                  <td className="px-3 py-3 text-[#596364]">{assignment.subject.name}</td>
+                  <td className="px-3 py-3 text-[#596364]">{new Date(assignment.dueDate).toLocaleDateString()}</td>
+                  <td className="px-3 py-3 font-semibold text-[#004649]">{assignment.submissions.length}</td>
+                  <td className="px-3 py-3">
+                    <span className={`rounded-full px-2.5 py-1 text-xs font-semibold ${assignment.status === 'PUBLISHED' ? 'bg-emerald-100 text-emerald-700' : assignment.status === 'CLOSED' ? 'bg-rose-100 text-rose-700' : 'bg-[#f3f4f3] text-[#596364]'}`}>
+                      {assignment.status}
+                    </span>
+                  </td>
                 </tr>
               ))}
             </tbody>
           </table>
         </div>
-        {assignments.length === 0 ? <p className="mt-4 text-sm text-slate-600">No assignments in this class yet.</p> : null}
+        {assignments.length === 0 ? <p className="mt-4 text-sm text-[#5c6668]">No assignments in this class yet.</p> : null}
       </div>
     </div>
   );

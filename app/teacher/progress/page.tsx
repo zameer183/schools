@@ -311,23 +311,24 @@ export default function TeacherProgressPage() {
 
   return (
     <div className="space-y-6">
-      <section className="rounded-3xl bg-white p-8 shadow-[0_10px_30px_rgba(15,89,84,0.08)]">
-        <h2 className="font-headline text-4xl font-extrabold tracking-tight text-slate-900">Daily Progress</h2>
-        <p className="mt-2 text-slate-600">Date, class, student, Juzz/Surah name, and Ayat From-To ke saath progress add karein.</p>
+      <section className="rounded-[1.75rem] bg-white p-8 shadow-[0_12px_40px_rgba(0,70,73,0.06)]">
+        <p className="text-[10px] font-semibold uppercase tracking-[0.32em] text-[#6e7778]">Teacher Hub</p>
+        <h2 className="font-headline mt-2 text-4xl font-extrabold tracking-[-0.03em] text-[#004649]">Daily Progress</h2>
+        <p className="mt-2 text-[#5c6668]">Record Juzz, Surah, and Ayah coverage for each student daily.</p>
 
         <form onSubmit={submit} className="mt-6 grid gap-4 md:grid-cols-3">
           <input
             type="date"
             value={form.date}
             onChange={(e) => setForm((prev) => ({ ...prev, date: e.target.value }))}
-            className="h-11 rounded-xl border border-slate-300 px-3"
+            className="h-11 rounded-xl border border-[#c0c8c9] bg-[#f9fafa] px-3 text-sm text-[#1a1c1c] focus:border-[#004649] focus:outline-none"
             required
           />
 
           <select
             value={form.classId}
             onChange={(e) => setForm((prev) => ({ ...prev, classId: e.target.value, studentId: '' }))}
-            className="h-11 rounded-xl border border-slate-300 px-3"
+            className="h-11 rounded-xl border border-[#c0c8c9] bg-[#f9fafa] px-3 text-sm text-[#1a1c1c] focus:border-[#004649] focus:outline-none"
             required
           >
             <option value="">Select Class</option>
@@ -339,7 +340,7 @@ export default function TeacherProgressPage() {
           <select
             value={form.studentId}
             onChange={(e) => setForm((prev) => ({ ...prev, studentId: e.target.value }))}
-            className="h-11 rounded-xl border border-slate-300 px-3"
+            className="h-11 rounded-xl border border-[#c0c8c9] bg-[#f9fafa] px-3 text-sm text-[#1a1c1c] focus:border-[#004649] focus:outline-none"
             required
           >
             <option value="">Select Student</option>
@@ -350,51 +351,35 @@ export default function TeacherProgressPage() {
 
           <select
             value={form.juzzNumber}
-            onChange={(e) =>
-              setForm((prev) => ({
-                ...prev,
-                juzzNumber: Number(e.target.value)
-              }))
-            }
-            className="h-11 rounded-xl border border-slate-300 px-3"
+            onChange={(e) => setForm((prev) => ({ ...prev, juzzNumber: Number(e.target.value) }))}
+            className="h-11 rounded-xl border border-[#c0c8c9] bg-[#f9fafa] px-3 text-sm text-[#1a1c1c] focus:border-[#004649] focus:outline-none"
           >
             {juzzList.map((item) => (
-              <option key={item.number} value={item.number}>
-                JUZZ {item.number}: {item.name}
-              </option>
+              <option key={item.number} value={item.number}>JUZZ {item.number}: {item.name}</option>
             ))}
           </select>
 
           <select
             value={form.surahNumber}
-            onChange={(e) =>
-              setForm((prev) => ({
-                ...prev,
-                surahNumber: Number(e.target.value),
-                ayahFrom: '',
-                ayahTo: ''
-              }))
-            }
-            className="h-11 rounded-xl border border-slate-300 px-3"
+            onChange={(e) => setForm((prev) => ({ ...prev, surahNumber: Number(e.target.value), ayahFrom: '', ayahTo: '' }))}
+            className="h-11 rounded-xl border border-[#c0c8c9] bg-[#f9fafa] px-3 text-sm text-[#1a1c1c] focus:border-[#004649] focus:outline-none"
           >
             {surahList.map((item) => (
-              <option key={item.number} value={item.number}>
-                SURAH {item.number}: {item.name}
-              </option>
+              <option key={item.number} value={item.number}>SURAH {item.number}: {item.name}</option>
             ))}
           </select>
 
           <input
             value={form.notes}
             onChange={(e) => setForm((prev) => ({ ...prev, notes: e.target.value }))}
-            className="h-11 rounded-xl border border-slate-300 px-3"
+            className="h-11 rounded-xl border border-[#c0c8c9] bg-[#f9fafa] px-3 text-sm text-[#1a1c1c] placeholder:text-[#6e7778] focus:border-[#004649] focus:outline-none"
             placeholder="Notes (optional)"
           />
 
           <select
             value={form.ayahFrom}
             onChange={(e) => setForm((prev) => ({ ...prev, ayahFrom: e.target.value, ayahTo: '' }))}
-            className="h-11 rounded-xl border border-slate-300 px-3"
+            className="h-11 rounded-xl border border-[#c0c8c9] bg-[#f9fafa] px-3 text-sm text-[#1a1c1c] focus:border-[#004649] focus:outline-none"
           >
             <option value="">From Ayah</option>
             {fromAyahOptions.map((num) => (
@@ -405,7 +390,7 @@ export default function TeacherProgressPage() {
           <select
             value={form.ayahTo}
             onChange={(e) => setForm((prev) => ({ ...prev, ayahTo: e.target.value }))}
-            className="h-11 rounded-xl border border-slate-300 px-3"
+            className="h-11 rounded-xl border border-[#c0c8c9] bg-[#f9fafa] px-3 text-sm text-[#1a1c1c] focus:border-[#004649] focus:outline-none"
             disabled={!form.ayahFrom}
           >
             <option value="">To Ayah</option>
@@ -417,56 +402,51 @@ export default function TeacherProgressPage() {
           <div className="md:col-span-3">
             <button
               disabled={saving || loading}
-              className="h-11 rounded-xl bg-[#0f5954] px-5 font-semibold text-white disabled:cursor-not-allowed disabled:opacity-60"
+              className="h-11 rounded-xl bg-[#004649] px-6 font-semibold text-white hover:bg-[#005a5e] disabled:cursor-not-allowed disabled:opacity-60"
             >
               {saving ? 'Saving...' : 'Save Daily Progress'}
             </button>
           </div>
         </form>
 
-        {message ? <p className="mt-3 text-sm text-slate-700">{message}</p> : null}
+        {message ? <p className="mt-3 rounded-xl bg-[#f3f4f3] px-4 py-3 text-sm text-[#1a1c1c]">{message}</p> : null}
       </section>
 
-      <section className="rounded-3xl bg-white p-8 shadow-[0_10px_30px_rgba(15,89,84,0.08)]">
-        <h3 className="font-headline text-2xl font-bold text-slate-900">Progress Log</h3>
+      <section className="rounded-[1.75rem] bg-white p-8 shadow-[0_12px_40px_rgba(0,70,73,0.06)]">
+        <h3 className="font-headline text-2xl font-bold tracking-[-0.02em] text-[#004649]">Progress Log</h3>
         <div className="mt-4 overflow-x-auto">
           <table className="min-w-full text-sm">
-            <thead className="bg-slate-50 text-slate-600">
+            <thead className="bg-[#f3f4f3] text-[#596364]">
               <tr>
-                <th className="px-3 py-2 text-left">Date</th>
-                <th className="px-3 py-2 text-left">Class</th>
-                <th className="px-3 py-2 text-left">Student</th>
-                <th className="px-3 py-2 text-left">Lesson Name</th>
-                <th className="px-3 py-2 text-left">From-To Ayah</th>
-                <th className="px-3 py-2 text-left">Notes</th>
+                <th className="px-3 py-3 text-left text-[10px] font-bold uppercase tracking-[0.18em]">Date</th>
+                <th className="px-3 py-3 text-left text-[10px] font-bold uppercase tracking-[0.18em]">Class</th>
+                <th className="px-3 py-3 text-left text-[10px] font-bold uppercase tracking-[0.18em]">Student</th>
+                <th className="px-3 py-3 text-left text-[10px] font-bold uppercase tracking-[0.18em]">Lesson</th>
+                <th className="px-3 py-3 text-left text-[10px] font-bold uppercase tracking-[0.18em]">Ayah Range</th>
+                <th className="px-3 py-3 text-left text-[10px] font-bold uppercase tracking-[0.18em]">Notes</th>
               </tr>
             </thead>
             <tbody>
               {progress.map((item) => {
-                const juzzName =
-                  item.juzzNumber ? juzzList.find((j) => j.number === item.juzzNumber)?.name || `Juzz ${item.juzzNumber}` : '-';
-                const name = surahList.find((s) => s.number === item.lessonNumber)?.name || `Surah ${item.lessonNumber}`;
-
-                const ayahRange =
-                  item.lessonType === 'SURAH' && item.ayahFrom && item.ayahTo
-                    ? `From ${item.ayahFrom} To ${item.ayahTo}`
-                    : '-';
+                const juzzName = item.juzzNumber ? juzzList.find((j) => j.number === item.juzzNumber)?.name || `Juzz ${item.juzzNumber}` : '-';
+                const surahName = surahList.find((s) => s.number === item.lessonNumber)?.name || `Surah ${item.lessonNumber}`;
+                const ayahRange = item.lessonType === 'SURAH' && item.ayahFrom && item.ayahTo ? `${item.ayahFrom} → ${item.ayahTo}` : '-';
 
                 return (
-                  <tr key={item.id} className="border-b border-slate-100">
-                    <td className="px-3 py-2">{item.date.slice(0, 10)}</td>
-                    <td className="px-3 py-2">{item.class.name} - {item.class.section}</td>
-                    <td className="px-3 py-2">{item.student.user.fullName}</td>
-                    <td className="px-3 py-2">Juzz {item.juzzNumber ?? '-'} ({juzzName}) | Surah {item.lessonNumber} - {name}</td>
-                    <td className="px-3 py-2">{ayahRange}</td>
-                    <td className="px-3 py-2">{item.notes || '-'}</td>
+                  <tr key={item.id} className="border-b border-[#eef1f1]">
+                    <td className="px-3 py-3 text-[#596364]">{item.date.slice(0, 10)}</td>
+                    <td className="px-3 py-3 text-[#596364]">{item.class.name} - {item.class.section}</td>
+                    <td className="px-3 py-3 font-semibold text-[#1a1c1c]">{item.student.user.fullName}</td>
+                    <td className="px-3 py-3 text-[#596364]">J{item.juzzNumber ?? '-'} ({juzzName}) · S{item.lessonNumber} {surahName}</td>
+                    <td className="px-3 py-3 font-semibold text-[#004649]">{ayahRange}</td>
+                    <td className="px-3 py-3 text-[#596364]">{item.notes || '-'}</td>
                   </tr>
                 );
               })}
             </tbody>
           </table>
         </div>
-        {progress.length === 0 ? <p className="mt-4 text-sm text-slate-600">No progress records found for selected filters.</p> : null}
+        {progress.length === 0 ? <p className="mt-4 text-sm text-[#5c6668]">No progress records found for selected filters.</p> : null}
       </section>
     </div>
   );
