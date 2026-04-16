@@ -12,7 +12,7 @@ export default async function StudentFeesPage() {
   if (!student) {
     return (
       <div className="rounded-xl bg-white border border-[#e2e8e8] p-8">
-        <h2 className="text-2xl font-bold text-[#1a1c1c]">Fee Status</h2>
+        <h2 className="text-3xl font-bold text-[#1a1c1c]">Fee Status</h2>
         <p className="mt-2 text-sm text-[#6f7979]">Student profile missing.</p>
       </div>
     );
@@ -34,7 +34,7 @@ export default async function StudentFeesPage() {
   return (
     <div className="space-y-4">
       <div className="rounded-xl bg-white border border-[#e2e8e8] p-6">
-        <h2 className="text-2xl font-bold text-[#1a1c1c]">Fee Status</h2>
+        <h2 className="text-3xl font-bold text-[#1a1c1c]">Fee Status</h2>
         <p className="mt-1 text-sm text-[#6f7979]">
           Total Due: PKR {totalDue.toLocaleString()} | Paid: PKR {totalPaid.toLocaleString()} | Outstanding: PKR {outstanding.toLocaleString()}
         </p>

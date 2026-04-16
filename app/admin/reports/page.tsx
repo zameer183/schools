@@ -31,7 +31,7 @@ export default async function AdminReportsPage() {
   return (
     <div className="space-y-4">
       <div className="rounded-xl bg-white border border-[#e2e8e8] p-6">
-        <h2 className="text-2xl font-bold text-[#1a1c1c]">Reports</h2>
+        <h2 className="text-3xl font-bold text-[#1a1c1c]">Reports</h2>
         <p className="mt-1 text-sm text-[#6f7979]">Generate exports and management summaries for academic operations.</p>
 
         <div className="mt-5 grid grid-cols-2 gap-3 lg:grid-cols-4">

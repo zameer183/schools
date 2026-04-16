@@ -83,7 +83,7 @@ export default async function TeacherMessagesPage() {
   return (
     <div className="space-y-6">
       <section className="rounded-xl bg-white p-8 border border-[#e2e8e8]">
-        <h2 className="text-2xl font-bold text-[#1a1c1c]">Messages</h2>
+        <h2 className="text-3xl font-bold text-[#1a1c1c]">Messages</h2>
         <p className="mt-2 text-[#5c6668]">Send updates to your class students and review incoming messages.</p>
 
         <form action={sendMessageAction} className="mt-6 grid gap-4">
@@ -99,17 +99,17 @@ export default async function TeacherMessagesPage() {
             className="min-h-28 rounded-xl border border-[#c0c8c9] bg-[#f9fafa] p-3 text-sm text-[#1a1c1c] placeholder:text-[#6e7778] focus:border-[#004649] focus:outline-none"
             placeholder="Write your message"
           />
-          <div className="rounded-2xl border border-[#d4dee7] p-5">
-            <p className="text-[10px] font-bold uppercase tracking-[0.18em] text-[#6e7778]">Recipients — Your Students</p>
-            <div className="mt-4 grid gap-2 md:grid-cols-2">
+          <div>
+            <p className="mb-2 text-sm font-medium text-[#1a1c1c]">Recipients (your students)</p>
+            <div className="space-y-1.5">
               {uniqueRecipients.length === 0 ? (
                 <p className="text-sm text-[#5c6668]">No students found in your assigned classes.</p>
               ) : (
                 uniqueRecipients.map((recipient) => (
-                  <label key={recipient.userId} className="flex cursor-pointer items-center gap-2 rounded-xl border border-[#d4dee7] px-3 py-2.5 text-sm hover:bg-[#f3f4f3]">
+                  <label key={recipient.userId} className="flex cursor-pointer items-center gap-2 rounded-lg border border-[#e2e8e8] px-3 py-2 text-sm hover:bg-[#f5f7f5]">
                     <input type="checkbox" name="recipientIds" value={recipient.userId} className="accent-[#004649]" />
                     <span className="font-medium text-[#1a1c1c]">{recipient.fullName}</span>
-                    <span className="text-[#6e7778]">({recipient.className})</span>
+                    <span className="text-[#6f7979]">({recipient.className})</span>
                   </label>
                 ))
               )}

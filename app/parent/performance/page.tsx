@@ -12,7 +12,7 @@ export default async function ParentPerformancePage() {
   if (!context) {
     return (
       <div className="rounded-xl bg-white p-8 border border-[#e2e8e8]">
-        <h2 className="text-2xl font-bold text-[#1a1c1c]">Performance</h2>
+        <h2 className="text-3xl font-bold text-[#1a1c1c]">Performance</h2>
         <p className="mt-2 text-[#5c6668]">Parent profile missing.</p>
       </div>
     );
@@ -23,7 +23,7 @@ export default async function ParentPerformancePage() {
   if (childIds.length === 0) {
     return (
       <div className="rounded-xl bg-white p-8 border border-[#e2e8e8]">
-        <h2 className="text-2xl font-bold text-[#1a1c1c]">Performance</h2>
+        <h2 className="text-3xl font-bold text-[#1a1c1c]">Performance</h2>
         <p className="mt-2 text-[#5c6668]">No child records linked yet.</p>
       </div>
     );
@@ -58,7 +58,7 @@ export default async function ParentPerformancePage() {
   return (
     <div className="space-y-6">
       <section className="rounded-xl bg-white p-8 border border-[#e2e8e8]">
-        <h2 className="text-2xl font-bold text-[#1a1c1c]">Child Performance</h2>
+        <h2 className="text-3xl font-bold text-[#1a1c1c]">Child Performance</h2>
         <p className="mt-2 text-[#5c6668]">Average marks: {avgMarks} | Passed exams: {passCount}/{results.length}</p>
       </section>
 

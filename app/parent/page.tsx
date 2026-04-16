@@ -14,7 +14,7 @@ export default async function ParentDashboardPage() {
   if (!context) {
     return (
       <div className="bg-white rounded-2xl p-8 border border-[#e2e8e8]">
-        <h2 className="text-2xl font-bold text-[#1a1c1c]">Parent Profile Missing</h2>
+        <h2 className="text-3xl font-bold text-[#1a1c1c]">Parent Profile Missing</h2>
         <p className="mt-2 text-[#3f4849]">Your account is active but no parent profile is linked yet. Contact admin.</p>
       </div>
     );
@@ -25,7 +25,7 @@ export default async function ParentDashboardPage() {
   if (children.length === 0) {
     return (
       <div className="bg-white rounded-2xl p-8 border border-[#e2e8e8]">
-        <h2 className="text-2xl font-bold text-[#1a1c1c]">Parent Dashboard</h2>
+        <h2 className="text-3xl font-bold text-[#1a1c1c]">Parent Dashboard</h2>
         <p className="mt-2 text-[#3f4849]">No children are linked with your profile yet. Please contact the admin office.</p>
       </div>
     );
@@ -77,7 +77,7 @@ export default async function ParentDashboardPage() {
   return (
     <div className="space-y-6">
       <section>
-        <h2 className="text-2xl font-bold text-[#1a1c1c]">
+        <h2 className="text-3xl font-bold text-[#1a1c1c]">
           Welcome back, {firstName}.
         </h2>
         <p className="mt-1 text-sm text-[#3f4849]">
@@ -114,7 +114,7 @@ export default async function ParentDashboardPage() {
           <div className="p-2 bg-[#865300]/5 text-[#865300] rounded-lg w-fit mb-3">
             <DollarSign className="h-5 w-5" />
           </div>
-          <p className="text-2xl font-bold text-[#1a1c1c]">PKR {outstanding.toLocaleString()}</p>
+          <p className="text-3xl font-bold text-[#1a1c1c]">PKR {outstanding.toLocaleString()}</p>
           <p className="mt-1 text-[11px] font-bold uppercase tracking-[0.12em] text-[#6f7979]">Outstanding</p>
           <p className="mt-1 text-[11px] text-[#6f7979]">{unreadNotifications} unread</p>
         </div>

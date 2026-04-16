@@ -170,7 +170,7 @@ export default function TeacherAttendancePage() {
   return (
     <div className="space-y-6">
       <div className="rounded-xl bg-white p-8 border border-[#e2e8e8]">
-        <h2 className="text-2xl font-bold text-[#1a1c1c]">Attendance Marking</h2>
+        <h2 className="text-3xl font-bold text-[#1a1c1c]">Attendance Marking</h2>
         <p className="mt-2 text-[#5c6668]">Mark daily attendance for students in your assigned classes.</p>
 
         <div className="mt-6 grid gap-4 md:grid-cols-3">

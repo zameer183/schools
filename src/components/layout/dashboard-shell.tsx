@@ -5,7 +5,7 @@ import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import { useTransition } from 'react';
 import {
-  BarChart3, Bell, BookOpen, CalendarCheck2, DollarSign,
+  BarChart3, Bell, BookOpen, CalendarCheck2, ChevronDown, DollarSign,
   Home, LogOut, MessageSquare, Settings, Users
 } from 'lucide-react';
 
@@ -152,11 +152,12 @@ export function DashboardShell({
               <Bell className="h-4 w-4" />
             </button>
             <button
-              onClick={() => router.push('/admin/settings')}
-              className="inline-flex h-8 w-8 items-center justify-center rounded-full bg-[#004649] text-xs font-bold text-white"
+              onClick={() => role === 'ADMIN' ? router.push('/admin/settings') : undefined}
+              className="inline-flex items-center gap-1 rounded-full bg-[#004649] pl-1 pr-2 h-8 text-xs font-bold text-white"
               title={fullName}
             >
-              {initials}
+              <span className="inline-flex h-6 w-6 items-center justify-center rounded-full bg-[#005a5e]">{initials}</span>
+              <ChevronDown className="h-3 w-3 opacity-80" />
             </button>
             <button
               onClick={doLogout}

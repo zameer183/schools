@@ -30,7 +30,7 @@ export default async function TeacherDashboardPage() {
   if (!teacher) {
     return (
       <div className="rounded-xl bg-white border border-[#e2e8e8] p-8">
-        <h2 className="text-2xl font-bold text-[#1a1c1c]">Teacher Profile Missing</h2>
+        <h2 className="text-3xl font-bold text-[#1a1c1c]">Teacher Profile Missing</h2>
         <p className="mt-2 text-sm text-[#6f7979]">Your account is active but no teacher profile is linked yet. Contact admin.</p>
       </div>
     );

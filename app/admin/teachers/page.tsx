@@ -81,7 +81,7 @@ export default function AdminTeachersPage() {
   return (
     <div className="space-y-4">
       <div className="rounded-xl bg-white border border-[#e2e8e8] p-6">
-        <h2 className="text-2xl font-bold text-[#1a1c1c]">Teachers</h2>
+        <h2 className="text-3xl font-bold text-[#1a1c1c]">Teachers</h2>
         <p className="mt-1 text-sm text-[#6f7979]">Create teacher and staff accounts from the admin panel.</p>
 
         <form onSubmit={createTeacher} className="mt-5 grid gap-3 sm:grid-cols-2">

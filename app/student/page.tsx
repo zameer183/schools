@@ -19,7 +19,7 @@ export default async function StudentDashboardPage() {
   if (!student) {
     return (
       <div className="rounded-xl bg-white p-8 border border-[#e2e8e8]">
-        <h2 className="text-2xl font-bold text-[#1a1c1c]">Student Profile Missing</h2>
+        <h2 className="text-3xl font-bold text-[#1a1c1c]">Student Profile Missing</h2>
         <p className="mt-2 text-sm text-[#6f7979]">Your account is active but no student profile is linked yet. Contact admin.</p>
       </div>
     );

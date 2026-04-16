@@ -12,7 +12,7 @@ export default async function StudentAssignmentsPage() {
   if (!student?.classId) {
     return (
       <div className="rounded-xl bg-white p-8 border border-[#e2e8e8]">
-        <h2 className="text-2xl font-bold text-[#1a1c1c]">Assignments</h2>
+        <h2 className="text-3xl font-bold text-[#1a1c1c]">Assignments</h2>
         <p className="mt-2 text-[#5c6668]">No class assigned yet. Please contact your administrator.</p>
       </div>
     );
@@ -28,32 +28,14 @@ export default async function StudentAssignmentsPage() {
     orderBy: { dueDate: 'asc' }
   });
 
-  const submitted = assignments.filter((a) => a.submissions.length > 0).length;
-  const pending = assignments.length - submitted;
-
   return (
-    <div className="space-y-6">
-      <section className="rounded-xl bg-white p-8 border border-[#e2e8e8]">
-        <h2 className="text-2xl font-bold text-[#1a1c1c]">Assignments</h2>
-        <p className="mt-2 text-[#5c6668]">Track all class assignments and your submission status.</p>
+    <div className="space-y-4">
+      <section className="rounded-xl bg-white p-6 border border-[#e2e8e8]">
+        <h2 className="text-3xl font-bold text-[#1a1c1c]">Assignments</h2>
+        <p className="mt-1 text-sm text-[#6f7979]">Track all class assignments and your submission status.</p>
       </section>
 
-      <section className="grid gap-4 md:grid-cols-3">
-        <div className="rounded-xl bg-white p-5 border border-[#e2e8e8]">
-          <p className="text-[10px] font-bold uppercase tracking-[0.18em] text-[#6e7778]">Total Assignments</p>
-          <p className="text-2xl font-bold text-[#1a1c1c]">{assignments.length}</p>
-        </div>
-        <div className="rounded-xl bg-white p-5 border border-[#e2e8e8]">
-          <p className="text-[10px] font-bold uppercase tracking-[0.18em] text-[#6e7778]">Submitted</p>
-          <p className="mt-2 text-3xl font-bold text-emerald-700">{submitted}</p>
-        </div>
-        <div className="rounded-xl bg-white p-5 border border-[#e2e8e8]">
-          <p className="text-[10px] font-bold uppercase tracking-[0.18em] text-[#6e7778]">Pending</p>
-          <p className="mt-2 text-3xl font-bold text-[#895100]">{pending}</p>
-        </div>
-      </section>
-
-      <section className="rounded-xl bg-white p-8 border border-[#e2e8e8]">
+      <section className="rounded-xl bg-white p-6 border border-[#e2e8e8]">
         <h3 className="font-semibold text-[#1a1c1c]">Assignment List</h3>
         <div className="mt-5 space-y-4">
           {assignments.length === 0 ? (
