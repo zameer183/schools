@@ -1,27 +1,9 @@
-﻿import { AttendanceStatus } from '@prisma/client';
+import { AttendanceStatus } from '@prisma/client';
 import { prisma } from '@/lib/prisma';
 
 export const dynamic = 'force-dynamic';
 
 type SearchParams = { date?: string; classId?: string };
-
-function StatCard({ label, value, tone }: { label: string; value: number; tone: 'teal' | 'rose' | 'amber' | 'blue' }) {
-  const toneClass =
-    tone === 'teal'
-      ? 'text-[#124346]'
-      : tone === 'rose'
-        ? 'text-rose-700'
-        : tone === 'amber'
-          ? 'text-amber-700'
-          : 'text-blue-700';
-
-  return (
-    <div className="rounded-xl bg-[#f3f4f3] p-4">
-      <p className="text-[10px] font-bold uppercase tracking-[0.18em] text-[#6e7778]">{label}</p>
-      <p className={`font-headline mt-2 text-3xl font-extrabold ${toneClass}`}>{value}</p>
-    </div>
-  );
-}
 
 export default async function AdminAttendancePage({ searchParams }: { searchParams?: Promise<SearchParams> }) {
   const params = (await searchParams) ?? {};
@@ -47,57 +29,81 @@ export default async function AdminAttendancePage({ searchParams }: { searchPara
   const countFor = (status: AttendanceStatus) => statusCounts.find((item) => item.status === status)?._count._all ?? 0;
 
   return (
-    <div className="space-y-6">
-      <section className="rounded-[1.2rem] bg-white p-7 shadow-[0px_12px_32px_rgba(26,28,28,0.06)]">
-        <p className="text-[10px] font-semibold uppercase tracking-[0.32em] text-[#6e7778]">Attendance</p>
-        <h2 className="font-headline mt-1 text-4xl font-extrabold tracking-[-0.03em] text-[#124346] md:text-5xl">Attendance Management</h2>
-        <p className="mt-2 text-[#596364]">Track daily attendance, absentee trends, and class-wise compliance.</p>
+    <div className="space-y-4">
+      <div className="rounded-xl bg-white border border-[#e2e8e8] p-6">
+        <h2 className="text-2xl font-bold text-[#1a1c1c]">Attendance</h2>
+        <p className="mt-1 text-sm text-[#6f7979]">Track daily attendance, absentee trends, and class-wise compliance.</p>
 
-        <form className="mt-5 grid gap-3 md:grid-cols-3">
-          <input type="date" name="date" defaultValue={selectedDate} className="h-11 rounded-xl border border-[#c0c8c9] px-3" />
-          <select name="classId" defaultValue={selectedClassId} className="h-11 rounded-xl border border-[#c0c8c9] px-3">
+        <form className="mt-5 flex flex-wrap gap-3">
+          <input
+            type="date"
+            name="date"
+            defaultValue={selectedDate}
+            className="h-10 rounded-lg border border-[#d4dee7] px-3 text-sm outline-none focus:border-[#004649]"
+          />
+          <select
+            name="classId"
+            defaultValue={selectedClassId}
+            className="h-10 rounded-lg border border-[#d4dee7] px-3 text-sm outline-none focus:border-[#004649]"
+          >
             <option value="">All Classes</option>
             {classes.map((item) => (
               <option key={item.id} value={item.id}>{item.name} - {item.section}</option>
             ))}
           </select>
-          <button className="h-11 rounded-xl bg-[#124346] px-4 font-semibold text-white">Apply Filter</button>
+          <button className="h-10 rounded-lg bg-[#004649] px-4 text-sm font-semibold text-white hover:bg-[#005a5e]">
+            Apply Filter
+          </button>
         </form>
-      </section>
+      </div>
 
-      <section className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
-        <StatCard label="Present" value={countFor('PRESENT')} tone="teal" />
-        <StatCard label="Absent" value={countFor('ABSENT')} tone="rose" />
-        <StatCard label="Late" value={countFor('LATE')} tone="amber" />
-        <StatCard label="Excused" value={countFor('EXCUSED')} tone="blue" />
-      </section>
+      <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
+        {[
+          { label: 'Present', value: countFor('PRESENT'), color: 'text-[#004649]' },
+          { label: 'Absent', value: countFor('ABSENT'), color: 'text-[#ba1a1a]' },
+          { label: 'Late', value: countFor('LATE'), color: 'text-[#865300]' },
+          { label: 'Excused', value: countFor('EXCUSED'), color: 'text-[#1a1c1c]' },
+        ].map(({ label, value, color }) => (
+          <div key={label} className="rounded-xl bg-white border border-[#e2e8e8] p-4">
+            <p className="text-[10px] font-bold uppercase tracking-widest text-[#6f7979]">{label}</p>
+            <p className={`mt-2 text-3xl font-bold ${color}`}>{value}</p>
+          </div>
+        ))}
+      </div>
 
-      <section className="rounded-[1.2rem] bg-white p-7 shadow-[0px_12px_32px_rgba(26,28,28,0.06)]">
-        <h3 className="font-headline text-2xl font-bold tracking-[-0.02em] text-[#124346]">Attendance Register</h3>
-        <div className="mt-4 overflow-x-auto">
-          <table className="min-w-full text-sm">
-            <thead className="bg-[#f3f4f3] text-[#596364]">
-              <tr>
-                <th className="px-3 py-3 text-left text-[10px] font-bold uppercase tracking-[0.18em]">Student</th>
-                <th className="px-3 py-3 text-left text-[10px] font-bold uppercase tracking-[0.18em]">Class</th>
-                <th className="px-3 py-3 text-left text-[10px] font-bold uppercase tracking-[0.18em]">Status</th>
-                <th className="px-3 py-3 text-left text-[10px] font-bold uppercase tracking-[0.18em]">Remarks</th>
+      <div className="rounded-xl bg-white border border-[#e2e8e8] p-6">
+        <h3 className="font-semibold text-[#1a1c1c] mb-4">Attendance Register</h3>
+        <div className="overflow-x-auto">
+          <table className="w-full text-sm">
+            <thead>
+              <tr className="border-b border-[#e2e8e8]">
+                <th className="pb-2 text-left text-[10px] font-bold uppercase tracking-widest text-[#6f7979]">Student</th>
+                <th className="pb-2 text-left text-[10px] font-bold uppercase tracking-widest text-[#6f7979]">Class</th>
+                <th className="pb-2 text-left text-[10px] font-bold uppercase tracking-widest text-[#6f7979]">Status</th>
+                <th className="pb-2 text-left text-[10px] font-bold uppercase tracking-widest text-[#6f7979]">Remarks</th>
               </tr>
             </thead>
-            <tbody>
+            <tbody className="divide-y divide-[#e2e8e8]">
               {records.map((record) => (
-                <tr key={record.id} className="border-b border-slate-100">
-                  <td className="px-3 py-3 font-semibold text-[#1a1c1c]">{record.student.user.fullName}</td>
-                  <td className="px-3 py-3">{record.class.name} - {record.class.section}</td>
-                  <td className="px-3 py-3">{record.status}</td>
-                  <td className="px-3 py-3 text-[#596364]">{record.remarks ?? '-'}</td>
+                <tr key={record.id}>
+                  <td className="py-3 font-medium text-[#1a1c1c]">{record.student.user.fullName}</td>
+                  <td className="py-3 text-[#6f7979]">{record.class.name} - {record.class.section}</td>
+                  <td className="py-3">
+                    <span className={`rounded-full px-2.5 py-1 text-[10px] font-bold ${
+                      record.status === 'PRESENT' ? 'bg-[#e8f5e9] text-[#004649]' :
+                      record.status === 'ABSENT' ? 'bg-[#fde8e8] text-[#ba1a1a]' :
+                      record.status === 'LATE' ? 'bg-[#fff3e0] text-[#865300]' :
+                      'bg-[#f5f7f5] text-[#6f7979]'
+                    }`}>{record.status}</span>
+                  </td>
+                  <td className="py-3 text-[#6f7979]">{record.remarks ?? '-'}</td>
                 </tr>
               ))}
             </tbody>
           </table>
-          {records.length === 0 ? <p className="mt-4 text-sm text-[#596364]">No attendance rows found for this filter.</p> : null}
+          {records.length === 0 ? <p className="mt-4 text-sm text-[#6f7979]">No attendance rows found for this filter.</p> : null}
         </div>
-      </section>
+      </div>
     </div>
   );
 }

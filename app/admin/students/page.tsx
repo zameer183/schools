@@ -1,4 +1,4 @@
-﻿'use client';
+'use client';
 
 import { useEffect, useState } from 'react';
 
@@ -82,59 +82,109 @@ export default function AdminStudentsPage() {
   };
 
   return (
-    <div className="space-y-5">
-      <section className="rounded-[24px] bg-white p-7 shadow-[0px_12px_32px_rgba(26,28,28,0.06)]">
-        <h2 className="font-headline text-4xl font-extrabold text-[#0f1f3a]">Add Student</h2>
-        <p className="mt-1 text-base text-[#3f536c]">Create new student account and admission profile.</p>
+    <div className="space-y-4">
+      <div className="rounded-xl bg-white border border-[#e2e8e8] p-6">
+        <h2 className="text-2xl font-bold text-[#1a1c1c]">Students</h2>
+        <p className="mt-1 text-sm text-[#6f7979]">Enroll, update, and manage learners.</p>
 
-        <form onSubmit={createStudent} className="mt-5 grid gap-3 md:grid-cols-2">
-          <input className="h-11 rounded-xl border border-[#c4d0db] px-3" placeholder="Full name" value={form.fullName} onChange={(e) => setForm((f) => ({ ...f, fullName: e.target.value }))} required />
-          <input className="h-11 rounded-xl border border-[#c4d0db] px-3" placeholder="Email" value={form.email} onChange={(e) => setForm((f) => ({ ...f, email: e.target.value }))} required />
-          <input className="h-11 rounded-xl border border-[#c4d0db] px-3" placeholder="Admission number" value={form.admissionNo} onChange={(e) => setForm((f) => ({ ...f, admissionNo: e.target.value }))} required />
-          <input className="h-11 rounded-xl border border-[#c4d0db] px-3" placeholder="Phone (optional)" value={form.phone} onChange={(e) => setForm((f) => ({ ...f, phone: e.target.value }))} />
-          <input className="h-11 rounded-xl border border-[#c4d0db] px-3" type="password" placeholder="Password" value={form.password} onChange={(e) => setForm((f) => ({ ...f, password: e.target.value }))} required />
-          <select className="h-11 rounded-xl border border-[#c4d0db] px-3" value={form.classId} onChange={(e) => setForm((f) => ({ ...f, classId: e.target.value }))}>
+        <form onSubmit={createStudent} className="mt-5 grid gap-3 sm:grid-cols-2">
+          <input
+            className="h-10 rounded-lg border border-[#d4dee7] px-3 text-sm outline-none focus:border-[#004649] focus:ring-1 focus:ring-[#004649]"
+            placeholder="Full name"
+            value={form.fullName}
+            onChange={(e) => setForm((f) => ({ ...f, fullName: e.target.value }))}
+            required
+          />
+          <input
+            className="h-10 rounded-lg border border-[#d4dee7] px-3 text-sm outline-none focus:border-[#004649] focus:ring-1 focus:ring-[#004649]"
+            placeholder="Email"
+            value={form.email}
+            onChange={(e) => setForm((f) => ({ ...f, email: e.target.value }))}
+            required
+          />
+          <input
+            className="h-10 rounded-lg border border-[#d4dee7] px-3 text-sm outline-none focus:border-[#004649] focus:ring-1 focus:ring-[#004649]"
+            placeholder="Admission number"
+            value={form.admissionNo}
+            onChange={(e) => setForm((f) => ({ ...f, admissionNo: e.target.value }))}
+            required
+          />
+          <input
+            className="h-10 rounded-lg border border-[#d4dee7] px-3 text-sm outline-none focus:border-[#004649] focus:ring-1 focus:ring-[#004649]"
+            placeholder="Phone (optional)"
+            value={form.phone}
+            onChange={(e) => setForm((f) => ({ ...f, phone: e.target.value }))}
+          />
+          <input
+            className="h-10 rounded-lg border border-[#d4dee7] px-3 text-sm outline-none focus:border-[#004649] focus:ring-1 focus:ring-[#004649]"
+            type="password"
+            placeholder="Password"
+            value={form.password}
+            onChange={(e) => setForm((f) => ({ ...f, password: e.target.value }))}
+            required
+          />
+          <select
+            className="h-10 rounded-lg border border-[#d4dee7] px-3 text-sm outline-none focus:border-[#004649] focus:ring-1 focus:ring-[#004649]"
+            value={form.classId}
+            onChange={(e) => setForm((f) => ({ ...f, classId: e.target.value }))}
+          >
             <option value="">Select class (optional)</option>
             {classes.map((c) => (
               <option key={c.id} value={c.id}>{c.name} - {c.section}</option>
             ))}
           </select>
-          <button disabled={saving} className="h-11 w-fit rounded-xl bg-[#0f5954] px-5 font-semibold text-white md:col-span-2">{saving ? 'Adding...' : 'Add Student'}</button>
+          <div className="sm:col-span-2">
+            <button
+              disabled={saving}
+              className="rounded-lg bg-[#004649] px-5 py-2.5 text-sm font-semibold text-white hover:bg-[#005a5e] disabled:opacity-60"
+            >
+              {saving ? 'Adding...' : 'Add Student'}
+            </button>
+            {message ? (
+              <span className={`ml-3 text-sm ${message.includes('success') ? 'text-[#004649]' : 'text-[#ba1a1a]'}`}>
+                {message}
+              </span>
+            ) : null}
+          </div>
         </form>
-        {message ? <p className="mt-3 text-sm text-[#5c6668]">{message}</p> : null}
-      </section>
+      </div>
 
-      <section className="rounded-[24px] bg-white p-7 shadow-[0px_12px_32px_rgba(26,28,28,0.06)]">
-        <h3 className="font-headline text-4xl font-bold text-[#0f1f3a]">Student List</h3>
-        <div className="mt-4 overflow-x-auto">
-          <table className="min-w-full text-sm">
-            <thead className="bg-[#f3f6f8] text-[#34495e]">
-              <tr>
-                <th className="px-3 py-3 text-left font-semibold">Name</th>
-                <th className="px-3 py-3 text-left font-semibold">Email</th>
-                <th className="px-3 py-3 text-left font-semibold">Admission #</th>
-                <th className="px-3 py-3 text-left font-semibold">Class</th>
-                <th className="px-3 py-3 text-left font-semibold">Actions</th>
+      <div className="rounded-xl bg-white border border-[#e2e8e8] p-6">
+        <h3 className="font-semibold text-[#1a1c1c] mb-4">Student List</h3>
+        <div className="overflow-x-auto">
+          <table className="w-full text-sm">
+            <thead>
+              <tr className="border-b border-[#e2e8e8]">
+                <th className="pb-2 text-left text-[10px] font-bold uppercase tracking-widest text-[#6f7979]">Name</th>
+                <th className="pb-2 text-left text-[10px] font-bold uppercase tracking-widest text-[#6f7979]">Email</th>
+                <th className="pb-2 text-left text-[10px] font-bold uppercase tracking-widest text-[#6f7979]">Admission #</th>
+                <th className="pb-2 text-left text-[10px] font-bold uppercase tracking-widest text-[#6f7979]">Class</th>
+                <th className="pb-2 text-right text-[10px] font-bold uppercase tracking-widest text-[#6f7979]">Actions</th>
               </tr>
             </thead>
-            <tbody>
+            <tbody className="divide-y divide-[#e2e8e8]">
               {students.map((s) => (
-                <tr key={s.id} className="border-b border-slate-100">
-                  <td className="px-3 py-3 font-semibold text-[#1a1c1c]">{s.user.fullName}</td>
-                  <td className="px-3 py-3 text-[#596364]">{s.user.email}</td>
-                  <td className="px-3 py-3">{s.admissionNo}</td>
-                  <td className="px-3 py-3">{s.class ? `${s.class.name} - ${s.class.section}` : '-'}</td>
-                  <td className="px-3 py-3">
-                    <button onClick={() => removeStudent(s.id)} className="rounded-lg border border-rose-300 px-3 py-1 text-rose-700 hover:bg-rose-50">Delete</button>
+                <tr key={s.id}>
+                  <td className="py-3 font-medium text-[#1a1c1c]">{s.user.fullName}</td>
+                  <td className="py-3 text-[#6f7979]">{s.user.email}</td>
+                  <td className="py-3 text-[#6f7979]">{s.admissionNo}</td>
+                  <td className="py-3 text-[#6f7979]">{s.class ? `${s.class.name} - ${s.class.section}` : '-'}</td>
+                  <td className="py-3 text-right">
+                    <button
+                      onClick={() => removeStudent(s.id)}
+                      className="rounded-lg border border-[#fca5a5] px-3 py-1 text-xs font-semibold text-[#ba1a1a] hover:bg-[#fde8e8]"
+                    >
+                      Remove
+                    </button>
                   </td>
                 </tr>
               ))}
             </tbody>
           </table>
-          {loading ? <p className="mt-4 text-sm text-[#596364]">Loading...</p> : null}
-          {!loading && students.length === 0 ? <p className="mt-4 text-sm text-[#596364]">No students available.</p> : null}
+          {loading ? <p className="mt-4 text-sm text-[#6f7979]">Loading...</p> : null}
+          {!loading && students.length === 0 ? <p className="mt-4 text-sm text-[#6f7979]">No students yet.</p> : null}
         </div>
-      </section>
+      </div>
     </div>
   );
 }

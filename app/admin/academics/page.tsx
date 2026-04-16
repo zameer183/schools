@@ -1,4 +1,4 @@
-﻿'use client';
+'use client';
 
 import { useEffect, useState } from 'react';
 
@@ -74,72 +74,133 @@ export default function AdminAcademicsPage() {
   };
 
   return (
-    <div className="space-y-5">
-      <section className="rounded-[24px] bg-white p-7 shadow-[0px_12px_32px_rgba(26,28,28,0.06)]">
-        <h2 className="font-headline text-4xl font-extrabold text-[#0f1f3a]">Classes & Subjects</h2>
-        <p className="mt-1 text-base text-[#3f536c]">Organize classes, sections, and subject mappings.</p>
+    <div className="space-y-4">
+      <div className="rounded-xl bg-white border border-[#e2e8e8] p-6">
+        <h2 className="text-2xl font-bold text-[#1a1c1c]">Classes &amp; Subjects</h2>
+        <p className="mt-1 text-sm text-[#6f7979]">Organize classes, sections, and subject mappings.</p>
 
         <div className="mt-5 grid gap-4 lg:grid-cols-2">
-          <form onSubmit={addClass} className="rounded-2xl border border-[#d4dee7] p-4">
-            <h3 className="mb-3 text-3xl font-bold text-[#0f1f3a]">Create Class</h3>
-            <div className="grid gap-3 md:grid-cols-2">
-              <input className="h-11 rounded-xl border border-[#c4d0db] px-3" placeholder="Class Name (e.g. Grade 10)" value={classForm.name} onChange={(e) => setClassForm((f) => ({ ...f, name: e.target.value }))} required />
-              <input className="h-11 rounded-xl border border-[#c4d0db] px-3" placeholder="Section (e.g. B)" value={classForm.section} onChange={(e) => setClassForm((f) => ({ ...f, section: e.target.value }))} required />
-              <input className="h-11 rounded-xl border border-[#c4d0db] px-3" placeholder="Academic Year (2026-27)" value={classForm.academicYear} onChange={(e) => setClassForm((f) => ({ ...f, academicYear: e.target.value }))} required />
-              <input className="h-11 rounded-xl border border-[#c4d0db] px-3" placeholder="Room (optional)" value={classForm.roomNo} onChange={(e) => setClassForm((f) => ({ ...f, roomNo: e.target.value }))} />
+          <form onSubmit={addClass} className="rounded-lg border border-[#e2e8e8] p-4">
+            <h3 className="font-semibold text-[#1a1c1c] mb-3">Create Class</h3>
+            <div className="grid gap-3 sm:grid-cols-2">
+              <input
+                className="h-10 rounded-lg border border-[#d4dee7] px-3 text-sm outline-none focus:border-[#004649]"
+                placeholder="Class Name (e.g. Grade 10)"
+                value={classForm.name}
+                onChange={(e) => setClassForm((f) => ({ ...f, name: e.target.value }))}
+                required
+              />
+              <input
+                className="h-10 rounded-lg border border-[#d4dee7] px-3 text-sm outline-none focus:border-[#004649]"
+                placeholder="Section (e.g. B)"
+                value={classForm.section}
+                onChange={(e) => setClassForm((f) => ({ ...f, section: e.target.value }))}
+                required
+              />
+              <input
+                className="h-10 rounded-lg border border-[#d4dee7] px-3 text-sm outline-none focus:border-[#004649]"
+                placeholder="Academic Year (2026-27)"
+                value={classForm.academicYear}
+                onChange={(e) => setClassForm((f) => ({ ...f, academicYear: e.target.value }))}
+                required
+              />
+              <input
+                className="h-10 rounded-lg border border-[#d4dee7] px-3 text-sm outline-none focus:border-[#004649]"
+                placeholder="Room (optional)"
+                value={classForm.roomNo}
+                onChange={(e) => setClassForm((f) => ({ ...f, roomNo: e.target.value }))}
+              />
             </div>
-            <button className="mt-4 h-11 rounded-xl bg-[#0f5954] px-5 font-semibold text-white">Add Class</button>
+            <button className="mt-3 rounded-lg bg-[#004649] px-4 py-2 text-sm font-semibold text-white hover:bg-[#005a5e]">
+              Add Class
+            </button>
           </form>
 
-          <form onSubmit={addSubject} className="rounded-2xl border border-[#d4dee7] p-4">
-            <h3 className="mb-3 text-3xl font-bold text-[#0f1f3a]">Create Subject</h3>
-            <div className="grid gap-3 md:grid-cols-2">
-              <input className="h-11 rounded-xl border border-[#c4d0db] px-3" placeholder="Subject Name" value={subjectForm.name} onChange={(e) => setSubjectForm((f) => ({ ...f, name: e.target.value }))} required />
-              <input className="h-11 rounded-xl border border-[#c4d0db] px-3" placeholder="Code (e.g. PHY-10)" value={subjectForm.code} onChange={(e) => setSubjectForm((f) => ({ ...f, code: e.target.value }))} required />
-              <select className="h-11 rounded-xl border border-[#c4d0db] px-3" value={subjectForm.classId} onChange={(e) => setSubjectForm((f) => ({ ...f, classId: e.target.value }))} required>
+          <form onSubmit={addSubject} className="rounded-lg border border-[#e2e8e8] p-4">
+            <h3 className="font-semibold text-[#1a1c1c] mb-3">Create Subject</h3>
+            <div className="grid gap-3 sm:grid-cols-2">
+              <input
+                className="h-10 rounded-lg border border-[#d4dee7] px-3 text-sm outline-none focus:border-[#004649]"
+                placeholder="Subject Name"
+                value={subjectForm.name}
+                onChange={(e) => setSubjectForm((f) => ({ ...f, name: e.target.value }))}
+                required
+              />
+              <input
+                className="h-10 rounded-lg border border-[#d4dee7] px-3 text-sm outline-none focus:border-[#004649]"
+                placeholder="Code (e.g. PHY-10)"
+                value={subjectForm.code}
+                onChange={(e) => setSubjectForm((f) => ({ ...f, code: e.target.value }))}
+                required
+              />
+              <select
+                className="h-10 rounded-lg border border-[#d4dee7] px-3 text-sm outline-none focus:border-[#004649]"
+                value={subjectForm.classId}
+                onChange={(e) => setSubjectForm((f) => ({ ...f, classId: e.target.value }))}
+                required
+              >
                 <option value="">Select Class</option>
                 {classes.map((c) => <option key={c.id} value={c.id}>{c.name} - {c.section}</option>)}
               </select>
-              <select className="h-11 rounded-xl border border-[#c4d0db] px-3" value={subjectForm.teacherId} onChange={(e) => setSubjectForm((f) => ({ ...f, teacherId: e.target.value }))}>
+              <select
+                className="h-10 rounded-lg border border-[#d4dee7] px-3 text-sm outline-none focus:border-[#004649]"
+                value={subjectForm.teacherId}
+                onChange={(e) => setSubjectForm((f) => ({ ...f, teacherId: e.target.value }))}
+              >
                 <option value="">Assign Teacher (optional)</option>
                 {teachers.map((t) => <option key={t.id} value={t.id}>{t.user.fullName}</option>)}
               </select>
-              <input className="h-11 rounded-xl border border-[#c4d0db] px-3 md:col-span-2" type="number" min={1} value={subjectForm.creditHours} onChange={(e) => setSubjectForm((f) => ({ ...f, creditHours: Number(e.target.value) }))} />
+              <input
+                className="h-10 rounded-lg border border-[#d4dee7] px-3 text-sm outline-none focus:border-[#004649] sm:col-span-2"
+                type="number"
+                min={1}
+                value={subjectForm.creditHours}
+                onChange={(e) => setSubjectForm((f) => ({ ...f, creditHours: Number(e.target.value) }))}
+              />
             </div>
-            <button className="mt-4 h-11 rounded-xl bg-[#0f5954] px-5 font-semibold text-white">Add Subject</button>
+            <button className="mt-3 rounded-lg bg-[#004649] px-4 py-2 text-sm font-semibold text-white hover:bg-[#005a5e]">
+              Add Subject
+            </button>
           </form>
         </div>
-        {message ? <p className="mt-3 text-sm text-[#5c6668]">{message}</p> : null}
-      </section>
+        {message ? (
+          <p className={`mt-3 text-sm ${message.toLowerCase().includes('error') || message.includes('Unable') ? 'text-[#ba1a1a]' : 'text-[#004649]'}`}>
+            {message}
+          </p>
+        ) : null}
+      </div>
 
-      <section className="grid gap-4 lg:grid-cols-2">
-        <div className="rounded-[24px] bg-white p-5 shadow-[0px_12px_32px_rgba(26,28,28,0.06)]">
-          <h3 className="text-4xl font-bold text-[#0f1f3a]">Classes</h3>
-          <div className="mt-4 space-y-3">
+      <div className="grid gap-4 lg:grid-cols-2">
+        <div className="rounded-xl bg-white border border-[#e2e8e8] p-6">
+          <h3 className="font-semibold text-[#1a1c1c] mb-4">Classes</h3>
+          <div className="space-y-2">
             {classes.map((item) => (
-              <article key={item.id} className="rounded-2xl border border-[#d4dee7] p-4">
-                <p className="text-2xl font-semibold text-[#0f1f3a]">{item.name} - {item.section}</p>
-                <p className="text-sm text-[#3f536c]">Year: {item.academicYear} | Room: {item.roomNo ?? '-'}</p>
-              </article>
+              <div key={item.id} className="rounded-lg bg-[#f5f7f5] px-4 py-3">
+                <p className="font-semibold text-[#1a1c1c]">{item.name} - {item.section}</p>
+                <p className="text-xs text-[#6f7979] mt-0.5">
+                  Year: {item.academicYear} | Room: {item.roomNo ?? '-'} | Students: {item.students?.length ?? 0} | Subjects: {item.subjects?.length ?? 0}
+                </p>
+              </div>
             ))}
-            {classes.length === 0 ? <p className="text-sm text-[#596364]">No classes created yet.</p> : null}
+            {classes.length === 0 ? <p className="text-sm text-[#6f7979]">No classes created yet.</p> : null}
           </div>
         </div>
 
-        <div className="rounded-[24px] bg-white p-5 shadow-[0px_12px_32px_rgba(26,28,28,0.06)]">
-          <h3 className="text-4xl font-bold text-[#0f1f3a]">Subjects</h3>
-          <div className="mt-4 space-y-3">
+        <div className="rounded-xl bg-white border border-[#e2e8e8] p-6">
+          <h3 className="font-semibold text-[#1a1c1c] mb-4">Subjects</h3>
+          <div className="space-y-2">
             {subjects.map((item) => (
-              <article key={item.id} className="rounded-2xl border border-[#d4dee7] p-4">
-                <p className="text-2xl font-semibold text-[#0f1f3a]">{item.name} ({item.code})</p>
-                <p className="text-sm text-[#3f536c]">Class: {item.class ? `${item.class.name} - ${item.class.section}` : '-'} </p>
-                <p className="text-sm text-[#3f536c]">Teacher: {item.teacher?.user.fullName ?? 'Unassigned'}</p>
-              </article>
+              <div key={item.id} className="rounded-lg bg-[#f5f7f5] px-4 py-3">
+                <p className="font-semibold text-[#1a1c1c]">{item.name} ({item.code})</p>
+                <p className="text-xs text-[#6f7979] mt-0.5">
+                  Class: {item.class ? `${item.class.name} - ${item.class.section}` : '-'} | Teacher: {item.teacher?.user.fullName ?? 'Unassigned'}
+                </p>
+              </div>
             ))}
-            {subjects.length === 0 ? <p className="text-sm text-[#596364]">No subjects created yet.</p> : null}
+            {subjects.length === 0 ? <p className="text-sm text-[#6f7979]">No subjects created yet.</p> : null}
           </div>
         </div>
-      </section>
+      </div>
     </div>
   );
 }

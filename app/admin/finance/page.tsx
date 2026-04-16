@@ -1,24 +1,14 @@
-﻿import { PaymentStatus } from '@prisma/client';
+import { PaymentStatus } from '@prisma/client';
 import { prisma } from '@/lib/prisma';
 import { formatCurrency } from '@/lib/utils';
 
 export const dynamic = 'force-dynamic';
 
 function statusColor(status: PaymentStatus) {
-  if (status === 'PAID') return 'bg-emerald-100 text-emerald-700';
-  if (status === 'PARTIAL') return 'bg-amber-100 text-amber-700';
-  if (status === 'OVERDUE') return 'bg-rose-100 text-rose-700';
-  return 'bg-[#f3f4f3] text-[#596364]';
-}
-
-function StatCard({ label, value, tone = 'teal' }: { label: string; value: string | number; tone?: 'teal' | 'amber' | 'dark' }) {
-  const toneClass = tone === 'amber' ? 'text-[#895100]' : tone === 'dark' ? 'text-[#1a1c1c]' : 'text-[#124346]';
-  return (
-    <div className="rounded-xl bg-[#f3f4f3] p-4">
-      <p className="text-[10px] font-bold uppercase tracking-[0.18em] text-[#6e7778]">{label}</p>
-      <p className={`font-headline mt-2 text-3xl font-extrabold ${toneClass}`}>{value}</p>
-    </div>
-  );
+  if (status === 'PAID') return 'bg-[#e8f5e9] text-[#004649]';
+  if (status === 'PARTIAL') return 'bg-[#fff3e0] text-[#865300]';
+  if (status === 'OVERDUE') return 'bg-[#fde8e8] text-[#ba1a1a]';
+  return 'bg-[#f5f7f5] text-[#6f7979]';
 }
 
 export default async function AdminFinancePage() {
@@ -51,79 +41,85 @@ export default async function AdminFinancePage() {
   const collectionRate = totalBilled > 0 ? Math.round((totalPaid / totalBilled) * 100) : 0;
 
   return (
-    <div className="space-y-6">
-      <section className="rounded-[1.2rem] bg-white p-7 shadow-[0px_12px_32px_rgba(26,28,28,0.06)]">
-        <p className="text-[10px] font-semibold uppercase tracking-[0.32em] text-[#6e7778]">Finance</p>
-        <h2 className="font-headline mt-1 text-4xl font-extrabold tracking-[-0.03em] text-[#124346] md:text-5xl">Financial Oversight</h2>
-        <p className="mt-2 text-[#596364]">Monitor fee collection, pending dues, and transaction health.</p>
+    <div className="space-y-4">
+      <div className="rounded-xl bg-white border border-[#e2e8e8] p-6">
+        <h2 className="text-2xl font-bold text-[#1a1c1c]">Finance</h2>
+        <p className="mt-1 text-sm text-[#6f7979]">Monitor fee collection, pending dues, and transaction health.</p>
 
-        <div className="mt-5 grid gap-4 md:grid-cols-2 xl:grid-cols-5">
-          <StatCard label="Total Billed" value={formatCurrency(totalBilled)} tone="dark" />
-          <StatCard label="Total Collected" value={formatCurrency(totalPaid)} />
-          <StatCard label="This Month" value={formatCurrency(thisMonthPaid)} />
-          <StatCard label="Pending Fees" value={pendingCount} tone="amber" />
-          <StatCard label="Collection Rate" value={`${collectionRate}%`} tone="dark" />
+        <div className="mt-5 grid grid-cols-2 gap-3 lg:grid-cols-5">
+          {[
+            { label: 'Total Billed', value: formatCurrency(totalBilled) },
+            { label: 'Total Collected', value: formatCurrency(totalPaid) },
+            { label: 'This Month', value: formatCurrency(thisMonthPaid) },
+            { label: 'Pending Fees', value: pendingCount },
+            { label: 'Collection Rate', value: `${collectionRate}%` },
+          ].map(({ label, value }) => (
+            <div key={label} className="rounded-lg bg-[#f5f7f5] p-4">
+              <p className="text-[10px] font-bold uppercase tracking-widest text-[#6f7979]">{label}</p>
+              <p className="mt-2 text-2xl font-bold text-[#1a1c1c]">{value}</p>
+            </div>
+          ))}
         </div>
-      </section>
+      </div>
 
-      <section className="grid gap-6 xl:grid-cols-2">
-        <div className="rounded-[1.2rem] bg-white p-7 shadow-[0px_12px_32px_rgba(26,28,28,0.06)]">
-          <h3 className="font-headline text-2xl font-bold tracking-[-0.02em] text-[#124346]">Recent Transactions</h3>
-          <div className="mt-4 overflow-x-auto">
-            <table className="min-w-full text-sm">
-              <thead className="bg-[#f3f4f3] text-[#596364]">
-                <tr>
-                  <th className="px-3 py-3 text-left text-[10px] font-bold uppercase tracking-[0.18em]">Student</th>
-                  <th className="px-3 py-3 text-left text-[10px] font-bold uppercase tracking-[0.18em]">Fee</th>
-                  <th className="px-3 py-3 text-left text-[10px] font-bold uppercase tracking-[0.18em]">Method</th>
-                  <th className="px-3 py-3 text-right text-[10px] font-bold uppercase tracking-[0.18em]">Amount</th>
+      <div className="grid gap-4 lg:grid-cols-2">
+        <div className="rounded-xl bg-white border border-[#e2e8e8] p-6">
+          <h3 className="font-semibold text-[#1a1c1c] mb-4">Recent Transactions</h3>
+          <table className="w-full text-sm">
+            <thead>
+              <tr className="border-b border-[#e2e8e8]">
+                <th className="pb-2 text-left text-[10px] font-bold uppercase tracking-widest text-[#6f7979]">Student</th>
+                <th className="pb-2 text-left text-[10px] font-bold uppercase tracking-widest text-[#6f7979]">Fee</th>
+                <th className="pb-2 text-right text-[10px] font-bold uppercase tracking-widest text-[#6f7979]">Amount</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-[#e2e8e8]">
+              {recentPayments.map((item) => (
+                <tr key={item.id}>
+                  <td className="py-3 font-medium text-[#1a1c1c]">{item.fee.student.user.fullName}</td>
+                  <td className="py-3 text-[#6f7979]">{item.fee.title}</td>
+                  <td className="py-3 text-right font-semibold text-[#1a1c1c]">{formatCurrency(Number(item.amountPaid))}</td>
                 </tr>
-              </thead>
-              <tbody>
-                {recentPayments.map((item) => (
-                  <tr key={item.id} className="border-b border-slate-100">
-                    <td className="px-3 py-3 font-semibold text-[#1a1c1c]">{item.fee.student.user.fullName}</td>
-                    <td className="px-3 py-3">{item.fee.title}</td>
-                    <td className="px-3 py-3">{item.method.replace('_', ' ')}</td>
-                    <td className="px-3 py-3 text-right font-semibold">{formatCurrency(Number(item.amountPaid))}</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-            {recentPayments.length === 0 ? <p className="mt-4 text-sm text-[#596364]">No transactions yet.</p> : null}
-          </div>
+              ))}
+            </tbody>
+          </table>
+          {recentPayments.length === 0 ? <p className="mt-4 text-sm text-[#6f7979]">No transactions yet.</p> : null}
         </div>
 
-        <div className="rounded-[1.2rem] bg-white p-7 shadow-[0px_12px_32px_rgba(26,28,28,0.06)]">
-          <div className="flex items-center justify-between">
-            <h3 className="font-headline text-2xl font-bold tracking-[-0.02em] text-[#124346]">Pending & Overdue Dues</h3>
-            <span className="rounded-full bg-rose-100 px-3 py-1 text-[10px] font-bold uppercase tracking-[0.18em] text-rose-700">Overdue: {overdueCount}</span>
+        <div className="rounded-xl bg-white border border-[#e2e8e8] p-6">
+          <div className="flex items-center justify-between mb-4">
+            <h3 className="font-semibold text-[#1a1c1c]">Pending &amp; Overdue Dues</h3>
+            <span className="rounded-full bg-[#fde8e8] px-3 py-1 text-[10px] font-bold text-[#ba1a1a]">
+              Overdue: {overdueCount}
+            </span>
           </div>
-          <div className="mt-4 space-y-3">
+          <div className="space-y-3">
             {dues.map((fee) => {
               const paid = fee.payments.reduce((sum, p) => sum + Number(p.amountPaid), 0);
               const total = Number(fee.amount) - Number(fee.discount);
               const remaining = Math.max(total - paid, 0);
               return (
-                <div key={fee.id} className="rounded-xl border border-[#d4dee7] p-4">
+                <div key={fee.id} className="rounded-lg border border-[#e2e8e8] p-4">
                   <div className="flex items-start justify-between gap-3">
                     <div>
                       <p className="font-semibold text-[#1a1c1c]">{fee.student.user.fullName}</p>
-                      <p className="text-sm text-[#596364]">{fee.title} - Due {fee.dueDate.toISOString().slice(0, 10)}</p>
+                      <p className="text-xs text-[#6f7979] mt-0.5">{fee.title} — Due {fee.dueDate.toISOString().slice(0, 10)}</p>
                     </div>
-                    <span className={`rounded-full px-2.5 py-1 text-xs font-semibold ${statusColor(fee.status)}`}>{fee.status}</span>
+                    <span className={`rounded-full px-2.5 py-1 text-[10px] font-bold ${statusColor(fee.status)}`}>
+                      {fee.status}
+                    </span>
                   </div>
                   <div className="mt-3 flex items-center justify-between text-sm">
-                    <span className="text-[#6e7778]">Remaining</span>
+                    <span className="text-[#6f7979]">Remaining</span>
                     <span className="font-bold text-[#004649]">{formatCurrency(remaining)}</span>
                   </div>
                 </div>
               );
             })}
-            {dues.length === 0 ? <p className="text-sm text-[#596364]">No pending dues right now.</p> : null}
+            {dues.length === 0 ? <p className="text-sm text-[#6f7979]">No pending dues right now.</p> : null}
           </div>
         </div>
-      </section>
+      </div>
     </div>
   );
 }

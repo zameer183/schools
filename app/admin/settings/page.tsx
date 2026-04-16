@@ -1,4 +1,4 @@
-﻿import { UserRole } from '@prisma/client';
+import { UserRole } from '@prisma/client';
 import { requireAuth } from '@/lib/auth';
 import { prisma } from '@/lib/prisma';
 
@@ -31,71 +31,121 @@ export default async function AdminSettingsPage() {
   const storageMb = (Number(files._sum.sizeInBytes ?? 0) / (1024 * 1024)).toFixed(2);
 
   return (
-    <div className="space-y-6">
-      <section className="rounded-[1.2rem] bg-white p-7 shadow-[0px_12px_32px_rgba(26,28,28,0.06)]">
-        <p className="text-[10px] font-semibold uppercase tracking-[0.32em] text-[#6e7778]">Settings</p>
-        <h2 className="font-headline mt-1 text-4xl font-extrabold tracking-[-0.03em] text-[#124346] md:text-5xl">Configuration Hub</h2>
-        <p className="mt-2 text-[#596364]">Configure institution profile, preferences, and system controls.</p>
+    <div className="space-y-4">
+      <div className="rounded-xl bg-white border border-[#e2e8e8] p-6">
+        <h2 className="text-2xl font-bold text-[#1a1c1c]">Settings</h2>
+        <p className="mt-1 text-sm text-[#6f7979]">Configure institution profile, preferences, and system controls.</p>
 
-        <div className="mt-5 grid gap-4 md:grid-cols-2 xl:grid-cols-4">
-          <div className="rounded-xl bg-[#f3f4f3] p-4"><p className="text-[10px] font-bold uppercase tracking-[0.18em] text-[#6e7778]">Active Users</p><p className="font-headline mt-2 text-3xl font-extrabold text-[#124346]">{activeUsers}</p></div>
-          <div className="rounded-xl bg-[#f3f4f3] p-4"><p className="text-[10px] font-bold uppercase tracking-[0.18em] text-[#6e7778]">Inactive Users</p><p className="font-headline mt-2 text-3xl font-extrabold text-[#895100]">{inactiveUsers}</p></div>
-          <div className="rounded-xl bg-[#f3f4f3] p-4"><p className="text-[10px] font-bold uppercase tracking-[0.18em] text-[#6e7778]">Academic Entities</p><p className="font-headline mt-2 text-3xl font-extrabold text-[#124346]">{classes + subjects + assignments}</p></div>
-          <div className="rounded-xl bg-[#f3f4f3] p-4"><p className="text-[10px] font-bold uppercase tracking-[0.18em] text-[#6e7778]">Uploaded Files</p><p className="font-headline mt-2 text-3xl font-extrabold text-[#124346]">{files._count._all}</p><p className="text-xs text-[#596364]">{storageMb} MB</p></div>
+        <div className="mt-5 grid grid-cols-2 gap-3 lg:grid-cols-4">
+          <div className="rounded-lg bg-[#f5f7f5] p-4">
+            <p className="text-[10px] font-bold uppercase tracking-widest text-[#6f7979]">Active Users</p>
+            <p className="mt-2 text-3xl font-bold text-[#1a1c1c]">{activeUsers}</p>
+          </div>
+          <div className="rounded-lg bg-[#f5f7f5] p-4">
+            <p className="text-[10px] font-bold uppercase tracking-widest text-[#6f7979]">Inactive Users</p>
+            <p className="mt-2 text-3xl font-bold text-[#1a1c1c]">{inactiveUsers}</p>
+          </div>
+          <div className="rounded-lg bg-[#f5f7f5] p-4">
+            <p className="text-[10px] font-bold uppercase tracking-widest text-[#6f7979]">Academic Entities</p>
+            <p className="mt-2 text-3xl font-bold text-[#1a1c1c]">{classes + subjects + assignments}</p>
+          </div>
+          <div className="rounded-lg bg-[#f5f7f5] p-4">
+            <p className="text-[10px] font-bold uppercase tracking-widest text-[#6f7979]">Uploaded Files</p>
+            <p className="mt-2 text-3xl font-bold text-[#1a1c1c]">{files._count._all} ({storageMb} MB)</p>
+          </div>
         </div>
-      </section>
+      </div>
 
-      <section className="grid gap-6 xl:grid-cols-3">
-        <div className="rounded-[1.2rem] bg-white p-7 shadow-[0px_12px_32px_rgba(26,28,28,0.06)]">
-          <h3 className="font-headline text-2xl font-bold tracking-[-0.02em] text-[#124346]">Admin Profile</h3>
-          <div className="mt-4 space-y-3 text-sm">
-            <div className="rounded-xl bg-[#f3f4f3] px-4 py-3"><p className="text-[#6e7778]">Name</p><p className="font-semibold text-[#1a1c1c]">{admin?.fullName ?? 'System Admin'}</p></div>
-            <div className="rounded-xl bg-[#f3f4f3] px-4 py-3"><p className="text-[#6e7778]">Email</p><p className="font-semibold text-[#1a1c1c]">{admin?.email ?? '-'}</p></div>
-            <div className="rounded-xl bg-[#f3f4f3] px-4 py-3"><p className="text-[#6e7778]">Phone</p><p className="font-semibold text-[#1a1c1c]">{admin?.phone ?? '-'}</p></div>
+      <div className="grid gap-4 lg:grid-cols-3">
+        <div className="rounded-xl bg-white border border-[#e2e8e8] p-6">
+          <h3 className="font-semibold text-[#1a1c1c] mb-4">Admin Profile</h3>
+          <div className="space-y-3 text-sm">
+            <div className="rounded-lg bg-[#f5f7f5] px-4 py-3">
+              <p className="text-[10px] text-[#6f7979] uppercase tracking-widest">Name</p>
+              <p className="font-semibold text-[#1a1c1c] mt-0.5">{admin?.fullName ?? 'System Admin'}</p>
+            </div>
+            <div className="rounded-lg bg-[#f5f7f5] px-4 py-3">
+              <p className="text-[10px] text-[#6f7979] uppercase tracking-widest">Email</p>
+              <p className="font-semibold text-[#1a1c1c] mt-0.5">{admin?.email ?? '-'}</p>
+            </div>
+            <div className="rounded-lg bg-[#f5f7f5] px-4 py-3">
+              <p className="text-[10px] text-[#6f7979] uppercase tracking-widest">Phone</p>
+              <p className="font-semibold text-[#1a1c1c] mt-0.5">{admin?.phone ?? '-'}</p>
+            </div>
+            <div className="rounded-lg bg-[#f5f7f5] px-4 py-3">
+              <p className="text-[10px] text-[#6f7979] uppercase tracking-widest">Joined</p>
+              <p className="font-semibold text-[#1a1c1c] mt-0.5">{admin?.createdAt.toISOString().slice(0, 10) ?? '-'}</p>
+            </div>
           </div>
         </div>
 
-        <div className="rounded-[1.2rem] bg-white p-7 shadow-[0px_12px_32px_rgba(26,28,28,0.06)]">
-          <h3 className="font-headline text-2xl font-bold tracking-[-0.02em] text-[#124346]">Role Distribution</h3>
-          <div className="mt-4 space-y-3 text-sm">
-            <div className="flex items-center justify-between rounded-xl bg-[#f3f4f3] px-4 py-3"><span className="text-[#596364]">Admins</span><span className="font-bold">{roleMap.get('ADMIN') ?? 0}</span></div>
-            <div className="flex items-center justify-between rounded-xl bg-[#f3f4f3] px-4 py-3"><span className="text-[#596364]">Teachers</span><span className="font-bold">{roleMap.get('TEACHER') ?? 0}</span></div>
-            <div className="flex items-center justify-between rounded-xl bg-[#f3f4f3] px-4 py-3"><span className="text-[#596364]">Students</span><span className="font-bold">{roleMap.get('STUDENT') ?? 0}</span></div>
-            <div className="flex items-center justify-between rounded-xl bg-[#f3f4f3] px-4 py-3"><span className="text-[#596364]">Parents</span><span className="font-bold">{roleMap.get('PARENT') ?? 0}</span></div>
+        <div className="rounded-xl bg-white border border-[#e2e8e8] p-6">
+          <h3 className="font-semibold text-[#1a1c1c] mb-4">Role Distribution</h3>
+          <div className="space-y-2 text-sm">
+            {(['ADMIN', 'TEACHER', 'STUDENT', 'PARENT'] as const).map((role) => (
+              <div key={role} className="flex items-center justify-between rounded-lg bg-[#f5f7f5] px-4 py-3">
+                <span className="text-[#6f7979]">{role.charAt(0) + role.slice(1).toLowerCase()}s</span>
+                <span className="font-bold text-[#1a1c1c]">{roleMap.get(role) ?? 0}</span>
+              </div>
+            ))}
           </div>
         </div>
 
-        <div className="rounded-[1.2rem] bg-white p-7 shadow-[0px_12px_32px_rgba(26,28,28,0.06)]">
-          <h3 className="font-headline text-2xl font-bold tracking-[-0.02em] text-[#124346]">System Modules</h3>
-          <div className="mt-4 space-y-3 text-sm">
-            <div className="flex items-center justify-between rounded-xl bg-[#f3f4f3] px-4 py-3"><span className="text-[#596364]">Classes</span><span className="font-bold">{classes}</span></div>
-            <div className="flex items-center justify-between rounded-xl bg-[#f3f4f3] px-4 py-3"><span className="text-[#596364]">Subjects</span><span className="font-bold">{subjects}</span></div>
-            <div className="flex items-center justify-between rounded-xl bg-[#f3f4f3] px-4 py-3"><span className="text-[#596364]">Assignments</span><span className="font-bold">{assignments}</span></div>
-            <div className="flex items-center justify-between rounded-xl bg-[#f3f4f3] px-4 py-3"><span className="text-[#596364]">Files</span><span className="font-bold">{files._count._all}</span></div>
+        <div className="rounded-xl bg-white border border-[#e2e8e8] p-6">
+          <h3 className="font-semibold text-[#1a1c1c] mb-4">System Modules</h3>
+          <div className="space-y-2 text-sm">
+            <div className="flex items-center justify-between rounded-lg bg-[#f5f7f5] px-4 py-3">
+              <span className="text-[#6f7979]">Classes</span>
+              <span className="font-bold text-[#1a1c1c]">{classes}</span>
+            </div>
+            <div className="flex items-center justify-between rounded-lg bg-[#f5f7f5] px-4 py-3">
+              <span className="text-[#6f7979]">Subjects</span>
+              <span className="font-bold text-[#1a1c1c]">{subjects}</span>
+            </div>
+            <div className="flex items-center justify-between rounded-lg bg-[#f5f7f5] px-4 py-3">
+              <span className="text-[#6f7979]">Assignments</span>
+              <span className="font-bold text-[#1a1c1c]">{assignments}</span>
+            </div>
+            <div className="flex items-center justify-between rounded-lg bg-[#f5f7f5] px-4 py-3">
+              <span className="text-[#6f7979]">Files</span>
+              <span className="font-bold text-[#1a1c1c]">{files._count._all}</span>
+            </div>
           </div>
         </div>
-      </section>
+      </div>
 
-      <section className="rounded-[1.2rem] bg-white p-7 shadow-[0px_12px_32px_rgba(26,28,28,0.06)]">
-        <h3 className="font-headline text-2xl font-bold tracking-[-0.02em] text-[#124346]">Recently Added Users</h3>
-        <div className="mt-4 overflow-x-auto">
-          <table className="min-w-full text-sm">
-            <thead className="bg-[#f3f4f3] text-[#596364]"><tr><th className="px-3 py-3 text-left text-[10px] font-bold uppercase tracking-[0.18em]">Name</th><th className="px-3 py-3 text-left text-[10px] font-bold uppercase tracking-[0.18em]">Email</th><th className="px-3 py-3 text-left text-[10px] font-bold uppercase tracking-[0.18em]">Role</th><th className="px-3 py-3 text-left text-[10px] font-bold uppercase tracking-[0.18em]">Status</th><th className="px-3 py-3 text-left text-[10px] font-bold uppercase tracking-[0.18em]">Created</th></tr></thead>
-            <tbody>
+      <div className="rounded-xl bg-white border border-[#e2e8e8] p-6">
+        <h3 className="font-semibold text-[#1a1c1c] mb-4">Recently Added Users</h3>
+        <div className="overflow-x-auto">
+          <table className="w-full text-sm">
+            <thead>
+              <tr className="border-b border-[#e2e8e8]">
+                <th className="pb-2 text-left text-[10px] font-bold uppercase tracking-widest text-[#6f7979]">Name</th>
+                <th className="pb-2 text-left text-[10px] font-bold uppercase tracking-widest text-[#6f7979]">Email</th>
+                <th className="pb-2 text-left text-[10px] font-bold uppercase tracking-widest text-[#6f7979]">Role</th>
+                <th className="pb-2 text-left text-[10px] font-bold uppercase tracking-widest text-[#6f7979]">Status</th>
+                <th className="pb-2 text-left text-[10px] font-bold uppercase tracking-widest text-[#6f7979]">Created</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-[#e2e8e8]">
               {recentUsers.map((u) => (
-                <tr key={u.id} className="border-b border-slate-100">
-                  <td className="px-3 py-3 font-semibold text-[#1a1c1c]">{u.fullName}</td>
-                  <td className="px-3 py-3">{u.email}</td>
-                  <td className="px-3 py-3">{u.role}</td>
-                  <td className="px-3 py-3">{u.isActive ? 'Active' : 'Inactive'}</td>
-                  <td className="px-3 py-3">{u.createdAt.toISOString().slice(0, 10)}</td>
+                <tr key={u.id}>
+                  <td className="py-3 font-medium text-[#1a1c1c]">{u.fullName}</td>
+                  <td className="py-3 text-[#6f7979]">{u.email}</td>
+                  <td className="py-3 text-[#6f7979]">{u.role}</td>
+                  <td className="py-3">
+                    <span className={`rounded-full px-2 py-0.5 text-[10px] font-bold ${u.isActive ? 'bg-[#e8f5e9] text-[#004649]' : 'bg-[#f5f7f5] text-[#6f7979]'}`}>
+                      {u.isActive ? 'Active' : 'Inactive'}
+                    </span>
+                  </td>
+                  <td className="py-3 text-[#6f7979]">{u.createdAt.toISOString().slice(0, 10)}</td>
                 </tr>
               ))}
             </tbody>
           </table>
-          {recentUsers.length === 0 ? <p className="mt-4 text-sm text-[#596364]">No users found.</p> : null}
+          {recentUsers.length === 0 ? <p className="mt-4 text-sm text-[#6f7979]">No users found.</p> : null}
         </div>
-      </section>
+      </div>
     </div>
   );
 }

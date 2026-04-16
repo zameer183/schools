@@ -1,4 +1,4 @@
-﻿'use client';
+'use client';
 
 import { useEffect, useState } from 'react';
 
@@ -79,54 +79,105 @@ export default function AdminTeachersPage() {
   };
 
   return (
-    <div className="space-y-5">
-      <section className="rounded-[24px] bg-white p-7 shadow-[0px_12px_32px_rgba(26,28,28,0.06)]">
-        <h2 className="font-headline text-4xl font-extrabold text-[#0f1f3a]">Add Teacher</h2>
-        <p className="mt-1 text-base text-[#3f536c]">Create teacher/staff account from admin panel.</p>
+    <div className="space-y-4">
+      <div className="rounded-xl bg-white border border-[#e2e8e8] p-6">
+        <h2 className="text-2xl font-bold text-[#1a1c1c]">Teachers</h2>
+        <p className="mt-1 text-sm text-[#6f7979]">Create teacher and staff accounts from the admin panel.</p>
 
-        <form onSubmit={createTeacher} className="mt-5 grid gap-3 md:grid-cols-2">
-          <input className="h-11 rounded-xl border border-[#c4d0db] px-3" placeholder="Full name" value={form.fullName} onChange={(e) => setForm((f) => ({ ...f, fullName: e.target.value }))} required />
-          <input className="h-11 rounded-xl border border-[#c4d0db] px-3" placeholder="Email" value={form.email} onChange={(e) => setForm((f) => ({ ...f, email: e.target.value }))} required />
-          <input className="h-11 rounded-xl border border-[#c4d0db] px-3" placeholder="Employee code" value={form.employeeCode} onChange={(e) => setForm((f) => ({ ...f, employeeCode: e.target.value }))} required />
-          <input className="h-11 rounded-xl border border-[#c4d0db] px-3" placeholder="Qualification" value={form.qualification} onChange={(e) => setForm((f) => ({ ...f, qualification: e.target.value }))} />
-          <input className="h-11 rounded-xl border border-[#c4d0db] px-3" placeholder="Specialization" value={form.specialization} onChange={(e) => setForm((f) => ({ ...f, specialization: e.target.value }))} />
-          <input className="h-11 rounded-xl border border-[#c4d0db] px-3" type="password" placeholder="Password" value={form.password} onChange={(e) => setForm((f) => ({ ...f, password: e.target.value }))} required />
-          <button disabled={saving} className="h-11 w-fit rounded-xl bg-[#0f5954] px-5 font-semibold text-white md:col-span-2">{saving ? 'Adding...' : 'Add Teacher'}</button>
+        <form onSubmit={createTeacher} className="mt-5 grid gap-3 sm:grid-cols-2">
+          <input
+            className="h-10 rounded-lg border border-[#d4dee7] px-3 text-sm outline-none focus:border-[#004649] focus:ring-1 focus:ring-[#004649]"
+            placeholder="Full name"
+            value={form.fullName}
+            onChange={(e) => setForm((f) => ({ ...f, fullName: e.target.value }))}
+            required
+          />
+          <input
+            className="h-10 rounded-lg border border-[#d4dee7] px-3 text-sm outline-none focus:border-[#004649] focus:ring-1 focus:ring-[#004649]"
+            placeholder="Email"
+            value={form.email}
+            onChange={(e) => setForm((f) => ({ ...f, email: e.target.value }))}
+            required
+          />
+          <input
+            className="h-10 rounded-lg border border-[#d4dee7] px-3 text-sm outline-none focus:border-[#004649] focus:ring-1 focus:ring-[#004649]"
+            placeholder="Employee code"
+            value={form.employeeCode}
+            onChange={(e) => setForm((f) => ({ ...f, employeeCode: e.target.value }))}
+            required
+          />
+          <input
+            className="h-10 rounded-lg border border-[#d4dee7] px-3 text-sm outline-none focus:border-[#004649] focus:ring-1 focus:ring-[#004649]"
+            placeholder="Qualification"
+            value={form.qualification}
+            onChange={(e) => setForm((f) => ({ ...f, qualification: e.target.value }))}
+          />
+          <input
+            className="h-10 rounded-lg border border-[#d4dee7] px-3 text-sm outline-none focus:border-[#004649] focus:ring-1 focus:ring-[#004649]"
+            placeholder="Specialization"
+            value={form.specialization}
+            onChange={(e) => setForm((f) => ({ ...f, specialization: e.target.value }))}
+          />
+          <input
+            className="h-10 rounded-lg border border-[#d4dee7] px-3 text-sm outline-none focus:border-[#004649] focus:ring-1 focus:ring-[#004649]"
+            type="password"
+            placeholder="Password"
+            value={form.password}
+            onChange={(e) => setForm((f) => ({ ...f, password: e.target.value }))}
+            required
+          />
+          <div className="sm:col-span-2">
+            <button
+              disabled={saving}
+              className="rounded-lg bg-[#004649] px-5 py-2.5 text-sm font-semibold text-white hover:bg-[#005a5e] disabled:opacity-60"
+            >
+              {saving ? 'Adding...' : 'Add Teacher'}
+            </button>
+            {message ? (
+              <span className={`ml-3 text-sm ${message.includes('success') ? 'text-[#004649]' : 'text-[#ba1a1a]'}`}>
+                {message}
+              </span>
+            ) : null}
+          </div>
         </form>
-        {message ? <p className="mt-3 text-sm text-[#5c6668]">{message}</p> : null}
-      </section>
+      </div>
 
-      <section className="rounded-[24px] bg-white p-7 shadow-[0px_12px_32px_rgba(26,28,28,0.06)]">
-        <h3 className="font-headline text-4xl font-bold text-[#0f1f3a]">Teacher List</h3>
-        <div className="mt-4 overflow-x-auto">
-          <table className="min-w-full text-sm">
-            <thead className="bg-[#f3f6f8] text-[#34495e]">
-              <tr>
-                <th className="px-3 py-3 text-left font-semibold">Name</th>
-                <th className="px-3 py-3 text-left font-semibold">Email</th>
-                <th className="px-3 py-3 text-left font-semibold">Employee Code</th>
-                <th className="px-3 py-3 text-left font-semibold">Specialization</th>
-                <th className="px-3 py-3 text-left font-semibold">Actions</th>
+      <div className="rounded-xl bg-white border border-[#e2e8e8] p-6">
+        <h3 className="font-semibold text-[#1a1c1c] mb-4">Teacher List</h3>
+        <div className="overflow-x-auto">
+          <table className="w-full text-sm">
+            <thead>
+              <tr className="border-b border-[#e2e8e8]">
+                <th className="pb-2 text-left text-[10px] font-bold uppercase tracking-widest text-[#6f7979]">Name</th>
+                <th className="pb-2 text-left text-[10px] font-bold uppercase tracking-widest text-[#6f7979]">Email</th>
+                <th className="pb-2 text-left text-[10px] font-bold uppercase tracking-widest text-[#6f7979]">Employee Code</th>
+                <th className="pb-2 text-left text-[10px] font-bold uppercase tracking-widest text-[#6f7979]">Specialization</th>
+                <th className="pb-2 text-right text-[10px] font-bold uppercase tracking-widest text-[#6f7979]">Actions</th>
               </tr>
             </thead>
-            <tbody>
+            <tbody className="divide-y divide-[#e2e8e8]">
               {teachers.map((teacher) => (
-                <tr key={teacher.id} className="border-b border-slate-100">
-                  <td className="px-3 py-3 font-semibold text-[#1a1c1c]">{teacher.user.fullName}</td>
-                  <td className="px-3 py-3 text-[#596364]">{teacher.user.email}</td>
-                  <td className="px-3 py-3">{teacher.employeeCode}</td>
-                  <td className="px-3 py-3">{teacher.specialization || '-'}</td>
-                  <td className="px-3 py-3">
-                    <button onClick={() => removeTeacher(teacher.id)} className="rounded-lg border border-rose-300 px-3 py-1 text-rose-700 hover:bg-rose-50">Delete</button>
+                <tr key={teacher.id}>
+                  <td className="py-3 font-medium text-[#1a1c1c]">{teacher.user.fullName}</td>
+                  <td className="py-3 text-[#6f7979]">{teacher.user.email}</td>
+                  <td className="py-3 text-[#6f7979]">{teacher.employeeCode}</td>
+                  <td className="py-3 text-[#6f7979]">{teacher.specialization || '-'}</td>
+                  <td className="py-3 text-right">
+                    <button
+                      onClick={() => removeTeacher(teacher.id)}
+                      className="rounded-lg border border-[#fca5a5] px-3 py-1 text-xs font-semibold text-[#ba1a1a] hover:bg-[#fde8e8]"
+                    >
+                      Remove
+                    </button>
                   </td>
                 </tr>
               ))}
             </tbody>
           </table>
-          {loading ? <p className="mt-4 text-sm text-[#596364]">Loading...</p> : null}
-          {!loading && teachers.length === 0 ? <p className="mt-4 text-sm text-[#596364]">No teachers available.</p> : null}
+          {loading ? <p className="mt-4 text-sm text-[#6f7979]">Loading...</p> : null}
+          {!loading && teachers.length === 0 ? <p className="mt-4 text-sm text-[#6f7979]">No teachers yet.</p> : null}
         </div>
-      </section>
+      </div>
     </div>
   );
 }
