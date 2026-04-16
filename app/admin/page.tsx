@@ -121,7 +121,7 @@ export default async function AdminDashboardPage() {
 
         {/* Charts */}
         <section className="grid grid-cols-12 gap-8">
-          <article className="col-span-8 bg-white rounded-3xl p-8 shadow-[0_12px_40px_rgba(0,70,73,0.06)]">
+          <article className="col-span-8 bg-white rounded-[1.75rem] p-8 shadow-[0_12px_40px_rgba(0,70,73,0.06)]">
             <div className="flex items-center justify-between mb-8">
               <div>
                 <h3 className="font-headline text-xl font-extrabold text-[#004649]">Attendance Trends</h3>
@@ -134,7 +134,7 @@ export default async function AdminDashboardPage() {
             <AttendanceBarChartCard data={attendanceSummary} />
           </article>
 
-          <article className="col-span-4 bg-white rounded-3xl p-8 shadow-[0_12px_40px_rgba(0,70,73,0.06)]">
+          <article className="col-span-4 bg-white rounded-[1.75rem] p-8 shadow-[0_12px_40px_rgba(0,70,73,0.06)]">
             <h3 className="font-headline text-xl font-extrabold text-[#004649] mb-1">Student Demographics</h3>
             <p className="text-sm text-[#6f7979] mb-6">By Academic Department</p>
             <div className="space-y-5">
@@ -162,7 +162,7 @@ export default async function AdminDashboardPage() {
 
         {/* Financial Pulse */}
         <section className="grid grid-cols-12 gap-8">
-          <article className="col-span-9 bg-white rounded-3xl p-8 shadow-[0_12px_40px_rgba(0,70,73,0.06)]">
+          <article className="col-span-9 bg-white rounded-[1.75rem] p-8 shadow-[0_12px_40px_rgba(0,70,73,0.06)]">
             <div className="mb-6 flex items-center justify-between">
               <div>
                 <h3 className="font-headline text-xl font-extrabold text-[#004649]">Financial Pulse</h3>
@@ -182,7 +182,7 @@ export default async function AdminDashboardPage() {
             <EnrollmentAreaChart data={enrollmentData} />
           </article>
 
-          <article className="col-span-3 bg-white rounded-3xl p-8 shadow-[0_12px_40px_rgba(0,70,73,0.06)]">
+          <article className="col-span-3 bg-white rounded-[1.75rem] p-8 shadow-[0_12px_40px_rgba(0,70,73,0.06)]">
             <h3 className="font-headline text-lg font-extrabold text-[#004649] mb-4">Recent Activity</h3>
             <div className="space-y-4">
               {invoices.slice(0, 4).map((invoice) => {
@@ -211,7 +211,7 @@ export default async function AdminDashboardPage() {
         </section>
 
         {/* Recent Admissions */}
-        <section className="bg-white rounded-3xl p-8 shadow-[0_12px_40px_rgba(0,70,73,0.06)]">
+        <section className="bg-white rounded-[1.75rem] p-8 shadow-[0_12px_40px_rgba(0,70,73,0.06)]">
           <div className="mb-6 flex items-center justify-between">
             <div>
               <h3 className="font-headline text-xl font-extrabold text-[#004649]">Recent Admissions</h3>

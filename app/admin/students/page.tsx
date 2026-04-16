@@ -101,7 +101,7 @@ export default function AdminStudentsPage() {
           </select>
           <button disabled={saving} className="h-11 w-fit rounded-xl bg-[#0f5954] px-5 font-semibold text-white md:col-span-2">{saving ? 'Adding...' : 'Add Student'}</button>
         </form>
-        {message ? <p className="mt-3 text-sm text-slate-700">{message}</p> : null}
+        {message ? <p className="mt-3 text-sm text-[#5c6668]">{message}</p> : null}
       </section>
 
       <section className="rounded-[24px] bg-white p-7 shadow-[0px_12px_32px_rgba(26,28,28,0.06)]">

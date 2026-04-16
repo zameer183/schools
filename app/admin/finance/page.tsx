@@ -8,7 +8,7 @@ function statusColor(status: PaymentStatus) {
   if (status === 'PAID') return 'bg-emerald-100 text-emerald-700';
   if (status === 'PARTIAL') return 'bg-amber-100 text-amber-700';
   if (status === 'OVERDUE') return 'bg-rose-100 text-rose-700';
-  return 'bg-slate-100 text-slate-700';
+  return 'bg-[#f3f4f3] text-[#596364]';
 }
 
 function StatCard({ label, value, tone = 'teal' }: { label: string; value: string | number; tone?: 'teal' | 'amber' | 'dark' }) {
@@ -105,17 +105,17 @@ export default async function AdminFinancePage() {
               const total = Number(fee.amount) - Number(fee.discount);
               const remaining = Math.max(total - paid, 0);
               return (
-                <div key={fee.id} className="rounded-xl border border-slate-200 p-4">
+                <div key={fee.id} className="rounded-xl border border-[#d4dee7] p-4">
                   <div className="flex items-start justify-between gap-3">
                     <div>
-                      <p className="font-semibold text-slate-900">{fee.student.user.fullName}</p>
-                      <p className="text-sm text-slate-600">{fee.title} - Due {fee.dueDate.toISOString().slice(0, 10)}</p>
+                      <p className="font-semibold text-[#1a1c1c]">{fee.student.user.fullName}</p>
+                      <p className="text-sm text-[#596364]">{fee.title} - Due {fee.dueDate.toISOString().slice(0, 10)}</p>
                     </div>
                     <span className={`rounded-full px-2.5 py-1 text-xs font-semibold ${statusColor(fee.status)}`}>{fee.status}</span>
                   </div>
                   <div className="mt-3 flex items-center justify-between text-sm">
-                    <span className="text-slate-500">Remaining</span>
-                    <span className="font-bold text-slate-900">{formatCurrency(remaining)}</span>
+                    <span className="text-[#6e7778]">Remaining</span>
+                    <span className="font-bold text-[#004649]">{formatCurrency(remaining)}</span>
                   </div>
                 </div>
               );

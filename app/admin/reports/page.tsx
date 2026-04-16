@@ -58,7 +58,7 @@ export default async function AdminReportsPage() {
           <h3 className="font-headline text-2xl font-bold tracking-[-0.02em] text-[#124346]">Quick Export</h3>
           <div className="mt-4 grid gap-3">
             {reportItems.map((item) => (
-              <a key={item.key} href={item.href} className="inline-flex items-center justify-between rounded-xl border border-slate-200 px-4 py-3 text-sm font-semibold text-slate-700 hover:bg-slate-50">
+              <a key={item.key} href={item.href} className="inline-flex items-center justify-between rounded-xl border border-[#d4dee7] px-4 py-3 text-sm font-semibold text-[#1a1c1c] hover:bg-[#f3f4f3]">
                 <span>{item.label}</span>
                 <span>Download</span>
               </a>

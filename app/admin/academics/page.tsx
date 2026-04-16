@@ -109,7 +109,7 @@ export default function AdminAcademicsPage() {
             <button className="mt-4 h-11 rounded-xl bg-[#0f5954] px-5 font-semibold text-white">Add Subject</button>
           </form>
         </div>
-        {message ? <p className="mt-3 text-sm text-slate-700">{message}</p> : null}
+        {message ? <p className="mt-3 text-sm text-[#5c6668]">{message}</p> : null}
       </section>
 
       <section className="grid gap-4 lg:grid-cols-2">
