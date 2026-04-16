@@ -7,12 +7,11 @@ export const dynamic = 'force-dynamic';
 export default async function AdminSettingsPage() {
   const session = await requireAuth([UserRole.ADMIN]);
 
-  const [admin, activeUsers, totalStorage] = await Promise.all([
+  const [admin, totalStorage] = await Promise.all([
     prisma.user.findUnique({
       where: { id: session.id },
       select: { fullName: true, email: true, phone: true, createdAt: true }
     }),
-    prisma.user.count({ where: { isActive: true } }),
     prisma.fileAsset.aggregate({ _sum: { sizeInBytes: true } })
   ]);
 
@@ -22,7 +21,7 @@ export default async function AdminSettingsPage() {
     <div className="space-y-4">
       <div className="rounded-xl bg-white border border-[#e2e8e8] p-6">
         <h2 className="text-3xl font-bold text-[#1a1c1c]">System Configurations</h2>
-        <p className="mt-1 text-sm text-[#6f7979]">Fine-tune your institution's digital environment and academic standards.</p>
+        <p className="mt-1 text-sm text-[#6f7979]">Fine-tune your institution&apos;s digital environment and academic standards.</p>
 
         <div className="mt-5 flex gap-2 flex-wrap">
           {['School Profile', 'Academic Cycle', 'Global Settings', 'Grading Systems'].map((tab, i) => (

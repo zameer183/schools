@@ -1,5 +1,4 @@
 import { prisma } from '@/lib/prisma';
-import Link from 'next/link';
 
 export const dynamic = 'force-dynamic';
 
@@ -8,13 +7,11 @@ export default async function AdminReportsPage() {
   monthStart.setDate(1);
   monthStart.setHours(0, 0, 0, 0);
 
-  const [students, teachers, classes, attendanceThisMonth, unpaidFees, exams, results, lastPayments] = await Promise.all([
+  const [students, teachers, classes, attendanceThisMonth, results, lastPayments] = await Promise.all([
     prisma.student.count(),
     prisma.teacher.count(),
     prisma.class.count(),
     prisma.attendance.count({ where: { date: { gte: monthStart } } }),
-    prisma.fee.count({ where: { status: { in: ['PENDING', 'PARTIAL', 'OVERDUE'] } } }),
-    prisma.exam.count(),
     prisma.result.count(),
     prisma.payment.findMany({
       select: { id: true, amountPaid: true, paidAt: true, fee: { select: { title: true } } },
@@ -22,8 +19,6 @@ export default async function AdminReportsPage() {
       take: 5
     })
   ]);
-
-  const totalPaidThisMonth = lastPayments.reduce((s, p) => s + Number(p.amountPaid), 0);
 
   const reportCategories = [
     {

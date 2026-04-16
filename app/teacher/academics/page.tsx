@@ -137,7 +137,7 @@ export default async function TeacherAcademicsPage() {
                   {uniqueStudents.length === 0 ? (
                     <div className="p-6 text-center text-sm text-[#6f7979]">No students in your classes.</div>
                   ) : (
-                    uniqueStudents.map((student, i) => {
+                    uniqueStudents.map((student) => {
                       const result = activeResults.find((r) => r.studentId === student.id);
                       const hasMark = result !== undefined;
                       const grade = result ? gradeFor(Number(result.marksObtained), activeExam.totalMarks) : null;

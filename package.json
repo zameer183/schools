@@ -5,6 +5,7 @@
   "scripts": {
     "dev": "node scripts/dev.mjs",
     "build": "next build",
+    "postinstall": "prisma generate",
     "start": "next start -p 5000 -H 0.0.0.0",
     "lint": "ESLINT_USE_FLAT_CONFIG=false eslint app src --ext .ts,.tsx",
     "prisma:generate": "prisma generate",

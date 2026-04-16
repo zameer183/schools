@@ -1,3 +1,5 @@
+import Link from 'next/link';
+
 export default function UnauthorizedPage() {
   return (
     <div className="flex min-h-screen items-center justify-center p-6 bg-[#f5f6f5]">
@@ -7,9 +9,9 @@ export default function UnauthorizedPage() {
         <p className="mt-3 text-sm text-[#5c6668]">
           You do not have permission to access this section. Please contact your administrator.
         </p>
-        <a href="/" className="mt-6 inline-block rounded-xl bg-[#004649] px-6 py-2.5 text-sm font-semibold text-white hover:bg-[#005a5e]">
+        <Link href="/" className="mt-6 inline-block rounded-xl bg-[#004649] px-6 py-2.5 text-sm font-semibold text-white hover:bg-[#005a5e]">
           Go to Login
-        </a>
+        </Link>
       </div>
     </div>
   );

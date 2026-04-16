@@ -42,9 +42,6 @@ export default async function StudentResultsPage() {
     })
   ]);
 
-  const avgMarks = results.length
-    ? results.reduce((sum, r) => sum + Number(r.marksObtained), 0) / results.length
-    : 0;
   const totalMarksMax = results.reduce((sum, r) => sum + r.exam.totalMarks, 0);
   const totalMarksObt = results.reduce((sum, r) => sum + Number(r.marksObtained), 0);
   const gpa = results.length ? Math.min(4.0, (totalMarksObt / Math.max(totalMarksMax, 1)) * 4.0) : 0;

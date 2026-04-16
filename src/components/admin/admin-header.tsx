@@ -1,6 +1,6 @@
 'use client';
 
-import { Bell, LogOut, Menu, Moon, Search, UserCircle2 } from 'lucide-react';
+import { Bell, LogOut, Moon, Search } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { useMemo, useState, useTransition } from 'react';
 import { MobileMenuButton } from '@/components/admin/admin-sidebar';

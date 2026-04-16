@@ -124,7 +124,7 @@ export default function EnrollStudentPage() {
           <>
             <p className="text-[10px] font-bold uppercase tracking-widest text-[#865300] mb-1">Step 1 of 3</p>
             <h2 className="text-3xl font-bold text-[#1a1c1c] mb-1">Personal Details</h2>
-            <p className="text-sm text-[#6f7979] mb-6">Please provide the student's legal identification details and primary guardian contact information to begin the enrollment process.</p>
+            <p className="text-sm text-[#6f7979] mb-6">Please provide the student&apos;s legal identification details and primary guardian contact information to begin the enrollment process.</p>
 
             <div className="space-y-5">
               <div className="rounded-xl border border-[#e2e8e8] p-5">

@@ -2,7 +2,6 @@ import { revalidatePath } from 'next/cache';
 import { UserRole } from '@prisma/client';
 import { requireAuth } from '@/lib/auth';
 import { prisma } from '@/lib/prisma';
-import { formatDistanceToNow } from 'date-fns';
 
 export const dynamic = 'force-dynamic';
 
@@ -87,8 +86,6 @@ export default async function TeacherMessagesPage() {
       direction: 'sent' as const
     }))
   ].sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime());
-
-  const unreadCount = inbox.filter((m) => !m.isRead).length;
 
   function initials(name: string) {
     return name.split(' ').filter(Boolean).slice(0, 2).map((p) => p[0]?.toUpperCase() ?? '').join('');
