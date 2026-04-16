@@ -1,19 +1,29 @@
-﻿@tailwind base;
+@tailwind base;
 @tailwind components;
 @tailwind utilities;
 
 :root {
   --background: #f8f9fa;
-  --surface: #ffffff;
-  --surface-low: #f3f4f5;
-  --surface-high: #e7e8e9;
-  --text: #191c1d;
-  --muted: #3f4849;
+  --surface: #f8f9fa;
+  --surface-container-lowest: #ffffff;
+  --surface-container-low: #f3f4f5;
+  --surface-container: #edeeef;
+  --surface-container-high: #e7e8e9;
+  --surface-variant: #e1e3e4;
+  --on-surface: #191c1d;
+  --on-surface-variant: #3f4849;
+  --outline: #6f7979;
+  --outline-variant: #bfc8c9;
   --primary: #004649;
   --primary-container: #1b5e62;
+  --primary-fixed: #afedf2;
+  --primary-fixed-dim: #93d1d5;
   --secondary: #865300;
   --secondary-container: #fdb24f;
-  --border: #d8ddde;
+  --secondary-fixed: #ffddb8;
+  --error: #ba1a1a;
+  --error-container: #ffdad6;
+  --border: #bfc8c9;
 }
 
 html {
@@ -21,22 +31,21 @@ html {
 }
 
 body {
-  font-family: Inter, 'Segoe UI', system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
+  font-family: 'Inter', 'Segoe UI', system-ui, -apple-system, sans-serif;
   background: var(--background);
-  color: var(--text);
+  color: var(--on-surface);
   overflow-x: hidden;
   -webkit-font-smoothing: antialiased;
   text-rendering: optimizeLegibility;
 }
 
 .font-headline {
-  font-family: Manrope, Inter, 'Segoe UI', system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
+  font-family: 'Manrope', 'Inter', system-ui, sans-serif;
 }
 
 .card {
-  border-radius: 1rem;
-  border: 1px solid color-mix(in srgb, var(--border) 70%, white 30%);
-  background: var(--surface);
+  border-radius: 1.5rem;
+  background: var(--surface-container-lowest);
   box-shadow: 0 12px 40px rgba(0, 70, 73, 0.06);
 }
 
@@ -45,12 +54,12 @@ body {
 }
 
 .tonal-bg {
-  background: linear-gradient(160deg, rgba(147, 209, 213, 0.15) 0%, transparent 55%), var(--background);
+  background: var(--background);
 }
 
 .surface-card {
   border-radius: 1.5rem;
-  background: var(--surface);
+  background: var(--surface-container-lowest);
   box-shadow: 0 12px 40px rgba(0, 70, 73, 0.06);
 }
 
@@ -58,8 +67,11 @@ body {
   background: linear-gradient(135deg, var(--primary) 0%, var(--primary-container) 100%);
 }
 
-.editorial-pill {
-  border-radius: 9999px;
+.glass-effect {
+  backdrop-filter: blur(20px);
   background: rgba(255, 255, 255, 0.8);
-  box-shadow: 0 8px 24px rgba(0, 70, 73, 0.05);
+}
+
+.tonal-layer {
+  box-shadow: 0 12px 40px rgba(0, 70, 73, 0.06);
 }

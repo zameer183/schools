@@ -29,6 +29,18 @@ export function AppSidebar({
   const navItems = panelNavItems[role];
   const isAdmin = role === 'ADMIN';
 
+  const roleLabel =
+    role === 'ADMIN' ? 'Admin Portal' :
+    role === 'TEACHER' ? 'Teacher Hub' :
+    role === 'STUDENT' ? 'Student Hub' :
+    'Parent Hub';
+
+  const homeHref =
+    role === 'ADMIN' ? '/admin' :
+    role === 'TEACHER' ? '/teacher' :
+    role === 'PARENT' ? '/parent' :
+    '/student';
+
   const doLogout = () => {
     setError('');
     startTransition(async () => {
@@ -55,33 +67,28 @@ export function AppSidebar({
 
       <aside
         className={cn(
-          'fixed inset-y-0 left-0 z-50 flex w-[280px] flex-col border-r border-[#c0c8c9]/30 bg-[#f3f4f3] px-4 py-5 transition-transform duration-300 lg:translate-x-0',
+          'fixed inset-y-0 left-0 z-50 flex w-64 flex-col bg-[#f3f4f5] px-4 py-6 transition-transform duration-300 lg:translate-x-0',
           open ? 'translate-x-0' : '-translate-x-full'
         )}
       >
-        <div className="flex items-start justify-between gap-3 px-2">
-          <Link
-            href={role === 'ADMIN' ? '/admin' : role === 'TEACHER' ? '/teacher' : role === 'PARENT' ? '/parent' : '/student'}
-            onClick={onClose}
-            className="block w-full"
-          >
-            <img
-              src="https://lh3.googleusercontent.com/aida/ADBb0ugS93ixky9Hrwk3Lu4M6_TiPkBRA87BCMrXCDoYrNYGCyGK_IUUKl5gGMnM_c9oDK4OU-wer1BhDwF73zlZqnnv7SLurT5VR4tOsnzE61oOr2cEoomB2grf-Q_T5AwBrG8l25ybiL7xxVKo58FYf-4evOQpADITZNjeBFJa4Ci-zg8AAmEMFgzWVKc2CmnpUu-_853TNiOwAZDZLXgbE4nH_tB6OnGD0Hw7t0HyO6YHh-GcRgI4-VZxpfFLzrrcOy0SLWNkd2i6TQ"
-              alt="Institution logo"
-              className="h-auto w-[210px] object-contain"
-            />
+        <div className="mb-8 flex items-start justify-between px-4">
+          <Link href={homeHref} onClick={onClose} className="block">
+            <p className="text-[10px] font-bold uppercase tracking-[0.35em] text-[#6f7979]">{roleLabel}</p>
+            <h2 className="font-headline mt-1 text-xl font-extrabold leading-tight tracking-tight text-[#004649]">
+              Scholarly<br />Editorial
+            </h2>
           </Link>
           <button
             type="button"
             onClick={onClose}
-            className="inline-flex h-10 w-10 items-center justify-center rounded-full bg-white text-[#004649] shadow-sm lg:hidden"
+            className="mt-1 inline-flex h-8 w-8 items-center justify-center rounded-full bg-white text-[#004649] shadow-sm lg:hidden"
             aria-label="Close sidebar"
           >
-            <X className="h-5 w-5" />
+            <X className="h-4 w-4" />
           </button>
         </div>
 
-        <nav className="mt-5 flex-1 space-y-1 overflow-y-auto pr-1">
+        <nav className="flex-1 space-y-1 overflow-y-auto">
           {navItems.map((item: PanelNavItem) => {
             const Icon = item.icon;
             const active = isActive(pathname, item.href);
@@ -92,40 +99,45 @@ export function AppSidebar({
                 href={item.href}
                 onClick={onClose}
                 className={cn(
-                  'group flex items-center gap-3 rounded-2xl px-4 py-3.5 text-[15px] font-semibold transition-all',
+                  'flex items-center gap-3 rounded-xl px-4 py-3 text-sm font-semibold transition-all',
                   active
-                    ? 'bg-[#004649] text-white shadow-[0_12px_32px_rgba(0,70,73,0.18)]'
-                    : 'text-[#223956] hover:bg-white/70 hover:text-[#004649]'
+                    ? 'bg-white/50 border-r-4 border-[#004649] text-[#004649] shadow-[0_12px_40px_rgba(0,70,73,0.04)]'
+                    : 'text-[#6f7979] hover:bg-[#e7e8e9] hover:text-[#004649]'
                 )}
               >
-                <Icon className={cn('h-[18px] w-[18px] shrink-0', active ? 'text-white' : 'text-[#004649]')} />
-                <span className="tracking-[-0.01em]">{item.label}</span>
+                <Icon className={cn('h-[18px] w-[18px] shrink-0', active ? 'text-[#004649]' : 'text-[#6f7979]')} />
+                <span>{item.label}</span>
               </Link>
             );
           })}
         </nav>
 
-        {isAdmin ? (
-          <div className="mt-auto border-t border-[#c0c8c9]/30 pt-5">
-            <button className="mb-4 flex h-11 w-full items-center justify-center gap-2 rounded-xl bg-[#124346] text-sm font-bold text-white shadow-lg shadow-[#124346]/20">
+        <div className="mt-auto space-y-1 px-0 pt-4">
+          {isAdmin && (
+            <button
+              onClick={() => router.push('/admin/students')}
+              className="mb-4 flex h-11 w-full items-center justify-center gap-2 rounded-xl bg-gradient-to-br from-[#004649] to-[#1b5e62] text-sm font-semibold text-white shadow-lg shadow-[#004649]/10 transition active:scale-[0.98]"
+            >
               <PlusCircle className="h-4 w-4" />
-              New Enrollment
+              New Registration
             </button>
-            <button className="flex w-full items-center gap-3 rounded-xl px-3 py-2 text-sm font-semibold text-[#5f6b6d] transition hover:bg-white/70">
+          )}
+          <div className="pt-4 space-y-1 border-t border-[#bfc8c9]/40">
+            <button className="flex w-full items-center gap-3 rounded-xl px-4 py-2 text-xs font-medium text-[#6f7979] transition hover:text-[#004649]">
               <HelpCircle className="h-4 w-4" />
-              Support
+              Help Center
             </button>
             <button
               onClick={doLogout}
               disabled={pending}
-              className="mt-1 flex w-full items-center gap-3 rounded-xl px-3 py-2 text-sm font-semibold text-[#5f6b6d] transition hover:bg-white/70"
+              className="flex w-full items-center gap-3 rounded-xl px-4 py-2 text-xs font-medium text-[#ba1a1a]/80 transition hover:text-[#ba1a1a]"
             >
               <LogOut className="h-4 w-4" />
               Logout
             </button>
-            {error ? <p className="mt-2 px-3 text-xs text-[#ba1a1a]">{error}</p> : null}
+            {error ? <p className="mt-2 px-4 text-xs text-[#ba1a1a]">{error}</p> : null}
           </div>
-        ) : null}
+        </div>
       </aside>
     </>
   );

@@ -1,4 +1,4 @@
-﻿'use client';
+'use client';
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
@@ -39,137 +39,152 @@ export default function LoginPage() {
   };
 
   return (
-    <div className="min-h-screen bg-[#f9f9f9] text-[#1a1c1c]">
-      <main className="flex min-h-screen">
-        <section className="relative hidden w-1/2 overflow-hidden bg-[#124346] lg:flex lg:flex-col lg:justify-center lg:px-12">
-          <div className="absolute inset-0">
-            <img
-              src="https://lh3.googleusercontent.com/aida-public/AB6AXuAt6EeJjyyzAUfD2uojijFuVcmP7q4dZt7F9_4oLG5UXtEaQnl2XJdr20WmZw5yQuoqBSkIZS-G6RuV_0F5cafOIHN6yj6ZRUxcE1wL-5ceLJeegONND39l8DpGv3vVdYrRjJFsXUfbDo19FiJ7koEXkwc839P0TLPv-VdJryw_OoVkpU7xzrXAkzN4Y4oxv1VciResoFmC6ACaS-Oe1pdEf7_AfPKExZk4yUlTyoCr-XtnMhUWJh6dAWXo8P2otvQyx5bf0AD2mlw"
-              alt="Academic campus"
-              className="h-full w-full object-cover opacity-30 grayscale"
-            />
-            <div className="absolute inset-0 bg-gradient-to-br from-[#124346]/95 to-[#2d5a5e]/85" />
+    <div className="relative min-h-screen bg-[#f8f9fa] text-[#191c1d] flex items-center justify-center p-6">
+      <div className="fixed top-[-10%] right-[-5%] w-[40vw] h-[40vw] rounded-full bg-[#004649]/5 blur-[120px] pointer-events-none" />
+      <div className="fixed bottom-[-10%] left-[-5%] w-[30vw] h-[30vw] rounded-full bg-[#865300]/5 blur-[100px] pointer-events-none" />
+
+      <div className="w-full max-w-5xl grid grid-cols-1 md:grid-cols-2 bg-white rounded-[2.5rem] overflow-hidden shadow-[0_12px_40px_rgba(0,70,73,0.06)]">
+
+        <div className="hidden md:flex flex-col justify-between p-12 bg-[#1b5e62] relative overflow-hidden text-white">
+          <div className="absolute inset-0 opacity-10 pointer-events-none">
+            <svg className="w-full h-full" preserveAspectRatio="none" viewBox="0 0 100 100">
+              <defs>
+                <pattern id="grid" width="10" height="10" patternUnits="userSpaceOnUse">
+                  <path d="M 10 0 L 0 0 0 10" fill="none" stroke="currentColor" strokeWidth="0.5" />
+                </pattern>
+              </defs>
+              <rect width="100" height="100" fill="url(#grid)" />
+            </svg>
           </div>
 
-          <div className="relative z-10 max-w-xl">
-            <img
-              src="https://lh3.googleusercontent.com/aida-public/AB6AXuA2r4HKadwDneVN7JeS81-lgdTwt06XZX9AdExp8VeBtLpPHRxQqSV66ZzfqTisAPG8jzJC9C5q4SPBY-KResnZ2JiPQXr1TXMYYr5ielg3EhDQ0aAs85XTiOpHzMYtRzggLUV0asBHmGMHbG04YnPsU-Egf-094ZpFcXAnPebpSfhldzcy5QpWtBPJhXgkgWuYZLjVZpZGhn7ZmLmMSWqIUpgGYUsYCtAJbUJCN-HEIODuf26GlYgZ0kUTcCxZX6a8bRDt0QZRi_g"
-              alt="Manarah logo"
-              className="mb-10 h-20 w-auto"
-            />
-            <h1 className="font-headline text-4xl font-extrabold leading-tight text-white">Welcome to the Curator&apos;s Portal.</h1>
-            <p className="mt-6 text-lg font-light leading-relaxed text-[#cde4e7]">
-              An editorial space designed for academic leadership. Manage your institution with precision and clarity.
+          <div className="z-10">
+            <div className="flex items-center gap-3 mb-16">
+              <div className="w-12 h-12 rounded-xl bg-white/10 flex items-center justify-center">
+                <span className="text-2xl font-black tracking-tight text-white font-headline">S</span>
+              </div>
+              <span className="font-headline font-black uppercase tracking-[0.2em] text-2xl">Scholarly</span>
+            </div>
+            <h1 className="text-5xl font-headline font-extrabold tracking-tight leading-tight mb-6">
+              Cultivating the{' '}
+              <br />
+              <span className="text-[#fdb24f]">Leaders of Tomorrow</span>
+            </h1>
+            <p className="text-lg opacity-80 max-w-md font-body leading-relaxed">
+              Access your personalized academic atelier. Manage grades, attendance, and student growth with editorial precision and effortless clarity.
             </p>
-            <div className="mt-8 inline-flex items-center gap-2 rounded-full border border-white/20 bg-white/10 px-4 py-2 text-xs font-semibold uppercase tracking-[0.18em] text-white">
-              Premium Admin Access
-            </div>
           </div>
 
-          <div className="absolute bottom-10 left-12 right-12 flex justify-between border-t border-white/15 pt-5 text-[10px] font-medium uppercase tracking-[0.2em] text-white/70">
-            <span>Excellence In Education</span>
-            <span>Est. 2024</span>
+          <div className="z-10 mt-12 bg-white/10 backdrop-blur-md p-6 rounded-2xl border border-white/10">
+            <p className="text-[11px] font-label font-bold uppercase tracking-[0.15em] text-[#ffddb8] mb-4">Latest Institution Update</p>
+            <h3 className="text-xl font-headline font-bold mb-2">Academic Excellence Forum 2024</h3>
+            <p className="text-sm opacity-70">Registration for the annual student-teacher synergy workshop is now open for all departments.</p>
           </div>
-        </section>
-
-        <section className="relative flex w-full items-center justify-center px-6 py-10 lg:w-1/2 lg:p-12">
-          <div className="absolute inset-0 -z-10 overflow-hidden lg:hidden">
-            <div className="absolute right-[-12%] top-[-10%] h-[42%] w-[62%] rounded-full bg-[#bcebef]/25 blur-[120px]" />
-            <div className="absolute bottom-[-8%] left-[-8%] h-[30%] w-[55%] rounded-full bg-[#ffdcbd]/20 blur-[100px]" />
-          </div>
-
-          <div className="w-full max-w-md">
-            <div className="mb-10 text-center lg:hidden">
-              <img
-                src="https://lh3.googleusercontent.com/aida-public/AB6AXuAfo15yTdPS9Z7nBbzrOUJp2UOaREBnF-Ye6ELO_F9QlKXz2CN1oOxC8imn37-CLQ1aWXL4MCDNQtUfrFG2KA_iyxUgaGaCTDwRX_TfhqIBCHAJUNWUlrIpMA5mgjtOEMVuoTg__XvLQivhklI_LBOe35HpRIh382EAb3T2XVFNIswcHnaxepK5rg7oHtyvzGTzQn_7elzLhcLMD_Gh7dNsw4NbXUzSwO6qAxlr4Y5f7po5IkGWuflLng9_DyklaYWZcb2fYo_UGLU"
-                alt="Manarah logo"
-                className="mx-auto mb-4 h-16 w-auto"
-              />
-              <h2 className="font-headline text-3xl font-extrabold tracking-tight text-[#124346]">Welcome Back</h2>
-              <p className="mt-1 text-sm text-[#404849]">Sign in to your curator dashboard</p>
-            </div>
-
-            <div className="rounded-2xl bg-white p-8 shadow-[0px_12px_32px_rgba(26,28,28,0.06)]">
-              <div className="hidden lg:block">
-                <h2 className="font-headline text-3xl font-extrabold tracking-tight text-[#1a1c1c]">Sign In</h2>
-                <p className="mt-2 text-[#404849]">Access your administrative dashboard</p>
-              </div>
-
-              <form onSubmit={onSubmit} className="mt-6 space-y-5 lg:mt-8">
-                <div>
-                  <label htmlFor="email" className="ml-1 block text-xs font-semibold uppercase tracking-[0.16em] text-[#895100]">
-                    Email
-                  </label>
-                  <input
-                    id="email"
-                    className="mt-2 h-14 w-full rounded-xl border-none bg-[#f3f4f3] px-4 text-[#1a1c1c] placeholder:text-[#707979] focus:ring-2 focus:ring-[#a1cfd3]"
-                    value={email}
-                    onChange={(e) => setEmail(e.target.value)}
-                    placeholder="curator@manarah.edu"
-                    type="email"
-                    required
-                  />
-                </div>
-
-                <div>
-                  <div className="ml-1 flex items-center justify-between">
-                    <label htmlFor="password" className="block text-xs font-semibold uppercase tracking-[0.16em] text-[#895100]">
-                      Password
-                    </label>
-                    <button type="button" className="text-xs font-semibold text-[#895100] hover:underline">
-                      Forgot Password?
-                    </button>
-                  </div>
-                  <input
-                    id="password"
-                    className="mt-2 h-14 w-full rounded-xl border-none bg-[#f3f4f3] px-4 text-[#1a1c1c] placeholder:text-[#707979] focus:ring-2 focus:ring-[#a1cfd3]"
-                    type="password"
-                    value={password}
-                    onChange={(e) => setPassword(e.target.value)}
-                    placeholder="••••••••"
-                    required
-                  />
-                </div>
-
-                {error ? <p className="text-sm text-[#ba1a1a]">{error}</p> : null}
-
-                <button
-                  disabled={loading}
-                  className="flex h-14 w-full items-center justify-center gap-2 rounded-xl bg-[#124346] font-headline text-base font-bold text-white shadow-lg shadow-[#124346]/20 transition active:scale-[0.98] disabled:opacity-60"
-                >
-                  {loading ? 'Signing in...' : 'Sign In'}
-                  <span aria-hidden="true">→</span>
-                </button>
-              </form>
-            </div>
-
-            <div className="mt-8 space-y-5 text-center lg:hidden">
-              <div className="flex items-center gap-4">
-                <div className="h-px flex-1 bg-[#c0c8c9]/40" />
-                <span className="text-[10px] font-semibold uppercase tracking-[0.2em] text-[#707979]">or explore as</span>
-                <div className="h-px flex-1 bg-[#c0c8c9]/40" />
-              </div>
-              <button type="button" className="h-12 w-full rounded-xl border border-[#c0c8c9]/40 bg-[#e7e8e8] text-sm font-medium text-[#404849]">
-                Guest Access
-              </button>
-              <p className="text-xs text-[#404849]">
-                Don&apos;t have an account? <span className="font-bold text-[#124346]">Apply for Enrollment</span>
-              </p>
-            </div>
-          </div>
-        </section>
-      </main>
-
-      <footer className="border-t border-slate-200 bg-slate-50 py-6">
-        <div className="mx-auto flex w-full max-w-7xl flex-col items-center justify-between gap-3 px-6 text-xs text-slate-500 md:flex-row">
-          <div>© 2024 Manarah Institute. All rights reserved.</div>
-          <nav className="flex gap-5">
-            <a href="#" className="hover:text-teal-700">Privacy Policy</a>
-            <a href="#" className="hover:text-teal-700">Terms of Service</a>
-            <a href="#" className="hover:text-teal-700">Contact Support</a>
-          </nav>
         </div>
-      </footer>
+
+        <div className="p-8 md:p-14 flex flex-col justify-center bg-white">
+          <div className="mb-8 block md:hidden">
+            <div className="w-10 h-10 rounded-xl bg-[#004649] flex items-center justify-center mb-4">
+              <span className="text-lg font-black text-white font-headline">S</span>
+            </div>
+            <h2 className="text-2xl font-headline font-black uppercase tracking-[0.15em] text-[#004649]">Scholarly</h2>
+          </div>
+
+          <div className="mb-8">
+            <h2 className="text-3xl font-headline font-bold text-[#191c1d] mb-2">Welcome Back</h2>
+            <p className="text-[#3f4849] font-body">Please enter your credentials to continue.</p>
+          </div>
+
+          <form onSubmit={onSubmit} className="space-y-6">
+            <div>
+              <label htmlFor="email" className="block text-[11px] font-bold uppercase tracking-[0.15em] text-[#6f7979] mb-2 ml-1">
+                Academic Email
+              </label>
+              <div className="relative">
+                <svg className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-[#6f7979]" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M21.75 6.75v10.5a2.25 2.25 0 0 1-2.25 2.25h-15a2.25 2.25 0 0 1-2.25-2.25V6.75m19.5 0A2.25 2.25 0 0 0 19.5 4.5h-15a2.25 2.25 0 0 0-2.25 2.25m19.5 0v.243a2.25 2.25 0 0 1-1.07 1.916l-7.5 4.615a2.25 2.25 0 0 1-2.36 0L3.32 8.91a2.25 2.25 0 0 1-1.07-1.916V6.75" />
+                </svg>
+                <input
+                  id="email"
+                  className="h-14 w-full rounded-xl border-none bg-[#edeeef] pl-12 pr-4 text-[#191c1d] placeholder:text-[#6f7979]/60 outline-none ring-[#004649]/20 transition focus:ring-2"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  placeholder="name@scholarly.edu"
+                  type="email"
+                  required
+                />
+              </div>
+            </div>
+
+            <div>
+              <div className="flex items-center justify-between mb-2 ml-1">
+                <label htmlFor="password" className="block text-[11px] font-bold uppercase tracking-[0.15em] text-[#6f7979]">
+                  Password
+                </label>
+                <button type="button" className="text-[11px] font-bold uppercase tracking-[0.15em] text-[#865300] hover:underline">
+                  Forgot Password?
+                </button>
+              </div>
+              <div className="relative">
+                <svg className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-[#6f7979]" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M16.5 10.5V6.75a4.5 4.5 0 1 0-9 0v3.75m-.75 11.25h10.5a2.25 2.25 0 0 0 2.25-2.25v-6.75a2.25 2.25 0 0 0-2.25-2.25H6.75a2.25 2.25 0 0 0-2.25 2.25v6.75a2.25 2.25 0 0 0 2.25 2.25Z" />
+                </svg>
+                <input
+                  id="password"
+                  className="h-14 w-full rounded-xl border-none bg-[#edeeef] pl-12 pr-4 text-[#191c1d] placeholder:text-[#6f7979]/60 outline-none ring-[#004649]/20 transition focus:ring-2"
+                  type="password"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  placeholder="••••••••"
+                  required
+                />
+              </div>
+            </div>
+
+            <div className="flex items-center gap-3 py-1">
+              <input
+                type="checkbox"
+                id="remember"
+                className="h-5 w-5 rounded border-[#bfc8c9] text-[#004649] focus:ring-[#004649]/20 cursor-pointer"
+              />
+              <label htmlFor="remember" className="text-sm text-[#3f4849] font-body cursor-pointer">
+                Remember my workstation
+              </label>
+            </div>
+
+            {error ? <p className="text-sm text-[#ba1a1a]">{error}</p> : null}
+
+            <button
+              disabled={loading}
+              className="flex h-14 w-full items-center justify-center gap-2 rounded-xl bg-gradient-to-br from-[#004649] to-[#1b5e62] font-headline text-lg font-bold text-white shadow-[0_8px_20px_rgba(0,70,73,0.15)] transition hover:opacity-90 active:scale-[0.98] disabled:opacity-60"
+            >
+              {loading ? 'Signing in...' : 'Sign In to Portal'}
+              {!loading && (
+                <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M13.5 4.5 21 12m0 0-7.5 7.5M21 12H3" />
+                </svg>
+              )}
+            </button>
+          </form>
+
+          <div className="mt-10 pt-8 border-t border-[#edeeef] flex flex-col items-center gap-4">
+            <p className="text-sm text-[#3f4849] font-body">Need technical assistance?</p>
+            <div className="flex gap-6">
+              <a href="#" className="text-xs font-semibold text-[#6f7979] hover:text-[#004649] transition flex items-center gap-1">
+                <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M9.879 7.519c1.171-1.025 3.071-1.025 4.242 0 1.172 1.025 1.172 2.687 0 3.712-.203.179-.43.326-.67.442-.745.361-1.45.999-1.45 1.827v.75M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0Zm-9 5.25h.008v.008H12v-.008Z" />
+                </svg>
+                Support Center
+              </a>
+              <a href="#" className="text-xs font-semibold text-[#6f7979] hover:text-[#004649] transition flex items-center gap-1">
+                <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M9 12.75 11.25 15 15 9.75m-3-7.036A11.959 11.959 0 0 1 3.598 6 11.99 11.99 0 0 0 3 9.749c0 5.592 3.824 10.29 9 11.623 5.176-1.332 9-6.03 9-11.622 0-1.31-.21-2.571-.598-3.751h-.152c-3.196 0-6.1-1.248-8.25-3.285Z" />
+                </svg>
+                Privacy Policy
+              </a>
+            </div>
+          </div>
+        </div>
+      </div>
     </div>
   );
 }
