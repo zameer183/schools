@@ -38,3 +38,4 @@ externalPort = 80
 
 [userenv.shared]
 JWT_SECRET = "08ce1b13b8bdac39beec172507667c3f79b55a733c1773ae990405dbd5e16742274887dc0d4065589ed3782ff31cc572"
+NEXT_PUBLIC_APP_NAME = "Stitch HMS"

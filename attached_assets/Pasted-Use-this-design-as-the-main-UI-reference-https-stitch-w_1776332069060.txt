@@ -1,0 +1,263 @@
+Use this design as the main UI reference:
+https://stitch.withgoogle.com/projects/2086379330969178698
+
+My application code, data, and functionality are already correct.
+
+Your task is ONLY to apply the design from the provided link to my existing app.
+
+Strict rules:
+
+Do NOT change any logic, data, or functionality
+Do NOT create new pages
+Do NOT redesign in a different style
+UI Rules:
+
+Follow the design from the link exactly
+Match layout, spacing, alignment, and structure
+Match colors, typography, and visual style
+Match sidebar, header, cards, and dashboard layout
+Element rules:
+
+If something exists in the design → ADD it
+If something exists in my app but not in the design → REMOVE it
+Do not keep extra UI elements
+Do not miss any design elements
+Important:
+
+This is not a redesign task
+This is a UI alignment task
+Transform the current UI to match the provided design
+Responsive:
+
+Desktop should match the design closely
+Mobile should adapt carefully without changing style
+Maintain the same design system across all screens
+Goal:
+Keep my existing code and data, but make the UI look exactly like the provided Stitch design.
+
+
+Show less
+24 minutes ago
+
+Analyzing Stitch design requirements
+Let me first take a screenshot of the Stitch design to understand exactly what it looks like:
+
+
+2 actions
+The Stitch project is loading at only 5% in the screenshot — the actual design screens aren't visible. Let me try to fetch more content from it:
+
+
+4 actions
+The Stitch link is not accessible to me — the screenshot only captured the AI chat panel at 5% loading, and the actual design screens are not rendering. The project appears to be private/behind auth.
+
+To proceed accurately with this task, I need to actually see the design. Could you share one of these?
+
+I cannot access the Stitch design — the page loaded at 5% and the actual screens were not visible. How would you like to share the design with me?
+
+https://github.com/zameer183/schools/tree/main/design_and_screenshots_archive as ma ha
+23 minutes ago
+
+Worked for 1 minute
+Let me fetch the design screenshots from that GitHub repository.
+
+
+2 actions
+The folders are all empty (0 bytes) - they're just folder names, not actual image files. Let me look inside the screenshots folder specifically.
+
+
+3 actions
+There's a full-panels.zip in the screenshots folder. Let me download it and extract the actual design images.
+
+
+8 actions
+Now let me view the design images to understand what needs to match.
+
+
+3 actions
+Excellent! Now I can see the design clearly. Let me view all the other screens too.
+
+
+3 actions
+Now I have a very clear picture of the design. The key differences are dramatic:
+
+Design uses:
+
+Left sidebar with white background for Student/Teacher (not mobile bottom nav)
+Very clean, minimal layout - no rounded-[1.75rem] giant cards everywhere
+Simple white cards with subtle borders
+Clean header: role label top-left, username top-right, bell + logout button
+Sidebar branding: "INSTITUTION" label + "The Scholarly Editorial" bold
+Active nav item: solid dark teal background, white text
+Page content: simple h2 heading + subtitle, then flat white cards
+Let me look at more screens and the current layout files:
+
+
+3 actions
+Now I have a complete picture. The design is fundamentally different from the current app. The current app uses a mobile-first bottom nav with big rounded cards. The design uses a persistent left sidebar layout for ALL roles (student, teacher, admin) with a clean, minimal style. Let me now look at the current layout files and make a comprehensive plan.
+
+
+3 actions
+Now I have a thorough understanding. Let me look at all the current layout files to know what to change:
+
+
+5 actions
+Now I have everything I need. The design uses a left sidebar for ALL roles (student, teacher, admin) - same layout structure. The current app uses a bottom nav for student/teacher/parent. I need to:
+
+Rewrite DashboardShell to use a sidebar layout for all roles
+Update the admin sidebar to match the design's nav items and styling
+Update the header to match the cleaner design (role label top, username + bell + logout)
+Update page content to use the simpler card style from the design
+Let me look at the remaining screens, then implement everything:
+
+
+3 actions
+Now I have a complete picture. The design is clear. Let me now create the session plan and implement all changes systematically:
+
+Key design changes needed:
+
+All roles get a left sidebar (currently student/teacher/parent use bottom nav)
+Sidebar: white/light-gray bg, "INSTITUTION" label + "The Scholarly Editorial", nav items with icon+label, active = solid teal bg
+Header: role label top, institution name in header, username + bell + logout button on right
+Content area: clean white cards, simpler typography (no giant rounded-[1.75rem] cards everywhere)
+Nav items match design: Student: Dashboard, Schedule, Assignments, Results, Financials | Teacher: Dashboard, Students, Progress, Attendance, Assignments, Messages | Admin: Dashboard, Students, Teachers, Classes, Attendance, Finance, Reports, Notifications, Settings
+
+Edited src/components/layout/dashboard-shell.tsx
+Now I need to check which layouts use AdminShell vs DashboardShell, and update accordingly:
+
+
+5 actions
+Good. The layouts look fine - they all use DashboardShell. Now I need to update the page content to match the design's simpler card style. The design uses simple white rounded cards (standard radius, like rounded-xl not rounded-[1.75rem]). Let me now update the admin layout to not use the old AdminShell/AdminSidebar system (since DashboardShell now handles everything), and then update the content styling on key pages.
+
+First let me check what the admin layout currently does - it uses AdminShell which wraps DashboardShell, so that's fine. But the admin also had AdminHeader and AdminSidebar components. Since DashboardShell now handles the layout for all roles, let me verify the admin layout still works correctly (it goes through AdminShell → DashboardShell).
+
+Now let me update the page content to match the design's minimal style. The design has simple white cards, clean typography, no giant eyebrow labels. Let me update the key pages systematically:
+
+
+2 actions
+The student dashboard page content is already reasonably close to the design (welcome, stats, subjects, results). The key change is the shell/layout. Now let me rewrite the student dashboard to match the design exactly, and update the other page contents to use the design's simpler card style.
+
+Looking at the design for student dashboard:
+
+Header card: "STUDENT" role, "Welcome, Shots Student", "Class: Grade 9 - S"
+4 stat tiles: Attendance %, Assignments X/X, Average Marks, Outstanding Fee
+Two bottom sections: Subjects (with "View schedule" link) and Latest Results (with "Open all" link)
+
+Edited app/student/page.tsx
+Now let me update the teacher dashboard and key pages to match the design:
+
+
+3 actions
+Now let me update the teacher dashboard to match the design and update all other important pages systematically. The design is very clean — just white cards with border, simple headings, no extra visual flourishes:
+
+
+Edited app/teacher/page.tsx
+Now let me look at the admin dashboard page and update it to match the design:
+
+
+2 actions
+The admin dashboard design is clear: "Academic Overview" header, 4 KPI tiles, Enrollment Trend chart, Attendance Overview chart. Let me now rewrite the admin dashboard:
+
+
+Opened app/admin/page.tsx
+Now I have the full picture. The admin dashboard has desktop and mobile layouts with lg:hidden separation. Since we now have a persistent sidebar (so it's always "desktop" view), I need to rewrite the admin dashboard to remove the mobile/desktop dual layout and use the unified clean design:
+
+
+Edited app/admin/page.tsx
+Good progress. Let me now look at a few more admin pages to update their content styling, then check the app sidebar which is still used for admin:
+
+
+3 actions
+Now let me update the admin students page to match the design's clean style:
+
+
+Edited app/admin/students/page.tsx
+Let me continue updating the remaining admin pages and check the app is working. Let me update the remaining key pages quickly:
+
+
+3 actions
+Good, the app is running. Let me now update the remaining key pages and then restart to check visually. Let me do a quick batch of all remaining page updates needed:
+
+
+2 actions
+Good. The reports page and teachers page look mostly fine - they already use the right general card style. The biggest visual changes needed are just the rounded-[1.2rem] → rounded-xl and shadow-[0px_12px_32px...] → border border-[#e2e8e8]. The most critical change was the shell layout. Let me now update the teachers and reports pages quickly to match the design consistently:
+
+
+Edited app/admin/teachers/page.tsx
+Now let me update the reports page to clean up the styling, and also update key remaining pages. Let me do the remaining pages in parallel:
+
+
+Edited app/admin/reports/page.tsx
+Let me now update a few more pages and then restart to verify. Let me look at the remaining admin pages quickly:
+
+
+2 actions
+Good, the app is running. Let me update the settings page and continue the remaining updates, then restart and screenshot:
+
+
+Opened app/admin/settings/page.tsx
+Let me update the settings page too:
+
+
+Edited app/admin/settings/page.tsx
+Good, the app is running. Let me now look at the remaining pages to update and then restart for a visual check. Let me look at other pages:
+
+
+Ran ls
+Let me now check and update the remaining admin pages that need restyling, and then restart and take a screenshot:
+
+
+4 actions
+Good. The app is running. Let me now restart it to pick up all my changes and take a screenshot to verify:
+
+
+2 actions
+Good, the app is running. It's showing the login page. Let me wait for the build to complete then take a screenshot of the admin dashboard:
+
+
+Took a screenshot
+The app is showing the login page (not authenticated). That's expected since I'm not authenticated in the preview. The app is running. Let me check the build logs for any errors:
+
+Checked console and system logs
+Good - the app compiles fine with no errors. The log shows /admin 200 which means the admin route works. Now let me look at the remaining pages that still have old styling. The most important ones to update are the admin pages with older card styles. Let me now also quickly update the remaining admin pages and student/teacher sub-pages, then do a final visual check.
+
+Let me update the remaining admin pages that still have old styling:
+
+
+2 actions
+Good - no errors. Let me now quickly update the remaining pages that still use old card styles (rounded-[1.2rem], shadow-[...] etc.). These are straightforward find-and-replace style updates:
+
+
+2 actions
+Good. Now let me update the notifications page and academics page, and then also quickly scan and update the student/teacher sub-pages:
+
+
+2 actions
+Let me update the notifications and academics pages:
+
+
+2 actions
+Good. Now let me quickly update the student sub-pages and teacher sub-pages that still have old card styling. Let me check them:
+
+
+2 actions
+The pages mostly have consistent data logic. The visual changes needed are mainly the card classes. The student fees page has rounded-[1.75rem] etc. Let me quickly update the remaining student and teacher sub-pages by doing find-and-replace operations on the key styling patterns:
+
+
+2 actions
+Let me now update these student pages to match the design's clean card style:
+
+
+2 actions
+Good progress. Let me now quickly update the remaining student and teacher pages. Let me look at what's left:
+
+
+3 actions
+The student sub-pages need the same card styling update. Let me do them in batch more efficiently - the most important ones are schedule and assignments since they're in the design:
+
+
+2 actions
+The apps are building and running. Let me now update the schedule and assignments pages for students, then update teacher sub-pages, and do a final screenshot:
+
+
+Edited app/student/schedule/page.tsx
+You've reached your daily free quota limit. It will reset at 12:00 AM UTC.
