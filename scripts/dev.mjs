@@ -1,4 +1,4 @@
-﻿import { rm } from 'node:fs/promises';
+import { rm } from 'node:fs/promises';
 import { spawn } from 'node:child_process';
 import path from 'node:path';
 
@@ -13,7 +13,7 @@ try {
   console.warn('[dev] Could not fully clear .next cache:', error);
 }
 
-const child = spawn(process.execPath, [nextBin, 'dev', '--turbopack'], {
+const child = spawn(process.execPath, [nextBin, 'dev', '-p', '5000', '-H', '0.0.0.0', '--turbopack'], {
   stdio: 'inherit',
   cwd: root,
   env: {
