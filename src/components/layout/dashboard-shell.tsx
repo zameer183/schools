@@ -33,6 +33,7 @@ const navByRole: Record<UserRole, NavItem[]> = {
   TEACHER: [
     { href: '/teacher', label: 'Dashboard', icon: Home },
     { href: '/teacher/students', label: 'Students', icon: Users },
+    { href: '/teacher/academics', label: 'Academics', icon: ClipboardList },
     { href: '/teacher/progress', label: 'Progress', icon: BarChart3 },
     { href: '/teacher/attendance', label: 'Attendance', icon: CalendarCheck2 },
     { href: '/teacher/assignments', label: 'Assignments', icon: BookOpen },
@@ -44,6 +45,7 @@ const navByRole: Record<UserRole, NavItem[]> = {
     { href: '/student/assignments', label: 'Assignments', icon: CalendarCheck2 },
     { href: '/student/results', label: 'Results', icon: BarChart3 },
     { href: '/student/fees', label: 'Financials', icon: DollarSign },
+    { href: '/student/messages', label: 'Messages', icon: MessageSquare },
   ],
   PARENT: [
     { href: '/parent', label: 'Dashboard', icon: Home },
