@@ -13,8 +13,8 @@ export default async function ParentDashboardPage() {
 
   if (!context) {
     return (
-      <div className="bg-white rounded-2xl p-8 shadow-[0_12px_40px_rgba(0,70,73,0.06)]">
-        <h2 className="font-headline text-2xl font-extrabold text-[#004649]">Parent Profile Missing</h2>
+      <div className="bg-white rounded-2xl p-8 border border-[#e2e8e8]">
+        <h2 className="text-2xl font-bold text-[#1a1c1c]">Parent Profile Missing</h2>
         <p className="mt-2 text-[#3f4849]">Your account is active but no parent profile is linked yet. Contact admin.</p>
       </div>
     );
@@ -24,8 +24,8 @@ export default async function ParentDashboardPage() {
 
   if (children.length === 0) {
     return (
-      <div className="bg-white rounded-2xl p-8 shadow-[0_12px_40px_rgba(0,70,73,0.06)]">
-        <h2 className="font-headline text-2xl font-extrabold text-[#004649]">Parent Dashboard</h2>
+      <div className="bg-white rounded-2xl p-8 border border-[#e2e8e8]">
+        <h2 className="text-2xl font-bold text-[#1a1c1c]">Parent Dashboard</h2>
         <p className="mt-2 text-[#3f4849]">No children are linked with your profile yet. Please contact the admin office.</p>
       </div>
     );
@@ -77,7 +77,7 @@ export default async function ParentDashboardPage() {
   return (
     <div className="space-y-6">
       <section>
-        <h2 className="font-headline text-3xl font-extrabold text-[#004649]">
+        <h2 className="text-2xl font-bold text-[#1a1c1c]">
           Welcome back, {firstName}.
         </h2>
         <p className="mt-1 text-sm text-[#3f4849]">
@@ -86,44 +86,44 @@ export default async function ParentDashboardPage() {
       </section>
 
       <section className="grid grid-cols-2 gap-4 md:grid-cols-4">
-        <div className="bg-white rounded-2xl p-5 shadow-[0_12px_40px_rgba(0,70,73,0.06)]">
+        <div className="bg-white rounded-2xl p-5 border border-[#e2e8e8]">
           <div className="p-2 bg-[#004649]/5 text-[#004649] rounded-lg w-fit mb-3">
             <Star className="h-5 w-5" />
           </div>
-          <p className="font-headline text-3xl font-extrabold text-[#191c1d]">{children.length}</p>
+          <p className="text-3xl font-bold text-[#1a1c1c]">{children.length}</p>
           <p className="mt-1 text-[11px] font-bold uppercase tracking-[0.12em] text-[#6f7979]">Children</p>
           <p className="mt-1 text-[11px] text-[#6f7979]">Linked profiles</p>
         </div>
-        <div className="bg-white rounded-2xl p-5 shadow-[0_12px_40px_rgba(0,70,73,0.06)]">
+        <div className="bg-white rounded-2xl p-5 border border-[#e2e8e8]">
           <div className="p-2 bg-[#865300]/5 text-[#865300] rounded-lg w-fit mb-3">
             <CalendarCheck2 className="h-5 w-5" />
           </div>
-          <p className="font-headline text-3xl font-extrabold text-[#191c1d]">{attendanceRate}%</p>
+          <p className="text-3xl font-bold text-[#1a1c1c]">{attendanceRate}%</p>
           <p className="mt-1 text-[11px] font-bold uppercase tracking-[0.12em] text-[#6f7979]">Attendance</p>
           <p className="mt-1 text-[11px] text-[#6f7979]">{present}/{totalAttendance} present</p>
         </div>
-        <div className="bg-white rounded-2xl p-5 shadow-[0_12px_40px_rgba(0,70,73,0.06)]">
+        <div className="bg-white rounded-2xl p-5 border border-[#e2e8e8]">
           <div className="p-2 bg-[#004649]/5 text-[#004649] rounded-lg w-fit mb-3">
             <TrendingUp className="h-5 w-5" />
           </div>
-          <p className="font-headline text-3xl font-extrabold text-[#191c1d]">{averageMarks}</p>
+          <p className="text-3xl font-bold text-[#1a1c1c]">{averageMarks}</p>
           <p className="mt-1 text-[11px] font-bold uppercase tracking-[0.12em] text-[#6f7979]">Avg Marks</p>
           <p className="mt-1 text-[11px] text-[#6f7979]">Latest performance</p>
         </div>
-        <div className="bg-white rounded-2xl p-5 shadow-[0_12px_40px_rgba(0,70,73,0.06)]">
+        <div className="bg-white rounded-2xl p-5 border border-[#e2e8e8]">
           <div className="p-2 bg-[#865300]/5 text-[#865300] rounded-lg w-fit mb-3">
             <DollarSign className="h-5 w-5" />
           </div>
-          <p className="font-headline text-2xl font-extrabold text-[#191c1d]">PKR {outstanding.toLocaleString()}</p>
+          <p className="text-2xl font-bold text-[#1a1c1c]">PKR {outstanding.toLocaleString()}</p>
           <p className="mt-1 text-[11px] font-bold uppercase tracking-[0.12em] text-[#6f7979]">Outstanding</p>
           <p className="mt-1 text-[11px] text-[#6f7979]">{unreadNotifications} unread</p>
         </div>
       </section>
 
       <section className="grid gap-6 xl:grid-cols-3">
-        <div className="xl:col-span-2 bg-white rounded-2xl p-6 shadow-[0_12px_40px_rgba(0,70,73,0.06)]">
+        <div className="xl:col-span-2 bg-white rounded-2xl p-6 border border-[#e2e8e8]">
           <div className="flex items-center justify-between mb-5">
-            <h3 className="font-headline text-lg font-bold text-[#004649]">My Children</h3>
+            <h3 className="font-semibold text-[#1a1c1c]">My Children</h3>
             <Link href="/parent/performance" className="inline-flex items-center gap-1 text-xs font-bold text-[#865300]">
               View progress <ChevronRight className="h-3 w-3" />
             </Link>
@@ -151,7 +151,7 @@ export default async function ParentDashboardPage() {
           {resultRows.length > 0 && (
             <div className="mt-6">
               <div className="flex items-center justify-between mb-4">
-                <h3 className="font-headline text-lg font-bold text-[#004649]">Latest Results</h3>
+                <h3 className="font-semibold text-[#1a1c1c]">Latest Results</h3>
                 <Link href="/parent/performance" className="inline-flex items-center gap-1 text-xs font-bold text-[#865300]">
                   Open all <ChevronRight className="h-3 w-3" />
                 </Link>
@@ -166,7 +166,7 @@ export default async function ParentDashboardPage() {
                         <p className="text-sm font-semibold text-[#191c1d]">{result.student.user.fullName}</p>
                         <p className="text-[11px] text-[#6f7979]">{result.subject.name} — {result.exam.title}</p>
                       </div>
-                      <span className="font-headline text-xl font-extrabold text-[#004649]">{grade}</span>
+                      <span className="font-bold text-[#004649]">{grade}</span>
                     </div>
                   );
                 })}
@@ -176,8 +176,8 @@ export default async function ParentDashboardPage() {
         </div>
 
         <div className="space-y-4">
-          <div className="bg-white rounded-2xl p-6 shadow-[0_12px_40px_rgba(0,70,73,0.06)]">
-            <h3 className="font-headline text-base font-bold text-[#004649] mb-4">Recent Activity</h3>
+          <div className="bg-white rounded-2xl p-6 border border-[#e2e8e8]">
+            <h3 className="font-semibold text-[#1a1c1c] mb-4">Recent Activity</h3>
             <div className="space-y-4">
               <div className="flex items-start gap-3">
                 <div className="h-8 w-8 shrink-0 rounded-full bg-[#afedf2]/40 flex items-center justify-center">
@@ -212,8 +212,8 @@ export default async function ParentDashboardPage() {
             </Link>
           </div>
 
-          <div className="bg-white rounded-2xl p-6 shadow-[0_12px_40px_rgba(0,70,73,0.06)]">
-            <h3 className="font-headline text-base font-bold text-[#004649] mb-4">Parent Resources</h3>
+          <div className="bg-white rounded-2xl p-6 border border-[#e2e8e8]">
+            <h3 className="font-semibold text-[#1a1c1c] mb-4">Parent Resources</h3>
             <div className="space-y-2">
               {[
                 { label: 'School Policies', icon: BookOpen },
@@ -238,7 +238,7 @@ export default async function ParentDashboardPage() {
           <div className="flex items-center justify-between">
             <div>
               <p className="text-[11px] font-bold uppercase tracking-[0.15em] text-[#afedf2] mb-1">Outstanding Tuition</p>
-              <p className="font-headline text-3xl font-extrabold">PKR {outstanding.toLocaleString()}</p>
+              <p className="text-3xl font-bold">PKR {outstanding.toLocaleString()}</p>
               <p className="text-sm text-white/70 mt-1">Due Date: End of month</p>
             </div>
             <Link

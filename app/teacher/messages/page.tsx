@@ -82,9 +82,8 @@ export default async function TeacherMessagesPage() {
 
   return (
     <div className="space-y-6">
-      <section className="rounded-[1.75rem] bg-white p-8 shadow-[0_12px_40px_rgba(0,70,73,0.06)]">
-        <p className="text-[10px] font-semibold uppercase tracking-[0.32em] text-[#6e7778]">Teacher Hub</p>
-        <h2 className="font-headline mt-2 text-4xl font-extrabold tracking-[-0.03em] text-[#004649]">Messages</h2>
+      <section className="rounded-xl bg-white p-8 border border-[#e2e8e8]">
+        <h2 className="text-2xl font-bold text-[#1a1c1c]">Messages</h2>
         <p className="mt-2 text-[#5c6668]">Send updates to your class students and review incoming messages.</p>
 
         <form action={sendMessageAction} className="mt-6 grid gap-4">
@@ -122,8 +121,8 @@ export default async function TeacherMessagesPage() {
         </form>
       </section>
 
-      <section className="rounded-[1.75rem] bg-white p-8 shadow-[0_12px_40px_rgba(0,70,73,0.06)]">
-        <h3 className="font-headline text-2xl font-bold tracking-[-0.02em] text-[#004649]">Inbox</h3>
+      <section className="rounded-xl bg-white p-8 border border-[#e2e8e8]">
+        <h3 className="font-semibold text-[#1a1c1c]">Inbox</h3>
         <div className="mt-5 space-y-3">
           {inbox.length === 0 ? (
             <div className="rounded-2xl bg-[#f3f4f3] p-5 text-sm text-[#596364]">No messages received yet.</div>

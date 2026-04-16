@@ -14,8 +14,8 @@ export default async function StudentAttendancePage() {
 
   if (!student) {
     return (
-      <div className="rounded-[1.75rem] bg-white p-8 shadow-[0_12px_40px_rgba(0,70,73,0.06)]">
-        <h2 className="font-headline text-3xl font-extrabold text-[#004649]">Attendance</h2>
+      <div className="rounded-xl bg-white p-8 border border-[#e2e8e8]">
+        <h2 className="text-2xl font-bold text-[#1a1c1c]">Attendance</h2>
         <p className="mt-2 text-[#5c6668]">Student profile missing.</p>
       </div>
     );
@@ -45,33 +45,32 @@ export default async function StudentAttendancePage() {
 
   return (
     <div className="space-y-6">
-      <section className="rounded-[1.75rem] bg-white p-8 shadow-[0_12px_40px_rgba(0,70,73,0.06)]">
-        <p className="text-[10px] font-semibold uppercase tracking-[0.32em] text-[#6e7778]">Student Hub</p>
-        <h2 className="font-headline mt-2 text-4xl font-extrabold tracking-[-0.03em] text-[#004649]">Attendance</h2>
+      <section className="rounded-xl bg-white p-8 border border-[#e2e8e8]">
+        <h2 className="text-2xl font-bold text-[#1a1c1c]">Attendance</h2>
         <p className="mt-2 text-[#5c6668]">Current attendance rate: {attendanceRate}%</p>
       </section>
 
       <section className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
-        <div className="rounded-[1.5rem] bg-white p-5 shadow-[0_12px_40px_rgba(0,70,73,0.06)]">
+        <div className="rounded-xl bg-white p-5 border border-[#e2e8e8]">
           <p className="text-sm text-[#6e7778]">Present</p>
           <p className="mt-2 text-3xl font-black text-[#004649]">{countFor('PRESENT')}</p>
         </div>
-        <div className="rounded-[1.5rem] bg-white p-5 shadow-[0_12px_40px_rgba(0,70,73,0.06)]">
+        <div className="rounded-xl bg-white p-5 border border-[#e2e8e8]">
           <p className="text-sm text-[#6e7778]">Absent</p>
           <p className="mt-2 text-3xl font-black text-[#895100]">{countFor('ABSENT')}</p>
         </div>
-        <div className="rounded-[1.5rem] bg-white p-5 shadow-[0_12px_40px_rgba(0,70,73,0.06)]">
+        <div className="rounded-xl bg-white p-5 border border-[#e2e8e8]">
           <p className="text-sm text-[#6e7778]">Late</p>
           <p className="mt-2 text-3xl font-black text-[#1b5e62]">{countFor('LATE')}</p>
         </div>
-        <div className="rounded-[1.5rem] bg-white p-5 shadow-[0_12px_40px_rgba(0,70,73,0.06)]">
+        <div className="rounded-xl bg-white p-5 border border-[#e2e8e8]">
           <p className="text-sm text-[#6e7778]">Excused</p>
           <p className="mt-2 text-3xl font-black text-[#596364]">{countFor('EXCUSED')}</p>
         </div>
       </section>
 
-      <section className="rounded-[1.75rem] bg-white p-8 shadow-[0_12px_40px_rgba(0,70,73,0.06)]">
-        <h3 className="font-headline text-2xl font-bold text-[#004649]">Recent Register</h3>
+      <section className="rounded-xl bg-white p-8 border border-[#e2e8e8]">
+        <h3 className="font-semibold text-[#1a1c1c]">Recent Register</h3>
         <div className="mt-4 overflow-x-auto">
           <table className="min-w-full text-sm">
             <thead className="bg-[#f3f4f3] text-[#5c6668]">

@@ -43,7 +43,7 @@ export default function LoginPage() {
       <div className="fixed top-[-10%] right-[-5%] w-[40vw] h-[40vw] rounded-full bg-[#004649]/5 blur-[120px] pointer-events-none" />
       <div className="fixed bottom-[-10%] left-[-5%] w-[30vw] h-[30vw] rounded-full bg-[#865300]/5 blur-[100px] pointer-events-none" />
 
-      <div className="w-full max-w-5xl grid grid-cols-1 md:grid-cols-2 bg-white rounded-[2.5rem] overflow-hidden shadow-[0_12px_40px_rgba(0,70,73,0.06)]">
+      <div className="w-full max-w-5xl grid grid-cols-1 md:grid-cols-2 bg-white rounded-[2.5rem] overflow-hidden border border-[#e2e8e8]">
 
         <div className="hidden md:flex flex-col justify-between p-12 bg-[#1b5e62] relative overflow-hidden text-white">
           <div className="absolute inset-0 opacity-10 pointer-events-none">

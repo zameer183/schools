@@ -11,8 +11,8 @@ export default async function ParentPerformancePage() {
 
   if (!context) {
     return (
-      <div className="rounded-[1.75rem] bg-white p-8 shadow-[0_12px_40px_rgba(0,70,73,0.06)]">
-        <h2 className="font-headline text-3xl font-extrabold text-[#004649]">Performance</h2>
+      <div className="rounded-xl bg-white p-8 border border-[#e2e8e8]">
+        <h2 className="text-2xl font-bold text-[#1a1c1c]">Performance</h2>
         <p className="mt-2 text-[#5c6668]">Parent profile missing.</p>
       </div>
     );
@@ -22,8 +22,8 @@ export default async function ParentPerformancePage() {
 
   if (childIds.length === 0) {
     return (
-      <div className="rounded-[1.75rem] bg-white p-8 shadow-[0_12px_40px_rgba(0,70,73,0.06)]">
-        <h2 className="font-headline text-3xl font-extrabold text-[#004649]">Performance</h2>
+      <div className="rounded-xl bg-white p-8 border border-[#e2e8e8]">
+        <h2 className="text-2xl font-bold text-[#1a1c1c]">Performance</h2>
         <p className="mt-2 text-[#5c6668]">No child records linked yet.</p>
       </div>
     );
@@ -57,29 +57,28 @@ export default async function ParentPerformancePage() {
 
   return (
     <div className="space-y-6">
-      <section className="rounded-[1.75rem] bg-white p-8 shadow-[0_12px_40px_rgba(0,70,73,0.06)]">
-        <p className="text-[10px] font-semibold uppercase tracking-[0.32em] text-[#6e7778]">Parent Hub</p>
-        <h2 className="font-headline mt-2 text-4xl font-extrabold tracking-[-0.03em] text-[#004649]">Child Performance</h2>
+      <section className="rounded-xl bg-white p-8 border border-[#e2e8e8]">
+        <h2 className="text-2xl font-bold text-[#1a1c1c]">Child Performance</h2>
         <p className="mt-2 text-[#5c6668]">Average marks: {avgMarks} | Passed exams: {passCount}/{results.length}</p>
       </section>
 
       <section className="grid gap-4 md:grid-cols-3">
-        <div className="rounded-[1.5rem] bg-white p-5 shadow-[0_12px_40px_rgba(0,70,73,0.06)]">
+        <div className="rounded-xl bg-white p-5 border border-[#e2e8e8]">
           <p className="text-sm text-[#6e7778]">Results Logged</p>
           <p className="mt-2 text-3xl font-black text-[#004649]">{results.length}</p>
         </div>
-        <div className="rounded-[1.5rem] bg-white p-5 shadow-[0_12px_40px_rgba(0,70,73,0.06)]">
+        <div className="rounded-xl bg-white p-5 border border-[#e2e8e8]">
           <p className="text-sm text-[#6e7778]">Progress Entries</p>
           <p className="mt-2 text-3xl font-black text-[#1b5e62]">{progressLogs.length}</p>
         </div>
-        <div className="rounded-[1.5rem] bg-white p-5 shadow-[0_12px_40px_rgba(0,70,73,0.06)]">
+        <div className="rounded-xl bg-white p-5 border border-[#e2e8e8]">
           <p className="text-sm text-[#6e7778]">Pass Rate</p>
           <p className="mt-2 text-3xl font-black text-[#895100]">{results.length ? Math.round((passCount / results.length) * 100) : 0}%</p>
         </div>
       </section>
 
-      <section className="rounded-[1.75rem] bg-white p-8 shadow-[0_12px_40px_rgba(0,70,73,0.06)]">
-        <h3 className="font-headline text-2xl font-bold text-[#004649]">Exam Results</h3>
+      <section className="rounded-xl bg-white p-8 border border-[#e2e8e8]">
+        <h3 className="font-semibold text-[#1a1c1c]">Exam Results</h3>
         <div className="mt-4 overflow-x-auto">
           <table className="min-w-full text-sm">
             <thead className="bg-[#f3f4f3] text-[#5c6668]">
@@ -112,8 +111,8 @@ export default async function ParentPerformancePage() {
         {results.length === 0 ? <p className="mt-4 text-sm text-[#5c6668]">No results found yet.</p> : null}
       </section>
 
-      <section className="rounded-[1.75rem] bg-white p-8 shadow-[0_12px_40px_rgba(0,70,73,0.06)]">
-        <h3 className="font-headline text-2xl font-bold text-[#004649]">Daily Progress</h3>
+      <section className="rounded-xl bg-white p-8 border border-[#e2e8e8]">
+        <h3 className="font-semibold text-[#1a1c1c]">Daily Progress</h3>
         <div className="mt-4 overflow-x-auto">
           <table className="min-w-full text-sm">
             <thead className="bg-[#f3f4f3] text-[#5c6668]">

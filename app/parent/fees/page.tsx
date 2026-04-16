@@ -11,8 +11,8 @@ export default async function ParentFeesPage() {
 
   if (!context) {
     return (
-      <div className="rounded-[1.75rem] bg-white p-8 shadow-[0_12px_40px_rgba(0,70,73,0.06)]">
-        <h2 className="font-headline text-3xl font-extrabold text-[#004649]">Fees</h2>
+      <div className="rounded-xl bg-white p-8 border border-[#e2e8e8]">
+        <h2 className="text-2xl font-bold text-[#1a1c1c]">Fees</h2>
         <p className="mt-2 text-[#5c6668]">Parent profile missing.</p>
       </div>
     );
@@ -54,31 +54,30 @@ export default async function ParentFeesPage() {
 
   return (
     <div className="space-y-6">
-      <section className="rounded-[1.75rem] bg-white p-8 shadow-[0_12px_40px_rgba(0,70,73,0.06)]">
-        <p className="text-[10px] font-semibold uppercase tracking-[0.32em] text-[#6e7778]">Parent Hub</p>
-        <h2 className="font-headline mt-2 text-4xl font-extrabold tracking-[-0.03em] text-[#004649]">Fee Status</h2>
+      <section className="rounded-xl bg-white p-8 border border-[#e2e8e8]">
+        <h2 className="text-2xl font-bold text-[#1a1c1c]">Fee Status</h2>
         <p className="mt-2 text-[#5c6668]">
           Total Due: PKR {totalDue.toLocaleString()} | Paid: PKR {totalPaid.toLocaleString()} | Outstanding: PKR {outstanding.toLocaleString()}
         </p>
       </section>
 
       <section className="grid gap-4 md:grid-cols-3">
-        <div className="rounded-[1.5rem] bg-white p-5 shadow-[0_12px_40px_rgba(0,70,73,0.06)]">
+        <div className="rounded-xl bg-white p-5 border border-[#e2e8e8]">
           <p className="text-sm text-[#6e7778]">Total Fee Heads</p>
           <p className="mt-2 text-3xl font-black text-[#004649]">{fees.length}</p>
         </div>
-        <div className="rounded-[1.5rem] bg-white p-5 shadow-[0_12px_40px_rgba(0,70,73,0.06)]">
+        <div className="rounded-xl bg-white p-5 border border-[#e2e8e8]">
           <p className="text-sm text-[#6e7778]">Payments Logged</p>
           <p className="mt-2 text-3xl font-black text-[#1b5e62]">{payments.length}</p>
         </div>
-        <div className="rounded-[1.5rem] bg-white p-5 shadow-[0_12px_40px_rgba(0,70,73,0.06)]">
+        <div className="rounded-xl bg-white p-5 border border-[#e2e8e8]">
           <p className="text-sm text-[#6e7778]">Outstanding</p>
           <p className="mt-2 text-3xl font-black text-[#895100]">PKR {outstanding.toLocaleString()}</p>
         </div>
       </section>
 
-      <section className="rounded-[1.75rem] bg-white p-8 shadow-[0_12px_40px_rgba(0,70,73,0.06)]">
-        <h3 className="font-headline text-2xl font-bold text-[#004649]">Fee Ledger</h3>
+      <section className="rounded-xl bg-white p-8 border border-[#e2e8e8]">
+        <h3 className="font-semibold text-[#1a1c1c]">Fee Ledger</h3>
         <div className="mt-4 overflow-x-auto">
           <table className="min-w-full text-sm">
             <thead className="bg-[#f3f4f3] text-[#5c6668]">
@@ -112,8 +111,8 @@ export default async function ParentFeesPage() {
         {fees.length === 0 ? <p className="mt-4 text-sm text-[#5c6668]">No fee records found yet.</p> : null}
       </section>
 
-      <section className="rounded-[1.75rem] bg-white p-8 shadow-[0_12px_40px_rgba(0,70,73,0.06)]">
-        <h3 className="font-headline text-2xl font-bold text-[#004649]">Recent Payments</h3>
+      <section className="rounded-xl bg-white p-8 border border-[#e2e8e8]">
+        <h3 className="font-semibold text-[#1a1c1c]">Recent Payments</h3>
         <div className="mt-4 overflow-x-auto">
           <table className="min-w-full text-sm">
             <thead className="bg-[#f3f4f3] text-[#5c6668]">

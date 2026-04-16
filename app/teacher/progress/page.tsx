@@ -311,9 +311,8 @@ export default function TeacherProgressPage() {
 
   return (
     <div className="space-y-6">
-      <section className="rounded-[1.75rem] bg-white p-8 shadow-[0_12px_40px_rgba(0,70,73,0.06)]">
-        <p className="text-[10px] font-semibold uppercase tracking-[0.32em] text-[#6e7778]">Teacher Hub</p>
-        <h2 className="font-headline mt-2 text-4xl font-extrabold tracking-[-0.03em] text-[#004649]">Daily Progress</h2>
+      <section className="rounded-xl bg-white p-8 border border-[#e2e8e8]">
+        <h2 className="text-2xl font-bold text-[#1a1c1c]">Daily Progress</h2>
         <p className="mt-2 text-[#5c6668]">Record Juzz, Surah, and Ayah coverage for each student daily.</p>
 
         <form onSubmit={submit} className="mt-6 grid gap-4 md:grid-cols-3">
@@ -412,8 +411,8 @@ export default function TeacherProgressPage() {
         {message ? <p className="mt-3 rounded-xl bg-[#f3f4f3] px-4 py-3 text-sm text-[#1a1c1c]">{message}</p> : null}
       </section>
 
-      <section className="rounded-[1.75rem] bg-white p-8 shadow-[0_12px_40px_rgba(0,70,73,0.06)]">
-        <h3 className="font-headline text-2xl font-bold tracking-[-0.02em] text-[#004649]">Progress Log</h3>
+      <section className="rounded-xl bg-white p-8 border border-[#e2e8e8]">
+        <h3 className="font-semibold text-[#1a1c1c]">Progress Log</h3>
         <div className="mt-4 overflow-x-auto">
           <table className="min-w-full text-sm">
             <thead className="bg-[#f3f4f3] text-[#596364]">
