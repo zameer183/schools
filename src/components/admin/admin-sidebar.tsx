@@ -1,5 +1,6 @@
 'use client';
 
+import Image from 'next/image';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import { BarChart3, Bell, BookOpen, CalendarCheck2, DollarSign, HelpCircle, Home, LogOut, Menu, PlusCircle, Settings, Users, UserCog, X } from 'lucide-react';
@@ -70,10 +71,14 @@ export function AdminSidebar({
       >
         <div className="mb-10 flex items-start justify-between px-4">
           <div>
-            <p className="text-[10px] font-bold uppercase tracking-[0.35em] text-[#6f7979]">Admin Portal</p>
-            <h2 className="font-headline mt-1 text-xl font-extrabold leading-tight tracking-tight text-[#004649]">
-              Scholarly<br />Editorial
-            </h2>
+            <Image
+              src="/manarah-logo.png"
+              alt="Manarah Institute logo"
+              width={220}
+              height={74}
+              className="h-auto w-[220px] max-w-full"
+              priority
+            />
           </div>
           <button className="mt-1 md:hidden" onClick={onClose} aria-label="Close menu">
             <X className="h-5 w-5 text-[#6f7979]" />

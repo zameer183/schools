@@ -56,7 +56,7 @@ export default async function AdminAuditLogsPage() {
     <div className="space-y-4">
       <div className="rounded-xl bg-white border border-[#e2e8e8] p-6 flex flex-col md:flex-row md:items-start md:justify-between gap-4">
         <div>
-          <h2 className="text-3xl font-bold text-[#1a1c1c]">Audit Ledger</h2>
+          <h2 className="text-2xl font-bold text-[#1a1c1c] sm:text-3xl">Audit Ledger</h2>
           <p className="mt-1 text-sm text-[#6f7979]">System-wide monitoring of administrative activities and governance logs.</p>
         </div>
         <button className="flex items-center gap-2 rounded-xl border border-[#e2e8e8] bg-white px-4 py-2.5 text-sm font-semibold text-[#1a1c1c] hover:bg-[#f5f7f5] transition shrink-0">
@@ -123,7 +123,7 @@ export default async function AdminAuditLogsPage() {
             </select>
           </div>
         </div>
-        <button className="mt-4 flex items-center gap-2 rounded-xl bg-[#004649] px-5 py-2.5 text-sm font-bold text-white hover:opacity-90 transition">
+        <button className="mt-4 flex w-full items-center justify-center gap-2 rounded-xl bg-[#004649] px-5 py-2.5 text-sm font-bold text-white hover:opacity-90 transition sm:w-auto">
           <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
             <path strokeLinecap="round" strokeLinejoin="round" d="M10.5 6h9.75M10.5 6a1.5 1.5 0 1 1-3 0m3 0a1.5 1.5 0 1 0-3 0M3.75 6H7.5m3 12h9.75m-9.75 0a1.5 1.5 0 0 1-3 0m3 0a1.5 1.5 0 0 0-3 0m-3.75 0H7.5m9-6h3.75m-3.75 0a1.5 1.5 0 0 1-3 0m3 0a1.5 1.5 0 0 0-3 0m-9.75 0h9.75" />
           </svg>
@@ -132,8 +132,22 @@ export default async function AdminAuditLogsPage() {
       </div>
 
       <div className="rounded-xl bg-white border border-[#e2e8e8] overflow-hidden">
+        <div className="space-y-2 p-3 md:hidden">
+          {logEntries.map((entry, i) => (
+            <div key={i} className="rounded-lg border border-[#e2e8e8] p-3">
+              <p className="text-xs text-[#6f7979]">{format(entry.timestamp, 'MMM d, yyyy HH:mm')}</p>
+              <p className="mt-1 font-semibold text-[#1a1c1c]">{entry.user.fullName} • {entry.user.role}</p>
+              <p className="text-sm text-[#1a1c1c] mt-1">{entry.action}</p>
+              <p className="text-xs text-[#6f7979] mt-0.5">{entry.module}</p>
+              <div className="mt-2 flex items-center justify-between">
+                <code className="rounded bg-[#f5f7f5] px-2 py-1 text-[10px] text-[#6f7979]">{entry.ip}</code>
+                <button className="text-xs font-semibold text-[#865300] hover:underline">Details</button>
+              </div>
+            </div>
+          ))}
+        </div>
         <div className="overflow-x-auto">
-          <table className="w-full text-sm">
+          <table className="hidden w-full min-w-[980px] text-sm md:table">
             <thead>
               <tr className="border-b border-[#e2e8e8] bg-[#f5f7f5]">
                 <th className="px-5 py-3 text-left text-[10px] font-bold uppercase tracking-widest text-[#6f7979]">Timestamp</th>

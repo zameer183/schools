@@ -20,7 +20,7 @@ export default async function AdminSettingsPage() {
   return (
     <div className="space-y-4">
       <div className="rounded-xl bg-white border border-[#e2e8e8] p-6">
-        <h2 className="text-3xl font-bold text-[#1a1c1c]">System Configurations</h2>
+        <h2 className="text-2xl font-bold text-[#1a1c1c] sm:text-3xl">System Configurations</h2>
         <p className="mt-1 text-sm text-[#6f7979]">Fine-tune your institution&apos;s digital environment and academic standards.</p>
 
         <div className="mt-5 flex gap-2 flex-wrap">
@@ -37,7 +37,7 @@ export default async function AdminSettingsPage() {
 
       <div className="grid gap-4 lg:grid-cols-3">
         <div className="lg:col-span-2 rounded-xl bg-white border border-[#e2e8e8] p-6">
-          <div className="flex items-center justify-between mb-5">
+          <div className="mb-5 flex flex-wrap items-center justify-between gap-2">
             <div>
               <h3 className="font-bold text-[#1a1c1c]">School Information</h3>
               <p className="text-xs text-[#6f7979] mt-0.5">Manage basic identification and contact details.</p>
@@ -124,7 +124,7 @@ export default async function AdminSettingsPage() {
                 <span className="text-[9px] font-bold text-white bg-[#004649] px-2 py-0.5 rounded-full">Live</span>
               </div>
             </div>
-            <div className="grid grid-cols-2 gap-3">
+            <div className="grid gap-3 sm:grid-cols-2">
               <div>
                 <label className="block text-[9px] font-bold uppercase tracking-widest text-[#6f7979] mb-1.5">Start Date</label>
                 <input type="date" defaultValue="2024-09-01" className="h-10 w-full rounded-xl bg-[#f5f7f5] px-3 text-sm text-[#1a1c1c] outline-none" />
@@ -141,7 +141,7 @@ export default async function AdminSettingsPage() {
         <div className="rounded-xl bg-white border border-[#e2e8e8] p-6">
           <h3 className="font-bold text-[#1a1c1c] mb-4">Global Settings</h3>
           <p className="text-xs text-[#6f7979] mb-4">Global system standards and currency.</p>
-          <div className="grid grid-cols-2 gap-3">
+          <div className="grid gap-3 sm:grid-cols-2">
             {[
               { label: 'Default Currency', value: 'USD ($) - US Dollar' },
               { label: 'System Timezone', value: '(GMT-05:00) Eastern' },
@@ -178,7 +178,7 @@ export default async function AdminSettingsPage() {
           <p className="text-[9px] font-bold uppercase tracking-widest text-white/60 mb-2">Security Advisory</p>
           <h3 className="text-2xl font-bold">System Integrity Check Passed</h3>
           <p className="text-xs text-white/60 mt-2 leading-relaxed">All critical configurations are synced with the institutional ledger. Last backup performed: 2 hours ago.</p>
-          <div className="grid grid-cols-3 gap-4 mt-5">
+          <div className="mt-5 grid gap-4 sm:grid-cols-3">
             {[
               { label: 'Open Errors', value: '0' },
               { label: 'Daily Accesses', value: '2.4k' },

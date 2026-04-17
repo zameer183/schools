@@ -59,10 +59,10 @@ export default async function AdminReportsPage() {
   return (
     <div className="space-y-4">
       <div className="rounded-xl bg-white border border-[#e2e8e8] p-6">
-        <h2 className="text-3xl font-bold text-[#1a1c1c]">Reports</h2>
+        <h2 className="text-2xl font-bold text-[#1a1c1c] sm:text-3xl">Reports</h2>
         <p className="mt-1 text-sm text-[#6f7979]">Generate exports and management summaries for academic operations.</p>
 
-        <div className="mt-5 grid grid-cols-2 gap-3 lg:grid-cols-4">
+        <div className="mt-5 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
           {[
             { label: 'Students', value: students, icon: '👥' },
             { label: 'Teachers', value: teachers, icon: '🎓' },
@@ -100,7 +100,7 @@ export default async function AdminReportsPage() {
             <div className="space-y-3">
               <div>
                 <p className="text-[9px] font-bold uppercase tracking-widest text-[#6f7979] mb-1.5">Date Range</p>
-                <div className="grid grid-cols-2 gap-2">
+                <div className="grid gap-2 sm:grid-cols-2">
                   <input type="date" defaultValue="2024-01-01" className="h-9 rounded-xl bg-[#f5f7f5] px-2 text-xs text-[#1a1c1c] outline-none" />
                   <input type="date" defaultValue="2024-06-30" className="h-9 rounded-xl bg-[#f5f7f5] px-2 text-xs text-[#1a1c1c] outline-none" />
                 </div>
@@ -147,7 +147,7 @@ export default async function AdminReportsPage() {
 
         <div className="lg:col-span-2 space-y-4">
           <div className="rounded-xl bg-white border border-[#e2e8e8] p-5">
-            <div className="flex items-start justify-between gap-2 mb-4">
+            <div className="mb-4 flex flex-wrap items-start justify-between gap-2">
               <div>
                 <p className="text-[9px] font-bold uppercase tracking-widest text-[#865300]">Draft Report</p>
                 <h3 className="font-bold text-[#1a1c1c]">Academic Performance Summary</h3>
@@ -166,7 +166,7 @@ export default async function AdminReportsPage() {
                   </span>
                 </div>
               </div>
-              <div className="flex items-center gap-2">
+              <div className="flex flex-wrap items-center gap-2">
                 <button className="flex items-center gap-1.5 rounded-xl border border-[#e2e8e8] px-3 py-2 text-xs font-semibold text-[#1a1c1c] hover:bg-[#f5f7f5] transition">
                   <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
                     <path strokeLinecap="round" strokeLinejoin="round" d="M10.5 6h9.75M10.5 6a1.5 1.5 0 1 1-3 0m3 0a1.5 1.5 0 1 0-3 0M3.75 6H7.5m3 12h9.75m-9.75 0a1.5 1.5 0 0 1-3 0m3 0a1.5 1.5 0 0 0-3 0m-3.75 0H7.5m9-6h3.75m-3.75 0a1.5 1.5 0 0 1-3 0m3 0a1.5 1.5 0 0 0-3 0m-9.75 0h9.75" />
@@ -198,7 +198,7 @@ export default async function AdminReportsPage() {
               </div>
             </div>
 
-            <div className="grid grid-cols-2 gap-3 mb-4">
+            <div className="mb-4 grid gap-3 sm:grid-cols-2">
               <div className="rounded-xl bg-[#004649] p-4 text-white">
                 <p className="text-[9px] font-bold uppercase tracking-widest text-white/60">Average GPA</p>
                 <div className="flex items-baseline gap-2 mt-1">

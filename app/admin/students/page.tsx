@@ -85,9 +85,9 @@ export default function AdminStudentsPage() {
   return (
     <div className="space-y-4">
       <div className="rounded-xl bg-white border border-[#e2e8e8] p-6">
-        <div className="flex items-start justify-between gap-4">
+        <div className="flex flex-wrap items-start justify-between gap-4">
           <div>
-            <h2 className="text-3xl font-bold text-[#1a1c1c]">Students</h2>
+            <h2 className="text-2xl font-bold text-[#1a1c1c] sm:text-3xl">Students</h2>
             <p className="mt-1 text-sm text-[#6f7979]">Enroll, update, and manage learners.</p>
           </div>
           <Link
@@ -147,15 +147,15 @@ export default function AdminStudentsPage() {
               <option key={c.id} value={c.id}>{c.name} - {c.section}</option>
             ))}
           </select>
-          <div className="sm:col-span-2">
+          <div className="flex flex-col gap-2 sm:col-span-2 sm:flex-row sm:items-center">
             <button
               disabled={saving}
-              className="rounded-lg bg-[#004649] px-5 py-2.5 text-sm font-semibold text-white hover:bg-[#005a5e] disabled:opacity-60"
+              className="w-full rounded-lg bg-[#004649] px-5 py-2.5 text-sm font-semibold text-white hover:bg-[#005a5e] disabled:opacity-60 sm:w-auto"
             >
               {saving ? 'Adding...' : 'Add Student'}
             </button>
             {message ? (
-              <span className={`ml-3 text-sm ${message.includes('success') ? 'text-[#004649]' : 'text-[#ba1a1a]'}`}>
+              <span className={`text-sm ${message.includes('success') ? 'text-[#004649]' : 'text-[#ba1a1a]'}`}>
                 {message}
               </span>
             ) : null}
@@ -165,8 +165,26 @@ export default function AdminStudentsPage() {
 
       <div className="rounded-xl bg-white border border-[#e2e8e8] p-6">
         <h3 className="font-semibold text-[#1a1c1c] mb-4">Student List</h3>
+        <div className="space-y-2 md:hidden">
+          {students.map((s) => (
+            <div key={s.id} className="rounded-lg border border-[#e2e8e8] p-3">
+              <p className="font-semibold text-[#1a1c1c]">{s.user.fullName}</p>
+              <p className="text-xs text-[#6f7979] mt-0.5">{s.user.email}</p>
+              <div className="mt-2 flex items-center justify-between text-xs">
+                <span className="text-[#6f7979]">Admission: {s.admissionNo}</span>
+                <span className="text-[#6f7979]">{s.class ? `${s.class.name} - ${s.class.section}` : '-'}</span>
+              </div>
+              <button
+                onClick={() => removeStudent(s.id)}
+                className="mt-2 rounded-lg border border-[#fca5a5] px-3 py-1 text-xs font-semibold text-[#ba1a1a] hover:bg-[#fde8e8]"
+              >
+                Remove
+              </button>
+            </div>
+          ))}
+        </div>
         <div className="overflow-x-auto">
-          <table className="w-full text-sm">
+          <table className="hidden w-full min-w-[720px] text-sm md:table">
             <thead>
               <tr className="border-b border-[#e2e8e8]">
                 <th className="pb-2 text-left text-[10px] font-bold uppercase tracking-widest text-[#6f7979]">Name</th>

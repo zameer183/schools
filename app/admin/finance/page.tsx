@@ -43,10 +43,10 @@ export default async function AdminFinancePage() {
   return (
     <div className="space-y-4">
       <div className="rounded-xl bg-white border border-[#e2e8e8] p-6">
-        <h2 className="text-3xl font-bold text-[#1a1c1c]">Finance</h2>
+        <h2 className="text-2xl font-bold text-[#1a1c1c] sm:text-3xl">Finance</h2>
         <p className="mt-1 text-sm text-[#6f7979]">Monitor fee collection, pending dues, and transaction health.</p>
 
-        <div className="mt-5 grid grid-cols-2 gap-3 lg:grid-cols-5">
+        <div className="mt-5 grid gap-3 sm:grid-cols-2 lg:grid-cols-5">
           {[
             { label: 'Total Billed', value: formatCurrency(totalBilled) },
             { label: 'Total Collected', value: formatCurrency(totalPaid) },
@@ -65,7 +65,17 @@ export default async function AdminFinancePage() {
       <div className="grid gap-4 lg:grid-cols-2">
         <div className="rounded-xl bg-white border border-[#e2e8e8] p-6">
           <h3 className="font-semibold text-[#1a1c1c] mb-4">Recent Transactions</h3>
-          <table className="w-full text-sm">
+          <div className="space-y-2 md:hidden">
+            {recentPayments.map((item) => (
+              <div key={item.id} className="rounded-lg border border-[#e2e8e8] p-3">
+                <p className="font-semibold text-[#1a1c1c]">{item.fee.student.user.fullName}</p>
+                <p className="text-xs text-[#6f7979] mt-0.5">{item.fee.title}</p>
+                <p className="mt-1 text-sm font-bold text-[#1a1c1c]">{formatCurrency(Number(item.amountPaid))}</p>
+              </div>
+            ))}
+          </div>
+          <div className="overflow-x-auto">
+            <table className="hidden w-full min-w-[520px] text-sm md:table">
             <thead>
               <tr className="border-b border-[#e2e8e8]">
                 <th className="pb-2 text-left text-[10px] font-bold uppercase tracking-widest text-[#6f7979]">Student</th>
@@ -82,12 +92,13 @@ export default async function AdminFinancePage() {
                 </tr>
               ))}
             </tbody>
-          </table>
+            </table>
+          </div>
           {recentPayments.length === 0 ? <p className="mt-4 text-sm text-[#6f7979]">No transactions yet.</p> : null}
         </div>
 
         <div className="rounded-xl bg-white border border-[#e2e8e8] p-6">
-          <div className="flex items-center justify-between mb-4">
+          <div className="mb-4 flex flex-wrap items-center justify-between gap-2">
             <h3 className="font-semibold text-[#1a1c1c]">Pending &amp; Overdue Dues</h3>
             <span className="rounded-full bg-[#fde8e8] px-3 py-1 text-[10px] font-bold text-[#ba1a1a]">
               Overdue: {overdueCount}
@@ -100,7 +111,7 @@ export default async function AdminFinancePage() {
               const remaining = Math.max(total - paid, 0);
               return (
                 <div key={fee.id} className="rounded-lg border border-[#e2e8e8] p-4">
-                  <div className="flex items-start justify-between gap-3">
+                  <div className="flex flex-wrap items-start justify-between gap-3">
                     <div>
                       <p className="font-semibold text-[#1a1c1c]">{fee.student.user.fullName}</p>
                       <p className="text-xs text-[#6f7979] mt-0.5">{fee.title} — Due {fee.dueDate.toISOString().slice(0, 10)}</p>

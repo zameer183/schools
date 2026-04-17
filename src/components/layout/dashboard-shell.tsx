@@ -1,12 +1,13 @@
 'use client';
 
 import type { UserRole } from '@prisma/client';
+import Image from 'next/image';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
-import { useTransition } from 'react';
+import { useEffect, useTransition, useState } from 'react';
 import {
   BarChart3, Bell, BookOpen, CalendarCheck2, ChevronDown, DollarSign,
-  Home, LogOut, MessageSquare, Settings, Users, ClipboardList, Zap, ShieldCheck
+  Home, LogOut, Menu, MessageSquare, Settings, Users, ClipboardList, Zap, ShieldCheck, X
 } from 'lucide-react';
 
 type NavItem = {
@@ -56,6 +57,11 @@ const navByRole: Record<UserRole, NavItem[]> = {
   ],
 };
 
+const mobileTabsByRole: Partial<Record<UserRole, string[]>> = {
+  TEACHER: ['/teacher', '/teacher/students', '/teacher/attendance', '/teacher/messages'],
+  STUDENT: ['/student', '/student/schedule', '/student/assignments', '/student/messages']
+};
+
 function isActive(pathname: string, href: string, role: UserRole) {
   const rootHrefs: Partial<Record<UserRole, string>> = {
     ADMIN: '/admin',
@@ -79,8 +85,12 @@ export function DashboardShell({
   const pathname = usePathname();
   const router = useRouter();
   const [pending, startTransition] = useTransition();
+  const [sidebarOpen, setSidebarOpen] = useState(false);
 
   const navItems = navByRole[role];
+  const mobileTabs = (mobileTabsByRole[role] ?? [])
+    .map((href) => navItems.find((item) => item.href === href))
+    .filter((item): item is NavItem => Boolean(item));
 
   const roleLabel =
     role === 'ADMIN' ? 'Admin' :
@@ -105,20 +115,48 @@ export function DashboardShell({
     });
   };
 
+  useEffect(() => {
+    setSidebarOpen(false);
+  }, [pathname]);
+
   return (
     <div className="flex min-h-screen bg-[#f0f2f0]">
-      {/* Sidebar */}
-      <aside className="fixed left-0 top-0 z-30 flex h-screen w-[220px] flex-col bg-white border-r border-[#e2e8e8]">
+      {sidebarOpen ? (
+        <button
+          aria-label="Close navigation menu"
+          className="fixed inset-0 z-30 bg-black/30 md:hidden"
+          onClick={() => setSidebarOpen(false)}
+        />
+      ) : null}
+
+      <aside
+        className={`fixed left-0 top-0 z-40 flex h-screen w-[220px] flex-col border-r border-[#e2e8e8] bg-white transition-transform md:translate-x-0 ${
+          sidebarOpen ? 'translate-x-0' : '-translate-x-full'
+        }`}
+      >
         {/* Branding */}
-        <div className="px-5 pt-6 pb-5 border-b border-[#e2e8e8]">
-          <p className="text-[10px] font-semibold uppercase tracking-[0.2em] text-[#6f7979]">INSTITUTION</p>
-          <h2 className="font-headline mt-1 text-[17px] font-bold leading-snug text-[#1a1c1c]">
-            The Scholarly<br />Editorial
-          </h2>
+        <div className="border-b border-[#e2e8e8] px-5 pb-5 pt-6">
+          <div className="mb-3 flex items-center justify-end md:hidden">
+            <button
+              onClick={() => setSidebarOpen(false)}
+              className="rounded-lg p-1 text-[#6f7979] hover:bg-[#f0f2f0]"
+              aria-label="Close menu"
+            >
+              <X className="h-5 w-5" />
+            </button>
+          </div>
+          <Image
+            src="/manarah-logo.png"
+            alt="Manarah Institute logo"
+            width={220}
+            height={74}
+            className="h-auto w-[220px] max-w-full"
+            priority
+          />
         </div>
 
         {/* Nav */}
-        <nav className="flex-1 overflow-y-auto px-3 py-4 space-y-0.5">
+        <nav className="flex-1 space-y-0.5 overflow-y-auto px-3 py-4">
           {navItems.map((item) => {
             const active = isActive(pathname, item.href, role);
             const Icon = item.icon;
@@ -126,6 +164,7 @@ export function DashboardShell({
               <Link
                 key={item.href}
                 href={item.href}
+                onClick={() => setSidebarOpen(false)}
                 className={`flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-colors ${
                   active
                     ? 'bg-[#004649] text-white'
@@ -141,14 +180,31 @@ export function DashboardShell({
       </aside>
 
       {/* Main area */}
-      <div className="flex min-h-screen flex-1 flex-col pl-[220px]">
+      <div className="flex min-h-screen flex-1 flex-col md:pl-[220px]">
         {/* Header */}
-        <header className="sticky top-0 z-20 flex h-14 items-center justify-between border-b border-[#e2e8e8] bg-white px-6">
-          <div>
-            <p className="text-[10px] font-semibold uppercase tracking-[0.15em] text-[#6f7979]">{roleLabel}</p>
-            <p className="text-sm font-semibold text-[#1a1c1c]">The Scholarly Editorial</p>
+        <header className="fixed left-0 right-0 top-0 z-20 flex h-14 items-center justify-between border-b border-[#e2e8e8] bg-white px-4 md:left-[220px] md:px-6">
+          <div className="flex items-center">
+            <Image
+              src="/manarah-logo.png"
+              alt="Manarah Institute logo"
+              width={148}
+              height={32}
+              className="h-8 w-auto md:hidden"
+              priority
+            />
+            <div className="hidden md:block">
+              <p className="text-[10px] font-semibold uppercase tracking-[0.15em] text-[#6f7979]">{roleLabel}</p>
+              <p className="text-sm font-semibold text-[#1a1c1c]">The Scholarly Editorial</p>
+            </div>
           </div>
           <div className="flex items-center gap-3">
+            <button
+              className="inline-flex h-9 w-9 items-center justify-center rounded-lg border border-[#d4dee7] text-[#1a1c1c] md:hidden"
+              aria-label="Open menu"
+              onClick={() => setSidebarOpen(true)}
+            >
+              <Menu className="h-4 w-4" />
+            </button>
             <span className="text-sm font-medium text-[#3d4a4a]">{fullName}</span>
             <button
               className="inline-flex h-8 w-8 items-center justify-center rounded-full text-[#6f7979] hover:bg-[#f0f2f0]"
@@ -158,7 +214,7 @@ export function DashboardShell({
             </button>
             <button
               onClick={() => role === 'ADMIN' ? router.push('/admin/settings') : undefined}
-              className="inline-flex items-center gap-1 rounded-full bg-[#004649] pl-1 pr-2 h-8 text-xs font-bold text-white"
+              className="inline-flex h-8 items-center gap-1 rounded-full bg-[#004649] pl-1 pr-2 text-xs font-bold text-white"
               title={fullName}
             >
               <span className="inline-flex h-6 w-6 items-center justify-center rounded-full bg-[#005a5e]">{initials}</span>
@@ -167,7 +223,7 @@ export function DashboardShell({
             <button
               onClick={doLogout}
               disabled={pending}
-              className="flex items-center gap-1.5 rounded-lg border border-[#d4dee7] bg-white px-3 py-1.5 text-xs font-semibold text-[#1a1c1c] hover:bg-[#f0f2f0] disabled:opacity-60"
+              className="hidden items-center gap-1.5 rounded-lg border border-[#d4dee7] bg-white px-3 py-1.5 text-xs font-semibold text-[#1a1c1c] hover:bg-[#f0f2f0] disabled:opacity-60 md:flex"
             >
               <LogOut className="h-3.5 w-3.5" />
               Logout
@@ -176,10 +232,31 @@ export function DashboardShell({
         </header>
 
         {/* Page content */}
-        <main className="flex-1 p-6">
+        <main className={`flex-1 px-4 pb-6 pt-16 md:px-6 ${mobileTabs.length > 0 ? 'pb-24 md:pb-6' : ''}`}>
           {children}
         </main>
       </div>
+
+      {mobileTabs.length > 0 ? (
+        <nav className="fixed bottom-0 left-0 right-0 z-20 grid h-16 grid-cols-4 border-t border-[#e2e8e8] bg-white md:hidden">
+          {mobileTabs.map((item) => {
+            const Icon = item.icon;
+            const active = isActive(pathname, item.href, role);
+            return (
+              <Link
+                key={item.href}
+                href={item.href}
+                className={`flex flex-col items-center justify-center gap-0.5 text-[10px] font-semibold ${
+                  active ? 'text-[#004649]' : 'text-[#6f7979]'
+                }`}
+              >
+                <Icon className={`h-4 w-4 ${active ? 'text-[#004649]' : 'text-[#6f7979]'}`} />
+                <span>{item.label}</span>
+              </Link>
+            );
+          })}
+        </nav>
+      ) : null}
     </div>
   );
 }

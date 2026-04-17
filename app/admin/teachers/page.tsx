@@ -111,7 +111,7 @@ export default function AdminTeachersPage() {
       <div className="rounded-xl bg-white border border-[#e2e8e8] p-6">
         <div className="flex items-start justify-between gap-4 flex-wrap">
           <div>
-            <h2 className="text-3xl font-bold text-[#1a1c1c]">Staff Management</h2>
+            <h2 className="text-2xl font-bold text-[#1a1c1c] sm:text-3xl">Staff Management</h2>
             <p className="mt-1 text-sm text-[#6f7979]">Managing {teachers.length} distinguished faculty and administrative members.</p>
           </div>
           <button
@@ -125,7 +125,7 @@ export default function AdminTeachersPage() {
           </button>
         </div>
 
-        <div className="flex items-center gap-3 mt-5">
+        <div className="mt-5 flex flex-col gap-3 sm:flex-row sm:items-center">
           <div className="flex flex-1 items-center gap-2 rounded-xl bg-[#f5f7f5] px-3 py-2.5">
             <svg className="h-4 w-4 text-[#6f7979] shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
               <path strokeLinecap="round" strokeLinejoin="round" d="m21 21-5.197-5.197m0 0A7.5 7.5 0 1 0 5.196 5.196a7.5 7.5 0 0 0 10.607 10.607Z" />
@@ -137,7 +137,7 @@ export default function AdminTeachersPage() {
               className="bg-transparent text-sm text-[#1a1c1c] placeholder:text-[#6f7979] outline-none flex-1"
             />
           </div>
-          <button className="flex items-center gap-2 rounded-xl border border-[#e2e8e8] px-4 py-2.5 text-sm font-semibold text-[#1a1c1c] hover:bg-[#f5f7f5] transition">
+          <button className="flex w-full items-center justify-center gap-2 rounded-xl border border-[#e2e8e8] px-4 py-2.5 text-sm font-semibold text-[#1a1c1c] hover:bg-[#f5f7f5] transition sm:w-auto">
             <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
               <path strokeLinecap="round" strokeLinejoin="round" d="M10.5 6h9.75M10.5 6a1.5 1.5 0 1 1-3 0m3 0a1.5 1.5 0 1 0-3 0M3.75 6H7.5m3 12h9.75m-9.75 0a1.5 1.5 0 0 1-3 0m3 0a1.5 1.5 0 0 0-3 0m-3.75 0H7.5m9-6h3.75m-3.75 0a1.5 1.5 0 0 1-3 0m3 0a1.5 1.5 0 0 0-3 0m-9.75 0h9.75" />
             </svg>
@@ -171,11 +171,11 @@ export default function AdminTeachersPage() {
                 />
               </div>
             ))}
-            <div className="sm:col-span-2 flex items-center gap-3">
-              <button type="submit" disabled={saving} className="rounded-xl bg-[#004649] px-6 py-2.5 text-sm font-bold text-white hover:opacity-90 transition disabled:opacity-50">
+            <div className="sm:col-span-2 flex flex-col gap-2 sm:flex-row sm:items-center">
+              <button type="submit" disabled={saving} className="w-full rounded-xl bg-[#004649] px-6 py-2.5 text-sm font-bold text-white hover:opacity-90 transition disabled:opacity-50 sm:w-auto">
                 {saving ? 'Adding...' : 'Add Teacher'}
               </button>
-              <button type="button" onClick={() => setShowForm(false)} className="rounded-xl border border-[#e2e8e8] px-6 py-2.5 text-sm font-semibold text-[#1a1c1c] hover:bg-[#f5f7f5]">Cancel</button>
+              <button type="button" onClick={() => setShowForm(false)} className="w-full rounded-xl border border-[#e2e8e8] px-6 py-2.5 text-sm font-semibold text-[#1a1c1c] hover:bg-[#f5f7f5] sm:w-auto">Cancel</button>
               {message && <p className="text-sm text-[#004649]">{message}</p>}
             </div>
           </form>
@@ -227,7 +227,7 @@ export default function AdminTeachersPage() {
                     <p className="text-[10px] text-[#6f7979] uppercase tracking-widest font-semibold">{dept}</p>
                   </div>
 
-                  <div className="flex items-center gap-2 mt-4">
+                  <div className="mt-4 flex flex-wrap items-center gap-2">
                     <button className="flex items-center gap-1.5 rounded-lg bg-[#004649] px-3 py-1.5 text-[10px] font-bold text-white hover:opacity-90 transition">
                       <svg className="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                         <path strokeLinecap="round" strokeLinejoin="round" d="M21.75 6.75v10.5a2.25 2.25 0 0 1-2.25 2.25h-15a2.25 2.25 0 0 1-2.25-2.25V6.75m19.5 0A2.25 2.25 0 0 0 19.5 4.5h-15a2.25 2.25 0 0 0-2.25 2.25m19.5 0v.243a2.25 2.25 0 0 1-1.07 1.916l-7.5 4.615a2.25 2.25 0 0 1-2.36 0L3.32 8.91a2.25 2.25 0 0 1-1.07-1.916V6.75" />

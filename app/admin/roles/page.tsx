@@ -28,7 +28,7 @@ export default async function AdminRolesPage() {
     <div className="space-y-4">
       <div className="rounded-xl bg-white border border-[#e2e8e8] p-6 flex flex-col md:flex-row md:items-start md:justify-between gap-4">
         <div>
-          <h2 className="text-3xl font-bold text-[#1a1c1c]">Governance Framework</h2>
+          <h2 className="text-2xl font-bold text-[#1a1c1c] sm:text-3xl">Governance Framework</h2>
           <p className="mt-1 text-sm text-[#6f7979]">
             Define institutional boundaries and manage administrative privileges across your scholarly ecosystem.
           </p>
@@ -43,7 +43,7 @@ export default async function AdminRolesPage() {
 
       <div className="grid gap-4 lg:grid-cols-3">
         <div className="lg:col-span-2 rounded-xl bg-white border border-[#e2e8e8] overflow-hidden">
-          <div className="grid grid-cols-3 border-b border-[#e2e8e8] px-5 py-3 bg-[#f5f7f5]">
+          <div className="hidden grid-cols-3 border-b border-[#e2e8e8] bg-[#f5f7f5] px-5 py-3 md:grid">
             <p className="text-[10px] font-bold uppercase tracking-widest text-[#6f7979]">Role Name</p>
             <p className="text-[10px] font-bold uppercase tracking-widest text-[#6f7979]">User Count</p>
             <p className="text-[10px] font-bold uppercase tracking-widest text-[#6f7979]">Access Tier</p>
@@ -53,7 +53,7 @@ export default async function AdminRolesPage() {
               const meta = ROLE_META[role];
               const count = roleMap.get(role) ?? 0;
               return (
-                <div key={role} className="grid grid-cols-3 items-center px-5 py-4 hover:bg-[#f5f7f5] cursor-pointer transition-colors">
+                <div key={role} className="grid grid-cols-1 gap-2 px-5 py-4 transition-colors hover:bg-[#f5f7f5] md:grid-cols-3 md:items-center">
                   <div className="flex items-center gap-3">
                     <div className="w-9 h-9 rounded-full bg-[#f0f2f0] flex items-center justify-center text-lg">
                       {meta.icon}
@@ -63,13 +63,13 @@ export default async function AdminRolesPage() {
                       <p className="text-xs text-[#6f7979]">{meta.desc}</p>
                     </div>
                   </div>
-                  <div className="flex items-center gap-2">
+                  <div className="flex items-center gap-2 md:justify-start">
                     <p className="text-2xl font-bold text-[#1a1c1c]">{count}</p>
                     <p className="text-xs text-[#6f7979]">
                       {role === 'TEACHER' ? 'Staff members' : role === 'STUDENT' ? 'Students' : role === 'PARENT' ? 'Guardians' : 'Admins'}
                     </p>
                   </div>
-                  <span className={`inline-block text-[10px] font-bold uppercase tracking-wider px-2.5 py-1 rounded-full w-fit ${meta.tierColor}`}>
+                  <span className={`inline-block w-fit rounded-full px-2.5 py-1 text-[10px] font-bold uppercase tracking-wider ${meta.tierColor}`}>
                     {meta.tier}
                   </span>
                 </div>

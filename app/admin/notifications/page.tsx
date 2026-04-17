@@ -43,10 +43,10 @@ export default async function AdminNotificationsPage() {
   return (
     <div className="space-y-4">
       <div className="rounded-xl bg-white border border-[#e2e8e8] p-6">
-        <h2 className="text-3xl font-bold text-[#1a1c1c]">Notifications</h2>
+        <h2 className="text-2xl font-bold text-[#1a1c1c] sm:text-3xl">Notifications</h2>
         <p className="mt-1 text-sm text-[#6f7979]">Broadcast institutional notices and monitor delivery status.</p>
 
-        <div className="mt-5 grid grid-cols-3 gap-3">
+        <div className="mt-5 grid gap-3 sm:grid-cols-3">
           <div className="rounded-lg bg-[#f5f7f5] p-4">
             <p className="text-[10px] font-bold uppercase tracking-widest text-[#6f7979]">Total</p>
             <p className="mt-2 text-3xl font-bold text-[#1a1c1c]">{total}</p>
@@ -81,7 +81,7 @@ export default async function AdminNotificationsPage() {
             <option value="STUDENT">Student</option>
             <option value="PARENT">Parent</option>
           </select>
-          <button className="h-10 rounded-lg bg-[#004649] px-4 text-sm font-semibold text-white hover:bg-[#005a5e]">
+          <button className="h-10 rounded-lg bg-[#004649] px-4 text-sm font-semibold text-white hover:bg-[#005a5e] sm:w-fit">
             Send Broadcast
           </button>
           <textarea
@@ -95,8 +95,22 @@ export default async function AdminNotificationsPage() {
 
       <div className="rounded-xl bg-white border border-[#e2e8e8] p-6">
         <h3 className="font-semibold text-[#1a1c1c] mb-4">Recent Notifications</h3>
+        <div className="space-y-2 md:hidden">
+          {recent.map((item) => (
+            <div key={item.id} className="rounded-lg border border-[#e2e8e8] p-3">
+              <p className="font-semibold text-[#1a1c1c]">{item.title}</p>
+              <p className="text-xs text-[#6f7979] mt-0.5">{item.user.fullName} ({item.user.role})</p>
+              <div className="mt-2 flex items-center justify-between">
+                <span className="text-xs text-[#6f7979]">{item.type}</span>
+                <span className={`rounded-full px-2 py-0.5 text-[10px] font-bold ${item.isRead ? 'bg-[#f5f7f5] text-[#6f7979]' : 'bg-[#e8f5e9] text-[#004649]'}`}>
+                  {item.isRead ? 'Read' : 'Unread'}
+                </span>
+              </div>
+            </div>
+          ))}
+        </div>
         <div className="overflow-x-auto">
-          <table className="w-full text-sm">
+          <table className="hidden w-full min-w-[760px] text-sm md:table">
             <thead>
               <tr className="border-b border-[#e2e8e8]">
                 <th className="pb-2 text-left text-[10px] font-bold uppercase tracking-widest text-[#6f7979]">Title</th>
