@@ -1,8 +1,7 @@
 'use client';
 
 import { useCallback, useEffect, useMemo, useState } from 'react';
-
-type LessonType = 'JUZZ' | 'SURAH';
+import { Bell, BookOpen, Search, Sparkles, Star, TrendingUp } from 'lucide-react';
 
 type ClassItem = { id: string; name: string; section: string };
 type StudentItem = {
@@ -15,169 +14,317 @@ type StudentItem = {
 type ProgressItem = {
   id: string;
   date: string;
-  lessonType: LessonType;
-  juzzNumber: number | null;
-  lessonNumber: number;
-  ayahFrom: number | null;
-  ayahTo: number | null;
   notes: string | null;
   student: { user: { fullName: string } };
   class: { name: string; section: string };
 };
 
-type Surah = { number: number; name: string; ayahCount: number };
+type SectionKey = 'sabaq' | 'sabqi' | 'manzil';
+type KaifiyatValue = 'Excellent ⭐⭐⭐⭐⭐' | 'Good ⭐⭐⭐⭐' | 'Average ⭐⭐⭐' | 'Weak ⭐⭐' | '';
 
-type Juzz = { number: number; name: string };
+type SurahRangeForm = {
+  id?: string;
+  surahInput: string;
+  surahId: number | null;
+  fromAyah: string;
+  toAyah: string;
+};
 
-const juzzList: Juzz[] = [
-  { number: 1, name: 'Alif Lam Meem' },
-  { number: 2, name: 'Sayaqool' },
-  { number: 3, name: 'Tilka Rusul' },
-  { number: 4, name: 'Lan Tanaaloo' },
-  { number: 5, name: 'Wal Mohsanat' },
-  { number: 6, name: 'La Yuhibbullah' },
-  { number: 7, name: 'Wa Iza Samiu' },
-  { number: 8, name: 'Wa Lau Annana' },
-  { number: 9, name: 'Qalal Malao' },
-  { number: 10, name: 'Wa Alamo' },
-  { number: 11, name: 'Yatazeroon' },
-  { number: 12, name: 'Wa Mamin Daabbah' },
-  { number: 13, name: 'Wa Ma Ubrioo' },
-  { number: 14, name: 'Rubama' },
-  { number: 15, name: 'Subhanallazi' },
-  { number: 16, name: 'Qal Alam' },
-  { number: 17, name: 'Aqtaraba' },
-  { number: 18, name: 'Qadd Aflaha' },
-  { number: 19, name: 'Wa Qalallazina' },
-  { number: 20, name: 'Aman Khalaq' },
-  { number: 21, name: 'Utlu Ma Oohi' },
-  { number: 22, name: 'Wa Manyaqnut' },
-  { number: 23, name: 'Wa Mali' },
-  { number: 24, name: 'Faman Azlam' },
-  { number: 25, name: 'Elahe Yuruddo' },
-  { number: 26, name: 'Ha Meem' },
-  { number: 27, name: 'Qala Fama Khatbukum' },
-  { number: 28, name: 'Qadd Sami Allah' },
-  { number: 29, name: 'Tabarakallazi' },
-  { number: 30, name: 'Amma Yatasaaloon' }
+type SectionForm = {
+  ranges: SurahRangeForm[];
+  kaifiyat: KaifiyatValue;
+  tajweeditotal: string; // exact count 0-99
+  hifztotal: string;     // exact count 0-99
+};
+
+type ParsedSurahRange = {
+  surahId: number;
+  surahName: string;
+  fromAyah: number;
+  toAyah: number;
+};
+
+type ParsedSection = {
+  ranges: ParsedSurahRange[];
+  kaifiyat: Exclude<KaifiyatValue, ''> | '';
+  tajweeditotal: number;
+  hifztotal: number;
+};
+
+type ParsedReport = {
+  sections: Record<SectionKey, ParsedSection>;
+  overall: string;
+  totalMistakes: number;
+  suggestion: string;
+};
+
+type NotificationItem = {
+  id: number;
+  type: 'success' | 'error' | 'info';
+  text: string;
+};
+
+type Surah = { id: number; name: string; ayahs: number };
+
+const SURAH_LIST: Surah[] = [
+  { id: 1, name: 'Al-Fatihah', ayahs: 7 },
+  { id: 2, name: 'Al-Baqarah', ayahs: 286 },
+  { id: 3, name: 'Aal-E-Imran', ayahs: 200 },
+  { id: 4, name: 'An-Nisa', ayahs: 176 },
+  { id: 5, name: 'Al-Maidah', ayahs: 120 },
+  { id: 6, name: 'Al-Anam', ayahs: 165 },
+  { id: 7, name: 'Al-Araf', ayahs: 206 },
+  { id: 8, name: 'Al-Anfal', ayahs: 75 },
+  { id: 9, name: 'At-Tawbah', ayahs: 129 },
+  { id: 10, name: 'Yunus', ayahs: 109 },
+  { id: 11, name: 'Hud', ayahs: 123 },
+  { id: 12, name: 'Yusuf', ayahs: 111 },
+  { id: 13, name: 'Ar-Rad', ayahs: 43 },
+  { id: 14, name: 'Ibrahim', ayahs: 52 },
+  { id: 15, name: 'Al-Hijr', ayahs: 99 },
+  { id: 16, name: 'An-Nahl', ayahs: 128 },
+  { id: 17, name: 'Al-Isra', ayahs: 111 },
+  { id: 18, name: 'Al-Kahf', ayahs: 110 },
+  { id: 19, name: 'Maryam', ayahs: 98 },
+  { id: 20, name: 'Ta-Ha', ayahs: 135 },
+  { id: 21, name: 'Al-Anbiya', ayahs: 112 },
+  { id: 22, name: 'Al-Hajj', ayahs: 78 },
+  { id: 23, name: 'Al-Muminun', ayahs: 118 },
+  { id: 24, name: 'An-Nur', ayahs: 64 },
+  { id: 25, name: 'Al-Furqan', ayahs: 77 },
+  { id: 26, name: 'Ash-Shuara', ayahs: 227 },
+  { id: 27, name: 'An-Naml', ayahs: 93 },
+  { id: 28, name: 'Al-Qasas', ayahs: 88 },
+  { id: 29, name: 'Al-Ankabut', ayahs: 69 },
+  { id: 30, name: 'Ar-Rum', ayahs: 60 },
+  { id: 31, name: 'Luqman', ayahs: 34 },
+  { id: 32, name: 'As-Sajdah', ayahs: 30 },
+  { id: 33, name: 'Al-Ahzab', ayahs: 73 },
+  { id: 34, name: 'Saba', ayahs: 54 },
+  { id: 35, name: 'Fatir', ayahs: 45 },
+  { id: 36, name: 'Ya-Sin', ayahs: 83 },
+  { id: 37, name: 'As-Saffat', ayahs: 182 },
+  { id: 38, name: 'Sad', ayahs: 88 },
+  { id: 39, name: 'Az-Zumar', ayahs: 75 },
+  { id: 40, name: 'Ghafir', ayahs: 85 },
+  { id: 41, name: 'Fussilat', ayahs: 54 },
+  { id: 42, name: 'Ash-Shura', ayahs: 53 },
+  { id: 43, name: 'Az-Zukhruf', ayahs: 89 },
+  { id: 44, name: 'Ad-Dukhan', ayahs: 59 },
+  { id: 45, name: 'Al-Jathiyah', ayahs: 37 },
+  { id: 46, name: 'Al-Ahqaf', ayahs: 35 },
+  { id: 47, name: 'Muhammad', ayahs: 38 },
+  { id: 48, name: 'Al-Fath', ayahs: 29 },
+  { id: 49, name: 'Al-Hujurat', ayahs: 18 },
+  { id: 50, name: 'Qaf', ayahs: 45 },
+  { id: 51, name: 'Adh-Dhariyat', ayahs: 60 },
+  { id: 52, name: 'At-Tur', ayahs: 49 },
+  { id: 53, name: 'An-Najm', ayahs: 62 },
+  { id: 54, name: 'Al-Qamar', ayahs: 55 },
+  { id: 55, name: 'Ar-Rahman', ayahs: 78 },
+  { id: 56, name: 'Al-Waqiah', ayahs: 96 },
+  { id: 57, name: 'Al-Hadid', ayahs: 29 },
+  { id: 58, name: 'Al-Mujadila', ayahs: 22 },
+  { id: 59, name: 'Al-Hashr', ayahs: 24 },
+  { id: 60, name: 'Al-Mumtahanah', ayahs: 13 },
+  { id: 61, name: 'As-Saff', ayahs: 14 },
+  { id: 62, name: 'Al-Jumuah', ayahs: 11 },
+  { id: 63, name: 'Al-Munafiqun', ayahs: 11 },
+  { id: 64, name: 'At-Taghabun', ayahs: 18 },
+  { id: 65, name: 'At-Talaq', ayahs: 12 },
+  { id: 66, name: 'At-Tahrim', ayahs: 12 },
+  { id: 67, name: 'Al-Mulk', ayahs: 30 },
+  { id: 68, name: 'Al-Qalam', ayahs: 52 },
+  { id: 69, name: 'Al-Haqqah', ayahs: 52 },
+  { id: 70, name: 'Al-Maarij', ayahs: 44 },
+  { id: 71, name: 'Nuh', ayahs: 28 },
+  { id: 72, name: 'Al-Jinn', ayahs: 28 },
+  { id: 73, name: 'Al-Muzzammil', ayahs: 20 },
+  { id: 74, name: 'Al-Muddaththir', ayahs: 56 },
+  { id: 75, name: 'Al-Qiyamah', ayahs: 40 },
+  { id: 76, name: 'Al-Insan', ayahs: 31 },
+  { id: 77, name: 'Al-Mursalat', ayahs: 50 },
+  { id: 78, name: 'An-Naba', ayahs: 40 },
+  { id: 79, name: 'An-Naziat', ayahs: 46 },
+  { id: 80, name: 'Abasa', ayahs: 42 },
+  { id: 81, name: 'At-Takwir', ayahs: 29 },
+  { id: 82, name: 'Al-Infitar', ayahs: 19 },
+  { id: 83, name: 'Al-Mutaffifin', ayahs: 36 },
+  { id: 84, name: 'Al-Inshiqaq', ayahs: 25 },
+  { id: 85, name: 'Al-Buruj', ayahs: 22 },
+  { id: 86, name: 'At-Tariq', ayahs: 17 },
+  { id: 87, name: 'Al-Ala', ayahs: 19 },
+  { id: 88, name: 'Al-Ghashiyah', ayahs: 26 },
+  { id: 89, name: 'Al-Fajr', ayahs: 30 },
+  { id: 90, name: 'Al-Balad', ayahs: 20 },
+  { id: 91, name: 'Ash-Shams', ayahs: 15 },
+  { id: 92, name: 'Al-Layl', ayahs: 21 },
+  { id: 93, name: 'Ad-Duha', ayahs: 11 },
+  { id: 94, name: 'Ash-Sharh', ayahs: 8 },
+  { id: 95, name: 'At-Tin', ayahs: 8 },
+  { id: 96, name: 'Al-Alaq', ayahs: 19 },
+  { id: 97, name: 'Al-Qadr', ayahs: 5 },
+  { id: 98, name: 'Al-Bayyinah', ayahs: 8 },
+  { id: 99, name: 'Az-Zalzalah', ayahs: 8 },
+  { id: 100, name: 'Al-Adiyat', ayahs: 11 },
+  { id: 101, name: 'Al-Qariah', ayahs: 11 },
+  { id: 102, name: 'At-Takathur', ayahs: 8 },
+  { id: 103, name: 'Al-Asr', ayahs: 3 },
+  { id: 104, name: 'Al-Humazah', ayahs: 9 },
+  { id: 105, name: 'Al-Fil', ayahs: 5 },
+  { id: 106, name: 'Quraysh', ayahs: 4 },
+  { id: 107, name: 'Al-Maun', ayahs: 7 },
+  { id: 108, name: 'Al-Kawthar', ayahs: 3 },
+  { id: 109, name: 'Al-Kafirun', ayahs: 6 },
+  { id: 110, name: 'An-Nasr', ayahs: 3 },
+  { id: 111, name: 'Al-Masad', ayahs: 5 },
+  { id: 112, name: 'Al-Ikhlas', ayahs: 4 },
+  { id: 113, name: 'Al-Falaq', ayahs: 5 },
+  { id: 114, name: 'An-Nas', ayahs: 6 }
 ];
 
-const surahList: Surah[] = [
-  { number: 1, name: 'Al-Fatihah', ayahCount: 7 },
-  { number: 2, name: 'Al-Baqarah', ayahCount: 286 },
-  { number: 3, name: "Ali 'Imran", ayahCount: 200 },
-  { number: 4, name: 'An-Nisa', ayahCount: 176 },
-  { number: 5, name: "Al-Ma'idah", ayahCount: 120 },
-  { number: 6, name: "Al-An'am", ayahCount: 165 },
-  { number: 7, name: "Al-A'raf", ayahCount: 206 },
-  { number: 8, name: 'Al-Anfal', ayahCount: 75 },
-  { number: 9, name: 'At-Tawbah', ayahCount: 129 },
-  { number: 10, name: 'Yunus', ayahCount: 109 },
-  { number: 11, name: 'Hud', ayahCount: 123 },
-  { number: 12, name: 'Yusuf', ayahCount: 111 },
-  { number: 13, name: "Ar-Ra'd", ayahCount: 43 },
-  { number: 14, name: 'Ibrahim', ayahCount: 52 },
-  { number: 15, name: 'Al-Hijr', ayahCount: 99 },
-  { number: 16, name: 'An-Nahl', ayahCount: 128 },
-  { number: 17, name: 'Al-Isra', ayahCount: 111 },
-  { number: 18, name: 'Al-Kahf', ayahCount: 110 },
-  { number: 19, name: 'Maryam', ayahCount: 98 },
-  { number: 20, name: 'Ta-Ha', ayahCount: 135 },
-  { number: 21, name: 'Al-Anbiya', ayahCount: 112 },
-  { number: 22, name: 'Al-Hajj', ayahCount: 78 },
-  { number: 23, name: "Al-Mu'minun", ayahCount: 118 },
-  { number: 24, name: 'An-Nur', ayahCount: 64 },
-  { number: 25, name: 'Al-Furqan', ayahCount: 77 },
-  { number: 26, name: "Ash-Shu'ara", ayahCount: 227 },
-  { number: 27, name: 'An-Naml', ayahCount: 93 },
-  { number: 28, name: 'Al-Qasas', ayahCount: 88 },
-  { number: 29, name: 'Al-Ankabut', ayahCount: 69 },
-  { number: 30, name: 'Ar-Rum', ayahCount: 60 },
-  { number: 31, name: 'Luqman', ayahCount: 34 },
-  { number: 32, name: 'As-Sajdah', ayahCount: 30 },
-  { number: 33, name: 'Al-Ahzab', ayahCount: 73 },
-  { number: 34, name: 'Saba', ayahCount: 54 },
-  { number: 35, name: 'Fatir', ayahCount: 45 },
-  { number: 36, name: 'Ya-Sin', ayahCount: 83 },
-  { number: 37, name: 'As-Saffat', ayahCount: 182 },
-  { number: 38, name: 'Sad', ayahCount: 88 },
-  { number: 39, name: 'Az-Zumar', ayahCount: 75 },
-  { number: 40, name: 'Ghafir', ayahCount: 85 },
-  { number: 41, name: 'Fussilat', ayahCount: 54 },
-  { number: 42, name: 'Ash-Shura', ayahCount: 53 },
-  { number: 43, name: 'Az-Zukhruf', ayahCount: 89 },
-  { number: 44, name: 'Ad-Dukhan', ayahCount: 59 },
-  { number: 45, name: 'Al-Jathiyah', ayahCount: 37 },
-  { number: 46, name: 'Al-Ahqaf', ayahCount: 35 },
-  { number: 47, name: 'Muhammad', ayahCount: 38 },
-  { number: 48, name: 'Al-Fath', ayahCount: 29 },
-  { number: 49, name: 'Al-Hujurat', ayahCount: 18 },
-  { number: 50, name: 'Qaf', ayahCount: 45 },
-  { number: 51, name: 'Adh-Dhariyat', ayahCount: 60 },
-  { number: 52, name: 'At-Tur', ayahCount: 49 },
-  { number: 53, name: 'An-Najm', ayahCount: 62 },
-  { number: 54, name: 'Al-Qamar', ayahCount: 55 },
-  { number: 55, name: 'Ar-Rahman', ayahCount: 78 },
-  { number: 56, name: "Al-Waqi'ah", ayahCount: 96 },
-  { number: 57, name: 'Al-Hadid', ayahCount: 29 },
-  { number: 58, name: 'Al-Mujadilah', ayahCount: 22 },
-  { number: 59, name: 'Al-Hashr', ayahCount: 24 },
-  { number: 60, name: 'Al-Mumtahanah', ayahCount: 13 },
-  { number: 61, name: 'As-Saff', ayahCount: 14 },
-  { number: 62, name: "Al-Jumu'ah", ayahCount: 11 },
-  { number: 63, name: 'Al-Munafiqun', ayahCount: 11 },
-  { number: 64, name: 'At-Taghabun', ayahCount: 18 },
-  { number: 65, name: 'At-Talaq', ayahCount: 12 },
-  { number: 66, name: 'At-Tahrim', ayahCount: 12 },
-  { number: 67, name: 'Al-Mulk', ayahCount: 30 },
-  { number: 68, name: 'Al-Qalam', ayahCount: 52 },
-  { number: 69, name: 'Al-Haqqah', ayahCount: 52 },
-  { number: 70, name: "Al-Ma'arij", ayahCount: 44 },
-  { number: 71, name: 'Nuh', ayahCount: 28 },
-  { number: 72, name: 'Al-Jinn', ayahCount: 28 },
-  { number: 73, name: 'Al-Muzzammil', ayahCount: 20 },
-  { number: 74, name: 'Al-Muddaththir', ayahCount: 56 },
-  { number: 75, name: 'Al-Qiyamah', ayahCount: 40 },
-  { number: 76, name: 'Al-Insan', ayahCount: 31 },
-  { number: 77, name: 'Al-Mursalat', ayahCount: 50 },
-  { number: 78, name: 'An-Naba', ayahCount: 40 },
-  { number: 79, name: "An-Nazi'at", ayahCount: 46 },
-  { number: 80, name: 'Abasa', ayahCount: 42 },
-  { number: 81, name: 'At-Takwir', ayahCount: 29 },
-  { number: 82, name: 'Al-Infitar', ayahCount: 19 },
-  { number: 83, name: 'Al-Mutaffifin', ayahCount: 36 },
-  { number: 84, name: 'Al-Inshiqaq', ayahCount: 25 },
-  { number: 85, name: 'Al-Buruj', ayahCount: 22 },
-  { number: 86, name: 'At-Tariq', ayahCount: 17 },
-  { number: 87, name: "Al-A'la", ayahCount: 19 },
-  { number: 88, name: 'Al-Ghashiyah', ayahCount: 26 },
-  { number: 89, name: 'Al-Fajr', ayahCount: 30 },
-  { number: 90, name: 'Al-Balad', ayahCount: 20 },
-  { number: 91, name: 'Ash-Shams', ayahCount: 15 },
-  { number: 92, name: 'Al-Layl', ayahCount: 21 },
-  { number: 93, name: 'Ad-Duha', ayahCount: 11 },
-  { number: 94, name: 'Ash-Sharh', ayahCount: 8 },
-  { number: 95, name: 'At-Tin', ayahCount: 8 },
-  { number: 96, name: "Al-'Alaq", ayahCount: 19 },
-  { number: 97, name: 'Al-Qadr', ayahCount: 5 },
-  { number: 98, name: 'Al-Bayyinah', ayahCount: 8 },
-  { number: 99, name: 'Az-Zalzalah', ayahCount: 8 },
-  { number: 100, name: "Al-'Adiyat", ayahCount: 11 },
-  { number: 101, name: "Al-Qari'ah", ayahCount: 11 },
-  { number: 102, name: 'At-Takathur', ayahCount: 8 },
-  { number: 103, name: "Al-'Asr", ayahCount: 3 },
-  { number: 104, name: 'Al-Humazah', ayahCount: 9 },
-  { number: 105, name: 'Al-Fil', ayahCount: 5 },
-  { number: 106, name: 'Quraysh', ayahCount: 4 },
-  { number: 107, name: "Al-Ma'un", ayahCount: 7 },
-  { number: 108, name: 'Al-Kawthar', ayahCount: 3 },
-  { number: 109, name: 'Al-Kafirun', ayahCount: 6 },
-  { number: 110, name: 'An-Nasr', ayahCount: 3 },
-  { number: 111, name: 'Al-Masad', ayahCount: 5 },
-  { number: 112, name: 'Al-Ikhlas', ayahCount: 4 },
-  { number: 113, name: 'Al-Falaq', ayahCount: 5 },
-  { number: 114, name: 'An-Nas', ayahCount: 6 }
+const sectionMeta: { key: SectionKey; title: string; icon: string }[] = [
+  { key: 'sabaq', title: 'Sabaq', icon: '📘' },
+  { key: 'sabqi', title: 'Sabqi', icon: '📗' },
+  { key: 'manzil', title: 'Manzil', icon: '📙' }
 ];
+
+const kaifiyatScores: Record<Exclude<KaifiyatValue, ''>, number> = {
+  'Excellent ⭐⭐⭐⭐⭐': 5,
+  'Good ⭐⭐⭐⭐': 4,
+  'Average ⭐⭐⭐': 3,
+  'Weak ⭐⭐': 2
+};
+
+function emptyRange(): SurahRangeForm {
+  return {
+    surahInput: '',
+    surahId: null,
+    fromAyah: '',
+    toAyah: ''
+  };
+}
+
+function emptySection(): SectionForm {
+  return {
+    ranges: [emptyRange()],
+    kaifiyat: '',
+    tajweeditotal: '',
+    hifztotal: ''
+  };
+}
+
+function formatDateYMD(value: Date | string) {
+  const parsed = value instanceof Date ? value : new Date(value);
+  return Number.isNaN(parsed.getTime()) ? '-' : parsed.toISOString().slice(0, 10);
+}
+
+function getSurahById(id: number | null): Surah | undefined {
+  if (!id) return undefined;
+  return SURAH_LIST.find((item) => item.id === id);
+}
+
+function resolveSurah(input: string): Surah | undefined {
+  const trimmed = input.trim();
+  if (!trimmed) return undefined;
+
+  const idMatch = trimmed.match(/^(\d{1,3})\s*\.?\s*(.*)$/);
+  if (idMatch) {
+    const id = Number(idMatch[1]);
+    const byId = SURAH_LIST.find((item) => item.id === id);
+    if (byId) return byId;
+  }
+
+  const normalized = trimmed.toLowerCase();
+  return SURAH_LIST.find((item) => item.name.toLowerCase() === normalized);
+}
+
+function createEmptyParsedSection(): ParsedSection {
+  return {
+    ranges: [],
+    kaifiyat: '',
+    tajweeditotal: 0,
+    hifztotal: 0
+  };
+}
+
+function parseStructuredNotes(notes: string | null): ParsedReport | null {
+  if (!notes) return null;
+
+  const parsed: ParsedReport = {
+    sections: {
+      sabaq: createEmptyParsedSection(),
+      sabqi: createEmptyParsedSection(),
+      manzil: createEmptyParsedSection()
+    },
+    overall: '-',
+    totalMistakes: 0,
+    suggestion: '-'
+  };
+
+  const lines = notes.split('\n').map((line) => line.trim()).filter(Boolean);
+  let currentSection: SectionKey | null = null;
+
+  for (const line of lines) {
+    if (line === '[SABAQ]') currentSection = 'sabaq';
+    if (line === '[SABQI]') currentSection = 'sabqi';
+    if (line === '[MANZIL]') currentSection = 'manzil';
+
+    if (line.startsWith('OverallPerformance:')) {
+      parsed.overall = line.replace('OverallPerformance:', '').trim();
+      continue;
+    }
+    if (line.startsWith('TotalMistakes:')) {
+      const count = Number.parseInt(line.replace('TotalMistakes:', '').trim(), 10);
+      parsed.totalMistakes = Number.isNaN(count) ? 0 : count;
+      continue;
+    }
+    if (line.startsWith('Suggestion:')) {
+      parsed.suggestion = line.replace('Suggestion:', '').trim();
+      continue;
+    }
+
+    if (!currentSection) continue;
+
+    // Parse new multi-range format
+    if (line.startsWith('Range:')) {
+      // Range:1, Range:2, etc - marks start of new range
+      continue;
+    } else if (line.startsWith('Kaifiyat:')) {
+      parsed.sections[currentSection].kaifiyat = line.replace('Kaifiyat:', '').trim() as ParsedSection['kaifiyat'];
+    } else if (line.startsWith('TajweeditTotal:')) {
+      const value = Number.parseInt(line.replace('TajweeditTotal:', '').trim(), 10);
+      parsed.sections[currentSection].tajweeditotal = Number.isNaN(value) ? 0 : value;
+    } else if (line.startsWith('HifzTotal:')) {
+      const value = Number.parseInt(line.replace('HifzTotal:', '').trim(), 10);
+      parsed.sections[currentSection].hifztotal = Number.isNaN(value) ? 0 : value;
+    }
+    // Skip old single-surah format fields (SurahId, FromAyah, ToAyah, etc)
+    // They will be loaded from SurahRange table instead
+  }
+
+  return parsed;
+}
+
+function computeStars(parsed: ParsedReport | null) {
+  if (!parsed) return 0;
+  const values = sectionMeta
+    .map(({ key }) => parsed.sections[key].kaifiyat)
+    .filter((value): value is Exclude<KaifiyatValue, ''> => Boolean(value));
+  if (!values.length) return 0;
+  const avg = values.reduce((sum, value) => sum + kaifiyatScores[value], 0) / values.length;
+  return Math.round(avg);
+}
+
+function computeReportMistakes(parsed: ParsedReport | null) {
+  if (!parsed) return 0;
+  return parsed.totalMistakes || sectionMeta.reduce((sum, { key }) => {
+    const section = parsed.sections[key];
+    const taj = section.tajweeditotal || 0;
+    const hifz = section.hifztotal || 0;
+    return sum + taj + hifz;
+  }, 0);
+}
 
 export default function TeacherProgressPage() {
   const [classes, setClasses] = useState<ClassItem[]>([]);
@@ -185,86 +332,204 @@ export default function TeacherProgressPage() {
   const [progress, setProgress] = useState<ProgressItem[]>([]);
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
-  const [message, setMessage] = useState('');
+  const [featureDisabled, setFeatureDisabled] = useState(false);
+  const [notifications, setNotifications] = useState<NotificationItem[]>([]);
+  const [studentSearch, setStudentSearch] = useState('');
+  const [reportQuery, setReportQuery] = useState('');
+  const [reportDate, setReportDate] = useState('');
+  const [openReportId, setOpenReportId] = useState<string | null>(null);
 
   const [form, setForm] = useState({
     date: new Date().toISOString().slice(0, 10),
     classId: '',
     studentId: '',
-    juzzNumber: 1,
-    surahNumber: 1,
-    ayahFrom: '',
-    ayahTo: '',
-    notes: ''
+    sections: {
+      sabaq: emptySection(),
+      sabqi: emptySection(),
+      manzil: emptySection()
+    }
   });
 
+  const addNotice = useCallback((type: NotificationItem['type'], text: string) => {
+    const id = Date.now() + Math.floor(Math.random() * 999);
+    setNotifications((prev) => [{ id, type, text }, ...prev].slice(0, 4));
+    setTimeout(() => {
+      setNotifications((prev) => prev.filter((item) => item.id !== id));
+    }, 3000);
+  }, []);
+
   const selectedStudents = useMemo(
-    () => students.filter((student) => student.class && student.class.id === form.classId),
-    [students, form.classId]
+    () => students
+      .filter((student) => student.class && student.class.id === form.classId)
+      .filter((student) => {
+        const query = studentSearch.toLowerCase();
+        return !query || student.user.fullName.toLowerCase().includes(query) || student.admissionNo.toLowerCase().includes(query);
+      }),
+    [students, form.classId, studentSearch]
   );
 
-  const selectedSurah = useMemo(
-    () => surahList.find((item) => item.number === Number(form.surahNumber)),
-    [form.surahNumber]
+  const filteredReports = useMemo(
+    () => progress.filter((item) => {
+      const dateMatch = !reportDate || formatDateYMD(item.date) === reportDate;
+      const nameMatch = !reportQuery || item.student.user.fullName.toLowerCase().includes(reportQuery.toLowerCase());
+      return dateMatch && nameMatch;
+    }),
+    [progress, reportDate, reportQuery]
   );
 
-  const fromAyahOptions = useMemo(() => {
-    if (!selectedSurah) return [];
-    return Array.from({ length: selectedSurah.ayahCount }, (_, i) => i + 1);
-  }, [selectedSurah]);
+  const completionPercent = useMemo(() => {
+    const baseDone = [form.date, form.classId, form.studentId].filter(Boolean).length;
+    const sectionDone = sectionMeta.reduce((sum, { key }) => {
+      const section = form.sections[key];
+      let done = 0;
+      // Count ranges (3 fields per range: surahId, fromAyah, toAyah)
+      section.ranges.forEach(range => {
+        if (range.surahId) done++;
+        if (range.fromAyah) done++;
+        if (range.toAyah) done++;
+      });
+      // Count other section fields
+      if (section.kaifiyat) done++;
+      if (section.tajweeditotal) done++;
+      if (section.hifztotal) done++;
+      return sum + done;
+    }, 0);
+    // Each section: assume 3 ranges (9) + 3 fields = 12 fields per section
+    const totalFields = 3 + 12 * 3;
+    return Math.round(((baseDone + sectionDone) / totalFields) * 100);
+  }, [form]);
 
-  const toAyahOptions = useMemo(() => {
-    if (!selectedSurah || !form.ayahFrom) return [];
-    const from = Number(form.ayahFrom);
-    return Array.from({ length: selectedSurah.ayahCount - from + 1 }, (_, i) => from + i);
-  }, [selectedSurah, form.ayahFrom]);
+  const summary = useMemo(() => {
+    const ratings = sectionMeta
+      .map(({ key }) => form.sections[key].kaifiyat)
+      .filter((value): value is Exclude<KaifiyatValue, ''> => Boolean(value));
 
-  const loadData = useCallback(async () => {
+    const avg = ratings.length ? ratings.reduce((sum, item) => sum + kaifiyatScores[item], 0) / ratings.length : 0;
+
+    const totalMistakes = sectionMeta.reduce((sum, { key }) => {
+      const section = form.sections[key];
+      const taj = Number(section.tajweeditotal) || 0;
+      const hifz = Number(section.hifztotal) || 0;
+      return sum + taj + hifz;
+    }, 0);
+
+    let overallPerformance = 'Pending';
+    let suggestion = 'Complete all sections to get auto suggestion.';
+
+    if (avg >= 4.5 && totalMistakes <= 2) {
+      overallPerformance = 'Excellent';
+      suggestion = 'Strong progress. Continue with same tajweed discipline.';
+    } else if (avg >= 3.5 && totalMistakes <= 5) {
+      overallPerformance = 'Good';
+      suggestion = 'Good momentum. Focus 10 minutes on weak tajweed points.';
+    } else if (avg >= 2.8) {
+      overallPerformance = 'Average';
+      suggestion = 'Needs improvement in Tajweed. Keep shorter ayaat with revision.';
+    } else if (avg > 0) {
+      overallPerformance = 'Weak';
+      suggestion = 'Needs improvement in Tajweed and Hifz consistency.';
+    }
+
+    return {
+      overallPerformance,
+      totalMistakes,
+      suggestion,
+      avgStars: Math.round(avg)
+    };
+  }, [form.sections]);
+
+  const suggestedNextSabaq = useMemo(() => {
+    if (!progress.length) return null;
+    const latest = progress[0];
+    const parsed = parseStructuredNotes(latest.notes);
+    if (!parsed) return null;
+
+    const sabaq = parsed.sections.sabaq;
+    if (!sabaq.ranges || sabaq.ranges.length === 0) return null;
+    const lastRange = sabaq.ranges[sabaq.ranges.length - 1];
+    if (!lastRange.surahId || !lastRange.toAyah) return null;
+
+    const currentSurah = getSurahById(lastRange.surahId);
+    if (!currentSurah) return null;
+
+    if (lastRange.toAyah < currentSurah.ayahs) {
+      const nextFrom = lastRange.toAyah + 1;
+      const nextTo = Math.min(nextFrom + 4, currentSurah.ayahs);
+      return { surahId: currentSurah.id, fromAyah: nextFrom, toAyah: nextTo, label: `${currentSurah.name} ${nextFrom}-${nextTo}` };
+    }
+
+    const nextSurah = getSurahById(currentSurah.id + 1);
+    if (!nextSurah) return null;
+    return { surahId: nextSurah.id, fromAyah: 1, toAyah: Math.min(5, nextSurah.ayahs), label: `${nextSurah.name} 1-${Math.min(5, nextSurah.ayahs)}` };
+  }, [progress]);
+
+  const loadBaseData = useCallback(async () => {
     setLoading(true);
-    setMessage('');
-
     try {
-      const [classesRes, studentsRes] = await Promise.all([
-        fetch('/api/classes', { cache: 'no-store' }),
-        fetch('/api/students', { cache: 'no-store' })
-      ]);
+      const [classesRes, studentsRes] = await Promise.all([fetch('/api/classes'), fetch('/api/students')]);
+      if (!classesRes.ok || !studentsRes.ok) {
+        const classesError = await classesRes.json().catch(() => null);
+        const studentsError = await studentsRes.json().catch(() => null);
+        const errorMessage =
+          (typeof classesError?.error === 'string' && classesError.error) ||
+          (typeof studentsError?.error === 'string' && studentsError.error) ||
+          'Failed to load progress data.';
+        addNotice('error', errorMessage);
+        if (classesRes.status === 403 || studentsRes.status === 403) setFeatureDisabled(true);
+        return;
+      }
 
       const classesJson = await classesRes.json();
       const studentsJson = await studentsRes.json();
-
       const classList = Array.isArray(classesJson) ? classesJson : [];
       const studentList = Array.isArray(studentsJson) ? studentsJson : [];
-
       setClasses(classList);
       setStudents(studentList);
+      setFeatureDisabled(false);
 
-      const classId = form.classId || classList[0]?.id || '';
-      const studentId = form.studentId || '';
-
-      if (!form.classId && classId) {
-        setForm((prev) => ({ ...prev, classId }));
-      }
-
-      if (classId) {
-        const query = new URLSearchParams({ classId, date: form.date });
-        if (studentId) query.set('studentId', studentId);
-
-        const progressRes = await fetch(`/api/progress?${query.toString()}`, { cache: 'no-store' });
-        const progressJson = await progressRes.json();
-        setProgress(Array.isArray(progressJson) ? progressJson : []);
-      } else {
-        setProgress([]);
+      if (classList[0]?.id) {
+        setForm((prev) => ({ ...prev, classId: prev.classId || classList[0].id }));
       }
     } catch {
-      setMessage('Failed to load progress data.');
+      addNotice('error', 'Failed to load progress data.');
     } finally {
       setLoading(false);
     }
-  }, [form.classId, form.date, form.studentId]);
+  }, [addNotice]);
+
+  const loadProgressData = useCallback(async () => {
+    if (!form.classId) {
+      setProgress([]);
+      return;
+    }
+    try {
+      const query = new URLSearchParams({ classId: form.classId });
+      if (form.studentId) query.set('studentId', form.studentId);
+      const response = await fetch(`/api/progress?${query.toString()}`);
+      if (!response.ok) {
+        const errorJson = await response.json().catch(() => null);
+        const errorMessage = typeof errorJson?.error === 'string' ? errorJson.error : 'Failed to load progress data.';
+        addNotice('error', errorMessage);
+        if (response.status === 403) setFeatureDisabled(true);
+        setProgress([]);
+        return;
+      }
+
+      const json = await response.json();
+      setProgress(Array.isArray(json) ? json : []);
+      setFeatureDisabled(false);
+    } catch {
+      addNotice('error', 'Failed to load progress data.');
+    }
+  }, [form.classId, form.studentId, addNotice]);
 
   useEffect(() => {
-    loadData();
-  }, [loadData]);
+    void loadBaseData();
+  }, [loadBaseData]);
+
+  useEffect(() => {
+    void loadProgressData();
+  }, [loadProgressData]);
 
   useEffect(() => {
     if (!form.studentId && selectedStudents[0]?.id) {
@@ -272,13 +537,169 @@ export default function TeacherProgressPage() {
     }
   }, [selectedStudents, form.studentId]);
 
+  const setSectionValue = (sectionKey: SectionKey, updates: Partial<SectionForm>) => {
+    setForm((prev) => ({
+      ...prev,
+      sections: {
+        ...prev.sections,
+        [sectionKey]: {
+          ...prev.sections[sectionKey],
+          ...updates
+        }
+      }
+    }));
+  };
+
+  const handleSurahInput = (sectionKey: SectionKey, rangeIndex: number, value: string) => {
+    const resolved = resolveSurah(value);
+    const current = form.sections[sectionKey];
+    const updatedRanges = [...current.ranges];
+
+    if (!resolved) {
+      updatedRanges[rangeIndex] = { ...updatedRanges[rangeIndex], surahInput: value, surahId: null };
+    } else {
+      const from = updatedRanges[rangeIndex].fromAyah ? Math.min(Number(updatedRanges[rangeIndex].fromAyah), resolved.ayahs) : '';
+      const to = updatedRanges[rangeIndex].toAyah ? Math.min(Number(updatedRanges[rangeIndex].toAyah), resolved.ayahs) : '';
+      updatedRanges[rangeIndex] = {
+        ...updatedRanges[rangeIndex],
+        surahInput: value,
+        surahId: resolved.id,
+        fromAyah: from ? String(from) : '',
+        toAyah: to ? String(to) : ''
+      };
+    }
+
+    setForm(prev => ({ ...prev, sections: { ...prev.sections, [sectionKey]: { ...current, ranges: updatedRanges } } }));
+  };
+
+  const handleRemoveRange = (sectionKey: SectionKey, rangeIndex: number) => {
+    const current = form.sections[sectionKey];
+    const updatedRanges = current.ranges.filter((_, i) => i !== rangeIndex);
+    if (updatedRanges.length === 0) {
+      updatedRanges.push(emptyRange());
+    }
+    setForm(prev => ({ ...prev, sections: { ...prev.sections, [sectionKey]: { ...current, ranges: updatedRanges } } }));
+  };
+
+  const handleAddRange = (sectionKey: SectionKey) => {
+    const current = form.sections[sectionKey];
+    setForm(prev => ({ ...prev, sections: { ...prev.sections, [sectionKey]: { ...current, ranges: [...current.ranges, emptyRange()] } } }));
+  };
+
+  const applyAutoSuggestion = () => {
+    if (!suggestedNextSabaq) return;
+    const surah = getSurahById(suggestedNextSabaq.surahId);
+    if (!surah) return;
+    const sabaqRanges = [{
+      id: undefined,
+      surahInput: `${surah.id}. ${surah.name}`,
+      surahId: surah.id,
+      fromAyah: String(suggestedNextSabaq.fromAyah),
+      toAyah: String(suggestedNextSabaq.toAyah)
+    }];
+    setForm(prev => ({ ...prev, sections: { ...prev.sections, sabaq: { ...prev.sections.sabaq, ranges: sabaqRanges } } }));
+    addNotice('info', `Auto-filled next Sabaq: ${suggestedNextSabaq.label}`);
+  };
+
+  const applyQuickPerformance = (value: Exclude<KaifiyatValue, ''>) => {
+    sectionMeta.forEach(({ key }) => setSectionValue(key, { kaifiyat: value }));
+    addNotice('info', `Quick performance applied: ${value}`);
+  };
+
+  const applyQuickMistakes = (value: '0' | '1-2' | '3+') => {
+    const mapped: Exclude<MistakeValue, ''> = value === '1-2' ? '1' : value;
+    sectionMeta.forEach(({ key }) => setSectionValue(key, { tajweedi: mapped, hifz: mapped }));
+    addNotice('info', `Quick mistake profile applied: ${value}`);
+  };
+
+  const validateForm = () => {
+    if (!form.date || !form.classId || !form.studentId) return 'Date, class, and student are required.';
+
+    for (const { key, title } of sectionMeta) {
+      const section = form.sections[key];
+
+      // Must have at least 1 range
+      if (!section.ranges || section.ranges.length === 0) {
+        return `${title}: add at least one Surah range.`;
+      }
+
+      // Validate each range
+      for (let i = 0; i < section.ranges.length; i++) {
+        const range = section.ranges[i];
+        if (!range.surahId || !range.fromAyah || !range.toAyah) {
+          return `${title} Range ${i + 1}: complete all fields.`;
+        }
+        if (Number(range.fromAyah) > Number(range.toAyah)) {
+          return `${title} Range ${i + 1}: From Ayah cannot be greater than To Ayah.`;
+        }
+      }
+
+      // Must have Kaifiyat and mistake counts
+      if (!section.kaifiyat) {
+        return `${title}: select Kaifiyat (performance).`;
+      }
+      if (!section.tajweeditotal || Number(section.tajweeditotal) < 0 || Number(section.tajweeditotal) > 99) {
+        return `${title}: Tajweedi mistakes must be 0-99.`;
+      }
+      if (!section.hifztotal || Number(section.hifztotal) < 0 || Number(section.hifztotal) > 99) {
+        return `${title}: Hifz mistakes must be 0-99.`;
+      }
+    }
+    return null;
+  };
+
+  const buildStructuredNotes = () => {
+    const lines: string[] = ['Daily Progress Report'];
+
+    sectionMeta.forEach(({ key, title }) => {
+      const section = form.sections[key];
+      lines.push(`[${title.toUpperCase()}]`);
+
+      section.ranges.forEach((range, idx) => {
+        const surah = getSurahById(range.surahId);
+        lines.push(`Range:${idx + 1}`);
+        lines.push(`SurahId:${surah?.id ?? ''}`);
+        lines.push(`SurahName:${surah?.name ?? '-'}`);
+        lines.push(`FromAyah:${range.fromAyah}`);
+        lines.push(`ToAyah:${range.toAyah}`);
+      });
+
+      lines.push(`Kaifiyat:${section.kaifiyat}`);
+      lines.push(`TajweeditTotal:${section.tajweeditotal}`);
+      lines.push(`HifzTotal:${section.hifztotal}`);
+    });
+
+    lines.push('[SUMMARY]');
+    lines.push(`OverallPerformance:${summary.overallPerformance}`);
+    lines.push(`TotalMistakes:${summary.totalMistakes}`);
+    lines.push(`Suggestion:${summary.suggestion}`);
+    return lines.join('\n');
+  };
+
   const submit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setSaving(true);
-    setMessage('');
+    if (featureDisabled) return;
 
+    const validationError = validateForm();
+    if (validationError) {
+      addNotice('error', validationError);
+      return;
+    }
+
+    setSaving(true);
     try {
-      const res = await fetch('/api/progress', {
+      // Build surah ranges for each section
+      const surahRangesData: Record<string, Array<{ surahId: number; fromAyah: number; toAyah: number }>> = {};
+
+      sectionMeta.forEach(({ key }) => {
+        surahRangesData[key] = form.sections[key].ranges.map(r => ({
+          surahId: r.surahId!,
+          fromAyah: Number(r.fromAyah),
+          toAyah: Number(r.toAyah)
+        }));
+      });
+
+      const response = await fetch('/api/progress', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -286,167 +707,491 @@ export default function TeacherProgressPage() {
           classId: form.classId,
           studentId: form.studentId,
           lessonType: 'SURAH',
-          juzzNumber: Number(form.juzzNumber),
-          lessonNumber: Number(form.surahNumber),
-          ayahFrom: form.ayahFrom ? Number(form.ayahFrom) : undefined,
-          ayahTo: form.ayahTo ? Number(form.ayahTo) : undefined,
-          notes: form.notes || undefined
+          lessonNumber: Number(form.sections.sabaq.ranges[0]?.fromAyah || 1),
+          ayahFrom: Number(form.sections.sabaq.ranges[0]?.fromAyah || 1),
+          ayahTo: Number(form.sections.sabaq.ranges[form.sections.sabaq.ranges.length - 1]?.toAyah || 1),
+          tajweeditotal: Number(form.sections.sabaq.tajweeditotal),
+          hifzTotal: Number(form.sections.sabaq.hifztotal),
+          surahRanges: surahRangesData,
+          notes: buildStructuredNotes()
         })
       });
 
-      const json = await res.json();
-      if (!res.ok) {
-        setMessage(typeof json?.error === 'string' ? json.error : 'Unable to save progress.');
+      const json = await response.json();
+      if (!response.ok) {
+        addNotice('error', typeof json?.error === 'string' ? json.error : 'Unable to save report.');
+        if (response.status === 403) setFeatureDisabled(true);
         return;
       }
 
-      setMessage('Daily progress saved successfully.');
-      await loadData();
+      addNotice('success', 'Quran progress report saved successfully.');
+      setForm((prev) => ({
+        ...prev,
+        sections: {
+          sabaq: emptySection(),
+          sabqi: emptySection(),
+          manzil: emptySection()
+        }
+      }));
+      await loadProgressData();
     } catch {
-      setMessage('Request failed. Please try again.');
+      addNotice('error', 'Request failed. Please try again.');
     } finally {
       setSaving(false);
     }
   };
 
   return (
-    <div className="space-y-6">
-      <section className="rounded-xl bg-white p-8 border border-[#e2e8e8]">
-        <h2 className="text-3xl font-bold text-[#1a1c1c]">Daily Progress</h2>
-        <p className="mt-2 text-[#5c6668]">Record Juzz, Surah, and Ayah coverage for each student daily.</p>
+    <div className="space-y-5">
+      <section className="rounded-2xl border border-[#d6e2ea] bg-gradient-to-br from-[#f4f9ff] via-white to-[#f1f8f3] p-4 shadow-sm md:p-6">
+        <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
+          <div>
+            <h2 className="font-headline text-2xl font-bold text-[#102a43] md:text-3xl">Teacher Daily Progress Report System</h2>
+            <p className="mt-1 text-sm text-[#486581]">Smart Quran Tracking SaaS | Surah + Ayah structured progress</p>
+          </div>
+          <div className="flex items-center gap-2 rounded-xl border border-[#c7d8e2] bg-white px-3 py-2 text-sm text-[#334e68]">
+            <Bell className="h-4 w-4 text-[#2563eb]" />
+            <span>{notifications.length} live alert(s)</span>
+          </div>
+        </div>
 
-        <form onSubmit={submit} className="mt-6 grid gap-4 md:grid-cols-3">
-          <input
-            type="date"
-            value={form.date}
-            onChange={(e) => setForm((prev) => ({ ...prev, date: e.target.value }))}
-            className="h-11 rounded-xl border border-[#c0c8c9] bg-[#f9fafa] px-3 text-sm text-[#1a1c1c] focus:border-[#004649] focus:outline-none"
-            required
-          />
+        <div className="mt-4">
+          <div className="mb-1 flex items-center justify-between text-xs font-semibold text-[#486581]">
+            <span>Form Completion</span>
+            <span>{completionPercent}%</span>
+          </div>
+          <div className="h-2 rounded-full bg-[#d9e2ec]">
+            <div className="h-2 rounded-full bg-gradient-to-r from-[#2563eb] to-[#16a34a] transition-all" style={{ width: `${completionPercent}%` }} />
+          </div>
+        </div>
 
-          <select
-            value={form.classId}
-            onChange={(e) => setForm((prev) => ({ ...prev, classId: e.target.value, studentId: '' }))}
-            className="h-11 rounded-xl border border-[#c0c8c9] bg-[#f9fafa] px-3 text-sm text-[#1a1c1c] focus:border-[#004649] focus:outline-none"
-            required
-          >
-            <option value="">Select Class</option>
-            {classes.map((item) => (
-              <option key={item.id} value={item.id}>{item.name} - {item.section}</option>
+        {notifications.length > 0 ? (
+          <div className="mt-4 grid gap-2 md:grid-cols-2">
+            {notifications.map((notice) => (
+              <div
+                key={notice.id}
+                className={`rounded-lg px-3 py-2 text-sm ${
+                  notice.type === 'success'
+                    ? 'bg-[#dcfce7] text-[#14532d]'
+                    : notice.type === 'error'
+                      ? 'bg-[#fee2e2] text-[#7f1d1d]'
+                      : 'bg-[#dbeafe] text-[#1e3a8a]'
+                }`}
+              >
+                {notice.text}
+              </div>
             ))}
-          </select>
+          </div>
+        ) : null}
+      </section>
 
-          <select
-            value={form.studentId}
-            onChange={(e) => setForm((prev) => ({ ...prev, studentId: e.target.value }))}
-            className="h-11 rounded-xl border border-[#c0c8c9] bg-[#f9fafa] px-3 text-sm text-[#1a1c1c] focus:border-[#004649] focus:outline-none"
-            required
-          >
-            <option value="">Select Student</option>
-            {selectedStudents.map((student) => (
-              <option key={student.id} value={student.id}>{student.user.fullName} ({student.admissionNo})</option>
-            ))}
-          </select>
+      <section className="grid gap-5 xl:grid-cols-[1.7fr_1fr]">
+        <form onSubmit={submit} className="rounded-2xl border border-[#d6e2ea] bg-white p-4 shadow-sm md:p-6">
+          <div className="grid gap-3 md:grid-cols-3">
+            <input
+              type="date"
+              value={form.date}
+              onChange={(e) => setForm((prev) => ({ ...prev, date: e.target.value }))}
+              className="h-11 rounded-xl border border-[#bcccdc] px-3 text-sm text-[#102a43] outline-none focus:border-[#2563eb]"
+              required
+            />
 
-          <select
-            value={form.juzzNumber}
-            onChange={(e) => setForm((prev) => ({ ...prev, juzzNumber: Number(e.target.value) }))}
-            className="h-11 rounded-xl border border-[#c0c8c9] bg-[#f9fafa] px-3 text-sm text-[#1a1c1c] focus:border-[#004649] focus:outline-none"
-          >
-            {juzzList.map((item) => (
-              <option key={item.number} value={item.number}>JUZZ {item.number}: {item.name}</option>
-            ))}
-          </select>
-
-          <select
-            value={form.surahNumber}
-            onChange={(e) => setForm((prev) => ({ ...prev, surahNumber: Number(e.target.value), ayahFrom: '', ayahTo: '' }))}
-            className="h-11 rounded-xl border border-[#c0c8c9] bg-[#f9fafa] px-3 text-sm text-[#1a1c1c] focus:border-[#004649] focus:outline-none"
-          >
-            {surahList.map((item) => (
-              <option key={item.number} value={item.number}>SURAH {item.number}: {item.name}</option>
-            ))}
-          </select>
-
-          <input
-            value={form.notes}
-            onChange={(e) => setForm((prev) => ({ ...prev, notes: e.target.value }))}
-            className="h-11 rounded-xl border border-[#c0c8c9] bg-[#f9fafa] px-3 text-sm text-[#1a1c1c] placeholder:text-[#6e7778] focus:border-[#004649] focus:outline-none"
-            placeholder="Notes (optional)"
-          />
-
-          <select
-            value={form.ayahFrom}
-            onChange={(e) => setForm((prev) => ({ ...prev, ayahFrom: e.target.value, ayahTo: '' }))}
-            className="h-11 rounded-xl border border-[#c0c8c9] bg-[#f9fafa] px-3 text-sm text-[#1a1c1c] focus:border-[#004649] focus:outline-none"
-          >
-            <option value="">From Ayah</option>
-            {fromAyahOptions.map((num) => (
-              <option key={num} value={num}>Ayah {num}</option>
-            ))}
-          </select>
-
-          <select
-            value={form.ayahTo}
-            onChange={(e) => setForm((prev) => ({ ...prev, ayahTo: e.target.value }))}
-            className="h-11 rounded-xl border border-[#c0c8c9] bg-[#f9fafa] px-3 text-sm text-[#1a1c1c] focus:border-[#004649] focus:outline-none"
-            disabled={!form.ayahFrom}
-          >
-            <option value="">To Ayah</option>
-            {toAyahOptions.map((num) => (
-              <option key={num} value={num}>Ayah {num}</option>
-            ))}
-          </select>
-
-          <div className="md:col-span-3">
-            <button
-              disabled={saving || loading}
-              className="h-11 rounded-xl bg-[#004649] px-6 font-semibold text-white hover:bg-[#005a5e] disabled:cursor-not-allowed disabled:opacity-60"
+            <select
+              value={form.classId}
+              onChange={(e) => setForm((prev) => ({ ...prev, classId: e.target.value, studentId: '' }))}
+              className="h-11 rounded-xl border border-[#bcccdc] px-3 text-sm text-[#102a43] outline-none focus:border-[#2563eb]"
+              required
             >
-              {saving ? 'Saving...' : 'Save Daily Progress'}
+              <option value="">Select Class</option>
+              {classes.map((item) => (
+                <option key={item.id} value={item.id}>
+                  {item.name} - {item.section}
+                </option>
+              ))}
+            </select>
+
+            <div className="relative">
+              <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-[#829ab1]" />
+              <input
+                value={studentSearch}
+                onChange={(e) => setStudentSearch(e.target.value)}
+                placeholder="Search student"
+                className="h-11 w-full rounded-xl border border-[#bcccdc] pl-9 pr-3 text-sm text-[#102a43] outline-none focus:border-[#2563eb]"
+              />
+            </div>
+
+            <select
+              value={form.studentId}
+              onChange={(e) => setForm((prev) => ({ ...prev, studentId: e.target.value }))}
+              className="h-11 rounded-xl border border-[#bcccdc] px-3 text-sm text-[#102a43] outline-none focus:border-[#2563eb] md:col-span-3"
+              required
+            >
+              <option value="">Select Student</option>
+              {selectedStudents.map((student) => (
+                <option key={student.id} value={student.id}>
+                  {student.user.fullName} ({student.admissionNo})
+                </option>
+              ))}
+            </select>
+          </div>
+
+          <div className="mt-4 rounded-xl border border-[#d6e2ea] bg-[#f7fbff] p-3">
+            <p className="text-xs font-bold uppercase tracking-[0.15em] text-[#486581]">Quick Actions</p>
+            <div className="mt-2 flex flex-wrap gap-2">
+              <button type="button" onClick={() => applyQuickPerformance('Good ⭐⭐⭐⭐')} className="rounded-xl bg-gradient-to-br from-[#004649] to-[#1b5e62] shadow-[0_8px_20px_rgba(0,70,73,0.12)] active:scale-[0.98] transition-all px-3 py-1.5 text-xs font-semibold text-white">Good</button>
+              <button type="button" onClick={() => applyQuickPerformance('Average ⭐⭐⭐')} className="rounded-xl bg-gradient-to-br from-[#004649] to-[#1b5e62] shadow-[0_8px_20px_rgba(0,70,73,0.12)] active:scale-[0.98] transition-all px-3 py-1.5 text-xs font-semibold text-white">Average</button>
+              <button type="button" onClick={() => applyQuickPerformance('Weak ⭐⭐')} className="rounded-xl bg-gradient-to-br from-[#004649] to-[#1b5e62] shadow-[0_8px_20px_rgba(0,70,73,0.12)] active:scale-[0.98] transition-all px-3 py-1.5 text-xs font-semibold text-white">Weak</button>
+              <button type="button" onClick={() => applyQuickMistakes('0')} className="rounded-xl bg-gradient-to-br from-[#004649] to-[#1b5e62] shadow-[0_8px_20px_rgba(0,70,73,0.12)] active:scale-[0.98] transition-all px-3 py-1.5 text-xs font-semibold text-white">No Mistake</button>
+              <button type="button" onClick={() => applyQuickMistakes('1-2')} className="rounded-xl bg-gradient-to-br from-[#004649] to-[#1b5e62] shadow-[0_8px_20px_rgba(0,70,73,0.12)] active:scale-[0.98] transition-all px-3 py-1.5 text-xs font-semibold text-white">1-2</button>
+              <button type="button" onClick={() => applyQuickMistakes('3+')} className="rounded-xl bg-gradient-to-br from-[#004649] to-[#1b5e62] shadow-[0_8px_20px_rgba(0,70,73,0.12)] active:scale-[0.98] transition-all px-3 py-1.5 text-xs font-semibold text-white">3+</button>
+            </div>
+          </div>
+
+          {suggestedNextSabaq ? (
+            <div className="mt-4 flex flex-wrap items-center gap-2 rounded-xl border border-[#bfdbfe] bg-[#eff6ff] p-3 text-sm text-[#1d4ed8]">
+              <Sparkles className="h-4 w-4" />
+              <span className="font-semibold">Auto Suggest Next Lesson:</span>
+              <span>{suggestedNextSabaq.label}</span>
+              <button type="button" onClick={applyAutoSuggestion} className="rounded-xl bg-[#004649] px-3 py-1 text-xs font-semibold text-white hover:bg-[#005a5e]">
+                Apply Suggestion
+              </button>
+            </div>
+          ) : null}
+
+          <div className="mt-5 space-y-4">
+            {sectionMeta.map((section) => {
+              const formSection = form.sections[section.key];
+
+              return (
+                <div key={section.key} className="rounded-2xl border border-[#d6e2ea] bg-[#f8fafc] p-4">
+                  <h3 className="mb-3 text-base font-bold text-[#102a43]">{section.icon} {section.title}</h3>
+
+                  <div className="mb-4 space-y-3">
+                    {formSection.ranges.map((range, rangeIdx) => {
+                      const selectedSurah = getSurahById(range.surahId || 0);
+                      const ayahCount = selectedSurah?.ayahs ?? 0;
+
+                      return (
+                        <div key={rangeIdx} className="space-y-2 rounded-xl border border-[#e0e7ff] bg-white p-3">
+                          <div className="flex items-center justify-between">
+                            <p className="text-xs font-semibold text-[#486581]">Range {rangeIdx + 1}</p>
+                            {formSection.ranges.length > 1 && (
+                              <button
+                                type="button"
+                                onClick={() => handleRemoveRange(section.key, rangeIdx)}
+                                className="text-xs text-red-600 hover:text-red-700"
+                              >
+                                Remove
+                              </button>
+                            )}
+                          </div>
+
+                          <div className="grid gap-2 md:grid-cols-3">
+                            <div>
+                              <p className="mb-1 text-xs font-semibold text-[#486581]">Surah</p>
+                              <input
+                                list={`surah-list-${section.key}-${rangeIdx}`}
+                                value={range.surahInput}
+                                onChange={(e) => handleSurahInput(section.key, rangeIdx, e.target.value)}
+                                placeholder="Type Surah name or number"
+                                className="h-9 w-full rounded-lg border border-[#bcccdc] px-2 text-sm text-[#102a43] outline-none focus:border-[#2563eb]"
+                                required
+                              />
+                              <datalist id={`surah-list-${section.key}-${rangeIdx}`}>
+                                {SURAH_LIST.map((surah) => (
+                                  <option key={surah.id} value={`${surah.id}. ${surah.name}`}>{surah.name}</option>
+                                ))}
+                              </datalist>
+                            </div>
+
+                            <div>
+                              <p className="mb-1 text-xs font-semibold text-[#486581]">From</p>
+                              <input
+                                type="number"
+                                min={1}
+                                max={ayahCount || 1}
+                                value={range.fromAyah}
+                                onChange={(e) => {
+                                  const value = e.target.value;
+                                  const numeric = Number(value || 0);
+                                  const safeValue = selectedSurah
+                                    ? String(Math.max(1, Math.min(numeric || 1, selectedSurah.ayahs)))
+                                    : value;
+                                  const updatedRanges = [...formSection.ranges];
+                                  updatedRanges[rangeIdx] = { ...updatedRanges[rangeIdx], fromAyah: safeValue };
+                                  setForm(prev => ({ ...prev, sections: { ...prev.sections, [section.key]: { ...formSection, ranges: updatedRanges } } }));
+                                }}
+                                className="h-9 w-full rounded-lg border border-[#bcccdc] px-2 text-sm text-[#102a43] outline-none focus:border-[#2563eb]"
+                                disabled={!selectedSurah}
+                                placeholder="From"
+                              />
+                            </div>
+
+                            <div>
+                              <p className="mb-1 text-xs font-semibold text-[#486581]">To</p>
+                              <input
+                                type="number"
+                                min={range.fromAyah ? Number(range.fromAyah) : 1}
+                                max={ayahCount || 1}
+                                value={range.toAyah}
+                                onChange={(e) => {
+                                  const value = e.target.value;
+                                  const numeric = Number(value || 0);
+                                  const minAllowed = Number(range.fromAyah || 1);
+                                  const maxAllowed = selectedSurah ? selectedSurah.ayahs : 1;
+                                  const safeValue = String(Math.max(minAllowed, Math.min(numeric || minAllowed, maxAllowed)));
+                                  const updatedRanges = [...formSection.ranges];
+                                  updatedRanges[rangeIdx] = { ...updatedRanges[rangeIdx], toAyah: safeValue };
+                                  setForm(prev => ({ ...prev, sections: { ...prev.sections, [section.key]: { ...formSection, ranges: updatedRanges } } }));
+                                }}
+                                className="h-9 w-full rounded-lg border border-[#bcccdc] px-2 text-sm text-[#102a43] outline-none focus:border-[#2563eb]"
+                                disabled={!selectedSurah}
+                                placeholder="To"
+                              />
+                            </div>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+
+                  <button
+                    type="button"
+                    onClick={() => handleAddRange(section.key)}
+                    className="mb-4 text-xs font-semibold text-[#2563eb] hover:text-[#1d4ed8]"
+                  >
+                    + Add Another Surah Range
+                  </button>
+
+                  <div className="grid gap-3 md:grid-cols-2">
+                    <div>
+                      <p className="mb-1 text-xs font-semibold text-[#486581]">Kaifiyat (Performance)</p>
+                      <select
+                        value={formSection.kaifiyat}
+                        onChange={(e) => setSectionValue(section.key, { kaifiyat: e.target.value as KaifiyatValue })}
+                        className="h-10 w-full rounded-xl border border-[#bcccdc] px-3 text-sm text-[#102a43] outline-none focus:border-[#16a34a]"
+                        required
+                      >
+                        <option value="">Select Rating</option>
+                        <option value="Excellent ⭐⭐⭐⭐⭐">Excellent ⭐⭐⭐⭐⭐</option>
+                        <option value="Good ⭐⭐⭐⭐">Good ⭐⭐⭐⭐</option>
+                        <option value="Average ⭐⭐⭐">Average ⭐⭐⭐</option>
+                        <option value="Weak ⭐⭐">Weak ⭐⭐</option>
+                      </select>
+                    </div>
+
+                    <div>
+                      <p className="mb-1 text-xs font-semibold text-[#486581]">Tajweedi Ghaltiyan (0-99)</p>
+                      <div className="flex items-center gap-2">
+                        <button
+                          type="button"
+                          onClick={() => setSectionValue(section.key, { tajweeditotal: String(Math.max(0, Number(formSection.tajweeditotal || 0) - 1)) })}
+                          className="h-9 w-9 rounded-lg border border-[#fecaca] text-[#7f1d1d] hover:bg-[#fecaca]"
+                        >
+                          −
+                        </button>
+                        <input
+                          type="number"
+                          min={0}
+                          max={99}
+                          value={formSection.tajweeditotal}
+                          onChange={(e) => {
+                            const value = Math.max(0, Math.min(99, Number(e.target.value || 0)));
+                            setSectionValue(section.key, { tajweeditotal: String(value) });
+                          }}
+                          className="h-9 w-16 rounded-lg border border-[#fecaca] px-2 text-center text-sm text-[#7f1d1d] outline-none focus:border-[#ef4444]"
+                        />
+                        <button
+                          type="button"
+                          onClick={() => setSectionValue(section.key, { tajweeditotal: String(Math.min(99, Number(formSection.tajweeditotal || 0) + 1)) })}
+                          className="h-9 w-9 rounded-lg border border-[#fecaca] text-[#7f1d1d] hover:bg-[#fecaca]"
+                        >
+                          +
+                        </button>
+                        <div className="flex gap-1">
+                          {[0, 1, 2, 3, 5, 10].map(val => (
+                            <button
+                              key={val}
+                              type="button"
+                              onClick={() => setSectionValue(section.key, { tajweeditotal: String(val) })}
+                              className="rounded-lg border border-[#fecaca] px-1.5 py-0.5 text-xs text-[#7f1d1d] hover:bg-[#fecaca]"
+                            >
+                              {val}
+                            </button>
+                          ))}
+                        </div>
+                      </div>
+                    </div>
+
+                    <div>
+                      <p className="mb-1 text-xs font-semibold text-[#486581]">Hifz Ghaltiyan (0-99)</p>
+                      <div className="flex items-center gap-2">
+                        <button
+                          type="button"
+                          onClick={() => setSectionValue(section.key, { hifztotal: String(Math.max(0, Number(formSection.hifztotal || 0) - 1)) })}
+                          className="h-9 w-9 rounded-lg border border-[#fecaca] text-[#7f1d1d] hover:bg-[#fecaca]"
+                        >
+                          −
+                        </button>
+                        <input
+                          type="number"
+                          min={0}
+                          max={99}
+                          value={formSection.hifztotal}
+                          onChange={(e) => {
+                            const value = Math.max(0, Math.min(99, Number(e.target.value || 0)));
+                            setSectionValue(section.key, { hifztotal: String(value) });
+                          }}
+                          className="h-9 w-16 rounded-lg border border-[#fecaca] px-2 text-center text-sm text-[#7f1d1d] outline-none focus:border-[#ef4444]"
+                        />
+                        <button
+                          type="button"
+                          onClick={() => setSectionValue(section.key, { hifztotal: String(Math.min(99, Number(formSection.hifztotal || 0) + 1)) })}
+                          className="h-9 w-9 rounded-lg border border-[#fecaca] text-[#7f1d1d] hover:bg-[#fecaca]"
+                        >
+                          +
+                        </button>
+                        <div className="flex gap-1">
+                          {[0, 1, 2, 3, 5, 10].map(val => (
+                            <button
+                              key={val}
+                              type="button"
+                              onClick={() => setSectionValue(section.key, { hifztotal: String(val) })}
+                              className="rounded-lg border border-[#fecaca] px-1.5 py-0.5 text-xs text-[#7f1d1d] hover:bg-[#fecaca]"
+                            >
+                              {val}
+                            </button>
+                          ))}
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+
+          <div className="mt-5 flex flex-wrap items-center gap-3">
+            <button
+              disabled={saving || loading || featureDisabled}
+              className="h-11 rounded-xl bg-gradient-to-br from-[#004649] to-[#1b5e62] shadow-[0_8px_20px_rgba(0,70,73,0.12)] active:scale-[0.98] transition-all px-6 font-semibold text-white disabled:cursor-not-allowed disabled:opacity-60"
+            >
+              {saving ? 'Saving...' : 'Save Daily Report'}
             </button>
+            <p className="text-xs text-[#486581]">Validation active: empty fields and invalid ayah range blocked.</p>
           </div>
         </form>
 
-        {message ? <p className="mt-3 rounded-xl bg-[#f3f4f3] px-4 py-3 text-sm text-[#1a1c1c]">{message}</p> : null}
+        <aside className="space-y-4">
+          <div className="rounded-2xl border border-[#d6e2ea] bg-white p-5 shadow-sm">
+            <div className="flex items-center gap-2">
+              <Sparkles className="h-4 w-4 text-[#2563eb]" />
+              <h3 className="font-bold text-[#102a43]">Auto Summary</h3>
+            </div>
+            <div className="mt-3 space-y-2 text-sm text-[#334e68]">
+              <p><span className="font-semibold">Overall Performance:</span> {summary.overallPerformance}</p>
+              <p><span className="font-semibold">Total Mistakes:</span> {summary.totalMistakes}</p>
+              <p><span className="font-semibold">Suggestion:</span> {summary.suggestion}</p>
+              <div className="flex items-center gap-1 pt-1">
+                {Array.from({ length: 5 }).map((_, i) => (
+                  <Star key={i} className={`h-4 w-4 ${i < summary.avgStars ? 'fill-[#f59e0b] text-[#f59e0b]' : 'text-[#cbd5e1]'}`} />
+                ))}
+              </div>
+            </div>
+          </div>
+
+          <div className="rounded-2xl border border-[#d6e2ea] bg-white p-5 shadow-sm">
+            <div className="flex items-center gap-2">
+              <BookOpen className="h-4 w-4 text-[#16a34a]" />
+              <h3 className="font-bold text-[#102a43]">Quran Tracking JSON</h3>
+            </div>
+            <p className="mt-2 text-sm text-[#486581]">Embedded Surah JSON count: {SURAH_LIST.length} Surahs</p>
+            <p className="text-xs text-[#627d98]">Ayah ranges are dynamic per selected Surah.</p>
+          </div>
+
+          <div className="rounded-2xl border border-[#d6e2ea] bg-white p-5 shadow-sm">
+            <div className="flex items-center gap-2">
+              <TrendingUp className="h-4 w-4 text-[#004649]" />
+              <h3 className="font-bold text-[#102a43]">Teacher Guidance</h3>
+            </div>
+            <ul className="mt-2 space-y-1 text-sm text-[#486581]">
+              <li>- Keep sabaq range realistic for quality.</li>
+              <li>- If mistakes increase, reduce range and revise.</li>
+              <li>- Use auto-suggest to continue lesson sequence.</li>
+            </ul>
+          </div>
+        </aside>
       </section>
 
-      <section className="rounded-xl bg-white p-8 border border-[#e2e8e8]">
-        <h3 className="font-semibold text-[#1a1c1c]">Progress Log</h3>
-        <div className="mt-4 overflow-x-auto">
-          <table className="min-w-full text-sm">
-            <thead className="bg-[#f3f4f3] text-[#596364]">
-              <tr>
-                <th className="px-3 py-3 text-left text-[10px] font-bold uppercase tracking-[0.18em]">Date</th>
-                <th className="px-3 py-3 text-left text-[10px] font-bold uppercase tracking-[0.18em]">Class</th>
-                <th className="px-3 py-3 text-left text-[10px] font-bold uppercase tracking-[0.18em]">Student</th>
-                <th className="px-3 py-3 text-left text-[10px] font-bold uppercase tracking-[0.18em]">Lesson</th>
-                <th className="px-3 py-3 text-left text-[10px] font-bold uppercase tracking-[0.18em]">Ayah Range</th>
-                <th className="px-3 py-3 text-left text-[10px] font-bold uppercase tracking-[0.18em]">Notes</th>
-              </tr>
-            </thead>
-            <tbody>
-              {progress.map((item) => {
-                const juzzName = item.juzzNumber ? juzzList.find((j) => j.number === item.juzzNumber)?.name || `Juzz ${item.juzzNumber}` : '-';
-                const surahName = surahList.find((s) => s.number === item.lessonNumber)?.name || `Surah ${item.lessonNumber}`;
-                const ayahRange = item.lessonType === 'SURAH' && item.ayahFrom && item.ayahTo ? `${item.ayahFrom} → ${item.ayahTo}` : '-';
-
-                return (
-                  <tr key={item.id} className="border-b border-[#eef1f1]">
-                    <td className="px-3 py-3 text-[#596364]">{item.date.slice(0, 10)}</td>
-                    <td className="px-3 py-3 text-[#596364]">{item.class.name} - {item.class.section}</td>
-                    <td className="px-3 py-3 font-semibold text-[#1a1c1c]">{item.student.user.fullName}</td>
-                    <td className="px-3 py-3 text-[#596364]">J{item.juzzNumber ?? '-'} ({juzzName}) · S{item.lessonNumber} {surahName}</td>
-                    <td className="px-3 py-3 font-semibold text-[#004649]">{ayahRange}</td>
-                    <td className="px-3 py-3 text-[#596364]">{item.notes || '-'}</td>
-                  </tr>
-                );
-              })}
-            </tbody>
-          </table>
+      <section className="rounded-2xl border border-[#d6e2ea] bg-white p-4 shadow-sm md:p-6">
+        <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
+          <h3 className="font-headline text-xl font-bold text-[#102a43]">Saved Reports</h3>
+          <div className="grid gap-2 md:grid-cols-2">
+            <input
+              type="date"
+              value={reportDate}
+              onChange={(e) => setReportDate(e.target.value)}
+              className="h-10 rounded-xl border border-[#bcccdc] px-3 text-sm text-[#102a43] outline-none focus:border-[#2563eb]"
+            />
+            <input
+              value={reportQuery}
+              onChange={(e) => setReportQuery(e.target.value)}
+              placeholder="Search student"
+              className="h-10 rounded-xl border border-[#bcccdc] px-3 text-sm text-[#102a43] outline-none focus:border-[#2563eb]"
+            />
+          </div>
         </div>
-        {progress.length === 0 ? <p className="mt-4 text-sm text-[#5c6668]">No progress records found for selected filters.</p> : null}
+
+        {filteredReports.length === 0 ? (
+          <p className="mt-4 text-sm text-[#627d98]">No reports found for selected filters.</p>
+        ) : (
+          <div className="mt-4 grid gap-3 md:grid-cols-2 xl:grid-cols-3">
+            {filteredReports.map((item) => {
+              const parsed = parseStructuredNotes(item.notes);
+              const stars = computeStars(parsed);
+              const mistakes = computeReportMistakes(parsed);
+              const sabaq = parsed?.sections.sabaq;
+              const firstRange = sabaq?.ranges && sabaq.ranges.length > 0 ? sabaq.ranges[0] : null;
+              const surahLabel = firstRange?.surahName && firstRange.surahName !== '-' ? `${firstRange.surahName} (${firstRange.fromAyah ?? '-'}-${firstRange.toAyah ?? '-'})` : 'Not structured';
+
+              return (
+                <div key={item.id} className="rounded-xl border border-[#d6e2ea] bg-[#f8fbff] p-4">
+                  <p className="text-xs font-semibold uppercase tracking-[0.16em] text-[#486581]">{formatDateYMD(item.date)}</p>
+                  <p className="mt-1 text-base font-bold text-[#102a43]">{item.student.user.fullName}</p>
+                  <p className="text-xs text-[#627d98]">{item.class.name} - {item.class.section}</p>
+                  <p className="mt-2 text-sm text-[#1e3a8a]"><span className="font-semibold">Sabaq:</span> {surahLabel}</p>
+
+                  <div className="mt-2 flex items-center gap-1">
+                    {Array.from({ length: 5 }).map((_, i) => (
+                      <Star key={i} className={`h-4 w-4 ${i < stars ? 'fill-[#f59e0b] text-[#f59e0b]' : 'text-[#cbd5e1]'}`} />
+                    ))}
+                  </div>
+
+                  <div className="mt-2 inline-flex rounded-xl bg-[#fee2e2] px-2 py-1 text-xs font-semibold text-[#7f1d1d]">
+                    Mistakes: {mistakes}
+                  </div>
+
+                  <button
+                    type="button"
+                    onClick={() => setOpenReportId((prev) => (prev === item.id ? null : item.id))}
+                    className="mt-3 rounded-xl bg-gradient-to-br from-[#004649] to-[#1b5e62] shadow-[0_8px_20px_rgba(0,70,73,0.12)] active:scale-[0.98] transition-all px-3 py-1.5 text-xs font-semibold text-white"
+                  >
+                    View Details
+                  </button>
+
+                  {openReportId === item.id ? (
+                    <pre className="mt-3 max-h-60 overflow-auto whitespace-pre-wrap rounded-xl border border-[#d6e2ea] bg-white p-3 text-xs text-[#334e68]">
+                      {item.notes || '-'}
+                    </pre>
+                  ) : null}
+                </div>
+              );
+            })}
+          </div>
+        )}
       </section>
     </div>
   );
 }
+
+

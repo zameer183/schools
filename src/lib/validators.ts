@@ -57,6 +57,17 @@ export const progressCreateSchema = z.object({
   lessonNumber: z.number().int().min(1),
   ayahFrom: z.preprocess((value) => (value === '' || value == null ? undefined : Number(value)), z.number().int().min(1).optional()),
   ayahTo: z.preprocess((value) => (value === '' || value == null ? undefined : Number(value)), z.number().int().min(1).optional()),
+  tajweeditotal: z.number().int().min(0).max(99).optional(),
+  hifzTotal: z.number().int().min(0).max(99).optional(),
+  surahRanges: z.record(
+    z.array(
+      z.object({
+        surahId: z.number().int().min(1).max(114),
+        fromAyah: z.number().int().min(1),
+        toAyah: z.number().int().min(1)
+      })
+    )
+  ).optional(),
   notes: z.string().trim().optional()
 }).superRefine((value, ctx) => {
   if (value.lessonType === 'SURAH') {

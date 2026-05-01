@@ -1,25 +1,44 @@
 import { UserRole } from '@prisma/client';
 import { NextResponse } from 'next/server';
+import { revalidatePath } from 'next/cache';
 import { prisma } from '@/lib/prisma';
 import { ensureApiRole } from '@/lib/rbac';
+import { hasTeacherAccessByUserId } from '@/lib/teacher-access';
 import { progressCreateSchema } from '@/lib/validators';
 
 async function getTeacherScope(userId: string) {
   const teacher = await prisma.teacher.findUnique({
     where: { userId },
-    select: { id: true, classAssignments: { select: { classId: true } } }
+    select: {
+      id: true,
+      classAssignments: { select: { classId: true } },
+      subjects: { select: { classId: true } }
+    }
   });
 
   if (!teacher) return null;
+  const classIds = Array.from(
+    new Set([
+      ...teacher.classAssignments.map((item) => item.classId),
+      ...teacher.subjects.map((item) => item.classId)
+    ])
+  );
+
   return {
     teacherId: teacher.id,
-    classIds: teacher.classAssignments.map((item) => item.classId)
+    classIds
   };
 }
 
 export async function GET(request: Request) {
   const auth = await ensureApiRole([UserRole.ADMIN, UserRole.TEACHER, UserRole.STUDENT, UserRole.PARENT]);
   if (!auth.authorized) return auth.response;
+  if (auth.session.role === UserRole.TEACHER) {
+    const canAccess = await hasTeacherAccessByUserId(auth.session.id, 'PROGRESS');
+    if (!canAccess) {
+      return NextResponse.json({ error: 'Progress module access is disabled by admin.' }, { status: 403 });
+    }
+  }
 
   const { searchParams } = new URL(request.url);
   const classId = searchParams.get('classId') ?? undefined;
@@ -40,7 +59,8 @@ export async function GET(request: Request) {
       include: {
         student: { include: { user: true } },
         class: true,
-        teacher: { include: { user: true } }
+        teacher: { include: { user: true } },
+        surahRanges: true
       },
       orderBy: { date: 'desc' }
     });
@@ -81,6 +101,12 @@ export async function GET(request: Request) {
 export async function POST(request: Request) {
   const auth = await ensureApiRole([UserRole.ADMIN, UserRole.TEACHER]);
   if (!auth.authorized) return auth.response;
+  if (auth.session.role === UserRole.TEACHER) {
+    const canAccess = await hasTeacherAccessByUserId(auth.session.id, 'PROGRESS');
+    if (!canAccess) {
+      return NextResponse.json({ error: 'Progress module access is disabled by admin.' }, { status: 403 });
+    }
+  }
 
   const parsed = progressCreateSchema.safeParse(await request.json());
   if (!parsed.success) {
@@ -125,6 +151,8 @@ export async function POST(request: Request) {
       lessonNumber: parsed.data.lessonNumber,
       ayahFrom: parsed.data.ayahFrom ?? null,
       ayahTo: parsed.data.ayahTo ?? null,
+      tajweeditotal: parsed.data.tajweeditotal ?? null,
+      hifzTotal: parsed.data.hifzTotal ?? null,
       notes: parsed.data.notes || null
     },
     create: {
@@ -137,14 +165,53 @@ export async function POST(request: Request) {
       lessonNumber: parsed.data.lessonNumber,
       ayahFrom: parsed.data.ayahFrom ?? null,
       ayahTo: parsed.data.ayahTo ?? null,
+      tajweeditotal: parsed.data.tajweeditotal ?? null,
+      hifzTotal: parsed.data.hifzTotal ?? null,
       notes: parsed.data.notes || null
     },
     include: {
       student: { include: { user: true } },
       class: true,
-      teacher: { include: { user: true } }
+      teacher: { include: { user: true } },
+      surahRanges: true
     }
   });
+
+  // Handle surah ranges if provided
+  if (parsed.data.surahRanges) {
+    // Delete existing ranges for this progress
+    await prisma.surahRange.deleteMany({
+      where: { progressId: progress.id }
+    });
+
+    // Create new ranges for each section
+    for (const [sectionKey, ranges] of Object.entries(parsed.data.surahRanges)) {
+      for (const range of ranges) {
+        await prisma.surahRange.create({
+          data: {
+            progressId: progress.id,
+            sectionKey,
+            surahId: range.surahId,
+            fromAyah: range.fromAyah,
+            toAyah: range.toAyah
+          }
+        });
+      }
+    }
+  }
+
+  // Push the progress update to the target student as an in-app notification.
+  await prisma.notification.create({
+    data: {
+      userId: progress.student.userId,
+      title: 'Daily Progress Report Updated',
+      body: `A new progress report has been submitted for ${parsed.data.date}.`,
+      type: 'ACADEMIC'
+    }
+  });
+
+  revalidatePath('/student');
+  revalidatePath('/student/notifications');
 
   return NextResponse.json(progress, { status: 201 });
 }
