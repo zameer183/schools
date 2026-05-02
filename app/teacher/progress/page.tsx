@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { Bell, BookOpen, Search, Sparkles, Star, TrendingUp } from 'lucide-react';
+import { PageHeader, Card } from '@/components/ui';
 
 type ClassItem = { id: string; name: string; section: string };
 type StudentItem = {
@@ -742,48 +743,43 @@ export default function TeacherProgressPage() {
   };
 
   return (
-    <div className="space-y-5">
-      <section className="rounded-2xl border border-[#d6e2ea] bg-gradient-to-br from-[#f4f9ff] via-white to-[#f1f8f3] p-4 shadow-sm md:p-6">
-        <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
-          <div>
-            <h2 className="font-headline text-2xl font-bold text-[#102a43] md:text-3xl">Teacher Daily Progress Report System</h2>
-            <p className="mt-1 text-sm text-[#486581]">Smart Quran Tracking SaaS | Surah + Ayah structured progress</p>
-          </div>
-          <div className="flex items-center gap-2 rounded-xl border border-[#c7d8e2] bg-white px-3 py-2 text-sm text-[#334e68]">
-            <Bell className="h-4 w-4 text-[#2563eb]" />
-            <span>{notifications.length} live alert(s)</span>
-          </div>
-        </div>
-
-        <div className="mt-4">
-          <div className="mb-1 flex items-center justify-between text-xs font-semibold text-[#486581]">
-            <span>Form Completion</span>
-            <span>{completionPercent}%</span>
-          </div>
-          <div className="h-2 rounded-full bg-[#d9e2ec]">
-            <div className="h-2 rounded-full bg-gradient-to-r from-[#2563eb] to-[#16a34a] transition-all" style={{ width: `${completionPercent}%` }} />
-          </div>
-        </div>
-
-        {notifications.length > 0 ? (
+    <div className="space-y-6">
+      <div>
+        <PageHeader
+          title="Teacher Daily Progress Report System"
+          subtitle="Smart Quran Tracking SaaS | Surah + Ayah structured progress"
+        />
+        {notifications.length > 0 && (
           <div className="mt-4 grid gap-2 md:grid-cols-2">
             {notifications.map((notice) => (
               <div
                 key={notice.id}
-                className={`rounded-lg px-3 py-2 text-sm ${
+                className={`rounded-lg px-4 py-3 text-sm font-medium ${
                   notice.type === 'success'
-                    ? 'bg-[#dcfce7] text-[#14532d]'
+                    ? 'bg-[#D1FAE5] text-[#065F46]'
                     : notice.type === 'error'
-                      ? 'bg-[#fee2e2] text-[#7f1d1d]'
-                      : 'bg-[#dbeafe] text-[#1e3a8a]'
+                      ? 'bg-[#FEE2E2] text-[#991B1B]'
+                      : 'bg-[#DBEAFE] text-[#1E40AF]'
                 }`}
               >
                 {notice.text}
               </div>
             ))}
           </div>
-        ) : null}
-      </section>
+        )}
+      </div>
+
+      <Card>
+        <div className="mb-4">
+          <div className="mb-2 flex items-center justify-between text-xs font-semibold text-[#6B7280]">
+            <span>Form Completion</span>
+            <span>{completionPercent}%</span>
+          </div>
+          <div className="h-2 rounded-full bg-[#E5E7EB]">
+            <div className="h-2 rounded-full bg-gradient-to-r from-[#1F5A5C] to-[#10B981] transition-all" style={{ width: `${completionPercent}%` }} />
+          </div>
+        </div>
+      </Card>
 
       <section className="grid gap-5 xl:grid-cols-[1.7fr_1fr]">
         <form onSubmit={submit} className="rounded-2xl border border-[#d6e2ea] bg-white p-4 shadow-sm md:p-6">
