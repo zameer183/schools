@@ -1,10 +1,10 @@
 import Link from 'next/link';
 import { AssignmentStatus, UserRole } from '@prisma/client';
 import { unstable_cache } from 'next/cache';
-import { BookOpen, CalendarCheck2, DollarSign, TrendingUp } from 'lucide-react';
 import { requireAuth } from '@/lib/auth';
 import { prisma } from '@/lib/prisma';
 import { KpiCard } from '@/components/ui/kpi-card';
+import { Card } from '@/components/ui/Card';
 
 export const dynamic = 'force-dynamic';
 
@@ -84,7 +84,6 @@ function parseProgressNotes(notes: string | null): ParsedProgress | null {
   return parsed;
 }
 
-
 const getCachedStudentDashboardData = unstable_cache(
   async (userId: string) => {
     const student = await prisma.student.findUnique({
@@ -154,14 +153,14 @@ export default async function StudentDashboardPage() {
 
   if (!dashboardData) {
     return (
-      <div className="rounded-2xl bg-white shadow-[0_12px_40px_rgba(0,70,73,0.06)] p-8">
-        <h2 className="text-3xl font-bold font-headline text-[#1a1c1c]">Student Profile Missing</h2>
-        <p className="mt-2 text-sm text-[#6f7979]">Your account is active but no student profile is linked yet. Contact admin.</p>
-      </div>
+      <Card className="p-8">
+        <h2 className="text-2xl md:text-3xl font-bold text-[#1F2937]">Student Profile Missing</h2>
+        <p className="mt-2 text-sm text-[#6B7280]">Your account is active but no student profile is linked yet. Contact admin.</p>
+      </Card>
     );
   }
 
-  const { student, attendanceRows, resultRows, feeRows, subjects, totalAssignments, submittedAssignments, progressRows, unreadNotifications } = dashboardData;
+  const { student, attendanceRows, resultRows, feeRows, subjects, totalAssignments, submittedAssignments, progressRows } = dashboardData;
 
   const totalAttendance = attendanceRows.reduce((sum, row) => sum + row._count._all, 0);
   const presentAttendance = attendanceRows.filter((row) => row.status === 'PRESENT').reduce((sum, row) => sum + row._count._all, 0);
@@ -173,86 +172,86 @@ export default async function StudentDashboardPage() {
   const assignmentPercent = totalAssignments > 0 ? Math.round((submittedAssignments / totalAssignments) * 100) : 0;
 
   return (
-    <div className="space-y-4">
-      {/* Welcome card */}
-      <div className="rounded-2xl bg-white shadow-[0_12px_40px_rgba(0,70,73,0.06)] p-6">
-        <p className="text-xs font-semibold uppercase tracking-widest text-[#6f7979]">STUDENT</p>
-        <h1 className="mt-1 text-3xl font-bold font-headline text-[#1a1c1c]">Welcome, {student.user.fullName}</h1>
+    <div className="space-y-6">
+      <Card className="p-6 md:p-8">
+        <p className="text-xs font-semibold uppercase tracking-widest text-[#6B7280]">Student</p>
+        <h1 className="mt-2 text-2xl md:text-4xl font-bold text-[#1F2937]">Welcome, {student.user.fullName}</h1>
         {student.class && (
-          <p className="mt-1 text-sm text-[#6f7979]">Class: {student.class.name} - {student.class.section}</p>
+          <p className="mt-2 text-sm md:text-base text-[#6B7280]">{student.class.name} — {student.class.section}</p>
         )}
-      </div>
+      </Card>
 
-      {/* KPI tiles */}
+      {/* KPI Grid */}
       <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
         <KpiCard title="ATTENDANCE" value={`${attendancePercent}%`} subtitle={`${presentAttendance}/${totalAttendance} present`} />
         <KpiCard title="ASSIGNMENTS" value={`${submittedAssignments}/${totalAssignments}`} subtitle="Submitted vs published" />
         <KpiCard title="AVERAGE MARKS" value={`${averageMarks}`} subtitle="Latest exam results" />
-        <KpiCard title="OUTSTANDING FEE" value={`PKR ${outstanding.toLocaleString()}`} subtitle={`${unreadNotifications} unread notes`} />
+        <KpiCard title="OUTSTANDING FEE" value={`PKR ${outstanding.toLocaleString()}`} subtitle={outstanding > 0 ? 'Amount due' : 'All paid'} />
       </div>
 
-      {/* Subjects + Latest Results */}
-      <div className="grid gap-4 lg:grid-cols-2">
-        <div className="rounded-2xl bg-white shadow-[0_12px_40px_rgba(0,70,73,0.06)] p-5">
+      {/* Subjects & Results */}
+      <div className="grid gap-6 lg:grid-cols-2">
+        <Card className="p-5 md:p-6">
           <div className="flex items-center justify-between mb-4">
-            <h3 className="font-semibold font-headline text-[#1a1c1c]">Subjects</h3>
-            <Link href="/student/schedule" className="text-xs font-semibold text-[#1F5A5C] hover:underline">
-              View schedule
+            <h3 className="text-lg font-semibold text-[#1F2937]">Subjects</h3>
+            <Link href="/student/schedule" className="text-xs font-semibold text-[#1F5A5C] hover:text-[#2a7478]">
+              View schedule →
             </Link>
           </div>
           {subjects.length === 0 ? (
-            <p className="text-sm text-[#6f7979]">No subjects assigned yet.</p>
+            <p className="text-sm text-[#6B7280]">No subjects assigned yet.</p>
           ) : (
             <div className="space-y-2">
               {subjects.map((subject) => (
-                <div key={subject.id} className="rounded-xl bg-[#f3f4f5] px-4 py-3">
-                  <p className="text-sm font-semibold text-[#1a1c1c]">{subject.name}</p>
-                  <p className="text-xs text-[#6f7979]">{subject.teacher?.user.fullName ?? 'TBA'}</p>
+                <div key={subject.id} className="rounded-lg bg-[#F5F1E8] px-4 py-3 border border-[#E5E7EB]">
+                  <p className="text-sm font-semibold text-[#1F2937]">{subject.name}</p>
+                  <p className="text-xs text-[#6B7280] mt-1">{subject.teacher?.user.fullName ?? 'TBA'}</p>
                 </div>
               ))}
             </div>
           )}
-        </div>
+        </Card>
 
-        <div className="rounded-2xl bg-white shadow-[0_12px_40px_rgba(0,70,73,0.06)] p-5">
+        <Card className="p-5 md:p-6">
           <div className="flex items-center justify-between mb-4">
-            <h3 className="font-semibold font-headline text-[#1a1c1c]">Latest Results</h3>
-            <Link href="/student/results" className="text-xs font-semibold text-[#1F5A5C] hover:underline">
-              Open all
+            <h3 className="text-lg font-semibold text-[#1F2937]">Latest Results</h3>
+            <Link href="/student/results" className="text-xs font-semibold text-[#1F5A5C] hover:text-[#2a7478]">
+              Open all →
             </Link>
           </div>
           {resultRows.length === 0 ? (
-            <p className="text-sm text-[#6f7979]">No results published yet.</p>
+            <p className="text-sm text-[#6B7280]">No results published yet.</p>
           ) : (
-            <div className="divide-y divide-[#e2e8e8]">
+            <div className="space-y-3">
               {resultRows.map((result) => (
-                <div key={result.id} className="flex items-center justify-between py-3">
-                  <div>
-                    <p className="text-sm font-semibold text-[#1a1c1c]">{result.subject.name}</p>
-                    <p className="text-xs text-[#6f7979]">{result.exam.title}</p>
+                <div key={result.id} className="flex items-center justify-between py-3 border-b border-[#E5E7EB] last:border-b-0">
+                  <div className="min-w-0 flex-1">
+                    <p className="text-sm font-semibold text-[#1F2937]">{result.subject.name}</p>
+                    <p className="text-xs text-[#6B7280]">{result.exam.title}</p>
                   </div>
-                  <span className="text-sm font-bold text-[#1F5A5C]">{result.grade}</span>
+                  <span className="ml-2 text-sm font-bold text-[#1F5A5C]">{result.grade}</span>
                 </div>
               ))}
             </div>
           )}
-        </div>
+        </Card>
       </div>
 
-      <div className="rounded-2xl bg-white shadow-[0_12px_40px_rgba(0,70,73,0.06)] p-5">
+      {/* Daily Progress */}
+      <Card className="p-5 md:p-6">
         <div className="mb-4">
-          <h3 className="font-semibold font-headline text-[#1a1c1c]">Daily Progress Reports</h3>
-          <p className="mt-1 text-xs text-[#6f7979]">📘 Teacher entered Sabaq, Sabqi, and Manzil notes.</p>
+          <h3 className="text-lg font-semibold text-[#1F2937]">Daily Progress Reports</h3>
+          <p className="mt-1 text-xs text-[#6B7280]">Teacher entered Sabaq, Sabqi, and Manzil notes.</p>
         </div>
         {progressRows.length === 0 ? (
-          <p className="text-sm text-[#6f7979]">No progress report published yet.</p>
+          <p className="text-sm text-[#6B7280]">No progress report published yet.</p>
         ) : (
-          <div className="space-y-3">
+          <div className="space-y-4">
             {progressRows.map((row) => (
-              <div key={row.id} className="rounded-xl bg-[#f3f4f5] p-3">
-                <div className="flex flex-wrap items-center justify-between gap-2">
-                  <p className="text-sm font-semibold text-[#1a1c1c]">{toDateString(row.date)}</p>
-                  <p className="text-xs text-[#6f7979]">{row.class.name} - {row.class.section} | {row.teacher.user.fullName}</p>
+              <div key={row.id} className="rounded-lg bg-[#F5F1E8] p-4 border border-[#E5E7EB]">
+                <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-2 mb-3">
+                  <p className="text-sm font-semibold text-[#1F2937]">{toDateString(row.date)}</p>
+                  <p className="text-xs text-[#6B7280]">{row.class.name} - {row.class.section} | {row.teacher.user.fullName}</p>
                 </div>
                 {(() => {
                   const parsed = parseProgressNotes(row.notes);
@@ -262,30 +261,30 @@ export default async function StudentDashboardPage() {
 
                   const reportSections = [
                     {
-                      title: '📘 Sabaq Report',
+                      title: 'Sabaq',
                       fields: [
-                        { label: 'Miqdar (Amount)', value: parsed.sabaqMiqdar },
-                        { label: 'Kaifiyat (Performance)', value: parsed.sabaqKaifiyat },
-                        { label: 'Tajweedi Ghaltiyan (Mistakes)', value: parsed.sabaqTajweedi },
-                        { label: 'Hifz ki Ghaltiyan (Mistakes)', value: parsed.sabaqHifz }
+                        { label: 'Amount', value: parsed.sabaqMiqdar },
+                        { label: 'Performance', value: parsed.sabaqKaifiyat },
+                        { label: 'Tajweedi', value: parsed.sabaqTajweedi },
+                        { label: 'Hifz', value: parsed.sabaqHifz }
                       ]
                     },
                     {
-                      title: '📘 Sabqi Report',
+                      title: 'Sabqi',
                       fields: [
-                        { label: 'Miqdar (Amount)', value: parsed.sabqiMiqdar },
-                        { label: 'Kaifiyat (Performance)', value: parsed.sabqiKaifiyat },
-                        { label: 'Tajweedi Ghaltiyan (Mistakes)', value: parsed.sabqiTajweedi },
-                        { label: 'Hifz ki Ghaltiyan (Mistakes)', value: parsed.sabqiHifz }
+                        { label: 'Amount', value: parsed.sabqiMiqdar },
+                        { label: 'Performance', value: parsed.sabqiKaifiyat },
+                        { label: 'Tajweedi', value: parsed.sabqiTajweedi },
+                        { label: 'Hifz', value: parsed.sabqiHifz }
                       ]
                     },
                     {
-                      title: '📘 Manzil Report',
+                      title: 'Manzil',
                       fields: [
-                        { label: 'Miqdar (Amount)', value: parsed.manzilMiqdar },
-                        { label: 'Kaifiyat (Performance)', value: parsed.manzilKaifiyat },
-                        { label: 'Tajweedi Ghaltiyan (Mistakes)', value: parsed.manzilTajweedi },
-                        { label: 'Hifz ki Ghaltiyan (Mistakes)', value: parsed.manzilHifz }
+                        { label: 'Amount', value: parsed.manzilMiqdar },
+                        { label: 'Performance', value: parsed.manzilKaifiyat },
+                        { label: 'Tajweedi', value: parsed.manzilTajweedi },
+                        { label: 'Hifz', value: parsed.manzilHifz }
                       ]
                     }
                   ];
@@ -293,13 +292,13 @@ export default async function StudentDashboardPage() {
                   return (
                     <div className="mt-3 grid gap-2 md:grid-cols-3">
                       {reportSections.map((section) => (
-                        <div key={section.title} className="rounded-xl bg-[#f3f4f5] p-3">
+                        <div key={section.title} className="rounded-lg bg-white p-3 border border-[#E5E7EB]">
                           <p className="text-xs font-bold text-[#1F5A5C]">{section.title}</p>
                           <div className="mt-2 space-y-2">
                             {section.fields.map((field) => (
                               <div key={field.label}>
-                                <p className="text-[11px] font-semibold text-[#6f7979]">{field.label}</p>
-                                <p className="text-sm text-[#1a1c1c]">{field.value || '-'}</p>
+                                <p className="text-[11px] font-semibold text-[#6B7280]">{field.label}</p>
+                                <p className="text-sm text-[#1F2937]">{field.value || '-'}</p>
                               </div>
                             ))}
                           </div>
@@ -312,7 +311,7 @@ export default async function StudentDashboardPage() {
             ))}
           </div>
         )}
-      </div>
+      </Card>
     </div>
   );
 }
