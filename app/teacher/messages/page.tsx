@@ -3,6 +3,8 @@ import { UserRole } from '@prisma/client';
 import { requireAuth } from '@/lib/auth';
 import { prisma } from '@/lib/prisma';
 import { getTeacherAccessMapByUserId } from '@/lib/teacher-access';
+import { PageHeader, Card } from '@/components/ui';
+import { Mail, Search } from 'lucide-react';
 
 export const dynamic = 'force-dynamic';
 
@@ -120,20 +122,18 @@ export default async function TeacherMessagesPage() {
   }
 
   return (
-    <div className="space-y-4">
-      <div className="rounded-2xl bg-white shadow-[0_12px_40px_rgba(0,70,73,0.06)] p-4 sm:p-6">
-        <h2 className="font-headline text-2xl sm:text-3xl font-bold text-[#1a1c1c]">Communications Hub</h2>
-        <p className="mt-1 text-sm text-[#6f7979]">Stay updated with your academic circle.</p>
-      </div>
+    <div className="space-y-6">
+      <PageHeader
+        title="Communications Hub"
+        subtitle="Stay updated with your academic circle."
+      />
 
-      <div className="grid gap-4 lg:grid-cols-3">
+      <div className="grid gap-6 lg:grid-cols-3">
         <div className="lg:col-span-1 space-y-4">
-          <div className="rounded-2xl bg-white shadow-[0_12px_40px_rgba(0,70,73,0.06)] p-3 sm:p-4">
-            <div className="flex items-center gap-2 rounded-xl bg-[#f3f4f5] px-3 py-2.5">
-              <svg className="h-4 w-4 text-[#6f7979] shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
-                <path strokeLinecap="round" strokeLinejoin="round" d="m21 21-5.197-5.197m0 0A7.5 7.5 0 1 0 5.196 5.196a7.5 7.5 0 0 0 10.607 10.607Z" />
-              </svg>
-              <input placeholder="Search conversations..." className="bg-transparent text-sm text-[#1a1c1c] placeholder:text-[#6f7979] outline-none flex-1" />
+          <Card>
+            <div className="flex items-center gap-2 rounded-lg bg-[#F9FAFB] border border-[#E5E7EB] px-3 py-2.5">
+              <Search className="h-4 w-4 text-[#6B7280] shrink-0" />
+              <input placeholder="Search conversations..." className="bg-transparent text-sm text-[#1F2937] placeholder:text-[#6B7280] outline-none flex-1" />
             </div>
 
             {uniqueRecipients.length > 0 && (
@@ -171,45 +171,47 @@ export default async function TeacherMessagesPage() {
                 ))}
               </div>
             </div>
-          </div>
+          </Card>
 
-          <div className="rounded-2xl bg-white shadow-[0_12px_40px_rgba(0,70,73,0.06)] overflow-hidden">
+          <Card>
             {allMessages.length === 0 ? (
-              <div className="p-8 text-center space-y-3">
-                <div className="w-14 h-14 rounded-full bg-[#f3f4f5] flex items-center justify-center mx-auto">
-                  <svg className="h-6 w-6 text-[#6f7979]" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
-                    <path strokeLinecap="round" strokeLinejoin="round" d="M21.75 6.75v10.5a2.25 2.25 0 0 1-2.25 2.25h-15a2.25 2.25 0 0 1-2.25-2.25V6.75m19.5 0A2.25 2.25 0 0 0 19.5 4.5h-15a2.25 2.25 0 0 0-2.25 2.25m19.5 0v.243a2.25 2.25 0 0 1-1.07 1.916l-7.5 4.615a2.25 2.25 0 0 1-2.36 0L3.32 8.91a2.25 2.25 0 0 1-1.07-1.916V6.75" />
-                  </svg>
-                </div>
-                <p className="font-semibold text-[#1a1c1c]">A Quiet Space</p>
-                <p className="text-xs text-[#6f7979]">No messages yet. Send your first message to a student.</p>
-                <p className="text-[9px] uppercase tracking-widest text-[#865300] font-bold bg-[#fff3e0] px-2 py-1 rounded-full inline-block">Communication Portal</p>
+              <div className="flex flex-col items-center justify-center py-8 text-center">
+                <svg className="h-10 w-10 text-[#E5E7EB]" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M21.75 6.75v10.5a2.25 2.25 0 0 1-2.25 2.25h-15a2.25 2.25 0 0 1-2.25-2.25V6.75m19.5 0A2.25 2.25 0 0 0 19.5 4.5h-15a2.25 2.25 0 0 0-2.25 2.25m19.5 0v.243a2.25 2.25 0 0 1-1.07 1.916l-7.5 4.615a2.25 2.25 0 0 1-2.36 0L3.32 8.91a2.25 2.25 0 0 1-1.07-1.916V6.75" />
+                </svg>
+                <p className="mt-2 text-sm font-semibold text-[#1F2937]">A Quiet Space</p>
+                <p className="mt-1 text-xs text-[#6B7280]">No messages yet. Send your first message to a student.</p>
               </div>
             ) : (
-              <div className="divide-y divide-[#e2e8e8]">
+              <div className="divide-y divide-[#E5E7EB]">
                 {allMessages.map((msg) => (
-                  <div key={msg.id} className={`flex gap-3 p-3 sm:p-4 hover:bg-[#f3f4f5] cursor-pointer ${!msg.isRead && msg.direction === 'received' ? 'border-l-4 border-l-[#004649]' : ''}`}>
-                    <div className={`w-10 h-10 rounded-full shrink-0 flex items-center justify-center text-xs font-bold ${msg.direction === 'sent' ? 'bg-[#e8f5e9] text-[#004649]' : 'bg-[#f3f4f5] text-[#1a1c1c]'}`}>
+                  <div key={msg.id} className={`flex gap-3 p-3 sm:p-4 hover:bg-[#F9FAFB] cursor-pointer transition-colors ${!msg.isRead && msg.direction === 'received' ? 'border-l-4 border-l-[#004649]' : ''}`}>
+                    <div className={`w-10 h-10 rounded-full shrink-0 flex items-center justify-center text-xs font-bold ${msg.direction === 'sent' ? 'bg-[#E0EBEC] text-[#1F5A5C]' : 'bg-[#F3F4F5] text-[#1F2937]'}`}>
                       {initials(msg.senderName)}
                     </div>
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center justify-between gap-2">
-                        <p className="text-sm font-semibold text-[#1a1c1c] truncate">{msg.senderName}</p>
-                        <p className="text-[10px] text-[#6f7979] shrink-0">{timeAgo(msg.createdAt)}</p>
+                        <p className="text-sm font-semibold text-[#1F2937] truncate">{msg.senderName}</p>
+                        <p className="text-[10px] text-[#6B7280] shrink-0">{timeAgo(msg.createdAt)}</p>
                       </div>
-                      <p className="text-xs font-medium text-[#1a1c1c] truncate">{msg.subject}</p>
-                      <p className="text-xs text-[#6f7979] truncate">{msg.body}</p>
+                      <p className="text-xs font-medium text-[#1F2937] truncate">{msg.subject}</p>
+                      <p className="text-xs text-[#6B7280] truncate">{msg.body}</p>
                     </div>
                   </div>
                 ))}
               </div>
             )}
-          </div>
+          </Card>
         </div>
 
-        <div className="lg:col-span-2 rounded-2xl bg-white shadow-[0_12px_40px_rgba(0,70,73,0.06)] p-4 sm:p-6">
-          <h3 className="font-headline font-bold text-[#1a1c1c] mb-1">New Message</h3>
-          <p className="text-sm text-[#6f7979] mb-5">Send an update to your students.</p>
+        <Card>
+          <div className="flex items-center gap-2 mb-4">
+            <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-[#F5E6CC]">
+              <Mail className="h-4 w-4 text-[#D69E3F]" />
+            </div>
+            <h3 className="text-sm font-bold text-[#1F2937]">New Message</h3>
+          </div>
+          <p className="text-sm text-[#6B7280] mb-5">Send an update to your students.</p>
           <form action={sendMessageAction} className="space-y-4">
             <div>
               <label className="block text-[10px] font-bold uppercase tracking-widest text-[#6f7979] mb-2">Subject</label>

@@ -228,7 +228,6 @@ export default async function TeacherSettingsPage() {
             </div>
           </div>
         </Card>
-      </section>
 
       <Card>
         <div className="flex items-center gap-2 mb-4">
@@ -247,7 +246,7 @@ export default async function TeacherSettingsPage() {
             </div>
           ))}
         </div>
-      </section>
+      </Card>
 
       <section className="rounded-2xl bg-white shadow-[0_12px_40px_rgba(0,70,73,0.06)] p-8">
         <div className="flex flex-wrap items-start justify-between gap-4">
