@@ -855,95 +855,95 @@ export default function TeacherProgressPage() {
               </div>
             ) : null}
 
-          <div className="mt-5 space-y-4">
-            {sectionMeta.map((section) => {
-              const formSection = form.sections[section.key];
+            <div className="mt-5 space-y-4">
+              {sectionMeta.map((section) => {
+                const formSection = form.sections[section.key];
 
-              return (
-                <div key={section.key} className="rounded-2xl border border-[#d6e2ea] bg-[#f8fafc] p-4">
-                  <h3 className="mb-3 text-base font-bold text-[#102a43]">{section.icon} {section.title}</h3>
+                return (
+                  <div key={section.key} className="rounded-lg border border-[#E5E7EB] bg-[#FFFFFF] p-4">
+                    <h3 className="mb-4 text-base font-bold text-[#1F2937]">{section.icon} {section.title}</h3>
 
-                  <div className="mb-4 space-y-3">
-                    {formSection.ranges.map((range, rangeIdx) => {
-                      const selectedSurah = getSurahById(range.surahId || 0);
-                      const ayahCount = selectedSurah?.ayahs ?? 0;
+                    <div className="mb-4 space-y-3">
+                      {formSection.ranges.map((range, rangeIdx) => {
+                        const selectedSurah = getSurahById(range.surahId || 0);
+                        const ayahCount = selectedSurah?.ayahs ?? 0;
 
-                      return (
-                        <div key={rangeIdx} className="space-y-2 rounded-xl border border-[#e0e7ff] bg-white p-3">
-                          <div className="flex items-center justify-between">
-                            <p className="text-xs font-semibold text-[#486581]">Range {rangeIdx + 1}</p>
-                            {formSection.ranges.length > 1 && (
-                              <button
-                                type="button"
-                                onClick={() => handleRemoveRange(section.key, rangeIdx)}
-                                className="text-xs text-red-600 hover:text-red-700"
-                              >
-                                Remove
-                              </button>
-                            )}
-                          </div>
-
-                          <div className="grid gap-2 md:grid-cols-3">
-                            <div>
-                              <p className="mb-1 text-xs font-semibold text-[#486581]">Surah</p>
-                              <input
-                                list={`surah-list-${section.key}-${rangeIdx}`}
-                                value={range.surahInput}
-                                onChange={(e) => handleSurahInput(section.key, rangeIdx, e.target.value)}
-                                placeholder="Type Surah name or number"
-                                className="h-9 w-full rounded-lg border border-[#bcccdc] px-2 text-sm text-[#102a43] outline-none focus:border-[#2563eb]"
-                                required
-                              />
-                              <datalist id={`surah-list-${section.key}-${rangeIdx}`}>
-                                {SURAH_LIST.map((surah) => (
-                                  <option key={surah.id} value={`${surah.id}. ${surah.name}`}>{surah.name}</option>
-                                ))}
-                              </datalist>
+                        return (
+                          <div key={rangeIdx} className="space-y-2 rounded-lg border border-[#E5E7EB] bg-[#F9FAFB] p-4">
+                            <div className="flex items-center justify-between">
+                              <p className="text-xs font-semibold text-[#6B7280]">Range {rangeIdx + 1}</p>
+                              {formSection.ranges.length > 1 && (
+                                <button
+                                  type="button"
+                                  onClick={() => handleRemoveRange(section.key, rangeIdx)}
+                                  className="text-xs text-[#EF4444] hover:text-[#DC2626]"
+                                >
+                                  Remove
+                                </button>
+                              )}
                             </div>
 
-                            <div>
-                              <p className="mb-1 text-xs font-semibold text-[#486581]">From</p>
-                              <input
-                                type="number"
-                                min={1}
-                                max={ayahCount || 1}
-                                value={range.fromAyah}
-                                onChange={(e) => {
-                                  const value = e.target.value;
-                                  const numeric = Number(value || 0);
-                                  const safeValue = selectedSurah
-                                    ? String(Math.max(1, Math.min(numeric || 1, selectedSurah.ayahs)))
-                                    : value;
-                                  const updatedRanges = [...formSection.ranges];
-                                  updatedRanges[rangeIdx] = { ...updatedRanges[rangeIdx], fromAyah: safeValue };
-                                  setForm(prev => ({ ...prev, sections: { ...prev.sections, [section.key]: { ...formSection, ranges: updatedRanges } } }));
-                                }}
-                                className="h-9 w-full rounded-lg border border-[#bcccdc] px-2 text-sm text-[#102a43] outline-none focus:border-[#2563eb]"
-                                disabled={!selectedSurah}
-                                placeholder="From"
-                              />
-                            </div>
+                            <div className="grid gap-2 md:grid-cols-3">
+                              <div>
+                                <p className="mb-2 text-xs font-semibold text-[#6B7280]">Surah</p>
+                                <input
+                                  list={`surah-list-${section.key}-${rangeIdx}`}
+                                  value={range.surahInput}
+                                  onChange={(e) => handleSurahInput(section.key, rangeIdx, e.target.value)}
+                                  placeholder="Type Surah name or number"
+                                  className="h-9 w-full rounded-lg border border-[#E5E7EB] px-3 text-sm text-[#1F2937] outline-none focus:ring-2 focus:ring-[#1F5A5C]/20"
+                                  required
+                                />
+                                <datalist id={`surah-list-${section.key}-${rangeIdx}`}>
+                                  {SURAH_LIST.map((surah) => (
+                                    <option key={surah.id} value={`${surah.id}. ${surah.name}`}>{surah.name}</option>
+                                  ))}
+                                </datalist>
+                              </div>
 
-                            <div>
-                              <p className="mb-1 text-xs font-semibold text-[#486581]">To</p>
-                              <input
-                                type="number"
-                                min={range.fromAyah ? Number(range.fromAyah) : 1}
-                                max={ayahCount || 1}
-                                value={range.toAyah}
-                                onChange={(e) => {
-                                  const value = e.target.value;
-                                  const numeric = Number(value || 0);
-                                  const minAllowed = Number(range.fromAyah || 1);
-                                  const maxAllowed = selectedSurah ? selectedSurah.ayahs : 1;
-                                  const safeValue = String(Math.max(minAllowed, Math.min(numeric || minAllowed, maxAllowed)));
-                                  const updatedRanges = [...formSection.ranges];
-                                  updatedRanges[rangeIdx] = { ...updatedRanges[rangeIdx], toAyah: safeValue };
-                                  setForm(prev => ({ ...prev, sections: { ...prev.sections, [section.key]: { ...formSection, ranges: updatedRanges } } }));
-                                }}
-                                className="h-9 w-full rounded-lg border border-[#bcccdc] px-2 text-sm text-[#102a43] outline-none focus:border-[#2563eb]"
-                                disabled={!selectedSurah}
-                                placeholder="To"
+                              <div>
+                                <p className="mb-2 text-xs font-semibold text-[#6B7280]">From</p>
+                                <input
+                                  type="number"
+                                  min={1}
+                                  max={ayahCount || 1}
+                                  value={range.fromAyah}
+                                  onChange={(e) => {
+                                    const value = e.target.value;
+                                    const numeric = Number(value || 0);
+                                    const safeValue = selectedSurah
+                                      ? String(Math.max(1, Math.min(numeric || 1, selectedSurah.ayahs)))
+                                      : value;
+                                    const updatedRanges = [...formSection.ranges];
+                                    updatedRanges[rangeIdx] = { ...updatedRanges[rangeIdx], fromAyah: safeValue };
+                                    setForm(prev => ({ ...prev, sections: { ...prev.sections, [section.key]: { ...formSection, ranges: updatedRanges } } }));
+                                  }}
+                                  className="h-9 w-full rounded-lg border border-[#E5E7EB] px-3 text-sm text-[#1F2937] outline-none focus:ring-2 focus:ring-[#1F5A5C]/20"
+                                  disabled={!selectedSurah}
+                                  placeholder="From"
+                                />
+                              </div>
+
+                              <div>
+                                <p className="mb-2 text-xs font-semibold text-[#6B7280]">To</p>
+                                <input
+                                  type="number"
+                                  min={range.fromAyah ? Number(range.fromAyah) : 1}
+                                  max={ayahCount || 1}
+                                  value={range.toAyah}
+                                  onChange={(e) => {
+                                    const value = e.target.value;
+                                    const numeric = Number(value || 0);
+                                    const minAllowed = Number(range.fromAyah || 1);
+                                    const maxAllowed = selectedSurah ? selectedSurah.ayahs : 1;
+                                    const safeValue = String(Math.max(minAllowed, Math.min(numeric || minAllowed, maxAllowed)));
+                                    const updatedRanges = [...formSection.ranges];
+                                    updatedRanges[rangeIdx] = { ...updatedRanges[rangeIdx], toAyah: safeValue };
+                                    setForm(prev => ({ ...prev, sections: { ...prev.sections, [section.key]: { ...formSection, ranges: updatedRanges } } }));
+                                  }}
+                                  className="h-9 w-full rounded-lg border border-[#E5E7EB] px-3 text-sm text-[#1F2937] outline-none focus:ring-2 focus:ring-[#1F5A5C]/20"
+                                  disabled={!selectedSurah}
+                                  placeholder="To"
                               />
                             </div>
                           </div>
@@ -952,23 +952,23 @@ export default function TeacherProgressPage() {
                     })}
                   </div>
 
-                  <button
-                    type="button"
-                    onClick={() => handleAddRange(section.key)}
-                    className="mb-4 text-xs font-semibold text-[#2563eb] hover:text-[#1d4ed8]"
-                  >
-                    + Add Another Surah Range
-                  </button>
+                    <button
+                      type="button"
+                      onClick={() => handleAddRange(section.key)}
+                      className="mb-4 text-xs font-semibold text-[#1F5A5C] hover:text-[#0f3a3c]"
+                    >
+                      + Add Another Surah Range
+                    </button>
 
-                  <div className="grid gap-3 md:grid-cols-2">
-                    <div>
-                      <p className="mb-1 text-xs font-semibold text-[#486581]">Kaifiyat (Performance)</p>
-                      <select
-                        value={formSection.kaifiyat}
-                        onChange={(e) => setSectionValue(section.key, { kaifiyat: e.target.value as KaifiyatValue })}
-                        className="h-10 w-full rounded-xl border border-[#bcccdc] px-3 text-sm text-[#102a43] outline-none focus:border-[#16a34a]"
-                        required
-                      >
+                    <div className="grid gap-3 md:grid-cols-2">
+                      <div>
+                        <p className="mb-2 text-xs font-semibold text-[#6B7280]">Kaifiyat (Performance)</p>
+                        <select
+                          value={formSection.kaifiyat}
+                          onChange={(e) => setSectionValue(section.key, { kaifiyat: e.target.value as KaifiyatValue })}
+                          className="h-10 w-full rounded-lg border border-[#E5E7EB] px-4 text-sm text-[#1F2937] outline-none focus:ring-2 focus:ring-[#10B981]/20"
+                          required
+                        >
                         <option value="">Select Rating</option>
                         <option value="Excellent ⭐⭐⭐⭐⭐">Excellent ⭐⭐⭐⭐⭐</option>
                         <option value="Good ⭐⭐⭐⭐">Good ⭐⭐⭐⭐</option>
@@ -977,96 +977,96 @@ export default function TeacherProgressPage() {
                       </select>
                     </div>
 
-                    <div>
-                      <p className="mb-1 text-xs font-semibold text-[#486581]">Tajweedi Ghaltiyan (0-99)</p>
-                      <div className="flex flex-wrap items-center gap-2">
-                        <button
-                          type="button"
-                          onClick={() => setSectionValue(section.key, { tajweeditotal: String(Math.max(0, Number(formSection.tajweeditotal || 0) - 1)) })}
-                          className="h-9 w-9 rounded-lg border border-[#fecaca] text-[#7f1d1d] hover:bg-[#fecaca]"
-                        >
-                          −
-                        </button>
-                        <input
-                          type="number"
-                          min={0}
-                          max={99}
-                          value={formSection.tajweeditotal}
-                          onChange={(e) => {
-                            const value = Math.max(0, Math.min(99, Number(e.target.value || 0)));
-                            setSectionValue(section.key, { tajweeditotal: String(value) });
-                          }}
-                          className="h-9 w-16 rounded-lg border border-[#fecaca] px-2 text-center text-sm text-[#7f1d1d] outline-none focus:border-[#ef4444]"
-                        />
-                        <button
-                          type="button"
-                          onClick={() => setSectionValue(section.key, { tajweeditotal: String(Math.min(99, Number(formSection.tajweeditotal || 0) + 1)) })}
-                          className="h-9 w-9 rounded-lg border border-[#fecaca] text-[#7f1d1d] hover:bg-[#fecaca]"
-                        >
-                          +
-                        </button>
-                        <div className="flex flex-wrap gap-1">
-                          {[0, 1, 2, 3, 5, 10].map(val => (
-                            <button
-                              key={val}
-                              type="button"
-                              onClick={() => setSectionValue(section.key, { tajweeditotal: String(val) })}
-                              className="rounded-lg border border-[#fecaca] px-1.5 py-0.5 text-xs text-[#7f1d1d] hover:bg-[#fecaca]"
-                            >
-                              {val}
-                            </button>
-                          ))}
+                      <div>
+                        <p className="mb-2 text-xs font-semibold text-[#6B7280]">Tajweedi Ghaltiyan (0-99)</p>
+                        <div className="flex flex-wrap items-center gap-2">
+                          <button
+                            type="button"
+                            onClick={() => setSectionValue(section.key, { tajweeditotal: String(Math.max(0, Number(formSection.tajweeditotal || 0) - 1)) })}
+                            className="h-9 w-9 rounded-lg border border-[#FEE2E2] text-[#991B1B] hover:bg-[#FEE2E2]"
+                          >
+                            −
+                          </button>
+                          <input
+                            type="number"
+                            min={0}
+                            max={99}
+                            value={formSection.tajweeditotal}
+                            onChange={(e) => {
+                              const value = Math.max(0, Math.min(99, Number(e.target.value || 0)));
+                              setSectionValue(section.key, { tajweeditotal: String(value) });
+                            }}
+                            className="h-9 w-16 rounded-lg border border-[#FEE2E2] px-2 text-center text-sm text-[#991B1B] outline-none focus:ring-2 focus:ring-[#EF4444]/20"
+                          />
+                          <button
+                            type="button"
+                            onClick={() => setSectionValue(section.key, { tajweeditotal: String(Math.min(99, Number(formSection.tajweeditotal || 0) + 1)) })}
+                            className="h-9 w-9 rounded-lg border border-[#FEE2E2] text-[#991B1B] hover:bg-[#FEE2E2]"
+                          >
+                            +
+                          </button>
+                          <div className="flex flex-wrap gap-1">
+                            {[0, 1, 2, 3, 5, 10].map(val => (
+                              <button
+                                key={val}
+                                type="button"
+                                onClick={() => setSectionValue(section.key, { tajweeditotal: String(val) })}
+                                className="rounded-lg border border-[#FEE2E2] px-2 py-1 text-xs text-[#991B1B] hover:bg-[#FEE2E2]"
+                              >
+                                {val}
+                              </button>
+                            ))}
+                          </div>
                         </div>
                       </div>
-                    </div>
 
-                    <div>
-                      <p className="mb-1 text-xs font-semibold text-[#486581]">Hifz Ghaltiyan (0-99)</p>
-                      <div className="flex flex-wrap items-center gap-2">
-                        <button
-                          type="button"
-                          onClick={() => setSectionValue(section.key, { hifztotal: String(Math.max(0, Number(formSection.hifztotal || 0) - 1)) })}
-                          className="h-9 w-9 rounded-lg border border-[#fecaca] text-[#7f1d1d] hover:bg-[#fecaca]"
-                        >
-                          −
-                        </button>
-                        <input
-                          type="number"
-                          min={0}
-                          max={99}
-                          value={formSection.hifztotal}
-                          onChange={(e) => {
-                            const value = Math.max(0, Math.min(99, Number(e.target.value || 0)));
-                            setSectionValue(section.key, { hifztotal: String(value) });
-                          }}
-                          className="h-9 w-16 rounded-lg border border-[#fecaca] px-2 text-center text-sm text-[#7f1d1d] outline-none focus:border-[#ef4444]"
-                        />
-                        <button
-                          type="button"
-                          onClick={() => setSectionValue(section.key, { hifztotal: String(Math.min(99, Number(formSection.hifztotal || 0) + 1)) })}
-                          className="h-9 w-9 rounded-lg border border-[#fecaca] text-[#7f1d1d] hover:bg-[#fecaca]"
-                        >
-                          +
-                        </button>
-                        <div className="flex flex-wrap gap-1">
-                          {[0, 1, 2, 3, 5, 10].map(val => (
-                            <button
-                              key={val}
-                              type="button"
-                              onClick={() => setSectionValue(section.key, { hifztotal: String(val) })}
-                              className="rounded-lg border border-[#fecaca] px-1.5 py-0.5 text-xs text-[#7f1d1d] hover:bg-[#fecaca]"
-                            >
-                              {val}
-                            </button>
-                          ))}
+                      <div>
+                        <p className="mb-2 text-xs font-semibold text-[#6B7280]">Hifz Ghaltiyan (0-99)</p>
+                        <div className="flex flex-wrap items-center gap-2">
+                          <button
+                            type="button"
+                            onClick={() => setSectionValue(section.key, { hifztotal: String(Math.max(0, Number(formSection.hifztotal || 0) - 1)) })}
+                            className="h-9 w-9 rounded-lg border border-[#FEE2E2] text-[#991B1B] hover:bg-[#FEE2E2]"
+                          >
+                            −
+                          </button>
+                          <input
+                            type="number"
+                            min={0}
+                            max={99}
+                            value={formSection.hifztotal}
+                            onChange={(e) => {
+                              const value = Math.max(0, Math.min(99, Number(e.target.value || 0)));
+                              setSectionValue(section.key, { hifztotal: String(value) });
+                            }}
+                            className="h-9 w-16 rounded-lg border border-[#FEE2E2] px-2 text-center text-sm text-[#991B1B] outline-none focus:ring-2 focus:ring-[#EF4444]/20"
+                          />
+                          <button
+                            type="button"
+                            onClick={() => setSectionValue(section.key, { hifztotal: String(Math.min(99, Number(formSection.hifztotal || 0) + 1)) })}
+                            className="h-9 w-9 rounded-lg border border-[#FEE2E2] text-[#991B1B] hover:bg-[#FEE2E2]"
+                          >
+                            +
+                          </button>
+                          <div className="flex flex-wrap gap-1">
+                            {[0, 1, 2, 3, 5, 10].map(val => (
+                              <button
+                                key={val}
+                                type="button"
+                                onClick={() => setSectionValue(section.key, { hifztotal: String(val) })}
+                                className="rounded-lg border border-[#FEE2E2] px-2 py-1 text-xs text-[#991B1B] hover:bg-[#FEE2E2]"
+                              >
+                                {val}
+                              </button>
+                            ))}
+                          </div>
                         </div>
                       </div>
                     </div>
                   </div>
-                </div>
-              );
-            })}
-          </div>
+                );
+              })}
+            </div>
 
             <div className="mt-5 flex flex-wrap items-center gap-3">
               <button
