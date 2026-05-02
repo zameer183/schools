@@ -260,7 +260,7 @@ export default async function TeacherMessagesPage() {
               Send Message
             </button>
           </form>
-        </div>
+        </Card>
       </div>
     </div>
   );

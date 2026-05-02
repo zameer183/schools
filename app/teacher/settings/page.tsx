@@ -228,6 +228,7 @@ export default async function TeacherSettingsPage() {
             </div>
           </div>
         </Card>
+      </section>
 
       <Card>
         <div className="flex items-center gap-2 mb-4">
@@ -248,13 +249,13 @@ export default async function TeacherSettingsPage() {
         </div>
       </Card>
 
-      <section className="rounded-2xl bg-white shadow-[0_12px_40px_rgba(0,70,73,0.06)] p-8">
-        <div className="flex flex-wrap items-start justify-between gap-4">
+      <Card>
+        <div className="flex flex-wrap items-start justify-between gap-4 mb-4">
           <div>
-            <h3 className="font-semibold text-[#1a1c1c]">My Attendance</h3>
-            <p className="mt-1 text-sm text-[#5c6668]">Mark your own daily attendance and review previous days.</p>
+            <h3 className="font-semibold text-[#1F2937]">My Attendance</h3>
+            <p className="mt-1 text-sm text-[#6B7280]">Mark your own daily attendance and review previous days.</p>
           </div>
-          <div className="rounded-full bg-[#f3f4f3] px-3 py-1 text-xs font-semibold text-[#1a1c1c]">Today: {todayStatus}</div>
+          <div className="rounded-full bg-[#F5E6CC] px-3 py-1 text-xs font-semibold text-[#D69E3F]">Today: {todayStatus}</div>
         </div>
 
         {access.STAFF_ATTENDANCE ? (
@@ -322,9 +323,9 @@ export default async function TeacherSettingsPage() {
               ))}
             </tbody>
           </table>
-          {recentAttendance.length === 0 ? <p className="mt-3 text-sm text-[#6f7979]">No attendance records yet.</p> : null}
+          {recentAttendance.length === 0 ? <p className="mt-3 text-sm text-[#6B7280]">No attendance records yet.</p> : null}
         </div>
-      </section>
+      </Card>
     </div>
   );
 }
