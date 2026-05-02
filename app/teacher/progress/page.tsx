@@ -1068,16 +1068,17 @@ export default function TeacherProgressPage() {
             })}
           </div>
 
-          <div className="mt-5 flex flex-wrap items-center gap-3">
-            <button
-              disabled={saving || loading || featureDisabled}
-              className="h-11 rounded-xl bg-gradient-to-br from-[#004649] to-[#1b5e62] shadow-[0_8px_20px_rgba(0,70,73,0.12)] active:scale-[0.98] transition-all px-6 font-semibold text-white disabled:cursor-not-allowed disabled:opacity-60"
-            >
-              {saving ? 'Saving...' : 'Save Daily Report'}
-            </button>
-            <p className="text-xs text-[#486581]">Validation active: empty fields and invalid ayah range blocked.</p>
-          </div>
-        </form>
+            <div className="mt-5 flex flex-wrap items-center gap-3">
+              <button
+                disabled={saving || loading || featureDisabled}
+                className="h-11 rounded-lg bg-gradient-to-br from-[#1F5A5C] to-[#2a7579] shadow-[0_8px_20px_rgba(31,90,92,0.12)] active:scale-[0.98] transition-all px-6 font-semibold text-white disabled:cursor-not-allowed disabled:opacity-60"
+              >
+                {saving ? 'Saving...' : 'Save Daily Report'}
+              </button>
+              <p className="text-xs text-[#6B7280]">Validation active: empty fields and invalid ayah range blocked.</p>
+            </div>
+          </form>
+        </Card>
 
         <aside className="space-y-4">
           <Card>
