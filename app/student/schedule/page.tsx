@@ -2,7 +2,8 @@ import { UserRole } from '@prisma/client';
 import { unstable_cache } from 'next/cache';
 import { requireAuth } from '@/lib/auth';
 import { prisma } from '@/lib/prisma';
-import { Card } from '@/components/ui/Card';
+import { PageHeader, Card } from '@/components/ui';
+import { BookOpen } from 'lucide-react';
 
 export const dynamic = 'force-dynamic';
 
@@ -33,25 +34,27 @@ export default async function StudentSchedulePage() {
 
   return (
     <div className="space-y-6">
-      <Card className="p-6 md:p-8">
-        <h2 className="text-2xl md:text-3xl font-bold text-[#1F2937]">Class Schedule</h2>
-        <p className="mt-2 text-sm text-[#6B7280]">
-          {student?.class ? `${student.class.name} — ${student.class.section}` : 'No class assigned.'}
-        </p>
-      </Card>
+      <PageHeader
+        title="Class Schedule"
+        subtitle={student?.class ? `${student.class.name} — ${student.class.section}` : 'No class assigned.'}
+      />
 
-      <Card className="p-5 md:p-6">
-        <h3 className="text-lg font-semibold text-[#1F2937] mb-4">Subjects</h3>
+      <Card>
         {!student?.class || student.class.subjects.length === 0 ? (
-          <p className="text-sm text-[#6B7280]">No schedule data yet.</p>
+          <div className="flex flex-col items-center justify-center py-8 text-center">
+            <BookOpen className="h-10 w-10 text-[#E5E7EB]" />
+            <p className="mt-2 text-sm text-[#9CA3AF]">No schedule data yet</p>
+          </div>
         ) : (
           <div className="space-y-3">
             {student.class.subjects.map((subject) => (
-              <div key={subject.id} className="rounded-lg bg-[#F5F1E8] px-4 py-3 border border-[#E5E7EB]">
+              <div key={subject.id} className="rounded-lg bg-[#F9FAFB] px-4 py-3 border border-[#E5E7EB] hover:bg-[#F3F4F6] transition-colors">
                 <p className="text-sm font-semibold text-[#1F2937]">{subject.name}</p>
-                <p className="text-xs text-[#6B7280] mt-1">Code: {subject.code}</p>
-                <p className="text-xs text-[#6B7280]">Teacher: {subject.teacher?.user.fullName ?? 'TBA'}</p>
-                <p className="text-xs text-[#6B7280]">Credits: {subject.creditHours}</p>
+                <div className="grid grid-cols-2 gap-2 mt-2 text-xs text-[#6B7280]">
+                  <span>Code: <span className="font-medium text-[#1F2937]">{subject.code}</span></span>
+                  <span>Credits: <span className="font-medium text-[#1F2937]">{subject.creditHours}</span></span>
+                </div>
+                <p className="text-xs text-[#6B7280] mt-1">Teacher: <span className="font-medium text-[#1F2937]">{subject.teacher?.user.fullName ?? 'TBA'}</span></p>
               </div>
             ))}
           </div>

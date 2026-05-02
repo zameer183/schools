@@ -13,7 +13,7 @@ type AssignmentItem = {
   maxMarks: number;
   class: { name: string; section: string };
   subject: { name: string };
-  submissions: { id: string }[];
+  _count: { submissions: number };
 };
 
 export default function TeacherAssignmentsPage() {
@@ -39,8 +39,8 @@ export default function TeacherAssignmentsPage() {
     setMessage('');
     try {
       const [classesRes, subjectsRes] = await Promise.all([
-        fetch('/api/classes', { cache: 'no-store' }),
-        fetch('/api/subjects', { cache: 'no-store' })
+        fetch('/api/classes'),
+        fetch('/api/subjects')
       ]);
 
       const classesJson = await classesRes.json();
@@ -62,12 +62,12 @@ export default function TeacherAssignmentsPage() {
       setClasses(classList);
       setSubjects(subjectList);
 
-      const defaultClassId = selectedClassId || classList[0]?.id || '';
+      const defaultClassId = classList[0]?.id || '';
       setSelectedClassId(defaultClassId);
       setForm((prev) => ({ ...prev, classId: prev.classId || defaultClassId }));
 
       if (defaultClassId) {
-        const assRes = await fetch(`/api/assignments?classId=${defaultClassId}`, { cache: 'no-store' });
+        const assRes = await fetch(`/api/assignments?classId=${defaultClassId}`);
         const assJson = await assRes.json();
         setAssignments(Array.isArray(assJson) ? assJson : []);
       } else {
@@ -78,7 +78,7 @@ export default function TeacherAssignmentsPage() {
     } finally {
       setLoading(false);
     }
-  }, [selectedClassId]);
+  }, []);
 
   useEffect(() => {
     loadData();
@@ -102,7 +102,7 @@ export default function TeacherAssignmentsPage() {
       return;
     }
 
-    const assRes = await fetch(`/api/assignments?classId=${classId}`, { cache: 'no-store' });
+    const assRes = await fetch(`/api/assignments?classId=${classId}`);
     const assJson = await assRes.json();
     setAssignments(Array.isArray(assJson) ? assJson : []);
   };
@@ -142,7 +142,7 @@ export default function TeacherAssignmentsPage() {
         dueDate: '',
         maxMarks: '100'
       }));
-      await refreshAssignments(form.classId);
+      void refreshAssignments(form.classId);
     } catch {
       setMessage('Request failed. Please try again.');
     } finally {
@@ -152,40 +152,40 @@ export default function TeacherAssignmentsPage() {
 
   return (
     <div className="space-y-6">
-      <div className="rounded-xl bg-white p-8 border border-[#e2e8e8]">
-        <h2 className="text-3xl font-bold text-[#1a1c1c]">Assignments</h2>
+      <div className="rounded-2xl bg-white shadow-[0_12px_40px_rgba(0,70,73,0.06)] p-4 sm:p-6">
+        <h2 className="font-headline text-2xl sm:text-3xl font-bold text-[#1a1c1c]">Assignments</h2>
         <p className="mt-2 text-[#5c6668]">Create and manage assignments for your classes.</p>
 
         <form onSubmit={submit} className="mt-6 grid gap-4 md:grid-cols-2">
           <input
-            className="h-11 rounded-xl border border-[#c0c8c9] bg-[#f9fafa] px-3 text-sm text-[#1a1c1c] placeholder:text-[#6e7778] focus:border-[#004649] focus:outline-none"
+            className="h-11 rounded-xl bg-[#edeeef] border-none px-3 text-sm text-[#1a1c1c] placeholder:text-[#6e7778] focus:ring-2 focus:ring-[#004649]/20 outline-none"
             placeholder="Assignment title"
             value={form.title}
             onChange={(e) => setForm((s) => ({ ...s, title: e.target.value }))}
             required
           />
           <input
-            className="h-11 rounded-xl border border-[#c0c8c9] bg-[#f9fafa] px-3 text-sm text-[#1a1c1c] focus:border-[#004649] focus:outline-none"
+            className="h-11 rounded-xl bg-[#edeeef] border-none px-3 text-sm text-[#1a1c1c] focus:ring-2 focus:ring-[#004649]/20 outline-none"
             type="date"
             value={form.dueDate}
             onChange={(e) => setForm((s) => ({ ...s, dueDate: e.target.value }))}
             required
           />
           <textarea
-            className="min-h-28 rounded-xl border border-[#c0c8c9] bg-[#f9fafa] p-3 text-sm text-[#1a1c1c] placeholder:text-[#6e7778] focus:border-[#004649] focus:outline-none md:col-span-2"
+            className="min-h-28 rounded-xl bg-[#edeeef] border-none p-3 text-sm text-[#1a1c1c] placeholder:text-[#6e7778] focus:border-[#004649] focus:outline-none md:col-span-2"
             placeholder="Assignment description"
             value={form.description}
             onChange={(e) => setForm((s) => ({ ...s, description: e.target.value }))}
             required
           />
           <select
-            className="h-11 rounded-xl border border-[#c0c8c9] bg-[#f9fafa] px-3 text-sm text-[#1a1c1c] focus:border-[#004649] focus:outline-none"
+            className="h-11 rounded-xl bg-[#edeeef] border-none px-3 text-sm text-[#1a1c1c] focus:ring-2 focus:ring-[#004649]/20 outline-none"
             value={form.classId}
             onChange={(e) => {
               const classId = e.target.value;
               setForm((s) => ({ ...s, classId, subjectId: '' }));
               setSelectedClassId(classId);
-              refreshAssignments(classId);
+              void refreshAssignments(classId);
             }}
             required
           >
@@ -195,7 +195,7 @@ export default function TeacherAssignmentsPage() {
             ))}
           </select>
           <select
-            className="h-11 rounded-xl border border-[#c0c8c9] bg-[#f9fafa] px-3 text-sm text-[#1a1c1c] focus:border-[#004649] focus:outline-none"
+            className="h-11 rounded-xl bg-[#edeeef] border-none px-3 text-sm text-[#1a1c1c] focus:ring-2 focus:ring-[#004649]/20 outline-none"
             value={form.subjectId}
             onChange={(e) => setForm((s) => ({ ...s, subjectId: e.target.value }))}
             required
@@ -206,7 +206,7 @@ export default function TeacherAssignmentsPage() {
             ))}
           </select>
           <input
-            className="h-11 rounded-xl border border-[#c0c8c9] bg-[#f9fafa] px-3 text-sm text-[#1a1c1c] focus:border-[#004649] focus:outline-none"
+            className="h-11 rounded-xl bg-[#edeeef] border-none px-3 text-sm text-[#1a1c1c] focus:ring-2 focus:ring-[#004649]/20 outline-none"
             type="number"
             min={1}
             max={1000}
@@ -218,7 +218,7 @@ export default function TeacherAssignmentsPage() {
           <div className="md:col-span-2">
             <button
               disabled={saving || loading}
-              className="h-11 rounded-xl bg-[#004649] px-6 font-semibold text-white hover:bg-[#005a5e] disabled:cursor-not-allowed disabled:opacity-60"
+              className="h-11 rounded-xl bg-gradient-to-br from-[#004649] to-[#1b5e62] shadow-[0_8px_20px_rgba(0,70,73,0.12)] active:scale-[0.98] transition-all px-6 font-semibold text-white disabled:cursor-not-allowed disabled:opacity-60"
             >
               {saving ? 'Publishing...' : 'Publish Assignment'}
             </button>
@@ -228,10 +228,24 @@ export default function TeacherAssignmentsPage() {
         {message ? <p className="mt-3 rounded-xl bg-[#f3f4f3] px-4 py-3 text-sm text-[#1a1c1c]">{message}</p> : null}
       </div>
 
-      <div className="rounded-xl bg-white p-8 border border-[#e2e8e8]">
-        <h3 className="font-semibold text-[#1a1c1c]">Published Assignments</h3>
+      <div className="rounded-2xl bg-white shadow-[0_12px_40px_rgba(0,70,73,0.06)] p-4 sm:p-6">
+        <h3 className="font-headline font-semibold text-[#1a1c1c]">Published Assignments</h3>
+        <div className="mt-4 space-y-2 md:hidden">
+          {assignments.map((assignment) => (
+            <div key={assignment.id} className="rounded-xl bg-[#f3f4f5] p-3">
+              <p className="text-sm font-semibold text-[#1a1c1c]">{assignment.title}</p>
+              <p className="mt-1 text-xs text-[#596364]">Class: {assignment.class.name} - {assignment.class.section}</p>
+              <p className="mt-1 text-xs text-[#596364]">Subject: {assignment.subject.name}</p>
+              <p className="mt-1 text-xs text-[#596364]">Due: {new Date(assignment.dueDate).toLocaleDateString()}</p>
+              <p className="mt-1 text-xs text-[#596364]">Submissions: {assignment._count.submissions}</p>
+              <span className={`mt-2 inline-flex rounded-full px-2.5 py-1 text-[10px] font-semibold ${assignment.status === 'PUBLISHED' ? 'bg-emerald-100 text-emerald-700' : assignment.status === 'CLOSED' ? 'bg-rose-100 text-rose-700' : 'bg-[#f3f4f3] text-[#596364]'}`}>
+                {assignment.status}
+              </span>
+            </div>
+          ))}
+        </div>
         <div className="mt-4 overflow-x-auto">
-          <table className="min-w-full text-sm">
+          <table className="hidden min-w-full text-sm md:table">
             <thead className="bg-[#f3f4f3] text-[#596364]">
               <tr>
                 <th className="px-3 py-3 text-left text-[10px] font-bold uppercase tracking-[0.18em]">Title</th>
@@ -249,7 +263,7 @@ export default function TeacherAssignmentsPage() {
                   <td className="px-3 py-3 text-[#596364]">{assignment.class.name} - {assignment.class.section}</td>
                   <td className="px-3 py-3 text-[#596364]">{assignment.subject.name}</td>
                   <td className="px-3 py-3 text-[#596364]">{new Date(assignment.dueDate).toLocaleDateString()}</td>
-                  <td className="px-3 py-3 font-semibold text-[#004649]">{assignment.submissions.length}</td>
+                  <td className="px-3 py-3 font-semibold text-[#004649]">{assignment._count.submissions}</td>
                   <td className="px-3 py-3">
                     <span className={`rounded-full px-2.5 py-1 text-xs font-semibold ${assignment.status === 'PUBLISHED' ? 'bg-emerald-100 text-emerald-700' : assignment.status === 'CLOSED' ? 'bg-rose-100 text-rose-700' : 'bg-[#f3f4f3] text-[#596364]'}`}>
                       {assignment.status}

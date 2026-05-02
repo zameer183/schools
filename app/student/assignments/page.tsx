@@ -1,11 +1,10 @@
 import Link from 'next/link';
 import { Prisma, UserRole } from '@prisma/client';
 import { unstable_cache } from 'next/cache';
-import { Calendar, ChevronRight } from 'lucide-react';
+import { Calendar, ChevronRight, CheckCircle2, Clock, AlertCircle } from 'lucide-react';
 import { requireAuth } from '@/lib/auth';
 import { prisma } from '@/lib/prisma';
-import { KpiCard } from '@/components/ui/kpi-card';
-import { Card } from '@/components/ui/Card';
+import { PageHeader, KpiCard, Card, StatusBadge } from '@/components/ui';
 
 export const dynamic = 'force-dynamic';
 
@@ -59,43 +58,42 @@ export default async function StudentAssignmentsPage() {
 
   return (
     <div className="space-y-6">
-      <Card className="p-6 md:p-8">
-        <p className="text-xs font-semibold uppercase tracking-widest text-[#6B7280]">Assignments</p>
-        <h2 className="mt-2 text-2xl md:text-3xl font-bold text-[#1F2937]">Track submissions</h2>
-        <p className="mt-2 text-sm text-[#6B7280]">Pending, submitted, and overdue assignments.</p>
-      </Card>
+      <PageHeader
+        title="Assignments"
+        subtitle="Pending, submitted, and overdue assignments."
+      />
 
-      <div className="grid grid-cols-1 gap-3 md:grid-cols-3">
-        <KpiCard title="PENDING" value={pending.toString()} subtitle="Awaiting submission" />
-        <KpiCard title="SUBMITTED" value={submitted.toString()} subtitle="Completed assignments" />
-        <KpiCard title="OVERDUE" value={overdue.toString()} subtitle="Past due date" />
-      </div>
+      <section className="grid grid-cols-1 gap-4 sm:grid-cols-3">
+        <KpiCard variant="primary" icon={<Clock />} label="Pending" value={pending} />
+        <KpiCard variant="success" icon={<CheckCircle2 />} label="Submitted" value={submitted} />
+        <KpiCard variant="danger" icon={<AlertCircle />} label="Overdue" value={overdue} />
+      </section>
 
-      <Card className="p-5 md:p-6">
-        <h3 className="text-lg font-semibold text-[#1F2937] mb-4">All Assignments</h3>
+      <Card>
         {assignments.length === 0 ? (
-          <p className="text-sm text-[#6B7280]">No assignments available yet.</p>
+          <div className="flex flex-col items-center justify-center py-8 text-center">
+            <CheckCircle2 className="h-10 w-10 text-[#E5E7EB]" />
+            <p className="mt-2 text-sm text-[#9CA3AF]">No assignments available yet</p>
+          </div>
         ) : (
           <div className="space-y-3">
             {assignments.map((assignment) => {
               const mine = assignment.submissions[0];
               const isOverdue = !mine && toDate(assignment.dueDate) < new Date();
-              const statusLabel = mine ? 'Submitted' : isOverdue ? 'Overdue' : 'Pending';
-              const statusBgColor = mine ? 'bg-[#D1FAE5]' : isOverdue ? 'bg-[#FEE2E2]' : 'bg-[#FEF3C7]';
-              const statusTextColor = mine ? 'text-[#10B981]' : isOverdue ? 'text-[#EF4444]' : 'text-[#D69E3F]';
+              const statusVariant = mine ? 'success' : isOverdue ? 'danger' : 'pending';
 
               return (
-                <Link key={assignment.id} href={`/student/assignments/${assignment.id}`} className="block">
-                  <article className="rounded-lg bg-[#F5F1E8] p-4 hover:bg-[#EEE9DE] transition-colors cursor-pointer group border border-[#E5E7EB]">
+                <Link key={assignment.id} href={`/student/assignments/${assignment.id}`} className="block transition active:scale-[0.98]">
+                  <article className="rounded-lg bg-[#F9FAFB] p-4 hover:bg-[#F3F4F6] transition-colors cursor-pointer group border border-[#E5E7EB]">
                     <div className="flex items-start justify-between gap-3">
                       <div className="min-w-0 flex-1">
                         <p className="text-sm font-semibold text-[#1F2937] group-hover:text-[#1F5A5C] transition-colors">{assignment.title}</p>
                         <p className="text-xs text-[#6B7280] mt-0.5">{assignment.subject.name} · {assignment.teacher.user.fullName}</p>
                       </div>
                       <div className="flex items-center gap-2 shrink-0">
-                        <span className={`rounded-full px-2.5 py-1 text-[10px] font-bold uppercase tracking-wider ${statusBgColor} ${statusTextColor}`}>
-                          {statusLabel}
-                        </span>
+                        <StatusBadge variant={statusVariant}>
+                          {mine ? 'Submitted' : isOverdue ? 'Overdue' : 'Pending'}
+                        </StatusBadge>
                         <ChevronRight className="h-4 w-4 text-[#6B7280] group-hover:text-[#1F5A5C] transition-colors" />
                       </div>
                     </div>

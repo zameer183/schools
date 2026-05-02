@@ -1,12 +1,11 @@
 'use client';
 
-import { useCallback, useEffect, useState } from 'react';
+import { useEffect, useState } from 'react';
+import { Users2 } from 'lucide-react';
 
-type ClassItem = { id: string; name: string; section: string };
 type StudentItem = {
   id: string;
   admissionNo: string;
-  currentAddress: string | null;
   emergencyContact: string | null;
   user: { fullName: string; email: string };
   class: null | { name: string; section: string };
@@ -14,140 +13,80 @@ type StudentItem = {
 
 export default function TeacherStudentsPage() {
   const [students, setStudents] = useState<StudentItem[]>([]);
-  const [classes, setClasses] = useState<ClassItem[]>([]);
-  const [loading, setLoading] = useState(false);
+  const [loading, setLoading] = useState(true);
   const [message, setMessage] = useState('');
-  const [form, setForm] = useState({
-    fullName: '',
-    email: '',
-    password: 'Pass@123',
-    admissionNo: '',
-    classId: '',
-    phone: ''
-  });
-
-  const loadData = useCallback(async () => {
-    try {
-      const [studentsRes, classesRes] = await Promise.all([
-        fetch('/api/students', { cache: 'no-store' }),
-        fetch('/api/classes', { cache: 'no-store' })
-      ]);
-
-      const studentsJson = await studentsRes.json();
-      const classesJson = await classesRes.json();
-
-      setStudents(Array.isArray(studentsJson) ? studentsJson : []);
-      const classList = Array.isArray(classesJson) ? classesJson : [];
-      setClasses(classList);
-
-      if (!form.classId && classList[0]?.id) {
-        setForm((prev) => ({ ...prev, classId: classList[0].id }));
-      }
-    } catch {
-      setMessage('Failed to load class student data.');
-    }
-  }, [form.classId]);
 
   useEffect(() => {
-    loadData();
-  }, [loadData]);
-
-  const submit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setLoading(true);
-    setMessage('');
-
-    try {
-      const res = await fetch('/api/students', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          fullName: form.fullName,
-          email: form.email,
-          password: form.password,
-          admissionNo: form.admissionNo,
-          classId: form.classId,
-          phone: form.phone || undefined
-        })
-      });
-
-      const json = await res.json();
-      if (!res.ok) {
-        setMessage(typeof json?.error === 'string' ? json.error : 'Unable to add student.');
-        return;
+    const loadData = async () => {
+      setLoading(true);
+      setMessage('');
+      try {
+        const studentsRes = await fetch('/api/students');
+        const studentsJson = await studentsRes.json();
+        setStudents(Array.isArray(studentsJson) ? studentsJson : []);
+      } catch {
+        setMessage('Failed to load class student data.');
+      } finally {
+        setLoading(false);
       }
+    };
 
-      setMessage('Student added to your class successfully.');
-      setForm((prev) => ({
-        ...prev,
-        fullName: '',
-        email: '',
-        password: 'Pass@123',
-        admissionNo: '',
-        phone: ''
-      }));
-      await loadData();
-    } catch {
-      setMessage('Request failed. Please try again.');
-    } finally {
-      setLoading(false);
-    }
-  };
+    loadData();
+  }, []);
 
   return (
     <div className="space-y-6">
-      <div className="rounded-xl bg-white p-8 border border-[#e2e8e8]">
-        <h2 className="text-3xl font-bold text-[#1a1c1c]">My Class Students</h2>
-        <p className="mt-2 text-[#5c6668]">Add and manage students for your assigned classes only.</p>
-
-        <form onSubmit={submit} className="mt-6 grid gap-4 md:grid-cols-2">
-          <input className="h-11 rounded-xl border border-[#c0c8c9] bg-[#f9fafa] px-3 text-sm text-[#1a1c1c] placeholder:text-[#6e7778] focus:border-[#004649] focus:outline-none" placeholder="Full name" value={form.fullName} onChange={(e) => setForm((s) => ({ ...s, fullName: e.target.value }))} required />
-          <input className="h-11 rounded-xl border border-[#c0c8c9] bg-[#f9fafa] px-3 text-sm text-[#1a1c1c] placeholder:text-[#6e7778] focus:border-[#004649] focus:outline-none" type="email" placeholder="Email" value={form.email} onChange={(e) => setForm((s) => ({ ...s, email: e.target.value }))} required />
-          <input className="h-11 rounded-xl border border-[#c0c8c9] bg-[#f9fafa] px-3 text-sm text-[#1a1c1c] placeholder:text-[#6e7778] focus:border-[#004649] focus:outline-none" placeholder="Admission number" value={form.admissionNo} onChange={(e) => setForm((s) => ({ ...s, admissionNo: e.target.value }))} required />
-          <input className="h-11 rounded-xl border border-[#c0c8c9] bg-[#f9fafa] px-3 text-sm text-[#1a1c1c] placeholder:text-[#6e7778] focus:border-[#004649] focus:outline-none" placeholder="Phone (optional)" value={form.phone} onChange={(e) => setForm((s) => ({ ...s, phone: e.target.value }))} />
-          <input className="h-11 rounded-xl border border-[#c0c8c9] bg-[#f9fafa] px-3 text-sm text-[#1a1c1c] focus:border-[#004649] focus:outline-none" type="password" placeholder="Password" value={form.password} onChange={(e) => setForm((s) => ({ ...s, password: e.target.value }))} required />
-          <select className="h-11 rounded-xl border border-[#c0c8c9] bg-[#f9fafa] px-3 text-sm text-[#1a1c1c] focus:border-[#004649] focus:outline-none" value={form.classId} onChange={(e) => setForm((s) => ({ ...s, classId: e.target.value }))} required>
-            <option value="">Select your class</option>
-            {classes.map((c) => (
-              <option key={c.id} value={c.id}>{c.name} - {c.section}</option>
-            ))}
-          </select>
-          <div className="md:col-span-2">
-            <button disabled={loading || classes.length === 0} className="h-11 rounded-xl bg-[#004649] px-6 font-semibold text-white hover:bg-[#005a5e] disabled:cursor-not-allowed disabled:opacity-60">
-              {loading ? 'Saving...' : 'Add Student'}
-            </button>
-          </div>
-        </form>
-
-        {message ? <p className="mt-3 rounded-xl bg-[#f3f4f3] px-4 py-3 text-sm text-[#1a1c1c]">{message}</p> : null}
+      <div className="rounded-xl bg-white border border-[#E5E7EB] shadow-sm p-6">
+        <h2 className="text-2xl font-bold text-[#1F2937]">My Class Students</h2>
+        <p className="mt-2 text-sm text-[#6B7280]">You can view students from your assigned classes. New student enrollment is restricted to admin.</p>
       </div>
 
-      <div className="rounded-xl bg-white p-8 border border-[#e2e8e8]">
-        <h3 className="font-semibold text-[#1a1c1c]">Students In Your Classes</h3>
-        <div className="mt-4 overflow-x-auto">
-          <table className="min-w-full text-sm">
-            <thead className="bg-[#f3f4f3] text-[#596364]">
-              <tr>
-                <th className="px-3 py-3 text-left text-[10px] font-bold uppercase tracking-[0.18em]">Name</th>
-                <th className="px-3 py-3 text-left text-[10px] font-bold uppercase tracking-[0.18em]">Email</th>
-                <th className="px-3 py-3 text-left text-[10px] font-bold uppercase tracking-[0.18em]">Admission #</th>
-                <th className="px-3 py-3 text-left text-[10px] font-bold uppercase tracking-[0.18em]">Class</th>
-                <th className="px-3 py-3 text-left text-[10px] font-bold uppercase tracking-[0.18em]">Emergency Contact</th>
-              </tr>
-            </thead>
-            <tbody>
-              {students.map((s) => (
-                <tr key={s.id} className="border-b border-[#eef1f1]">
-                  <td className="px-3 py-3 font-semibold text-[#1a1c1c]">{s.user.fullName}</td>
-                  <td className="px-3 py-3 text-[#596364]">{s.user.email}</td>
-                  <td className="px-3 py-3 text-[#596364]">{s.admissionNo}</td>
-                  <td className="px-3 py-3 text-[#596364]">{s.class ? `${s.class.name} - ${s.class.section}` : '-'}</td>
-                  <td className="px-3 py-3 text-[#596364]">{s.emergencyContact || '-'}</td>
+      <div className="rounded-xl bg-white border border-[#E5E7EB] shadow-sm overflow-hidden">
+        <div className="p-6">
+          <div className="flex items-center gap-2 mb-4">
+            <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-[#D1FAE5]">
+              <Users2 className="h-4 w-4 text-[#10B981]" />
+            </div>
+            <h3 className="text-sm font-bold text-[#1F2937]">Students In Your Classes</h3>
+          </div>
+          <div className="space-y-2 md:hidden">
+            {students.map((s) => (
+              <div key={s.id} className="rounded-lg bg-[#F9FAFB] p-3 border border-[#E5E7EB]">
+                <p className="text-sm font-semibold text-[#1F2937]">{s.user.fullName}</p>
+                <p className="mt-0.5 text-xs text-[#6B7280]">{s.user.email}</p>
+                <p className="mt-1 text-xs text-[#6B7280]">Admission: {s.admissionNo}</p>
+                <p className="mt-1 text-xs text-[#6B7280]">Class: {s.class ? `${s.class.name} - ${s.class.section}` : '-'}</p>
+                <p className="mt-1 text-xs text-[#6B7280]">Emergency: {s.emergencyContact || '-'}</p>
+              </div>
+            ))}
+          </div>
+          <div className="mt-4 overflow-x-auto">
+            <table className="hidden min-w-full text-sm md:table">
+              <thead className="bg-[#F9FAFB] text-[#6B7280] border-b border-[#E5E7EB]">
+                <tr>
+                  <th className="px-3 py-3 text-left text-xs font-semibold">Name</th>
+                  <th className="px-3 py-3 text-left text-xs font-semibold">Email</th>
+                  <th className="px-3 py-3 text-left text-xs font-semibold">Admission #</th>
+                  <th className="px-3 py-3 text-left text-xs font-semibold">Class</th>
+                  <th className="px-3 py-3 text-left text-xs font-semibold">Emergency Contact</th>
                 </tr>
-              ))}
-            </tbody>
-          </table>
-          {students.length === 0 ? <p className="mt-4 text-sm text-[#5c6668]">No students found yet.</p> : null}
+              </thead>
+              <tbody className="divide-y divide-[#E5E7EB]">
+                {students.map((s) => (
+                  <tr key={s.id} className="last:border-b-0">
+                    <td className="px-3 py-3 font-semibold text-[#1F2937]">{s.user.fullName}</td>
+                    <td className="px-3 py-3 text-[#6B7280]">{s.user.email}</td>
+                    <td className="px-3 py-3 text-[#6B7280]">{s.admissionNo}</td>
+                    <td className="px-3 py-3 text-[#6B7280]">{s.class ? `${s.class.name} - ${s.class.section}` : '-'}</td>
+                    <td className="px-3 py-3 text-[#6B7280]">{s.emergencyContact || '-'}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+            {loading ? <p className="mt-4 text-sm text-[#6B7280]">Loading students...</p> : null}
+            {!loading && students.length === 0 ? <p className="mt-4 text-sm text-[#6B7280]">No students found yet.</p> : null}
+            {message ? <p className="mt-4 rounded-lg bg-[#FEE2E2] border border-[#FECACA] px-4 py-3 text-sm text-[#991B1B]">{message}</p> : null}
+          </div>
         </div>
       </div>
     </div>

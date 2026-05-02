@@ -7,7 +7,7 @@ import { Bell } from 'lucide-react';
 
 export const dynamic = 'force-dynamic';
 
-const getCachedStudentNotificationsData = unstable_cache(
+const getCachedTeacherNotificationsData = unstable_cache(
   async (userId: string) => {
     const [unread, items] = await Promise.all([
       prisma.notification.count({ where: { userId, isRead: false } }),
@@ -20,30 +20,30 @@ const getCachedStudentNotificationsData = unstable_cache(
 
     return { unread, items };
   },
-  ['student-notifications-page-data'],
+  ['teacher-notifications-page-data'],
   { revalidate: 30 }
 );
 
 async function markAllRead() {
   'use server';
-  const session = await requireAuth([UserRole.STUDENT, UserRole.ADMIN]);
+  const session = await requireAuth([UserRole.TEACHER, UserRole.ADMIN]);
   await prisma.notification.updateMany({
     where: { userId: session.id, isRead: false },
     data: { isRead: true }
   });
-  revalidatePath('/student/notifications');
+  revalidatePath('/teacher/notifications');
 }
 
-export default async function StudentNotificationsPage() {
-  const session = await requireAuth([UserRole.STUDENT, UserRole.ADMIN]);
-  const { unread, items } = await getCachedStudentNotificationsData(session.id);
+export default async function TeacherNotificationsPage() {
+  const session = await requireAuth([UserRole.TEACHER, UserRole.ADMIN]);
+  const { unread, items } = await getCachedTeacherNotificationsData(session.id);
   const toDate = (value: Date | string) => (value instanceof Date ? value : new Date(value));
 
   return (
     <div className="space-y-6">
       <PageHeader
         title="Notifications"
-        subtitle="School updates and important alerts."
+        subtitle="Announcements and alerts for your classes."
         action={
           <form action={markAllRead}>
             <button className="rounded-lg bg-white border border-[#E5E7EB] px-4 py-2 text-sm font-semibold text-[#1F2937] hover:bg-[#F9FAFB] transition-colors active:scale-[0.97]">
@@ -69,7 +69,7 @@ export default async function StudentNotificationsPage() {
             {items.map((item) => (
               <div key={item.id} className={`rounded-lg p-4 border transition-colors ${item.isRead ? 'bg-white border-[#E5E7EB] hover:bg-[#F9FAFB]' : 'bg-[#FEF3C7] border-[#FCD34D]'}`}>
                 <div className="flex items-start justify-between gap-2 mb-2">
-                  <p className="text-sm font-semibold text-[#1F2937]">{item.title}</p>
+                  <p className="font-semibold text-[#1F2937]">{item.title}</p>
                   <StatusBadge variant={item.isRead ? 'info' : 'pending'}>
                     {item.type}
                   </StatusBadge>

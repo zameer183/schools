@@ -607,8 +607,8 @@ export default function TeacherProgressPage() {
   };
 
   const applyQuickMistakes = (value: '0' | '1-2' | '3+') => {
-    const mapped: Exclude<MistakeValue, ''> = value === '1-2' ? '1' : value;
-    sectionMeta.forEach(({ key }) => setSectionValue(key, { tajweedi: mapped, hifz: mapped }));
+    const mistakeCount = value === '0' ? 0 : value === '1-2' ? 1 : 3;
+    sectionMeta.forEach(({ key }) => setSectionValue(key, { tajweeditotal: String(mistakeCount), hifztotal: String(mistakeCount) }));
     addNotice('info', `Quick mistake profile applied: ${value}`);
   };
 
@@ -982,7 +982,7 @@ export default function TeacherProgressPage() {
 
                     <div>
                       <p className="mb-1 text-xs font-semibold text-[#486581]">Tajweedi Ghaltiyan (0-99)</p>
-                      <div className="flex items-center gap-2">
+                      <div className="flex flex-wrap items-center gap-2">
                         <button
                           type="button"
                           onClick={() => setSectionValue(section.key, { tajweeditotal: String(Math.max(0, Number(formSection.tajweeditotal || 0) - 1)) })}
@@ -1008,7 +1008,7 @@ export default function TeacherProgressPage() {
                         >
                           +
                         </button>
-                        <div className="flex gap-1">
+                        <div className="flex flex-wrap gap-1">
                           {[0, 1, 2, 3, 5, 10].map(val => (
                             <button
                               key={val}
@@ -1025,7 +1025,7 @@ export default function TeacherProgressPage() {
 
                     <div>
                       <p className="mb-1 text-xs font-semibold text-[#486581]">Hifz Ghaltiyan (0-99)</p>
-                      <div className="flex items-center gap-2">
+                      <div className="flex flex-wrap items-center gap-2">
                         <button
                           type="button"
                           onClick={() => setSectionValue(section.key, { hifztotal: String(Math.max(0, Number(formSection.hifztotal || 0) - 1)) })}
@@ -1051,7 +1051,7 @@ export default function TeacherProgressPage() {
                         >
                           +
                         </button>
-                        <div className="flex gap-1">
+                        <div className="flex flex-wrap gap-1">
                           {[0, 1, 2, 3, 5, 10].map(val => (
                             <button
                               key={val}
@@ -1193,5 +1193,4 @@ export default function TeacherProgressPage() {
     </div>
   );
 }
-
 

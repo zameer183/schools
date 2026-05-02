@@ -2,7 +2,8 @@ import { UserRole } from '@prisma/client';
 import { unstable_cache } from 'next/cache';
 import { requireAuth } from '@/lib/auth';
 import { prisma } from '@/lib/prisma';
-import { Card } from '@/components/ui/Card';
+import { PageHeader, Card, StatusBadge } from '@/components/ui';
+import { Wallet } from 'lucide-react';
 
 export const dynamic = 'force-dynamic';
 
@@ -50,18 +51,18 @@ export default async function StudentFeesPage() {
 
   return (
     <div className="space-y-6">
-      <Card className="p-6 md:p-8">
-        <h2 className="text-2xl md:text-3xl font-bold text-[#1F2937]">Fee Status</h2>
-        <p className="mt-2 text-sm text-[#6B7280]">
-          Due: PKR {totalDue.toLocaleString()} | Paid: PKR {totalPaid.toLocaleString()} | Outstanding: PKR {outstanding.toLocaleString()}
-        </p>
-      </Card>
+      <PageHeader
+        title="Fee Status"
+        subtitle={`Due: PKR ${totalDue.toLocaleString()} | Paid: PKR ${totalPaid.toLocaleString()} | Outstanding: PKR ${outstanding.toLocaleString()}`}
+      />
 
-      <Card className="p-5 md:p-6">
-        <h3 className="text-lg font-semibold text-[#1F2937] mb-4">Fee Ledger</h3>
+      <Card>
 
         {fees.length === 0 ? (
-          <p className="text-sm text-[#6B7280]">No fee records yet.</p>
+          <div className="flex flex-col items-center justify-center py-8 text-center">
+            <Wallet className="h-10 w-10 text-[#E5E7EB]" />
+            <p className="mt-2 text-sm text-[#9CA3AF]">No fee records yet</p>
+          </div>
         ) : (
           <>
             <div className="space-y-3 md:hidden">
@@ -69,12 +70,12 @@ export default async function StudentFeesPage() {
                 const feeDue = Number(fee.amount) - Number(fee.discount);
                 const feePaid = fee.payments.reduce((sum, p) => sum + Number(p.amountPaid), 0);
                 const remaining = Math.max(feeDue - feePaid, 0);
-                const statusBg = fee.status === 'PAID' ? 'bg-[#D1FAE5] text-[#10B981]' : fee.status === 'PARTIAL' ? 'bg-[#FEF3C7] text-[#D69E3F]' : 'bg-[#FEE2E2] text-[#EF4444]';
+                const statusVariant = fee.status === 'PAID' ? 'success' : fee.status === 'PARTIAL' ? 'pending' : 'danger';
                 return (
-                  <div key={fee.id} className="rounded-lg bg-[#F5F1E8] p-4 border border-[#E5E7EB]">
+                  <div key={fee.id} className="rounded-lg bg-[#F9FAFB] p-4 border border-[#E5E7EB]">
                     <div className="flex items-start justify-between gap-2 mb-3">
                       <p className="text-sm font-semibold text-[#1F2937]">{fee.title}</p>
-                      <span className={`shrink-0 rounded-full px-2.5 py-1 text-[10px] font-bold ${statusBg}`}>{fee.status}</span>
+                      <StatusBadge variant={statusVariant}>{fee.status}</StatusBadge>
                     </div>
                     <div className="grid grid-cols-2 gap-x-3 gap-y-2 text-xs text-[#6B7280]">
                       <span>Due: <span className="text-[#1F2937] font-semibold">{toDateString(fee.dueDate)}</span></span>
@@ -90,13 +91,13 @@ export default async function StudentFeesPage() {
             <div className="hidden overflow-x-auto md:block">
               <table className="min-w-[560px] w-full text-sm">
                 <thead>
-                  <tr className="border-b border-[#E5E7EB] bg-[#F5F1E8]">
-                    <th className="px-3 py-2 text-left text-[10px] font-bold uppercase tracking-widest text-[#6B7280]">Title</th>
-                    <th className="px-3 py-2 text-left text-[10px] font-bold uppercase tracking-widest text-[#6B7280]">Due</th>
-                    <th className="px-3 py-2 text-right text-[10px] font-bold uppercase tracking-widest text-[#6B7280]">Amount</th>
-                    <th className="px-3 py-2 text-right text-[10px] font-bold uppercase tracking-widest text-[#6B7280]">Paid</th>
-                    <th className="px-3 py-2 text-right text-[10px] font-bold uppercase tracking-widest text-[#6B7280]">Remaining</th>
-                    <th className="px-3 py-2 text-left text-[10px] font-bold uppercase tracking-widest text-[#6B7280]">Status</th>
+                  <tr className="border-b border-[#E5E7EB] bg-[#F9FAFB]">
+                    <th className="px-3 py-3 text-left text-xs font-semibold text-[#6B7280]">Title</th>
+                    <th className="px-3 py-3 text-left text-xs font-semibold text-[#6B7280]">Due</th>
+                    <th className="px-3 py-3 text-right text-xs font-semibold text-[#6B7280]">Amount</th>
+                    <th className="px-3 py-3 text-right text-xs font-semibold text-[#6B7280]">Paid</th>
+                    <th className="px-3 py-3 text-right text-xs font-semibold text-[#6B7280]">Remaining</th>
+                    <th className="px-3 py-3 text-left text-xs font-semibold text-[#6B7280]">Status</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-[#E5E7EB]">
@@ -104,7 +105,7 @@ export default async function StudentFeesPage() {
                     const feeDue = Number(fee.amount) - Number(fee.discount);
                     const feePaid = fee.payments.reduce((sum, p) => sum + Number(p.amountPaid), 0);
                     const remaining = Math.max(feeDue - feePaid, 0);
-                    const statusBg = fee.status === 'PAID' ? 'bg-[#D1FAE5] text-[#10B981]' : fee.status === 'PARTIAL' ? 'bg-[#FEF3C7] text-[#D69E3F]' : 'bg-[#FEE2E2] text-[#EF4444]';
+                    const statusVariant = fee.status === 'PAID' ? 'success' : fee.status === 'PARTIAL' ? 'pending' : 'danger';
                     return (
                       <tr key={fee.id}>
                         <td className="px-3 py-3 font-medium text-[#1F2937]">{fee.title}</td>
@@ -113,7 +114,7 @@ export default async function StudentFeesPage() {
                         <td className="px-3 py-3 text-right font-semibold text-[#10B981]">PKR {feePaid.toLocaleString()}</td>
                         <td className="px-3 py-3 text-right font-semibold text-[#EF4444]">PKR {remaining.toLocaleString()}</td>
                         <td className="px-3 py-3">
-                          <span className={`rounded-full px-2.5 py-1 text-[10px] font-bold ${statusBg}`}>{fee.status}</span>
+                          <StatusBadge variant={statusVariant}>{fee.status}</StatusBadge>
                         </td>
                       </tr>
                     );

@@ -1,10 +1,10 @@
-import Link from 'next/link';
+﻿import Link from 'next/link';
 import { AssignmentStatus, UserRole } from '@prisma/client';
 import { unstable_cache } from 'next/cache';
 import { requireAuth } from '@/lib/auth';
 import { prisma } from '@/lib/prisma';
-import { KpiCard } from '@/components/ui/kpi-card';
-import { Card } from '@/components/ui/Card';
+import { PageHeader, KpiCard, Card, SectionTitle, StatusBadge } from '@/components/ui';
+import { BookOpen, Award, AlertCircle, Wallet, Users2, UserCog2, TrendingUp, ClipboardList } from 'lucide-react';
 
 export const dynamic = 'force-dynamic';
 
@@ -173,29 +173,31 @@ export default async function StudentDashboardPage() {
 
   return (
     <div className="space-y-6">
-      <Card className="p-6 md:p-8">
-        <p className="text-xs font-semibold uppercase tracking-widest text-[#6B7280]">Student</p>
-        <h1 className="mt-2 text-2xl md:text-4xl font-bold text-[#1F2937]">Welcome, {student.user.fullName}</h1>
-        {student.class && (
-          <p className="mt-2 text-sm md:text-base text-[#6B7280]">{student.class.name} — {student.class.section}</p>
-        )}
-      </Card>
+      <PageHeader
+        title={`Welcome, ${student.user.fullName}`}
+        subtitle={student.class ? `${student.class.name} - ${student.class.section}` : 'Student'}
+      />
 
       {/* KPI Grid */}
-      <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
-        <KpiCard title="ATTENDANCE" value={`${attendancePercent}%`} subtitle={`${presentAttendance}/${totalAttendance} present`} />
-        <KpiCard title="ASSIGNMENTS" value={`${submittedAssignments}/${totalAssignments}`} subtitle="Submitted vs published" />
-        <KpiCard title="AVERAGE MARKS" value={`${averageMarks}`} subtitle="Latest exam results" />
-        <KpiCard title="OUTSTANDING FEE" value={`PKR ${outstanding.toLocaleString()}`} subtitle={outstanding > 0 ? 'Amount due' : 'All paid'} />
-      </div>
+      <section className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
+        <KpiCard variant="success" icon={<ClipboardList />} label="Attendance" value={`${attendancePercent}%`} />
+        <KpiCard variant="primary" icon={<BookOpen />} label="Assignments" value={`${submittedAssignments}/${totalAssignments}`} />
+        <KpiCard variant="primary" icon={<Award />} label="Average Mark" value={averageMarks} />
+        <KpiCard variant={outstanding > 0 ? 'danger' : 'success'} icon={<Wallet />} label="Outstanding Fee" value={outstanding > 0 ? `PKR ${outstanding.toLocaleString()}` : 'Paid'} />
+      </section>
 
       {/* Subjects & Results */}
       <div className="grid gap-6 lg:grid-cols-2">
-        <Card className="p-5 md:p-6">
+        <Card>
           <div className="flex items-center justify-between mb-4">
-            <h3 className="text-lg font-semibold text-[#1F2937]">Subjects</h3>
-            <Link href="/student/schedule" className="text-xs font-semibold text-[#1F5A5C] hover:text-[#2a7478]">
-              View schedule →
+            <div className="flex items-center gap-2">
+              <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-[#E0EBEC]">
+                <BookOpen className="h-4 w-4 text-[#1F5A5C]" />
+              </div>
+              <p className="text-sm font-bold text-[#1F2937]">Subjects</p>
+            </div>
+            <Link href="/student/schedule" className="text-xs font-semibold text-[#1F5A5C] hover:underline">
+              View
             </Link>
           </div>
           {subjects.length === 0 ? (
@@ -203,33 +205,38 @@ export default async function StudentDashboardPage() {
           ) : (
             <div className="space-y-2">
               {subjects.map((subject) => (
-                <div key={subject.id} className="rounded-lg bg-[#F5F1E8] px-4 py-3 border border-[#E5E7EB]">
+                <div key={subject.id} className="rounded-lg bg-[#F9FAFB] px-4 py-3 border border-[#E5E7EB]">
                   <p className="text-sm font-semibold text-[#1F2937]">{subject.name}</p>
-                  <p className="text-xs text-[#6B7280] mt-1">{subject.teacher?.user.fullName ?? 'TBA'}</p>
+                  <p className="text-xs text-[#6B7280] mt-1">{subject.teacher?.user?.fullName ?? 'TBA'}</p>
                 </div>
               ))}
             </div>
           )}
         </Card>
 
-        <Card className="p-5 md:p-6">
+        <Card>
           <div className="flex items-center justify-between mb-4">
-            <h3 className="text-lg font-semibold text-[#1F2937]">Latest Results</h3>
-            <Link href="/student/results" className="text-xs font-semibold text-[#1F5A5C] hover:text-[#2a7478]">
-              Open all →
+            <div className="flex items-center gap-2">
+              <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-[#D1FAE5]">
+                <Award className="h-4 w-4 text-[#10B981]" />
+              </div>
+              <p className="text-sm font-bold text-[#1F2937]">Latest Results</p>
+            </div>
+            <Link href="/student/results" className="text-xs font-semibold text-[#10B981] hover:underline">
+              View
             </Link>
           </div>
           {resultRows.length === 0 ? (
             <p className="text-sm text-[#6B7280]">No results published yet.</p>
           ) : (
-            <div className="space-y-3">
+            <div className="divide-y divide-[#E5E7EB]">
               {resultRows.map((result) => (
-                <div key={result.id} className="flex items-center justify-between py-3 border-b border-[#E5E7EB] last:border-b-0">
+                <div key={result.id} className="flex items-center justify-between py-3 first:pt-0 last:pb-0">
                   <div className="min-w-0 flex-1">
                     <p className="text-sm font-semibold text-[#1F2937]">{result.subject.name}</p>
                     <p className="text-xs text-[#6B7280]">{result.exam.title}</p>
                   </div>
-                  <span className="ml-2 text-sm font-bold text-[#1F5A5C]">{result.grade}</span>
+                  <span className="ml-2 text-sm font-bold text-[#10B981]">{result.grade}</span>
                 </div>
               ))}
             </div>
@@ -238,20 +245,26 @@ export default async function StudentDashboardPage() {
       </div>
 
       {/* Daily Progress */}
-      <Card className="p-5 md:p-6">
-        <div className="mb-4">
-          <h3 className="text-lg font-semibold text-[#1F2937]">Daily Progress Reports</h3>
-          <p className="mt-1 text-xs text-[#6B7280]">Teacher entered Sabaq, Sabqi, and Manzil notes.</p>
+      <Card>
+        <div className="flex items-center gap-2 mb-4">
+          <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-[#F5E6CC]">
+            <TrendingUp className="h-4 w-4 text-[#D69E3F]" />
+          </div>
+          <h3 className="text-sm font-bold text-[#1F2937]">Daily Progress Reports</h3>
         </div>
+        <p className="text-xs text-[#6B7280] mb-4">Teacher entered Sabaq, Sabqi, and Manzil notes.</p>
         {progressRows.length === 0 ? (
-          <p className="text-sm text-[#6B7280]">No progress report published yet.</p>
+          <div className="flex flex-col items-center justify-center py-8 text-center">
+            <TrendingUp className="h-10 w-10 text-[#E5E7EB]" />
+            <p className="mt-2 text-sm text-[#9CA3AF]">No progress report published yet</p>
+          </div>
         ) : (
           <div className="space-y-4">
             {progressRows.map((row) => (
-              <div key={row.id} className="rounded-lg bg-[#F5F1E8] p-4 border border-[#E5E7EB]">
+              <div key={row.id} className="rounded-lg bg-[#F9FAFB] p-4 border border-[#E5E7EB]">
                 <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-2 mb-3">
                   <p className="text-sm font-semibold text-[#1F2937]">{toDateString(row.date)}</p>
-                  <p className="text-xs text-[#6B7280]">{row.class.name} - {row.class.section} | {row.teacher.user.fullName}</p>
+                  <p className="text-xs text-[#6B7280]">{(row.class?.name && row.class?.section) ? `${row.class.name} - ${row.class.section}` : 'Class not assigned'} | {row.teacher?.user?.fullName ?? 'Teacher'}</p>
                 </div>
                 {(() => {
                   const parsed = parseProgressNotes(row.notes);

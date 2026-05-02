@@ -1,4 +1,4 @@
-import { Prisma, UserRole } from '@prisma/client';
+﻿import { Prisma, UserRole } from '@prisma/client';
 import Link from 'next/link';
 import { unstable_cache } from 'next/cache';
 import { FileText, Download, BookOpen, Award } from 'lucide-react';
@@ -138,6 +138,7 @@ export default async function StudentResultsPage() {
             <p className="text-sm text-[#6B7280] mt-1">Teacher resources will appear here.</p>
           </div>
         ) : (
+          <>
           <div className="space-y-6">
             {Array.from(subjectFiles.values()).map((subj) => (
               <div key={subj.name}>
@@ -173,8 +174,6 @@ export default async function StudentResultsPage() {
                 </div>
               </div>
             ))}
-          )}
-
           </div>
 
           <div className="grid grid-cols-2 gap-3 pt-4 border-t border-[#E5E7EB]">
@@ -197,6 +196,7 @@ export default async function StudentResultsPage() {
               <p className="text-2xl font-bold text-[#1F2937]">{results.length * 3} <span className="text-sm font-medium text-[#6B7280]">/ 150</span></p>
             </div>
           </div>
+          </>
         )}
       </Card>
 
