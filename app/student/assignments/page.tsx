@@ -1,111 +1,121 @@
 import Link from 'next/link';
-import { UserRole } from '@prisma/client';
+import { Prisma, UserRole } from '@prisma/client';
+import { unstable_cache } from 'next/cache';
+import { Calendar, ChevronRight } from 'lucide-react';
 import { requireAuth } from '@/lib/auth';
 import { prisma } from '@/lib/prisma';
+import { KpiCard } from '@/components/ui/kpi-card';
+import { Card } from '@/components/ui/Card';
 
 export const dynamic = 'force-dynamic';
 
+type AssignmentRow = Prisma.AssignmentGetPayload<{
+  include: {
+    subject: { select: { name: true } };
+    teacher: { include: { user: { select: { fullName: true } } } };
+    submissions: true;
+  };
+}>;
+
+const getCachedStudentAssignmentsData = unstable_cache(
+  async (userId: string) => {
+    const student = await prisma.student.findUnique({ where: { userId }, select: { id: true, classId: true } });
+    if (!student) return { student: null, assignments: [] as AssignmentRow[] };
+    if (!student.classId) return { student, assignments: [] as AssignmentRow[] };
+
+    const assignments = await prisma.assignment.findMany({
+      where: { classId: student.classId },
+      include: {
+        subject: { select: { name: true } },
+        teacher: { include: { user: { select: { fullName: true } } } },
+        submissions: { where: { studentId: student.id } }
+      },
+      orderBy: { dueDate: 'asc' }
+    });
+
+    return { student, assignments };
+  },
+  ['student-assignments-page-data'],
+  { revalidate: 30 }
+);
+
 export default async function StudentAssignmentsPage() {
   const session = await requireAuth([UserRole.STUDENT, UserRole.ADMIN]);
-
-  const student = await prisma.student.findUnique({ where: { userId: session.id }, select: { id: true, classId: true } });
+  const { student, assignments } = await getCachedStudentAssignmentsData(session.id);
+  const toDate = (value: Date | string) => (value instanceof Date ? value : new Date(value));
 
   if (!student?.classId) {
     return (
-      <div className="rounded-xl bg-white p-8 border border-[#e2e8e8]">
-        <h2 className="text-3xl font-bold text-[#1a1c1c]">Assignments</h2>
-        <p className="mt-2 text-[#5c6668]">No class assigned yet. Please contact your administrator.</p>
-      </div>
+      <Card className="p-8">
+        <h2 className="text-2xl md:text-3xl font-bold text-[#1F2937]">Assignments</h2>
+        <p className="mt-2 text-sm text-[#6B7280]">No class assigned yet. Contact your administrator.</p>
+      </Card>
     );
   }
 
-  const assignments = await prisma.assignment.findMany({
-    where: { classId: student.classId },
-    include: {
-      subject: { select: { name: true } },
-      teacher: { include: { user: { select: { fullName: true } } } },
-      submissions: { where: { studentId: student.id } }
-    },
-    orderBy: { dueDate: 'asc' }
-  });
-
-  const pending = assignments.filter((a) => !a.submissions[0] && new Date(a.dueDate) > new Date()).length;
+  const pending = assignments.filter((a) => !a.submissions[0] && toDate(a.dueDate) > new Date()).length;
   const submitted = assignments.filter((a) => a.submissions[0]).length;
-  const overdue = assignments.filter((a) => !a.submissions[0] && new Date(a.dueDate) < new Date()).length;
+  const overdue = assignments.filter((a) => !a.submissions[0] && toDate(a.dueDate) < new Date()).length;
 
   return (
-    <div className="space-y-4">
-      <section className="rounded-xl bg-white p-6 border border-[#e2e8e8]">
-        <h2 className="text-3xl font-bold text-[#1a1c1c]">Assignments</h2>
-        <p className="mt-1 text-sm text-[#6f7979]">Track all class assignments and your submission status.</p>
-        <div className="mt-5 grid grid-cols-3 gap-3">
-          <div className="rounded-xl bg-[#fff3e0] p-4">
-            <p className="text-[10px] font-bold uppercase tracking-widest text-[#865300]">Pending</p>
-            <p className="mt-1 text-2xl font-bold text-[#1a1c1c]">{pending}</p>
-          </div>
-          <div className="rounded-xl bg-[#e8f5e9] p-4">
-            <p className="text-[10px] font-bold uppercase tracking-widest text-[#004649]">Submitted</p>
-            <p className="mt-1 text-2xl font-bold text-[#1a1c1c]">{submitted}</p>
-          </div>
-          <div className="rounded-xl bg-[#fce4ec] p-4">
-            <p className="text-[10px] font-bold uppercase tracking-widest text-[#ba1a1a]">Overdue</p>
-            <p className="mt-1 text-2xl font-bold text-[#1a1c1c]">{overdue}</p>
-          </div>
-        </div>
-      </section>
+    <div className="space-y-6">
+      <Card className="p-6 md:p-8">
+        <p className="text-xs font-semibold uppercase tracking-widest text-[#6B7280]">Assignments</p>
+        <h2 className="mt-2 text-2xl md:text-3xl font-bold text-[#1F2937]">Track submissions</h2>
+        <p className="mt-2 text-sm text-[#6B7280]">Pending, submitted, and overdue assignments.</p>
+      </Card>
 
-      <section className="rounded-xl bg-white p-6 border border-[#e2e8e8]">
-        <h3 className="font-semibold text-[#1a1c1c] mb-4">All Assignments</h3>
-        <div className="space-y-3">
-          {assignments.length === 0 ? (
-            <div className="rounded-2xl bg-[#f3f4f3] p-5 text-sm text-[#596364]">No assignments available yet.</div>
-          ) : (
-            assignments.map((assignment) => {
+      <div className="grid grid-cols-1 gap-3 md:grid-cols-3">
+        <KpiCard title="PENDING" value={pending.toString()} subtitle="Awaiting submission" />
+        <KpiCard title="SUBMITTED" value={submitted.toString()} subtitle="Completed assignments" />
+        <KpiCard title="OVERDUE" value={overdue.toString()} subtitle="Past due date" />
+      </div>
+
+      <Card className="p-5 md:p-6">
+        <h3 className="text-lg font-semibold text-[#1F2937] mb-4">All Assignments</h3>
+        {assignments.length === 0 ? (
+          <p className="text-sm text-[#6B7280]">No assignments available yet.</p>
+        ) : (
+          <div className="space-y-3">
+            {assignments.map((assignment) => {
               const mine = assignment.submissions[0];
-              const isOverdue = !mine && new Date(assignment.dueDate) < new Date();
+              const isOverdue = !mine && toDate(assignment.dueDate) < new Date();
               const statusLabel = mine ? 'Submitted' : isOverdue ? 'Overdue' : 'Pending';
-              const statusColor = mine
-                ? 'bg-[#e8f5e9] text-[#004649]'
-                : isOverdue
-                ? 'bg-[#fce4ec] text-[#ba1a1a]'
-                : 'bg-[#fff3e0] text-[#865300]';
+              const statusBgColor = mine ? 'bg-[#D1FAE5]' : isOverdue ? 'bg-[#FEE2E2]' : 'bg-[#FEF3C7]';
+              const statusTextColor = mine ? 'text-[#10B981]' : isOverdue ? 'text-[#EF4444]' : 'text-[#D69E3F]';
 
               return (
                 <Link key={assignment.id} href={`/student/assignments/${assignment.id}`} className="block">
-                  <article className="rounded-xl border border-[#e2e8e8] p-5 hover:bg-[#f5f7f5] hover:border-[#004649]/30 transition-colors cursor-pointer group">
+                  <article className="rounded-lg bg-[#F5F1E8] p-4 hover:bg-[#EEE9DE] transition-colors cursor-pointer group border border-[#E5E7EB]">
                     <div className="flex items-start justify-between gap-3">
-                      <div className="min-w-0">
-                        <p className="font-semibold text-[#1a1c1c] group-hover:text-[#004649] transition-colors">{assignment.title}</p>
-                        <p className="text-xs text-[#6f7979] mt-0.5">{assignment.subject.name} · {assignment.teacher.user.fullName}</p>
+                      <div className="min-w-0 flex-1">
+                        <p className="text-sm font-semibold text-[#1F2937] group-hover:text-[#1F5A5C] transition-colors">{assignment.title}</p>
+                        <p className="text-xs text-[#6B7280] mt-0.5">{assignment.subject.name} · {assignment.teacher.user.fullName}</p>
                       </div>
                       <div className="flex items-center gap-2 shrink-0">
-                        <span className={`rounded-full px-2.5 py-1 text-[10px] font-bold uppercase tracking-wider ${statusColor}`}>
+                        <span className={`rounded-full px-2.5 py-1 text-[10px] font-bold uppercase tracking-wider ${statusBgColor} ${statusTextColor}`}>
                           {statusLabel}
                         </span>
-                        <svg className="h-4 w-4 text-[#6f7979] group-hover:text-[#004649] transition-colors" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                          <path strokeLinecap="round" strokeLinejoin="round" d="M8.25 4.5l7.5 7.5-7.5 7.5" />
-                        </svg>
+                        <ChevronRight className="h-4 w-4 text-[#6B7280] group-hover:text-[#1F5A5C] transition-colors" />
                       </div>
                     </div>
-                    <div className="flex items-center gap-4 mt-3 text-xs text-[#6f7979]">
+                    <div className="flex flex-wrap items-center gap-3 mt-3 text-xs text-[#6B7280]">
                       <span className="flex items-center gap-1">
-                        <svg className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
-                          <path strokeLinecap="round" strokeLinejoin="round" d="M6.75 3v2.25M17.25 3v2.25M3 18.75V7.5a2.25 2.25 0 0 1 2.25-2.25h13.5A2.25 2.25 0 0 1 21 7.5v11.25m-18 0A2.25 2.25 0 0 0 5.25 21h13.5A2.25 2.25 0 0 0 21 18.75m-18 0v-7.5A2.25 2.25 0 0 1 5.25 9h13.5A2.25 2.25 0 0 1 21 11.25v7.5" />
-                        </svg>
-                        Due {assignment.dueDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
+                        <Calendar className="h-3.5 w-3.5" />
+                        Due {toDate(assignment.dueDate).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
                       </span>
-                      <span>· Max {assignment.maxMarks} pts</span>
+                      <span>Max {assignment.maxMarks} pts</span>
                       {mine?.marksObtained != null && (
-                        <span className="text-[#004649] font-semibold">· {mine.marksObtained} pts earned</span>
+                        <span className="text-[#10B981] font-semibold">{mine.marksObtained} pts earned</span>
                       )}
                     </div>
                   </article>
                 </Link>
               );
-            })
-          )}
-        </div>
-      </section>
+            })}
+          </div>
+        )}
+      </Card>
     </div>
   );
 }
