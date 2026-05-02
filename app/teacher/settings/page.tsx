@@ -10,6 +10,8 @@ import {
   type TeacherAccessModule
 } from '@/lib/teacher-access';
 import { formatCurrency } from '@/lib/utils';
+import { PageHeader, Card, StatusBadge } from '@/components/ui';
+import { User, BookOpen, CheckCircle2 } from 'lucide-react';
 
 export const dynamic = 'force-dynamic';
 
@@ -181,52 +183,67 @@ export default async function TeacherSettingsPage() {
 
   return (
     <div className="space-y-6">
-      <section className="rounded-2xl bg-white shadow-[0_12px_40px_rgba(0,70,73,0.06)] p-8">
-        <h2 className="font-headline text-3xl font-bold text-[#1a1c1c]">Settings</h2>
-        <p className="mt-2 text-[#5c6668]">Complete profile, attendance, access, and salary overview.</p>
-      </section>
+      <PageHeader
+        title="Settings"
+        subtitle="Complete profile, attendance, access, and salary overview."
+      />
 
       <section className="grid gap-6 xl:grid-cols-2">
-        <div className="rounded-2xl bg-white shadow-[0_12px_40px_rgba(0,70,73,0.06)] p-8">
-          <h3 className="font-headline font-semibold text-[#1a1c1c]">Profile</h3>
-          <div className="mt-4 space-y-3 text-sm">
-            <div className="rounded-2xl bg-[#f3f4f3] px-4 py-3"><p className="text-[#6e7778]">Name</p><p className="font-semibold text-[#1a1c1c]">{teacher.user.fullName}</p></div>
-            <div className="rounded-2xl bg-[#f3f4f3] px-4 py-3"><p className="text-[#6e7778]">Email (Login ID)</p><p className="font-semibold text-[#1a1c1c]">{teacher.user.email}</p></div>
-            <div className="rounded-2xl bg-[#f3f4f3] px-4 py-3"><p className="text-[#6e7778]">Phone</p><p className="font-semibold text-[#1a1c1c]">{teacher.user.phone ?? '-'}</p></div>
-            <div className="rounded-2xl bg-[#f3f4f3] px-4 py-3"><p className="text-[#6e7778]">Position</p><p className="font-semibold text-[#1a1c1c]">{teacher.specialization ?? '-'}</p></div>
-            <div className="rounded-2xl bg-[#f3f4f3] px-4 py-3"><p className="text-[#6e7778]">Department</p><p className="font-semibold text-[#1a1c1c]">{teacher.qualification ?? '-'}</p></div>
+        <Card>
+          <div className="flex items-center gap-2 mb-4">
+            <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-[#D1FAE5]">
+              <User className="h-4 w-4 text-[#10B981]" />
+            </div>
+            <h3 className="text-sm font-bold text-[#1F2937]">Profile</h3>
           </div>
-        </div>
+          <div className="space-y-3 text-sm">
+            <div className="rounded-lg bg-[#F9FAFB] px-4 py-3 border border-[#E5E7EB]"><p className="text-xs text-[#6B7280]">Name</p><p className="font-semibold text-[#1F2937] mt-1">{teacher.user.fullName}</p></div>
+            <div className="rounded-lg bg-[#F9FAFB] px-4 py-3 border border-[#E5E7EB]"><p className="text-xs text-[#6B7280]">Email (Login ID)</p><p className="font-semibold text-[#1F2937] mt-1">{teacher.user.email}</p></div>
+            <div className="rounded-lg bg-[#F9FAFB] px-4 py-3 border border-[#E5E7EB]"><p className="text-xs text-[#6B7280]">Phone</p><p className="font-semibold text-[#1F2937] mt-1">{teacher.user.phone ?? '-'}</p></div>
+            <div className="rounded-lg bg-[#F9FAFB] px-4 py-3 border border-[#E5E7EB]"><p className="text-xs text-[#6B7280]">Position</p><p className="font-semibold text-[#1F2937] mt-1">{teacher.specialization ?? '-'}</p></div>
+            <div className="rounded-lg bg-[#F9FAFB] px-4 py-3 border border-[#E5E7EB]"><p className="text-xs text-[#6B7280]">Department</p><p className="font-semibold text-[#1F2937] mt-1">{teacher.qualification ?? '-'}</p></div>
+          </div>
+        </Card>
 
-        <div className="rounded-2xl bg-white shadow-[0_12px_40px_rgba(0,70,73,0.06)] p-8">
-          <h3 className="font-headline font-semibold text-[#1a1c1c]">Class & Subject Scope</h3>
-          <div className="mt-4 space-y-3 text-sm">
-            <div className="rounded-2xl bg-[#f3f4f3] px-4 py-3">
-              <p className="text-[#6e7778]">Assigned Classes</p>
-              <p className="font-semibold text-[#1a1c1c]">{teachingClasses.length ? teachingClasses.join(', ') : 'No classes assigned'}</p>
+        <Card>
+          <div className="flex items-center gap-2 mb-4">
+            <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-[#E0EBEC]">
+              <BookOpen className="h-4 w-4 text-[#1F5A5C]" />
             </div>
-            <div className="rounded-2xl bg-[#f3f4f3] px-4 py-3">
-              <p className="text-[#6e7778]">Subjects</p>
-              <p className="font-semibold text-[#1a1c1c]">{teacher.subjects.length ? teacher.subjects.map((subject) => `${subject.name} (${subject.code})`).join(', ') : 'No subjects assigned'}</p>
+            <h3 className="text-sm font-bold text-[#1F2937]">Class & Subject Scope</h3>
+          </div>
+          <div className="space-y-3 text-sm">
+            <div className="rounded-lg bg-[#F9FAFB] px-4 py-3 border border-[#E5E7EB]">
+              <p className="text-xs text-[#6B7280]">Assigned Classes</p>
+              <p className="font-semibold text-[#1F2937] mt-1">{teachingClasses.length ? teachingClasses.join(', ') : 'No classes assigned'}</p>
             </div>
-            <div className="rounded-2xl bg-[#f3f4f3] px-4 py-3">
-              <p className="text-[#6e7778]">Salary</p>
-              <p className="font-semibold text-[#1a1c1c]">{formatCurrency(compensation.baseSalary)}</p>
-              <p className="mt-1 text-xs text-[#6f7979]">Bonus: {formatCurrency(compensation.bonus)} | Deduction: {formatCurrency(compensation.deduction)} | Net: {formatCurrency(compensation.netSalary)}</p>
+            <div className="rounded-lg bg-[#F9FAFB] px-4 py-3 border border-[#E5E7EB]">
+              <p className="text-xs text-[#6B7280]">Subjects</p>
+              <p className="font-semibold text-[#1F2937] mt-1">{teacher.subjects.length ? teacher.subjects.map((subject) => `${subject.name} (${subject.code})`).join(', ') : 'No subjects assigned'}</p>
+            </div>
+            <div className="rounded-lg bg-[#F9FAFB] px-4 py-3 border border-[#E5E7EB]">
+              <p className="text-xs text-[#6B7280]">Salary</p>
+              <p className="font-semibold text-[#1F2937] mt-1">{formatCurrency(compensation.baseSalary)}</p>
+              <p className="mt-1 text-xs text-[#6B7280]">Bonus: {formatCurrency(compensation.bonus)} | Deduction: {formatCurrency(compensation.deduction)} | Net: {formatCurrency(compensation.netSalary)}</p>
             </div>
           </div>
-        </div>
+        </Card>
       </section>
 
-      <section className="rounded-2xl bg-white shadow-[0_12px_40px_rgba(0,70,73,0.06)] p-8">
-        <h3 className="font-headline font-semibold text-[#1a1c1c]">Access Granted By Admin</h3>
-        <div className="mt-4 grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
+      <Card>
+        <div className="flex items-center gap-2 mb-4">
+          <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-[#F5E6CC]">
+            <CheckCircle2 className="h-4 w-4 text-[#D69E3F]" />
+          </div>
+          <h3 className="text-sm font-bold text-[#1F2937]">Access Granted By Admin</h3>
+        </div>
+        <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
           {TEACHER_ACCESS_MODULES.map((module) => (
-            <div key={module} className="flex items-center justify-between rounded-xl bg-[#f3f4f5] px-3 py-2.5 text-sm">
-              <span className="font-medium text-[#1a1c1c]">{MODULE_LABEL[module]}</span>
-              <span className={`rounded-full px-2 py-0.5 text-[10px] font-bold ${access[module] ? 'bg-[#e8f5e9] text-[#004649]' : 'bg-[#fde8e8] text-[#ba1a1a]'}`}>
+            <div key={module} className="flex items-center justify-between rounded-lg bg-[#F9FAFB] border border-[#E5E7EB] px-3 py-2.5 text-sm">
+              <span className="font-medium text-[#1F2937]">{MODULE_LABEL[module]}</span>
+              <StatusBadge variant={access[module] ? 'success' : 'danger'}>
                 {access[module] ? 'Enabled' : 'Disabled'}
-              </span>
+              </StatusBadge>
             </div>
           ))}
         </div>
