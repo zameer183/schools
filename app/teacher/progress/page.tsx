@@ -782,54 +782,55 @@ export default function TeacherProgressPage() {
       </Card>
 
       <section className="grid gap-5 xl:grid-cols-[1.7fr_1fr]">
-        <form onSubmit={submit} className="rounded-2xl border border-[#d6e2ea] bg-white p-4 shadow-sm md:p-6">
-          <div className="grid gap-3 md:grid-cols-3">
-            <input
-              type="date"
-              value={form.date}
-              onChange={(e) => setForm((prev) => ({ ...prev, date: e.target.value }))}
-              className="h-11 rounded-xl border border-[#bcccdc] px-3 text-sm text-[#102a43] outline-none focus:border-[#2563eb]"
-              required
-            />
-
-            <select
-              value={form.classId}
-              onChange={(e) => setForm((prev) => ({ ...prev, classId: e.target.value, studentId: '' }))}
-              className="h-11 rounded-xl border border-[#bcccdc] px-3 text-sm text-[#102a43] outline-none focus:border-[#2563eb]"
-              required
-            >
-              <option value="">Select Class</option>
-              {classes.map((item) => (
-                <option key={item.id} value={item.id}>
-                  {item.name} - {item.section}
-                </option>
-              ))}
-            </select>
-
-            <div className="relative">
-              <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-[#829ab1]" />
+        <Card>
+          <form onSubmit={submit}>
+            <div className="grid gap-3 md:grid-cols-3">
               <input
-                value={studentSearch}
-                onChange={(e) => setStudentSearch(e.target.value)}
-                placeholder="Search student"
-                className="h-11 w-full rounded-xl border border-[#bcccdc] pl-9 pr-3 text-sm text-[#102a43] outline-none focus:border-[#2563eb]"
+                type="date"
+                value={form.date}
+                onChange={(e) => setForm((prev) => ({ ...prev, date: e.target.value }))}
+                className="h-11 rounded-lg border border-[#E5E7EB] px-4 text-sm text-[#1F2937] outline-none focus:ring-2 focus:ring-[#1F5A5C]/20"
+                required
               />
-            </div>
 
-            <select
-              value={form.studentId}
-              onChange={(e) => setForm((prev) => ({ ...prev, studentId: e.target.value }))}
-              className="h-11 rounded-xl border border-[#bcccdc] px-3 text-sm text-[#102a43] outline-none focus:border-[#2563eb] md:col-span-3"
-              required
-            >
-              <option value="">Select Student</option>
-              {selectedStudents.map((student) => (
-                <option key={student.id} value={student.id}>
-                  {student.user.fullName} ({student.admissionNo})
-                </option>
-              ))}
-            </select>
-          </div>
+              <select
+                value={form.classId}
+                onChange={(e) => setForm((prev) => ({ ...prev, classId: e.target.value, studentId: '' }))}
+                className="h-11 rounded-lg border border-[#E5E7EB] px-4 text-sm text-[#1F2937] outline-none focus:ring-2 focus:ring-[#1F5A5C]/20"
+                required
+              >
+                <option value="">Select Class</option>
+                {classes.map((item) => (
+                  <option key={item.id} value={item.id}>
+                    {item.name} - {item.section}
+                  </option>
+                ))}
+              </select>
+
+              <div className="relative">
+                <Search className="pointer-events-none absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-[#9CA3AF]" />
+                <input
+                  value={studentSearch}
+                  onChange={(e) => setStudentSearch(e.target.value)}
+                  placeholder="Search student"
+                  className="h-11 w-full rounded-lg border border-[#E5E7EB] pl-10 pr-4 text-sm text-[#1F2937] placeholder:text-[#9CA3AF] outline-none focus:ring-2 focus:ring-[#1F5A5C]/20"
+                />
+              </div>
+
+              <select
+                value={form.studentId}
+                onChange={(e) => setForm((prev) => ({ ...prev, studentId: e.target.value }))}
+                className="h-11 rounded-lg border border-[#E5E7EB] px-4 text-sm text-[#1F2937] outline-none focus:ring-2 focus:ring-[#1F5A5C]/20 md:col-span-3"
+                required
+              >
+                <option value="">Select Student</option>
+                {selectedStudents.map((student) => (
+                  <option key={student.id} value={student.id}>
+                    {student.user.fullName} ({student.admissionNo})
+                  </option>
+                ))}
+              </select>
+            </div>
 
           <div className="mt-4 rounded-xl border border-[#d6e2ea] bg-[#f7fbff] p-3">
             <p className="text-xs font-bold uppercase tracking-[0.15em] text-[#486581]">Quick Actions</p>
