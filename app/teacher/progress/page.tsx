@@ -1079,43 +1079,43 @@ export default function TeacherProgressPage() {
         </form>
 
         <aside className="space-y-4">
-          <div className="rounded-2xl border border-[#d6e2ea] bg-white p-5 shadow-sm">
-            <div className="flex items-center gap-2">
-              <Sparkles className="h-4 w-4 text-[#2563eb]" />
-              <h3 className="font-bold text-[#102a43]">Auto Summary</h3>
+          <Card>
+            <div className="flex items-center gap-2 mb-3">
+              <Sparkles className="h-4 w-4 text-[#1F5A5C]" />
+              <h3 className="font-bold text-[#1F2937]">Auto Summary</h3>
             </div>
-            <div className="mt-3 space-y-2 text-sm text-[#334e68]">
-              <p><span className="font-semibold">Overall Performance:</span> {summary.overallPerformance}</p>
-              <p><span className="font-semibold">Total Mistakes:</span> {summary.totalMistakes}</p>
-              <p><span className="font-semibold">Suggestion:</span> {summary.suggestion}</p>
+            <div className="space-y-2 text-sm text-[#6B7280]">
+              <p><span className="font-semibold text-[#1F2937]">Overall Performance:</span> {summary.overallPerformance}</p>
+              <p><span className="font-semibold text-[#1F2937]">Total Mistakes:</span> {summary.totalMistakes}</p>
+              <p><span className="font-semibold text-[#1F2937]">Suggestion:</span> {summary.suggestion}</p>
               <div className="flex items-center gap-1 pt-1">
                 {Array.from({ length: 5 }).map((_, i) => (
-                  <Star key={i} className={`h-4 w-4 ${i < summary.avgStars ? 'fill-[#f59e0b] text-[#f59e0b]' : 'text-[#cbd5e1]'}`} />
+                  <Star key={i} className={`h-4 w-4 ${i < summary.avgStars ? 'fill-[#D69E3F] text-[#D69E3F]' : 'text-[#E5E7EB]'}`} />
                 ))}
               </div>
             </div>
-          </div>
+          </Card>
 
-          <div className="rounded-2xl border border-[#d6e2ea] bg-white p-5 shadow-sm">
-            <div className="flex items-center gap-2">
-              <BookOpen className="h-4 w-4 text-[#16a34a]" />
-              <h3 className="font-bold text-[#102a43]">Quran Tracking JSON</h3>
+          <Card>
+            <div className="flex items-center gap-2 mb-3">
+              <BookOpen className="h-4 w-4 text-[#10B981]" />
+              <h3 className="font-bold text-[#1F2937]">Quran Tracking JSON</h3>
             </div>
-            <p className="mt-2 text-sm text-[#486581]">Embedded Surah JSON count: {SURAH_LIST.length} Surahs</p>
-            <p className="text-xs text-[#627d98]">Ayah ranges are dynamic per selected Surah.</p>
-          </div>
+            <p className="text-sm text-[#6B7280]">Embedded Surah JSON count: {SURAH_LIST.length} Surahs</p>
+            <p className="text-xs text-[#9CA3AF]">Ayah ranges are dynamic per selected Surah.</p>
+          </Card>
 
-          <div className="rounded-2xl border border-[#d6e2ea] bg-white p-5 shadow-sm">
-            <div className="flex items-center gap-2">
-              <TrendingUp className="h-4 w-4 text-[#004649]" />
-              <h3 className="font-bold text-[#102a43]">Teacher Guidance</h3>
+          <Card>
+            <div className="flex items-center gap-2 mb-3">
+              <TrendingUp className="h-4 w-4 text-[#1F5A5C]" />
+              <h3 className="font-bold text-[#1F2937]">Teacher Guidance</h3>
             </div>
-            <ul className="mt-2 space-y-1 text-sm text-[#486581]">
+            <ul className="space-y-1 text-sm text-[#6B7280]">
               <li>- Keep sabaq range realistic for quality.</li>
               <li>- If mistakes increase, reduce range and revise.</li>
               <li>- Use auto-suggest to continue lesson sequence.</li>
             </ul>
-          </div>
+          </Card>
         </aside>
       </section>
 
