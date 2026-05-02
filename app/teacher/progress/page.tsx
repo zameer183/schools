@@ -844,16 +844,16 @@ export default function TeacherProgressPage() {
               </div>
             </div>
 
-          {suggestedNextSabaq ? (
-            <div className="mt-4 flex flex-wrap items-center gap-2 rounded-xl border border-[#bfdbfe] bg-[#eff6ff] p-3 text-sm text-[#1d4ed8]">
-              <Sparkles className="h-4 w-4" />
-              <span className="font-semibold">Auto Suggest Next Lesson:</span>
-              <span>{suggestedNextSabaq.label}</span>
-              <button type="button" onClick={applyAutoSuggestion} className="rounded-xl bg-[#004649] px-3 py-1 text-xs font-semibold text-white hover:bg-[#005a5e]">
-                Apply Suggestion
-              </button>
-            </div>
-          ) : null}
+            {suggestedNextSabaq ? (
+              <div className="mt-4 flex flex-wrap items-center gap-2 rounded-lg border border-[#D1FAE5] bg-[#F0FDF4] p-4 text-sm text-[#10B981]">
+                <Sparkles className="h-4 w-4" />
+                <span className="font-semibold">Auto Suggest Next Lesson:</span>
+                <span>{suggestedNextSabaq.label}</span>
+                <button type="button" onClick={applyAutoSuggestion} className="rounded-lg bg-[#10B981] px-3 py-1 text-xs font-semibold text-white hover:bg-[#059669]">
+                  Apply Suggestion
+                </button>
+              </div>
+            ) : null}
 
           <div className="mt-5 space-y-4">
             {sectionMeta.map((section) => {
