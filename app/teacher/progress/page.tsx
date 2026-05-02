@@ -1119,29 +1119,29 @@ export default function TeacherProgressPage() {
         </aside>
       </section>
 
-      <section className="rounded-2xl border border-[#d6e2ea] bg-white p-4 shadow-sm md:p-6">
-        <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
-          <h3 className="font-headline text-xl font-bold text-[#102a43]">Saved Reports</h3>
+      <Card>
+        <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between mb-4">
+          <h3 className="text-xl font-bold text-[#1F2937]">Saved Reports</h3>
           <div className="grid gap-2 md:grid-cols-2">
             <input
               type="date"
               value={reportDate}
               onChange={(e) => setReportDate(e.target.value)}
-              className="h-10 rounded-xl border border-[#bcccdc] px-3 text-sm text-[#102a43] outline-none focus:border-[#2563eb]"
+              className="h-10 rounded-lg border border-[#E5E7EB] px-4 text-sm text-[#1F2937] outline-none focus:ring-2 focus:ring-[#1F5A5C]/20"
             />
             <input
               value={reportQuery}
               onChange={(e) => setReportQuery(e.target.value)}
               placeholder="Search student"
-              className="h-10 rounded-xl border border-[#bcccdc] px-3 text-sm text-[#102a43] outline-none focus:border-[#2563eb]"
+              className="h-10 rounded-lg border border-[#E5E7EB] px-4 text-sm text-[#1F2937] placeholder:text-[#6B7280] outline-none focus:ring-2 focus:ring-[#1F5A5C]/20"
             />
           </div>
         </div>
 
         {filteredReports.length === 0 ? (
-          <p className="mt-4 text-sm text-[#627d98]">No reports found for selected filters.</p>
+          <p className="text-sm text-[#6B7280]">No reports found for selected filters.</p>
         ) : (
-          <div className="mt-4 grid gap-3 md:grid-cols-2 xl:grid-cols-3">
+          <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-3">
             {filteredReports.map((item) => {
               const parsed = parseStructuredNotes(item.notes);
               const stars = computeStars(parsed);
@@ -1151,32 +1151,32 @@ export default function TeacherProgressPage() {
               const surahLabel = firstRange?.surahName && firstRange.surahName !== '-' ? `${firstRange.surahName} (${firstRange.fromAyah ?? '-'}-${firstRange.toAyah ?? '-'})` : 'Not structured';
 
               return (
-                <div key={item.id} className="rounded-xl border border-[#d6e2ea] bg-[#f8fbff] p-4">
-                  <p className="text-xs font-semibold uppercase tracking-[0.16em] text-[#486581]">{formatDateYMD(item.date)}</p>
-                  <p className="mt-1 text-base font-bold text-[#102a43]">{item.student.user.fullName}</p>
-                  <p className="text-xs text-[#627d98]">{item.class.name} - {item.class.section}</p>
-                  <p className="mt-2 text-sm text-[#1e3a8a]"><span className="font-semibold">Sabaq:</span> {surahLabel}</p>
+                <div key={item.id} className="rounded-xl border border-[#E5E7EB] bg-[#F9FAFB] p-4">
+                  <p className="text-xs font-semibold uppercase tracking-widest text-[#6B7280]">{formatDateYMD(item.date)}</p>
+                  <p className="mt-1 text-base font-bold text-[#1F2937]">{item.student.user.fullName}</p>
+                  <p className="text-xs text-[#9CA3AF]">{item.class.name} - {item.class.section}</p>
+                  <p className="mt-2 text-sm text-[#1F5A5C]"><span className="font-semibold">Sabaq:</span> {surahLabel}</p>
 
                   <div className="mt-2 flex items-center gap-1">
                     {Array.from({ length: 5 }).map((_, i) => (
-                      <Star key={i} className={`h-4 w-4 ${i < stars ? 'fill-[#f59e0b] text-[#f59e0b]' : 'text-[#cbd5e1]'}`} />
+                      <Star key={i} className={`h-4 w-4 ${i < stars ? 'fill-[#D69E3F] text-[#D69E3F]' : 'text-[#E5E7EB]'}`} />
                     ))}
                   </div>
 
-                  <div className="mt-2 inline-flex rounded-xl bg-[#fee2e2] px-2 py-1 text-xs font-semibold text-[#7f1d1d]">
+                  <div className="mt-2 inline-flex rounded-lg bg-[#FEE2E2] px-3 py-1 text-xs font-semibold text-[#991B1B]">
                     Mistakes: {mistakes}
                   </div>
 
                   <button
                     type="button"
                     onClick={() => setOpenReportId((prev) => (prev === item.id ? null : item.id))}
-                    className="mt-3 rounded-xl bg-gradient-to-br from-[#004649] to-[#1b5e62] shadow-[0_8px_20px_rgba(0,70,73,0.12)] active:scale-[0.98] transition-all px-3 py-1.5 text-xs font-semibold text-white"
+                    className="mt-3 rounded-lg bg-gradient-to-br from-[#1F5A5C] to-[#2a7579] shadow-[0_8px_20px_rgba(31,90,92,0.12)] active:scale-[0.98] transition-all px-3 py-1.5 text-xs font-semibold text-white"
                   >
                     View Details
                   </button>
 
                   {openReportId === item.id ? (
-                    <pre className="mt-3 max-h-60 overflow-auto whitespace-pre-wrap rounded-xl border border-[#d6e2ea] bg-white p-3 text-xs text-[#334e68]">
+                    <pre className="mt-3 max-h-60 overflow-auto whitespace-pre-wrap rounded-lg border border-[#E5E7EB] bg-white p-3 text-xs text-[#6B7280]">
                       {item.notes || '-'}
                     </pre>
                   ) : null}
@@ -1185,7 +1185,7 @@ export default function TeacherProgressPage() {
             })}
           </div>
         )}
-      </section>
+      </Card>
     </div>
   );
 }
