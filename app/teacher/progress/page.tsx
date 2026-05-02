@@ -832,17 +832,17 @@ export default function TeacherProgressPage() {
               </select>
             </div>
 
-          <div className="mt-4 rounded-xl border border-[#d6e2ea] bg-[#f7fbff] p-3">
-            <p className="text-xs font-bold uppercase tracking-[0.15em] text-[#486581]">Quick Actions</p>
-            <div className="mt-2 flex flex-wrap gap-2">
-              <button type="button" onClick={() => applyQuickPerformance('Good ⭐⭐⭐⭐')} className="rounded-xl bg-gradient-to-br from-[#004649] to-[#1b5e62] shadow-[0_8px_20px_rgba(0,70,73,0.12)] active:scale-[0.98] transition-all px-3 py-1.5 text-xs font-semibold text-white">Good</button>
-              <button type="button" onClick={() => applyQuickPerformance('Average ⭐⭐⭐')} className="rounded-xl bg-gradient-to-br from-[#004649] to-[#1b5e62] shadow-[0_8px_20px_rgba(0,70,73,0.12)] active:scale-[0.98] transition-all px-3 py-1.5 text-xs font-semibold text-white">Average</button>
-              <button type="button" onClick={() => applyQuickPerformance('Weak ⭐⭐')} className="rounded-xl bg-gradient-to-br from-[#004649] to-[#1b5e62] shadow-[0_8px_20px_rgba(0,70,73,0.12)] active:scale-[0.98] transition-all px-3 py-1.5 text-xs font-semibold text-white">Weak</button>
-              <button type="button" onClick={() => applyQuickMistakes('0')} className="rounded-xl bg-gradient-to-br from-[#004649] to-[#1b5e62] shadow-[0_8px_20px_rgba(0,70,73,0.12)] active:scale-[0.98] transition-all px-3 py-1.5 text-xs font-semibold text-white">No Mistake</button>
-              <button type="button" onClick={() => applyQuickMistakes('1-2')} className="rounded-xl bg-gradient-to-br from-[#004649] to-[#1b5e62] shadow-[0_8px_20px_rgba(0,70,73,0.12)] active:scale-[0.98] transition-all px-3 py-1.5 text-xs font-semibold text-white">1-2</button>
-              <button type="button" onClick={() => applyQuickMistakes('3+')} className="rounded-xl bg-gradient-to-br from-[#004649] to-[#1b5e62] shadow-[0_8px_20px_rgba(0,70,73,0.12)] active:scale-[0.98] transition-all px-3 py-1.5 text-xs font-semibold text-white">3+</button>
+            <div className="mt-4 rounded-lg border border-[#E5E7EB] bg-[#F9FAFB] p-4">
+              <p className="text-xs font-bold uppercase tracking-widest text-[#6B7280]">Quick Actions</p>
+              <div className="mt-3 flex flex-wrap gap-2">
+                <button type="button" onClick={() => applyQuickPerformance('Good ⭐⭐⭐⭐')} className="rounded-lg bg-gradient-to-br from-[#1F5A5C] to-[#2a7579] shadow-[0_8px_20px_rgba(31,90,92,0.12)] active:scale-[0.98] transition-all px-3 py-1.5 text-xs font-semibold text-white">Good</button>
+                <button type="button" onClick={() => applyQuickPerformance('Average ⭐⭐⭐')} className="rounded-lg bg-gradient-to-br from-[#1F5A5C] to-[#2a7579] shadow-[0_8px_20px_rgba(31,90,92,0.12)] active:scale-[0.98] transition-all px-3 py-1.5 text-xs font-semibold text-white">Average</button>
+                <button type="button" onClick={() => applyQuickPerformance('Weak ⭐⭐')} className="rounded-lg bg-gradient-to-br from-[#1F5A5C] to-[#2a7579] shadow-[0_8px_20px_rgba(31,90,92,0.12)] active:scale-[0.98] transition-all px-3 py-1.5 text-xs font-semibold text-white">Weak</button>
+                <button type="button" onClick={() => applyQuickMistakes('0')} className="rounded-lg bg-gradient-to-br from-[#1F5A5C] to-[#2a7579] shadow-[0_8px_20px_rgba(31,90,92,0.12)] active:scale-[0.98] transition-all px-3 py-1.5 text-xs font-semibold text-white">No Mistake</button>
+                <button type="button" onClick={() => applyQuickMistakes('1-2')} className="rounded-lg bg-gradient-to-br from-[#1F5A5C] to-[#2a7579] shadow-[0_8px_20px_rgba(31,90,92,0.12)] active:scale-[0.98] transition-all px-3 py-1.5 text-xs font-semibold text-white">1-2</button>
+                <button type="button" onClick={() => applyQuickMistakes('3+')} className="rounded-lg bg-gradient-to-br from-[#1F5A5C] to-[#2a7579] shadow-[0_8px_20px_rgba(31,90,92,0.12)] active:scale-[0.98] transition-all px-3 py-1.5 text-xs font-semibold text-white">3+</button>
+              </div>
             </div>
-          </div>
 
           {suggestedNextSabaq ? (
             <div className="mt-4 flex flex-wrap items-center gap-2 rounded-xl border border-[#bfdbfe] bg-[#eff6ff] p-3 text-sm text-[#1d4ed8]">
