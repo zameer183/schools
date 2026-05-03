@@ -1,133 +1,279 @@
 import { PaymentStatus } from '@prisma/client';
+import { DollarSign, TrendingUp, Clock, AlertCircle, Percent } from 'lucide-react';
 import { prisma } from '@/lib/prisma';
 import { formatCurrency } from '@/lib/utils';
+import { KpiCard } from '@/components/ui';
+import { FinanceClientBar } from './finance-client-bar';
+import { FeeBulkList, type SerializedFeeItem } from './fee-bulk-list';
 
 export const dynamic = 'force-dynamic';
 
-function statusColor(status: PaymentStatus) {
-  if (status === 'PAID') return 'bg-[#e8f5e9] text-[#004649]';
-  if (status === 'PARTIAL') return 'bg-[#fff3e0] text-[#865300]';
-  if (status === 'OVERDUE') return 'bg-[#fde8e8] text-[#ba1a1a]';
-  return 'bg-[#f5f7f5] text-[#6f7979]';
+type AdminFinancePageProps = {
+  searchParams?: Promise<{ status?: string; classId?: string; search?: string; sort?: string }>;
+};
+
+function txnStatusBadge(status: PaymentStatus) {
+  if (status === 'PAID') return 'bg-[#10B981] text-white';
+  if (status === 'OVERDUE') return 'bg-[#EF4444] text-white';
+  if (status === 'PARTIAL') return 'bg-[#D69E3F] text-white';
+  return 'bg-[#D69E3F] text-white';
 }
 
-export default async function AdminFinancePage() {
+const kpiIcons = [DollarSign, TrendingUp, Clock, AlertCircle, Percent];
+
+export default async function AdminFinancePage({ searchParams }: AdminFinancePageProps) {
+  const params = (await searchParams) ?? {};
+  const selectedStatus =
+    ['paid', 'unpaid', 'partial', 'overdue'].includes(params.status as string)
+      ? (params.status as string)
+      : 'all';
+  const selectedClassId = params.classId ?? 'all';
+  const searchValue = params.search ?? '';
+  const selectedSort = params.sort ?? 'dueDate';
+
+  // Determine fee status where clause
+  let feeStatusWhere: any = {};
+  if (selectedStatus === 'paid') {
+    feeStatusWhere = { status: PaymentStatus.PAID };
+  } else if (selectedStatus === 'unpaid') {
+    feeStatusWhere = { status: { in: [PaymentStatus.PENDING, PaymentStatus.PARTIAL, PaymentStatus.OVERDUE] } };
+  } else if (selectedStatus === 'partial') {
+    feeStatusWhere = { status: PaymentStatus.PARTIAL };
+  } else if (selectedStatus === 'overdue') {
+    feeStatusWhere = { status: PaymentStatus.OVERDUE };
+  }
+
+  const classWhere =
+    selectedClassId !== 'all' ? { student: { classId: selectedClassId } } : {};
+
+  const combinedWhere = { ...feeStatusWhere, ...classWhere };
+
   const monthStart = new Date();
   monthStart.setDate(1);
   monthStart.setHours(0, 0, 0, 0);
 
-  const [feeAgg, paidAgg, monthlyAgg, pendingCount, overdueCount, recentPayments, dues] = await Promise.all([
-    prisma.fee.aggregate({ _sum: { amount: true, discount: true } }),
-    prisma.payment.aggregate({ _sum: { amountPaid: true } }),
-    prisma.payment.aggregate({ where: { paidAt: { gte: monthStart } }, _sum: { amountPaid: true } }),
-    prisma.fee.count({ where: { status: { in: ['PENDING', 'PARTIAL'] } } }),
-    prisma.fee.count({ where: { status: 'OVERDUE' } }),
+  // Determine order by clause
+  let orderBy: any = [{ status: 'desc' }, { dueDate: 'asc' }];
+  if (selectedSort === 'amount') {
+    orderBy = [{ amount: 'desc' }];
+  } else if (selectedSort === 'name') {
+    orderBy = [{ student: { user: { fullName: 'asc' } } }];
+  }
+
+  const [
+    classes,
+    feeAgg,
+    paidAgg,
+    pendingCount,
+    overdueCount,
+    recentPayments,
+    dues
+  ] = await Promise.all([
+    prisma.class.findMany({
+      select: { id: true, name: true, section: true },
+      orderBy: { name: 'asc' }
+    }),
+    prisma.fee.aggregate({ where: feeStatusWhere, _sum: { amount: true, discount: true } }),
+    prisma.payment.aggregate({
+      where: selectedStatus === 'all' ? {} : { fee: feeStatusWhere },
+      _sum: { amountPaid: true }
+    }),
+    prisma.fee.count({ where: { ...feeStatusWhere, status: { in: [PaymentStatus.PENDING, PaymentStatus.PARTIAL] } } }),
+    prisma.fee.count({ where: { ...combinedWhere, status: PaymentStatus.OVERDUE } }),
     prisma.payment.findMany({
-      include: { fee: { include: { student: { include: { user: { select: { fullName: true } } } } } } },
+      where: selectedClassId !== 'all'
+        ? { fee: { student: { classId: selectedClassId } } }
+        : selectedStatus === 'all' ? {} : { fee: feeStatusWhere },
+      include: {
+        fee: { include: { student: { include: { user: { select: { fullName: true } } } } } }
+      },
       orderBy: { paidAt: 'desc' },
-      take: 8
+      take: 10
     }),
     prisma.fee.findMany({
-      where: { status: { in: ['PENDING', 'PARTIAL', 'OVERDUE'] } },
-      include: { student: { include: { user: { select: { fullName: true } } } }, payments: { select: { amountPaid: true } } },
-      orderBy: [{ status: 'desc' }, { dueDate: 'asc' }],
-      take: 10
+      where: combinedWhere,
+      select: {
+        id: true,
+        title: true,
+        status: true,
+        dueDate: true,
+        amount: true,
+        discount: true,
+        student: {
+          select: {
+            id: true,
+            whatsApp: true,
+            guardianPhone: true,
+            user: { select: { fullName: true } }
+          }
+        },
+        payments: { select: { amountPaid: true } }
+      },
+      orderBy,
+      take: 50
     })
   ]);
 
   const totalBilled = Number(feeAgg._sum.amount ?? 0) - Number(feeAgg._sum.discount ?? 0);
   const totalPaid = Number(paidAgg._sum.amountPaid ?? 0);
-  const thisMonthPaid = Number(monthlyAgg._sum.amountPaid ?? 0);
   const collectionRate = totalBilled > 0 ? Math.round((totalPaid / totalBilled) * 100) : 0;
+
+  // Serialize dues and calculate outstanding + overdue amounts
+  let outstandingAmount = 0;
+  let overdueAmount = 0;
+
+  let serializedDues: SerializedFeeItem[] = dues.map(fee => {
+    const paidAmount = fee.payments.reduce((s, p) => s + Number(p.amountPaid), 0);
+    const total = Number(fee.amount) - Number(fee.discount);
+    const remaining = Math.max(total - paidAmount, 0);
+
+    if (fee.status !== PaymentStatus.PAID) {
+      outstandingAmount += remaining;
+    }
+    if (fee.status === PaymentStatus.OVERDUE) {
+      overdueAmount += remaining;
+    }
+
+    return {
+      id: fee.id,
+      title: fee.title,
+      status: fee.status,
+      dueDate: fee.dueDate.toISOString(),
+      studentName: fee.student.user.fullName,
+      amount: Number(fee.amount),
+      discount: Number(fee.discount),
+      paidAmount,
+      remaining,
+      whatsApp: fee.student.whatsApp,
+      guardianPhone: fee.student.guardianPhone
+    };
+  });
+
+  // Apply client-side search filtering
+  if (searchValue) {
+    serializedDues = serializedDues.filter(fee =>
+      fee.studentName.toLowerCase().includes(searchValue.toLowerCase())
+    );
+  }
+
+  const kpis = [
+    { label: 'Total Billed',     value: formatCurrency(totalBilled) },
+    { label: 'Total Collected',  value: formatCurrency(totalPaid) },
+    { label: 'Outstanding',      value: formatCurrency(outstandingAmount) },
+    { label: 'Overdue',          value: formatCurrency(overdueAmount) },
+    { label: 'Collection Rate',  value: `${collectionRate}%` }
+  ];
 
   return (
     <div className="space-y-4">
-      <div className="rounded-xl bg-white border border-[#e2e8e8] p-6">
-        <h2 className="text-2xl font-bold text-[#1a1c1c] sm:text-3xl">Finance</h2>
-        <p className="mt-1 text-sm text-[#6f7979]">Monitor fee collection, pending dues, and transaction health.</p>
 
-        <div className="mt-5 grid gap-3 sm:grid-cols-2 lg:grid-cols-5">
-          {[
-            { label: 'Total Billed', value: formatCurrency(totalBilled) },
-            { label: 'Total Collected', value: formatCurrency(totalPaid) },
-            { label: 'This Month', value: formatCurrency(thisMonthPaid) },
-            { label: 'Pending Fees', value: pendingCount },
-            { label: 'Collection Rate', value: `${collectionRate}%` },
-          ].map(({ label, value }) => (
-            <div key={label} className="rounded-lg bg-[#f5f7f5] p-4">
-              <p className="text-[10px] font-bold uppercase tracking-widest text-[#6f7979]">{label}</p>
-              <p className="mt-2 text-2xl font-bold text-[#1a1c1c]">{value}</p>
-            </div>
-          ))}
+      {/* ── Header ── */}
+      <div className="rounded-2xl bg-white p-4 shadow-[0_4px_12px_rgba(0,0,0,0.08)] sm:p-6">
+        <div>
+          <p className="text-[10px] font-bold uppercase tracking-widest text-[#6f7979]">Admin</p>
+          <h1 className="font-headline mt-0.5 text-2xl font-extrabold text-[#1a1c1c] sm:text-3xl">Finance</h1>
+          <p className="mt-1 text-sm text-[#6f7979]">Track fee collection, outstanding amounts, and transaction health.</p>
         </div>
       </div>
 
-      <div className="grid gap-4 lg:grid-cols-2">
-        <div className="rounded-xl bg-white border border-[#e2e8e8] p-6">
-          <h3 className="font-semibold text-[#1a1c1c] mb-4">Recent Transactions</h3>
-          <div className="space-y-2 md:hidden">
-            {recentPayments.map((item) => (
-              <div key={item.id} className="rounded-lg border border-[#e2e8e8] p-3">
-                <p className="font-semibold text-[#1a1c1c]">{item.fee.student.user.fullName}</p>
-                <p className="text-xs text-[#6f7979] mt-0.5">{item.fee.title}</p>
-                <p className="mt-1 text-sm font-bold text-[#1a1c1c]">{formatCurrency(Number(item.amountPaid))}</p>
-              </div>
-            ))}
-          </div>
-          <div className="overflow-x-auto">
-            <table className="hidden w-full min-w-[520px] text-sm md:table">
-            <thead>
-              <tr className="border-b border-[#e2e8e8]">
-                <th className="pb-2 text-left text-[10px] font-bold uppercase tracking-widest text-[#6f7979]">Student</th>
-                <th className="pb-2 text-left text-[10px] font-bold uppercase tracking-widest text-[#6f7979]">Fee</th>
-                <th className="pb-2 text-right text-[10px] font-bold uppercase tracking-widest text-[#6f7979]">Amount</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-[#e2e8e8]">
-              {recentPayments.map((item) => (
-                <tr key={item.id}>
-                  <td className="py-3 font-medium text-[#1a1c1c]">{item.fee.student.user.fullName}</td>
-                  <td className="py-3 text-[#6f7979]">{item.fee.title}</td>
-                  <td className="py-3 text-right font-semibold text-[#1a1c1c]">{formatCurrency(Number(item.amountPaid))}</td>
-                </tr>
-              ))}
-            </tbody>
-            </table>
-          </div>
-          {recentPayments.length === 0 ? <p className="mt-4 text-sm text-[#6f7979]">No transactions yet.</p> : null}
-        </div>
+      {/* ── KPI Cards ── */}
+      <div className="grid gap-3 sm:gap-4 sm:grid-cols-2 lg:grid-cols-5">
+        {kpis.map(({ label, value }, i) => {
+          const Icon = kpiIcons[i];
+          const variants: ('primary' | 'accent' | 'success' | 'danger')[] = ['primary', 'success', 'accent', 'danger', 'primary'];
+          return (
+            <KpiCard
+              key={label}
+              variant={variants[i] || 'primary'}
+              icon={<Icon size={20} />}
+              label={label}
+              value={value}
+            />
+          );
+        })}
+      </div>
 
-        <div className="rounded-xl bg-white border border-[#e2e8e8] p-6">
-          <div className="mb-4 flex flex-wrap items-center justify-between gap-2">
-            <h3 className="font-semibold text-[#1a1c1c]">Pending &amp; Overdue Dues</h3>
-            <span className="rounded-full bg-[#fde8e8] px-3 py-1 text-[10px] font-bold text-[#ba1a1a]">
-              Overdue: {overdueCount}
-            </span>
-          </div>
-          <div className="space-y-3">
-            {dues.map((fee) => {
-              const paid = fee.payments.reduce((sum, p) => sum + Number(p.amountPaid), 0);
-              const total = Number(fee.amount) - Number(fee.discount);
-              const remaining = Math.max(total - paid, 0);
-              return (
-                <div key={fee.id} className="rounded-lg border border-[#e2e8e8] p-4">
-                  <div className="flex flex-wrap items-start justify-between gap-3">
-                    <div>
-                      <p className="font-semibold text-[#1a1c1c]">{fee.student.user.fullName}</p>
-                      <p className="text-xs text-[#6f7979] mt-0.5">{fee.title} — Due {fee.dueDate.toISOString().slice(0, 10)}</p>
-                    </div>
-                    <span className={`rounded-full px-2.5 py-1 text-[10px] font-bold ${statusColor(fee.status)}`}>
-                      {fee.status}
+      {/* ── Filter Bar (Full Width) ── */}
+      <div className="rounded-2xl bg-white p-4 shadow-[0_4px_12px_rgba(0,0,0,0.08)] sm:p-6">
+        <FinanceClientBar
+          classes={classes}
+          selectedClassId={selectedClassId}
+          selectedStatus={selectedStatus}
+          selectedSort={selectedSort}
+          searchValue={searchValue}
+        />
+      </div>
+
+      {/* ── Content: Fee List (Left/Primary) + Transactions (Right/Secondary) ── */}
+      <div className="grid gap-5 lg:grid-cols-[1fr_340px]">
+
+        {/* Fee Records — PRIMARY */}
+        <FeeBulkList
+          fees={serializedDues}
+          overdueCount={overdueCount}
+          selectedFeeStatus={selectedStatus}
+        />
+
+        {/* Recent Transactions — SECONDARY */}
+        <div className="rounded-2xl bg-white p-4 shadow-[0_4px_12px_rgba(0,0,0,0.08)] sm:p-6">
+          <h3 className="font-headline mb-4 text-lg font-bold text-[#1a1c1c]">Recent Transactions</h3>
+
+          {/* Mobile cards */}
+          <div className="space-y-3 md:hidden">
+            {recentPayments.map(item => (
+              <div key={item.id} className="rounded-xl bg-[#f5f7fa] p-3">
+                <div className="flex items-start justify-between gap-2">
+                  <div className="min-w-0">
+                    <p className="font-semibold text-[#1a1c1c] text-sm">{item.fee.student.user.fullName}</p>
+                    <p className="mt-0.5 truncate text-xs text-[#6f7979]">{item.fee.title}</p>
+                    <p className="mt-1 text-xs text-[#6f7979]">{item.paidAt.toISOString().slice(0, 10)}</p>
+                  </div>
+                  <div className="shrink-0 text-right">
+                    <p className="font-bold text-[#1a1c1c] text-sm">{formatCurrency(Number(item.amountPaid))}</p>
+                    <span className={`mt-1.5 inline-block rounded-full px-2 py-0.5 text-[9px] font-bold uppercase ${txnStatusBadge(item.fee.status)}`}>
+                      {item.fee.status === PaymentStatus.PENDING ? 'DUE' : item.fee.status}
                     </span>
                   </div>
-                  <div className="mt-3 flex items-center justify-between text-sm">
-                    <span className="text-[#6f7979]">Remaining</span>
-                    <span className="font-bold text-[#004649]">{formatCurrency(remaining)}</span>
-                  </div>
                 </div>
-              );
-            })}
-            {dues.length === 0 ? <p className="text-sm text-[#6f7979]">No pending dues right now.</p> : null}
+              </div>
+            ))}
+            {recentPayments.length === 0 ? <p className="text-xs text-[#6f7979]">No transactions yet.</p> : null}
+          </div>
+
+          {/* Desktop table */}
+          <div className="hidden overflow-x-auto md:block">
+            <table className="w-full text-xs">
+              <thead>
+                <tr className="rounded-xl bg-[#f3f4f5]">
+                  <th className="rounded-l-xl px-3 py-2 text-left text-[9px] font-bold uppercase tracking-widest text-[#6f7979]">Date</th>
+                  <th className="px-3 py-2 text-left text-[9px] font-bold uppercase tracking-widest text-[#6f7979]">Student</th>
+                  <th className="px-3 py-2 text-right text-[9px] font-bold uppercase tracking-widest text-[#6f7979]">Amount</th>
+                  <th className="rounded-r-xl px-3 py-2 text-right text-[9px] font-bold uppercase tracking-widest text-[#6f7979]">Status</th>
+                </tr>
+              </thead>
+              <tbody>
+                {recentPayments.map(item => (
+                  <tr
+                    key={item.id}
+                    className="border-b border-[#f0f2f0] transition-colors last:border-0 hover:bg-[#f9fafb]"
+                  >
+                    <td className="px-3 py-2.5">
+                      <span className="rounded-full bg-[#edeeef] px-2 py-0.5 text-xs text-[#6f7979]">
+                        {item.paidAt.toISOString().slice(0, 10)}
+                      </span>
+                    </td>
+                    <td className="px-3 py-2.5 font-medium text-[#1a1c1c] truncate">{item.fee.student.user.fullName}</td>
+                    <td className="px-3 py-2.5 text-right font-bold text-[#1a1c1c]">{formatCurrency(Number(item.amountPaid))}</td>
+                    <td className="px-3 py-2.5 text-right">
+                      <span className={`rounded-full px-2 py-0.5 text-xs font-bold uppercase ${txnStatusBadge(item.fee.status)}`}>
+                        {item.fee.status === PaymentStatus.PENDING ? 'DUE' : item.fee.status}
+                      </span>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+            {recentPayments.length === 0 ? <p className="mt-4 text-xs text-[#6f7979]">No transactions yet.</p> : null}
           </div>
         </div>
       </div>

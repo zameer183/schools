@@ -2,6 +2,8 @@
 
 import { useEffect, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
+import { AlertCircle, CheckCircle, MessageCircle, Download } from 'lucide-react';
+import Link from 'next/link';
 import { formatCurrency } from '@/lib/utils';
 import { FinanceToast } from './finance-toast';
 
@@ -15,13 +17,15 @@ export type SerializedFeeItem = {
   discount: number;
   paidAmount: number;
   remaining: number;
+  whatsApp: string | null;
+  guardianPhone: string | null;
 };
 
 function statusBadge(status: string) {
   if (status === 'PAID')    return 'bg-[#27ae60] text-white';
   if (status === 'OVERDUE') return 'bg-[#e74c3c] text-white';
   if (status === 'PARTIAL') return 'bg-[#e67e22] text-white';
-  return 'bg-[#f39c12] text-white'; // PENDING → DUE amber solid
+  return 'bg-[#f39c12] text-white';
 }
 
 function statusAccent(status: string) {
@@ -36,6 +40,13 @@ function statusLabel(status: string) {
   return status;
 }
 
+function getWhatsAppUrl(fee: SerializedFeeItem): string | null {
+  const phone = (fee.whatsApp ?? fee.guardianPhone ?? '').replace(/[^0-9+]/g, '');
+  if (!phone) return null;
+  const msg = `Reminder: ${fee.title} of ${formatCurrency(fee.remaining)} is due by ${fee.dueDate.slice(0, 10)}. Please pay promptly.`;
+  return `https://wa.me/${phone}?text=${encodeURIComponent(msg)}`;
+}
+
 export function FeeBulkList({
   fees,
   overdueCount,
@@ -48,6 +59,7 @@ export function FeeBulkList({
   const router = useRouter();
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [loading, setLoading] = useState(false);
+  const [loadingIds, setLoadingIds] = useState<Set<string>>(new Set());
   const [toast, setToast] = useState<{ message: string; type: 'success' | 'error' } | null>(null);
   const selectAllRef = useRef<HTMLInputElement>(null);
 
@@ -88,6 +100,39 @@ export function FeeBulkList({
     setLoading(false);
   };
 
+  const markOnePaid = async (feeId: string) => {
+    setLoadingIds(prev => new Set(prev).add(feeId));
+    const res = await fetch('/api/fees/bulk', {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ ids: [feeId], status: 'PAID' })
+    });
+    if (res.ok) {
+      setToast({ message: 'Fee marked as paid.', type: 'success' });
+      router.refresh();
+    } else {
+      const data = await res.json().catch(() => ({}));
+      setToast({ message: data.error ?? 'Failed. Try again.', type: 'error' });
+    }
+    setLoadingIds(prev => { const n = new Set(prev); n.delete(feeId); return n; });
+  };
+
+  const exportCSV = () => {
+    if (selected.size === 0) return;
+    const rows = fees.filter(f => selected.has(f.id));
+    const header = 'Student,Fee Type,Due Date,Status,Amount,Paid,Remaining';
+    const csvRows = rows.map(f =>
+      `"${f.studentName}","${f.title}",${f.dueDate.slice(0, 10)},${f.status},${f.amount},${f.paidAmount},${f.remaining}`
+    );
+    const csv = [header, ...csvRows].join('\n');
+    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.setAttribute('href', url);
+    link.setAttribute('download', `fees-export-${new Date().toISOString().slice(0, 10)}.csv`);
+    link.click();
+  };
+
   const title =
     selectedFeeStatus === 'paid'   ? 'Paid Fee Records'   :
     selectedFeeStatus === 'unpaid' ? 'Unpaid Fee Records' :
@@ -95,21 +140,31 @@ export function FeeBulkList({
 
   return (
     <>
-      <div className="rounded-2xl bg-white p-6 shadow-[0_4px_12px_rgba(0,0,0,0.08)]">
+      <div className="rounded-2xl bg-white p-4 shadow-[0_4px_12px_rgba(0,0,0,0.08)] sm:p-6">
         {/* Header */}
         <div className="mb-4 flex flex-wrap items-center justify-between gap-2">
           <h3 className="font-headline text-lg font-bold text-[#1a1c1c]">{title}</h3>
-          {overdueCount > 0 ? (
-            <span className="rounded-full bg-[#e74c3c] px-3 py-1 text-[10px] font-bold uppercase text-white">
-              {overdueCount} Overdue
-            </span>
-          ) : null}
         </div>
 
         {fees.length > 0 ? (
           <>
+            {/* Overdue Alert */}
+            {overdueCount > 0 ? (
+              <div className="mb-4 rounded-xl bg-[#fef2f2] border border-[#fca5a5] px-4 py-3 flex items-center justify-between gap-3">
+                <div className="flex items-center gap-2">
+                  <AlertCircle className="h-5 w-5 text-[#b91c1c]" />
+                  <p className="text-sm font-semibold text-[#b91c1c]">{overdueCount} overdue fee(s)</p>
+                </div>
+                <Link href="/admin/finance/reminders">
+                  <button className="rounded-xl bg-[#b91c1c] px-3 py-1.5 text-xs font-bold text-white hover:bg-[#a01717] active:scale-[0.98] transition-all">
+                    Send Reminder to All
+                  </button>
+                </Link>
+              </div>
+            ) : null}
+
             {/* Select-all bar */}
-            <div className="mb-3 flex items-center justify-between rounded-xl bg-[#f5f7fa] px-4 py-2.5">
+            <div className="mb-3 flex flex-col items-start justify-between gap-2 rounded-xl bg-[#f5f7fa] px-4 py-2.5 sm:flex-row sm:items-center">
               <label className="flex cursor-pointer items-center gap-2.5 text-xs font-semibold text-[#3d4a4a] select-none">
                 <input
                   ref={selectAllRef}
@@ -122,20 +177,34 @@ export function FeeBulkList({
               </label>
 
               {selected.size > 0 ? (
-                <div className="flex items-center gap-2">
-                  <button
-                    onClick={() => bulkUpdate('PENDING')}
-                    disabled={loading}
-                    className="rounded-xl bg-gradient-to-br from-[#f39c12] to-[#e67e22] px-3 py-1.5 text-xs font-bold text-white shadow-[0_4px_12px_rgba(243,156,18,0.3)] transition-all duration-200 hover:scale-105 hover:shadow-[0_6px_16px_rgba(243,156,18,0.4)] active:scale-[0.98] disabled:opacity-60"
-                  >
-                    Mark as Unpaid
-                  </button>
+                <div className="flex flex-wrap items-center gap-2">
                   <button
                     onClick={() => bulkUpdate('PAID')}
                     disabled={loading}
-                    className="rounded-xl bg-gradient-to-br from-[#27ae60] to-[#229954] px-3 py-1.5 text-xs font-bold text-white shadow-[0_4px_12px_rgba(39,174,96,0.3)] transition-all duration-200 hover:scale-105 hover:shadow-[0_6px_16px_rgba(39,174,96,0.4)] active:scale-[0.98] disabled:opacity-60"
+                    className="h-9 flex items-center gap-1 rounded-xl bg-[#27ae60] px-3 text-xs font-bold text-white hover:bg-[#229954] active:scale-[0.98] disabled:opacity-60 transition-all"
                   >
-                    {loading ? 'Updating...' : `Mark as Paid`}
+                    <CheckCircle className="h-4 w-4" />
+                    Mark Paid
+                  </button>
+                  <button
+                    onClick={() => bulkUpdate('PENDING')}
+                    disabled={loading}
+                    className="h-9 flex items-center gap-1 rounded-xl bg-[#f39c12] px-3 text-xs font-bold text-white hover:bg-[#e67e22] active:scale-[0.98] disabled:opacity-60 transition-all"
+                  >
+                    Mark Unpaid
+                  </button>
+                  <Link href="/admin/finance/reminders">
+                    <button className="h-9 flex items-center gap-1 rounded-xl bg-[#25d366] px-3 text-xs font-bold text-white hover:bg-[#1fa456] active:scale-[0.98] transition-all">
+                      <MessageCircle className="h-4 w-4" />
+                      Send Reminder
+                    </button>
+                  </Link>
+                  <button
+                    onClick={exportCSV}
+                    className="h-9 flex items-center gap-1 rounded-xl bg-[#6f7979] px-3 text-xs font-bold text-white hover:bg-[#5a6264] active:scale-[0.98] transition-all"
+                  >
+                    <Download className="h-4 w-4" />
+                    Export
                   </button>
                 </div>
               ) : null}
@@ -143,68 +212,117 @@ export function FeeBulkList({
 
             {/* Fee rows */}
             <div className="space-y-2">
-              {fees.map(fee => (
-                <div
-                  key={fee.id}
-                  onClick={() => toggle(fee.id)}
-                  className={`cursor-pointer rounded-xl border-l-4 p-4 transition-all duration-150 ${statusAccent(fee.status)} ${
-                    selected.has(fee.id)
-                      ? 'bg-[#f0f9f9] shadow-[0_2px_8px_rgba(0,70,73,0.1)]'
-                      : 'bg-white shadow-[0_2px_6px_rgba(0,0,0,0.06)] hover:shadow-[0_4px_12px_rgba(0,0,0,0.1)]'
-                  }`}
-                >
-                  <div className="flex items-start gap-3">
-                    <input
-                      type="checkbox"
-                      checked={selected.has(fee.id)}
-                      onChange={() => toggle(fee.id)}
-                      onClick={e => e.stopPropagation()}
-                      className="mt-0.5 h-4 w-4 cursor-pointer accent-[#004649]"
-                    />
-                    <div className="min-w-0 flex-1">
-                      {/* ──── DESKTOP LAYOUT ──── */}
-                      <div className="hidden sm:block">
-                        <div className="flex flex-wrap items-start justify-between gap-2">
-                          <div className="min-w-0">
-                            <p className="font-semibold text-[#1a1c1c]">{fee.studentName}</p>
-                            <p className="mt-0.5 truncate text-xs text-[#6f7979]">
-                              {fee.title} · Due {fee.dueDate.slice(0, 10)}
-                            </p>
+              {fees.map(fee => {
+                const isLoading = loadingIds.has(fee.id);
+                const waUrl = getWhatsAppUrl(fee);
+                return (
+                  <div
+                    key={fee.id}
+                    className={`rounded-xl border-l-4 p-4 transition-all duration-150 ${statusAccent(fee.status)} ${
+                      selected.has(fee.id)
+                        ? 'bg-[#f0f9f9] shadow-[0_2px_8px_rgba(0,70,73,0.1)]'
+                        : 'bg-white shadow-[0_2px_6px_rgba(0,0,0,0.06)] hover:shadow-[0_4px_12px_rgba(0,0,0,0.1)]'
+                    }`}
+                  >
+                    {/* Desktop Layout */}
+                    <div className="hidden sm:block">
+                      <div className="flex items-start gap-3">
+                        <input
+                          type="checkbox"
+                          checked={selected.has(fee.id)}
+                          onChange={() => toggle(fee.id)}
+                          className="mt-1 h-4 w-4 cursor-pointer accent-[#004649]"
+                        />
+                        <div className="min-w-0 flex-1">
+                          {/* Line 1: Student + Fee + Badge */}
+                          <div className="flex items-start justify-between gap-3 mb-2">
+                            <div className="min-w-0">
+                              <p className="font-semibold text-[#1a1c1c]">{fee.studentName}</p>
+                              <p className="text-xs text-[#6f7979]">{fee.title}</p>
+                            </div>
+                            <span className={`shrink-0 rounded-full px-2.5 py-1 text-[10px] font-bold uppercase ${statusBadge(fee.status)}`}>
+                              {statusLabel(fee.status)}
+                            </span>
                           </div>
-                          <span className={`shrink-0 rounded-full px-2.5 py-1 text-[10px] font-bold uppercase ${statusBadge(fee.status)}`}>
-                            {statusLabel(fee.status)}
-                          </span>
-                        </div>
-                        <div className="mt-2.5 flex items-center justify-between">
-                          <span className="text-xs text-[#6f7979]">Remaining</span>
-                          <span className={`text-base font-extrabold ${fee.remaining > 0 ? 'text-[#e74c3c]' : 'text-[#27ae60]'}`}>
-                            {formatCurrency(fee.remaining)}
-                          </span>
+                          {/* Line 2: Due Date */}
+                          <p className="text-xs text-[#6f7979] mb-2">Due: {fee.dueDate.slice(0, 10)}</p>
+                          {/* Line 3: Paid + Remaining */}
+                          <div className="flex items-center justify-between mb-3">
+                            <span className="text-xs text-[#6f7979]">Paid: {formatCurrency(fee.paidAmount)} / {formatCurrency(fee.amount)}</span>
+                            <span className={`text-sm font-bold ${fee.remaining > 0 ? 'text-[#e74c3c]' : 'text-[#27ae60]'}`}>
+                              Remaining: {formatCurrency(fee.remaining)}
+                            </span>
+                          </div>
+                          {/* Actions */}
+                          <div className="flex flex-wrap items-center gap-2">
+                            <button
+                              onClick={() => markOnePaid(fee.id)}
+                              disabled={isLoading || fee.status === 'PAID'}
+                              className="h-8 flex items-center gap-1 rounded-lg bg-[#27ae60] px-2.5 text-xs font-bold text-white hover:bg-[#229954] active:scale-[0.98] disabled:opacity-50 transition-all"
+                            >
+                              {isLoading ? '...' : '✓'} Paid
+                            </button>
+                            <button
+                              onClick={() => waUrl && window.open(waUrl, '_blank')}
+                              disabled={!waUrl}
+                              title={waUrl ? 'Send WhatsApp reminder' : 'No phone number'}
+                              className="h-8 flex items-center gap-1 rounded-lg bg-[#25d366] px-2.5 text-xs font-bold text-white hover:bg-[#1fa456] active:scale-[0.98] disabled:opacity-50 transition-all"
+                            >
+                              📱 WhatsApp
+                            </button>
+                          </div>
                         </div>
                       </div>
+                    </div>
 
-                      {/* ──── MOBILE LAYOUT ──── */}
-                      <div className="sm:hidden">
-                        {/* Row 1: Student Name | Fee Type */}
-                        <div className="flex items-baseline justify-between gap-2">
-                          <p className="font-semibold text-[#1a1c1c] truncate flex-1">{fee.studentName}</p>
-                          <p className="shrink-0 text-xs text-[#6f7979]">{fee.title}</p>
-                        </div>
-                        {/* Row 2: Due Date | Status Badge | Remaining Amount */}
-                        <div className="mt-1.5 flex items-center gap-2">
-                          <span className="text-xs text-[#6f7979]">Due {fee.dueDate.slice(0, 10)}</span>
-                          <span className={`rounded-full px-2 py-0.5 text-[10px] font-bold uppercase shrink-0 ${statusBadge(fee.status)}`}>
-                            {statusLabel(fee.status)}
-                          </span>
-                          <span className={`ml-auto text-sm font-bold shrink-0 ${fee.remaining > 0 ? 'text-[#e74c3c]' : 'text-[#27ae60]'}`}>
-                            {formatCurrency(fee.remaining)}
-                          </span>
+                    {/* Mobile Layout */}
+                    <div className="sm:hidden">
+                      <div className="flex items-start gap-3">
+                        <input
+                          type="checkbox"
+                          checked={selected.has(fee.id)}
+                          onChange={() => toggle(fee.id)}
+                          className="mt-0.5 h-4 w-4 cursor-pointer accent-[#004649]"
+                        />
+                        <div className="min-w-0 flex-1">
+                          {/* Row 1: Name | Fee Type */}
+                          <div className="flex items-baseline justify-between gap-2 mb-1">
+                            <p className="font-semibold text-[#1a1c1c] truncate flex-1">{fee.studentName}</p>
+                            <p className="shrink-0 text-xs text-[#6f7979]">{fee.title}</p>
+                          </div>
+                          {/* Row 2: Due + Badge + Remaining */}
+                          <div className="flex items-center gap-2 mb-2">
+                            <span className="text-xs text-[#6f7979]">Due {fee.dueDate.slice(0, 10)}</span>
+                            <span className={`shrink-0 rounded-full px-2 py-0.5 text-[10px] font-bold uppercase ${statusBadge(fee.status)}`}>
+                              {statusLabel(fee.status)}
+                            </span>
+                            <span className={`ml-auto shrink-0 text-sm font-bold ${fee.remaining > 0 ? 'text-[#e74c3c]' : 'text-[#27ae60]'}`}>
+                              {formatCurrency(fee.remaining)}
+                            </span>
+                          </div>
+                          {/* Actions */}
+                          <div className="flex gap-1.5">
+                            <button
+                              onClick={() => markOnePaid(fee.id)}
+                              disabled={isLoading || fee.status === 'PAID'}
+                              className="flex-1 h-8 rounded-lg bg-[#27ae60] px-2 text-xs font-bold text-white hover:bg-[#229954] active:scale-[0.98] disabled:opacity-50 transition-all"
+                            >
+                              {isLoading ? '...' : '✓'} Paid
+                            </button>
+                            <button
+                              onClick={() => waUrl && window.open(waUrl, '_blank')}
+                              disabled={!waUrl}
+                              className="flex-1 h-8 rounded-lg bg-[#25d366] px-2 text-xs font-bold text-white hover:bg-[#1fa456] active:scale-[0.98] disabled:opacity-50 transition-all"
+                            >
+                              📱 WA
+                            </button>
+                          </div>
                         </div>
                       </div>
                     </div>
                   </div>
-                </div>
-              ))}
+                );
+              })}
             </div>
           </>
         ) : (
