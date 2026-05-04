@@ -32,12 +32,39 @@ export type StudentItem = {
   rollNumber?: string | null;
   classId?: string | null;
   attendancePercentage?: number;
-  feeStatus?: 'PAID' | 'PENDING' | 'PARTIAL' | 'OVERDUE';
+  feeStatus?: 'PAID' | 'UNPAID' | 'PARTIAL' | 'OVERDUE';
   lastActivityAt?: string | Date | null;
   attendance?: Array<{ status: 'PRESENT' | 'ABSENT' | 'LATE' | 'EXCUSED'; date: string | Date }>;
   user: { id: string; fullName: string; email: string; phone?: string | null; isActive?: boolean };
   class?: { id: string; name: string; section: string } | null;
-  fees?: Array<{ title: string; amount: string; discount: string; dueDate: string | Date; status?: 'PAID' | 'PENDING' | 'PARTIAL' | 'OVERDUE'; updatedAt?: string | Date }>;
+  fees?: Array<{
+    title: string;
+    amount: string;
+    discount: string;
+    dueDate: string | Date;
+    status?: 'PAID' | 'UNPAID' | 'PARTIAL' | 'OVERDUE';
+    updatedAt?: string | Date;
+    totalPaid?: string;
+    remaining?: string;
+    month?: string;
+  }>;
+};
+
+type RawStudentFee = {
+  title: string;
+  amount: string;
+  discount: string;
+  dueDate: string | Date;
+  status?: 'PAID' | 'UNPAID' | 'PARTIAL' | 'OVERDUE' | 'PENDING';
+  updatedAt?: string | Date;
+  totalPaid?: string;
+  remaining?: string;
+  month?: string;
+};
+
+type RawStudentItem = Omit<StudentItem, 'feeStatus' | 'fees'> & {
+  feeStatus?: 'PAID' | 'UNPAID' | 'PARTIAL' | 'OVERDUE' | 'PENDING';
+  fees?: RawStudentFee[];
 };
 
 type EditFormState = {
@@ -59,7 +86,8 @@ type EditFormState = {
   partialFeeSupported: boolean; collectOnMonthStart: boolean;
 };
 
-type StatusFilter = 'all' | 'active' | 'inactive' | 'paid' | 'pending' | 'overdue';
+type StatusFilter = 'all' | 'active' | 'inactive' | 'pending';
+type FeeFilter = 'all' | 'paid' | 'unpaid' | 'partial' | 'overdue';
 
 const BASE_PAGE_SIZE = 25;
 
@@ -81,6 +109,19 @@ const COUNTRY_CODES = [
 ];
 const FEE_CATEGORIES = ['Monthly','Quarterly','Semi-Annual','Annual','One-time','Admission','Exam'];
 const FEE_TYPES = ['Tuition Fee','Transport Fee','Exam Fee','Activity Fee','Library Fee','Hostel Fee','Other'];
+const STATUS_FILTERS: Array<{ value: StatusFilter; label: string }> = [
+  { value: 'all', label: 'All' },
+  { value: 'active', label: 'Active' },
+  { value: 'inactive', label: 'Inactive' },
+  { value: 'pending', label: 'Fee Pending' },
+];
+const FEE_STATUS_FILTERS: Array<{ value: FeeFilter; label: string }> = [
+  { value: 'all', label: 'All' },
+  { value: 'paid', label: 'Paid' },
+  { value: 'unpaid', label: 'Unpaid' },
+  { value: 'partial', label: 'Partial' },
+  { value: 'overdue', label: 'Overdue' },
+];
 
 function parseWhatsApp(raw: string | null | undefined): { code: string; number: string } {
   if (!raw) return { code: '+92', number: '' };
@@ -89,6 +130,36 @@ function parseWhatsApp(raw: string | null | undefined): { code: string; number: 
     if (raw.startsWith(code)) return { code, number: raw.slice(code.length) };
   }
   return { code: '+92', number: raw };
+}
+
+function normalizeWhatsAppPk(raw?: string | null) {
+  if (!raw) return null;
+  let digits = raw.replace(/\D/g, '');
+  while (digits.startsWith('00')) digits = digits.slice(2);
+
+  if (digits.startsWith('92')) {
+    digits = digits.slice(2);
+    if (digits.startsWith('0')) digits = digits.slice(1);
+  } else if (digits.startsWith('0')) {
+    digits = digits.slice(1);
+  }
+
+  if (digits.length === 11 && digits.startsWith('03')) {
+    digits = digits.slice(1);
+  }
+
+  if (digits.length === 10 && digits.startsWith('3')) {
+    return `+92${digits}`;
+  }
+
+  return null;
+}
+
+function toCanonicalFeeStatus(status?: string | null): 'PAID' | 'UNPAID' | 'PARTIAL' | 'OVERDUE' {
+  if (status === 'PAID') return 'PAID';
+  if (status === 'PARTIAL') return 'PARTIAL';
+  if (status === 'OVERDUE') return 'OVERDUE';
+  return 'UNPAID';
 }
 
 function initials(name: string) {
@@ -127,20 +198,97 @@ function attendanceBarColor(pct: number) {
 function normalizeStudentsData(value: unknown): StudentItem[] {
   if (!Array.isArray(value)) return [];
   return value.map((raw) => {
-    const s = raw as StudentItem;
+    const s = raw as RawStudentItem;
     const att = Array.isArray(s.attendance) ? s.attendance : [];
+    const normalizedFees = Array.isArray(s.fees)
+      ? s.fees.map((fee) => {
+          const amount = Number(fee.amount ?? 0);
+          const discount = Number(fee.discount ?? 0);
+          const totalAmount = Math.max(amount - discount, 0);
+          const totalPaid = Number(fee.totalPaid ?? 0);
+          const remaining = Math.max(totalAmount - totalPaid, 0);
+          const dueDateObj = safeDate(fee.dueDate);
+          return {
+            ...fee,
+            status: toCanonicalFeeStatus(fee.status),
+            totalPaid: totalPaid.toString(),
+            remaining: remaining.toString(),
+            month: fee.month ?? (dueDateObj ? dueDateObj.toLocaleDateString('en-US', { month: 'long', year: 'numeric' }) : ''),
+          };
+        })
+      : [];
     const present = att.filter((r) => r.status === 'PRESENT').length;
     const attendancePercentage = typeof s.attendancePercentage === 'number'
       ? s.attendancePercentage
       : att.length ? Math.round((present / att.length) * 100) : 0;
+    const canonicalFeeStatus = toCanonicalFeeStatus(s.feeStatus ?? normalizedFees[0]?.status);
     return {
       ...s,
+      whatsApp: normalizeWhatsAppPk(s.whatsApp) ?? normalizeWhatsAppPk(s.guardianPhone) ?? null,
+      guardianPhone: normalizeWhatsAppPk(s.guardianPhone) ?? null,
       user: { ...s.user, isActive: s.user?.isActive ?? true },
+      fees: normalizedFees,
       attendancePercentage,
-      feeStatus: s.feeStatus ?? s.fees?.[0]?.status ?? 'PENDING',
-      lastActivityAt: s.lastActivityAt ?? att[0]?.date ?? s.fees?.[0]?.updatedAt ?? null
+      feeStatus: canonicalFeeStatus,
+      lastActivityAt: s.lastActivityAt ?? att[0]?.date ?? normalizedFees[0]?.updatedAt ?? null
     };
   });
+}
+
+type FeeMessagingRow = {
+  studentId: string;
+  studentName: string;
+  classId: string;
+  classLabel: string;
+  feeStatus: 'PAID' | 'UNPAID' | 'PARTIAL' | 'OVERDUE';
+  amount: number;
+  remaining: number;
+  dueDate: Date | null;
+  month: string;
+  schoolName: string;
+  whatsApp: string | null;
+};
+
+function formatPkr(value: number) {
+  return new Intl.NumberFormat('en-PK', { style: 'currency', currency: 'PKR', maximumFractionDigits: 0 }).format(value);
+}
+
+function feeFilterMatch(status: FeeMessagingRow['feeStatus'], filter: FeeFilter) {
+  if (filter === 'all') return true;
+  if (filter === 'paid') return status === 'PAID';
+  if (filter === 'unpaid') return status === 'UNPAID';
+  if (filter === 'partial') return status === 'PARTIAL';
+  return status === 'OVERDUE';
+}
+
+function toWaRecipient(phone: string | null | undefined) {
+  if (!phone) return null;
+  const digits = phone.replace(/\D/g, '');
+  return digits.length >= 10 ? digits : null;
+}
+
+function buildPaidTemplate(row: FeeMessagingRow) {
+  return [
+    'Assalamualaikum,',
+    `This is to confirm that the fee for ${row.studentName} has been successfully received.`,
+    `Amount: ${formatPkr(row.amount)}`,
+    `Month: ${row.month}`,
+    `School: ${row.schoolName}`,
+    'Thank you.'
+  ].join('\n');
+}
+
+function buildReminderTemplate(row: FeeMessagingRow) {
+  return [
+    'Assalamualaikum,',
+    `This is a reminder that the fee for ${row.studentName} is still pending.`,
+    `Amount Due: ${formatPkr(row.remaining)}`,
+    `Due Date: ${row.dueDate ? row.dueDate.toLocaleDateString('en-CA') : 'N/A'}`,
+    `Month: ${row.month}`,
+    `School: ${row.schoolName}`,
+    'Kindly make the payment at your earliest convenience.',
+    'Thank you.'
+  ].join('\n');
 }
 
 /* ─────────────────────────────────────────────────────────────────────────
@@ -733,6 +881,9 @@ export default function AdminStudentsPageClient({
   const [search, setSearch] = useState('');
   const [classFilter, setClassFilter] = useState('');
   const [statusFilter, setStatusFilter] = useState<StatusFilter>('all');
+  const [feeSearch, setFeeSearch] = useState('');
+  const [feeClassFilter, setFeeClassFilter] = useState('');
+  const [feeStatusFilter, setFeeStatusFilter] = useState<FeeFilter>('all');
   const [view, setView] = useState<'grid' | 'list'>('grid');
   const [page, setPage] = useState(1);
 
@@ -747,7 +898,16 @@ export default function AdminStudentsPageClient({
   const [mobileActionStudent, setMobileActionStudent] = useState<StudentItem | null>(null);
   const [editOpen, setEditOpen] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
+  const [bulkWhatsAppModal, setBulkWhatsAppModal] = useState<{
+    title: string;
+    mode: 'paid' | 'unpaid';
+    rows: FeeMessagingRow[];
+    skippedCount: number;
+  } | null>(null);
   const [form, setForm] = useState<EditFormState>(emptyEditForm);
+  // Mobile collapse states
+  const [statsSectionOpen, setStatsSectionOpen] = useState(false);
+  const [feeMessagingSectionOpen, setFeeMessagingSectionOpen] = useState(false);
 
   /* ── Stats ── */
   const stats = useMemo(() => {
@@ -770,17 +930,9 @@ export default function AdminStudentsPageClient({
       if (classFilter && s.classId !== classFilter) return false;
       if (statusFilter === 'active'   && !s.user.isActive)          return false;
       if (statusFilter === 'inactive' &&  s.user.isActive)          return false;
-      if (statusFilter === 'paid'     && s.feeStatus !== 'PAID')    return false;
       if (statusFilter === 'pending'  && s.feeStatus === 'PAID')    return false;
-      if (statusFilter === 'overdue'  && s.feeStatus !== 'OVERDUE') return false;
       const text = search.trim().toLowerCase();
-      if (text) {
-        const match =
-          s.user.fullName.toLowerCase().includes(text) ||
-          s.user.email.toLowerCase().includes(text) ||
-          s.admissionNo.toLowerCase().includes(text);
-        if (!match) return false;
-      }
+      if (text && !s.user.fullName.toLowerCase().includes(text)) return false;
       return true;
     });
   }, [students, classFilter, search, statusFilter]);
@@ -791,6 +943,51 @@ export default function AdminStudentsPageClient({
   const totalPages  = Math.max(1, Math.ceil(filteredStudents.length / PAGE_SIZE));
   const pagedStudents = filteredStudents.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);
   const allPageSelected = pagedStudents.length > 0 && pagedStudents.every((s) => selected.has(s.id));
+
+  const feeMessagingRows = useMemo(() => {
+    const text = feeSearch.trim().toLowerCase();
+    return students
+      .map((student): FeeMessagingRow | null => {
+        const fee = student.fees?.[0];
+        if (!fee) return null;
+
+        const amount = Math.max(Number(fee.amount) - Number(fee.discount), 0);
+        const remaining = Math.max(Number(fee.remaining ?? amount), 0);
+        const dueDate = safeDate(fee.dueDate);
+        const month = fee.month ?? (dueDate ? dueDate.toLocaleDateString('en-US', { month: 'long', year: 'numeric' }) : '');
+        const schoolName = student.schoolName?.trim() || 'Manarah Institute';
+
+        return {
+          studentId: student.id,
+          studentName: student.user.fullName,
+          classId: student.classId ?? '',
+          classLabel: student.class ? `${student.class.name} - ${student.class.section}` : 'Unassigned',
+          feeStatus: toCanonicalFeeStatus(student.feeStatus ?? fee.status),
+          amount,
+          remaining,
+          dueDate,
+          month,
+          schoolName,
+          whatsApp: student.whatsApp ?? student.guardianPhone ?? null,
+        };
+      })
+      .filter((row): row is FeeMessagingRow => row !== null)
+      .filter((row) => {
+        if (text && !row.studentName.toLowerCase().includes(text)) return false;
+        if (feeClassFilter && row.classId !== feeClassFilter) return false;
+        if (!feeFilterMatch(row.feeStatus, feeStatusFilter)) return false;
+        return true;
+      });
+  }, [students, feeSearch, feeClassFilter, feeStatusFilter]);
+
+  const paidRows = useMemo(
+    () => feeMessagingRows.filter((row) => row.feeStatus === 'PAID'),
+    [feeMessagingRows]
+  );
+  const unpaidRows = useMemo(
+    () => feeMessagingRows.filter((row) => row.feeStatus === 'UNPAID' || row.feeStatus === 'PARTIAL' || row.feeStatus === 'OVERDUE'),
+    [feeMessagingRows]
+  );
 
   /* ── Selection ── */
   const toggleSelect = (id: string) =>
@@ -821,6 +1018,32 @@ export default function AdminStudentsPageClient({
   };
 
   const clearFilters = () => { setClassFilter(''); setSearch(''); setStatusFilter('all'); };
+  const hasActiveFilters = Boolean(search.trim() || classFilter || statusFilter !== 'all');
+  const clearFeeFilters = () => { setFeeSearch(''); setFeeClassFilter(''); setFeeStatusFilter('all'); };
+  const hasActiveFeeFilters = Boolean(feeSearch.trim() || feeClassFilter || feeStatusFilter !== 'all');
+
+  const openWhatsApp = (row: FeeMessagingRow) => {
+    const recipient = toWaRecipient(row.whatsApp);
+    if (!recipient) {
+      setMessage(`WhatsApp number missing for ${row.studentName}.`);
+      return;
+    }
+    const text = row.feeStatus === 'PAID' ? buildPaidTemplate(row) : buildReminderTemplate(row);
+    const url = `https://wa.me/${recipient}?text=${encodeURIComponent(text)}`;
+    window.open(url, '_blank', 'noopener,noreferrer');
+  };
+
+  const openBulkModal = (mode: 'paid' | 'unpaid') => {
+    const sourceRows = mode === 'paid' ? paidRows : unpaidRows;
+    const rowsWithNumber = sourceRows.filter((row) => Boolean(toWaRecipient(row.whatsApp)));
+    const skippedCount = sourceRows.length - rowsWithNumber.length;
+    setBulkWhatsAppModal({
+      title: mode === 'paid' ? 'Send Confirmation to All Paid' : 'Send Reminder to All Unpaid',
+      mode,
+      rows: rowsWithNumber,
+      skippedCount,
+    });
+  };
 
   /* ── Edit ── */
   const openEdit = (student: StudentItem) => {
@@ -929,7 +1152,7 @@ export default function AdminStudentsPageClient({
   /* ── Stats cards config ── */
   /* ════════════════════════════════════════════════════════════════════ */
   return (
-    <div className="w-full min-w-0 space-y-5 overflow-x-hidden">
+    <div className="w-full min-w-0 space-y-5 overflow-x-hidden pb-20 sm:pb-5">
 
       {/* ── HEADER ── */}
       <section className="rounded-2xl bg-white p-4 shadow-[0_2px_8px_rgba(0,0,0,0.06),0_8px_32px_rgba(0,0,0,0.04)] sm:p-6">
@@ -941,86 +1164,308 @@ export default function AdminStudentsPageClient({
           </div>
           <Link
             href="/admin/students/enroll"
-            className="h-10 px-4 py-2.5 text-sm font-medium bg-[#1F5A5C] text-white hover:bg-[#174548] active:scale-[0.98] rounded-lg transition-all inline-flex items-center justify-center gap-2"
+            className="h-11 px-4 text-sm font-medium bg-[#1F5A5C] text-white hover:bg-[#174548] active:scale-[0.98] rounded-lg transition-all inline-flex items-center justify-center gap-2 sm:h-10"
           >
             <UserPlus size={16} />
-            Enroll Student
+            <span className="hidden sm:inline">Enroll</span>
+            <span className="sm:hidden">+</span>
           </Link>
         </div>
 
-        {/* Stats */}
-        <div className="mt-5 grid grid-cols-2 gap-3 lg:grid-cols-4">
-          <KpiCard variant="success" icon={<Users size={20} />} label="Total Students" value={stats.total} />
-          <KpiCard variant="primary" icon={<UserCheck size={20} />} label="Active" value={stats.active} />
-          <KpiCard variant="accent" icon={<AlertCircle size={20} />} label="Fees Pending" value={stats.pendingFees} />
-          <KpiCard variant="danger" icon={<TrendingUp size={20} />} label="New This Month" value={stats.newThisMonth} />
-        </div>
+        {/* Stats — collapsible on mobile */}
+        <button
+          type="button"
+          onClick={() => setStatsSectionOpen(!statsSectionOpen)}
+          className="mt-4 flex w-full items-center justify-between sm:hidden px-3 py-2 rounded-lg hover:bg-[#f3f4f5] transition"
+        >
+          <span className="text-xs font-semibold text-[#6b7280]">STATS</span>
+          <ChevronDown className={`h-4 w-4 transition-transform ${statsSectionOpen ? 'rotate-180' : ''}`} />
+        </button>
+
+        {(statsSectionOpen || window.matchMedia('(min-width: 640px)').matches) && (
+          <div className="mt-4 grid grid-cols-2 gap-3 lg:grid-cols-4">
+            <KpiCard variant="success" icon={<Users size={20} />} label="Total Students" value={stats.total} />
+            <KpiCard variant="primary" icon={<UserCheck size={20} />} label="Active" value={stats.active} />
+            <KpiCard variant="accent" icon={<AlertCircle size={20} />} label="Fees Pending" value={stats.pendingFees} />
+            <KpiCard variant="danger" icon={<TrendingUp size={20} />} label="New This Month" value={stats.newThisMonth} />
+          </div>
+        )}
       </section>
 
       {/* ── FILTER BAR ── */}
-      <section className="rounded-2xl bg-white p-4 shadow-[0_2px_8px_rgba(0,0,0,0.06),0_8px_32px_rgba(0,0,0,0.04)]">
-        <div className="grid gap-3 lg:grid-cols-[minmax(0,1fr)_200px_180px_auto_auto]">
-          <label className="flex h-11 items-center gap-2 rounded-xl bg-[#f3f4f5] px-3 transition focus-within:ring-2 focus-within:ring-[#16a34a]/30">
-            <Search className="h-4 w-4 shrink-0 text-[#9ca3af]" />
-            <input
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-              placeholder="Search by name, email or admission ID…"
-              className="w-full bg-transparent text-sm text-[#111827] outline-none placeholder:text-[#9ca3af]"
-            />
-            {search ? (
-              <button onClick={() => setSearch('')} className="shrink-0 text-[#9ca3af] hover:text-[#374151]">
-                <X className="h-3.5 w-3.5" />
-              </button>
-            ) : null}
-          </label>
+      <section className="rounded-2xl bg-white p-4 shadow-[0_2px_8px_rgba(0,0,0,0.06),0_8px_32px_rgba(0,0,0,0.04)] space-y-3">
+        {/* Search — full width */}
+        <label className="flex h-11 items-center gap-2 rounded-xl bg-[#f3f4f5] px-3 transition focus-within:ring-2 focus-within:ring-[#16a34a]/30">
+          <Search className="h-4 w-4 shrink-0 text-[#9ca3af]" />
+          <input
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            placeholder="Search student by name…"
+            className="w-full bg-transparent text-sm text-[#111827] outline-none placeholder:text-[#9ca3af]"
+          />
+          {search ? (
+            <button
+              type="button"
+              onClick={() => setSearch('')}
+              className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg text-[#9ca3af] hover:bg-[#e5e7eb] hover:text-[#374151]"
+              aria-label="Clear search"
+            >
+              <X className="h-3.5 w-3.5" />
+            </button>
+          ) : null}
+        </label>
 
+        {/* Class + Status on mobile, row on desktop */}
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
           <select
             value={classFilter}
             onChange={(e) => setClassFilter(e.target.value)}
-            className="h-11 rounded-xl border-none bg-[#f3f4f5] px-3 text-sm text-[#374151] outline-none focus:ring-2 focus:ring-[#16a34a]/30"
+            className="h-10 rounded-xl border-none bg-[#f3f4f5] px-3 text-sm text-[#374151] outline-none focus:ring-2 focus:ring-[#16a34a]/30 sm:flex-none sm:w-auto"
+            aria-label="Filter by class"
           >
             <option value="">All Classes</option>
             {classes.map((c) => <option key={c.id} value={c.id}>{c.name} – {c.section}</option>)}
           </select>
 
-          <select
-            value={statusFilter}
-            onChange={(e) => setStatusFilter(e.target.value as StatusFilter)}
-            className="h-11 rounded-xl border-none bg-[#f3f4f5] px-3 text-sm text-[#374151] outline-none focus:ring-2 focus:ring-[#16a34a]/30"
-          >
-            <option value="all">All Status</option>
-            <option value="active">Active</option>
-            <option value="inactive">Inactive</option>
-            <option value="paid">Fee Paid</option>
-            <option value="pending">Fee Pending</option>
-            <option value="overdue">Fee Overdue</option>
-          </select>
+          {/* Status chips — horizontally scrollable on mobile */}
+          <div className="flex-1 overflow-x-auto -mx-4 px-4 sm:mx-0 sm:px-0">
+            <div className="flex gap-2 pb-1">
+              {STATUS_FILTERS.map((filter) => (
+                <button
+                  key={filter.value}
+                  type="button"
+                  onClick={() => setStatusFilter(filter.value)}
+                  className={`shrink-0 inline-flex h-10 items-center justify-center rounded-full px-3 text-xs font-semibold transition ${
+                    statusFilter === filter.value
+                      ? 'bg-gradient-to-br from-[#004649] to-[#1b5e62] text-white shadow-sm'
+                      : 'bg-[#f3f4f5] text-[#4b5563] hover:bg-[#e5e7eb]'
+                  }`}
+                >
+                  {filter.label}
+                </button>
+              ))}
+            </div>
+          </div>
 
-          <button
-            onClick={clearFilters}
-            className="inline-flex h-11 items-center justify-center gap-2 rounded-xl border border-[#e5e7eb] bg-white px-4 text-sm font-medium text-[#374151] transition hover:bg-[#f9fafb]"
-          >
-            <SlidersHorizontal className="h-4 w-4 text-[#6b7280]" />
-            Reset
-          </button>
+          {/* Reset + View toggle — desktop only */}
+          {hasActiveFilters && (
+            <button
+              type="button"
+              onClick={clearFilters}
+              className="h-10 inline-flex items-center justify-center gap-1.5 rounded-xl border border-[#e5e7eb] bg-white px-3 text-xs font-semibold text-[#374151] transition hover:bg-[#f9fafb] sm:flex hidden"
+            >
+              <SlidersHorizontal className="h-3.5 w-3.5 text-[#6b7280]" />
+              Reset
+            </button>
+          )}
 
-          <div className="flex items-center gap-1 rounded-xl bg-[#edeeef] p-1">
+          <div className="hidden sm:flex items-center gap-1 rounded-xl bg-[#edeeef] p-1 sm:ml-auto">
             <button
               onClick={() => setView('grid')}
-              className={`rounded-lg p-1.5 transition-colors ${view === 'grid' ? 'bg-gradient-to-br from-[#004649] to-[#1b5e62] text-white shadow-sm' : 'text-[#6f7979] hover:text-[#1a1c1c]'}`}
+              className={`flex h-10 w-10 items-center justify-center rounded-lg transition-colors ${view === 'grid' ? 'bg-gradient-to-br from-[#004649] to-[#1b5e62] text-white shadow-sm' : 'text-[#6f7979] hover:text-[#1a1c1c]'}`}
             >
               <Grid3X3 size={15} />
             </button>
             <button
               onClick={() => setView('list')}
-              className={`rounded-lg p-1.5 transition-colors ${view === 'list' ? 'bg-gradient-to-br from-[#004649] to-[#1b5e62] text-white shadow-sm' : 'text-[#6f7979] hover:text-[#1a1c1c]'}`}
+              className={`flex h-10 w-10 items-center justify-center rounded-lg transition-colors ${view === 'list' ? 'bg-gradient-to-br from-[#004649] to-[#1b5e62] text-white shadow-sm' : 'text-[#6f7979] hover:text-[#1a1c1c]'}`}
             >
               <List size={15} />
             </button>
           </div>
         </div>
-        {message ? <p className="mt-3 text-sm font-medium text-[#16a34a]">{message}</p> : null}
+
+        {message ? <p className="text-sm font-medium text-[#16a34a]">{message}</p> : null}
+      </section>
+
+      {/* ── FEE MESSAGING ── */}
+      <section className="rounded-2xl bg-white p-4 shadow-[0_2px_8px_rgba(0,0,0,0.06),0_8px_32px_rgba(0,0,0,0.04)] sm:p-5">
+        {/* Collapsible header on mobile */}
+        <button
+          type="button"
+          onClick={() => setFeeMessagingSectionOpen(!feeMessagingSectionOpen)}
+          className="flex w-full items-center justify-between sm:flex-row sm:gap-3 mb-4"
+        >
+          <div className="text-left">
+            <h2 className="font-headline text-base font-bold text-[#111827] sm:text-lg">Fee Messaging</h2>
+            <p className="text-xs text-[#64748b] hidden sm:block">Filter students by fee status and send WhatsApp reminders/confirmations.</p>
+          </div>
+          <div className="flex items-center gap-2 shrink-0">
+            <span className="rounded-full bg-[#f3f4f5] px-2 py-1 text-xs font-semibold text-[#374151]">
+              {feeMessagingRows.length}
+            </span>
+            <ChevronDown className={`h-4 w-4 text-[#6b7280] transition-transform sm:hidden ${feeMessagingSectionOpen ? 'rotate-180' : ''}`} />
+          </div>
+        </button>
+
+        {/* Content — show on desktop or when expanded on mobile */}
+        {(feeMessagingSectionOpen || window.matchMedia('(min-width: 640px)').matches) && (
+
+        <div className="mt-3 space-y-3">
+          <label className="flex h-10 items-center gap-2 rounded-xl bg-[#f3f4f5] px-3 focus-within:ring-2 focus-within:ring-[#16a34a]/30">
+            <Search className="h-4 w-4 shrink-0 text-[#9ca3af]" />
+            <input
+              value={feeSearch}
+              onChange={(e) => setFeeSearch(e.target.value)}
+              placeholder="Search by student name…"
+              className="w-full bg-transparent text-sm text-[#111827] outline-none placeholder:text-[#9ca3af]"
+            />
+            {feeSearch ? (
+              <button
+                type="button"
+                onClick={() => setFeeSearch('')}
+                className="flex h-11 w-11 items-center justify-center rounded-lg text-[#9ca3af] hover:bg-[#e5e7eb] hover:text-[#374151] lg:h-8 lg:w-8"
+                aria-label="Clear fee search"
+              >
+                <X className="h-3.5 w-3.5" />
+              </button>
+            ) : null}
+          </label>
+
+          <div className="flex flex-wrap items-center gap-2">
+            <div className="min-w-[150px] flex-1 sm:flex-none">
+              <select
+                value={feeClassFilter}
+                onChange={(e) => setFeeClassFilter(e.target.value)}
+                className="h-9 w-full rounded-full border-none bg-[#f3f4f5] px-3 text-sm text-[#374151] outline-none focus:ring-2 focus:ring-[#16a34a]/30"
+                aria-label="Fee filter by class"
+              >
+                <option value="">All Classes</option>
+                {classes.map((c) => <option key={c.id} value={c.id}>{c.name} – {c.section}</option>)}
+              </select>
+            </div>
+
+            <div className="flex flex-1 flex-wrap items-center gap-2">
+              {FEE_STATUS_FILTERS.map((filter) => (
+                <button
+                  key={filter.value}
+                  type="button"
+                  onClick={() => setFeeStatusFilter(filter.value)}
+                  className={`inline-flex h-11 items-center justify-center rounded-full px-3 text-xs font-semibold transition lg:h-9 ${
+                    feeStatusFilter === filter.value
+                      ? 'bg-gradient-to-br from-[#004649] to-[#1b5e62] text-white shadow-sm'
+                      : 'bg-[#f3f4f5] text-[#4b5563] hover:bg-[#e5e7eb]'
+                  }`}
+                >
+                  {filter.label}
+                </button>
+              ))}
+            </div>
+
+            {hasActiveFeeFilters ? (
+              <button
+                type="button"
+                onClick={clearFeeFilters}
+                className="inline-flex h-11 items-center justify-center gap-1.5 rounded-full border border-[#e5e7eb] bg-white px-3 text-xs font-semibold text-[#374151] transition hover:bg-[#f9fafb] lg:h-9"
+              >
+                <SlidersHorizontal className="h-3.5 w-3.5 text-[#6b7280]" />
+                Reset
+              </button>
+            ) : null}
+          </div>
+
+          <div className="flex flex-wrap gap-2">
+            <button
+              type="button"
+              onClick={() => openBulkModal('unpaid')}
+              className="inline-flex h-11 items-center justify-center rounded-xl bg-[#fff7ed] px-3 text-xs font-semibold text-[#9a5a00] ring-1 ring-[#fed7aa] transition hover:bg-[#ffedd5] lg:h-10"
+            >
+              Send Reminder to All Unpaid
+            </button>
+            <button
+              type="button"
+              onClick={() => openBulkModal('paid')}
+              className="inline-flex h-11 items-center justify-center rounded-xl bg-[#ecfdf3] px-3 text-xs font-semibold text-[#15803d] ring-1 ring-[#bbf7d0] transition hover:bg-[#dcfce7] lg:h-10"
+            >
+              Send Confirmation to All Paid
+            </button>
+          </div>
+        </div>
+
+        <div className="mt-4 space-y-2 sm:hidden">
+          {feeMessagingRows.map((row) => (
+            <div key={row.studentId} className="rounded-xl border border-[#edf0f2] bg-[#fafafa] p-3">
+              <div className="flex items-start justify-between gap-2">
+                <div className="min-w-0">
+                  <p className="truncate text-sm font-semibold text-[#111827]">{row.studentName}</p>
+                  <p className="text-xs text-[#6b7280]">{row.classLabel}</p>
+                </div>
+                <span className={`shrink-0 rounded-full px-2 py-0.5 text-[10px] font-bold ${feeBadgeClass(row.feeStatus)}`}>
+                  {row.feeStatus}
+                </span>
+              </div>
+              <div className="mt-2 grid grid-cols-2 gap-2 text-xs text-[#4b5563]">
+                <p>Amount: <span className="font-semibold text-[#111827]">{formatPkr(row.amount)}</span></p>
+                <p>Remaining: <span className="font-semibold text-[#111827]">{formatPkr(row.remaining)}</span></p>
+                <p>Due: <span className="font-semibold text-[#111827]">{row.dueDate ? row.dueDate.toLocaleDateString('en-CA') : 'N/A'}</span></p>
+                <p>Month: <span className="font-semibold text-[#111827]">{row.month || 'N/A'}</span></p>
+              </div>
+              <button
+                type="button"
+                onClick={() => openWhatsApp(row)}
+                disabled={!toWaRecipient(row.whatsApp)}
+                className="mt-2 inline-flex h-11 w-full items-center justify-center gap-2 rounded-xl bg-[#16a34a] px-3 text-sm font-semibold text-white transition hover:bg-[#15803d] disabled:cursor-not-allowed disabled:opacity-50 lg:h-10"
+              >
+                <MessageSquare className="h-4 w-4" />
+                {row.feeStatus === 'PAID' ? 'Send Confirmation' : 'Send Reminder'}
+              </button>
+            </div>
+          ))}
+          {feeMessagingRows.length === 0 ? (
+            <p className="rounded-xl bg-[#f8fafc] px-3 py-4 text-center text-sm text-[#64748b]">No students match fee filters.</p>
+          ) : null}
+        </div>
+
+        <div className="mt-4 hidden overflow-x-auto sm:block">
+          <table className="w-full min-w-[860px] text-sm">
+            <thead>
+              <tr className="bg-[#f8fafc] text-left text-[11px] uppercase tracking-[0.12em] text-[#9ca3af]">
+                <th className="rounded-l-xl px-3 py-2">Student</th>
+                <th className="px-3 py-2">Class</th>
+                <th className="px-3 py-2">Status</th>
+                <th className="px-3 py-2">Amount / Remaining</th>
+                <th className="px-3 py-2">Due Date</th>
+                <th className="px-3 py-2">WhatsApp</th>
+                <th className="rounded-r-xl px-3 py-2 text-right">Action</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-[#f1f5f9]">
+              {feeMessagingRows.map((row) => (
+                <tr key={row.studentId} className="hover:bg-[#fafafa]">
+                  <td className="px-3 py-3 font-medium text-[#111827]">{row.studentName}</td>
+                  <td className="px-3 py-3 text-[#64748b]">{row.classLabel}</td>
+                  <td className="px-3 py-3">
+                    <span className={`rounded-full px-2.5 py-1 text-[10px] font-bold ${feeBadgeClass(row.feeStatus)}`}>
+                      {row.feeStatus}
+                    </span>
+                  </td>
+                  <td className="px-3 py-3 text-[#374151]">
+                    {formatPkr(row.amount)} / <span className="font-semibold">{formatPkr(row.remaining)}</span>
+                  </td>
+                  <td className="px-3 py-3 text-[#64748b]">
+                    {row.dueDate ? row.dueDate.toLocaleDateString('en-CA') : 'N/A'}
+                  </td>
+                  <td className="px-3 py-3 text-[#64748b]">{row.whatsApp ?? 'No number'}</td>
+                  <td className="px-3 py-3 text-right">
+                    <button
+                      type="button"
+                      onClick={() => openWhatsApp(row)}
+                      disabled={!toWaRecipient(row.whatsApp)}
+                      className="inline-flex h-11 items-center justify-center gap-2 rounded-lg bg-[#16a34a] px-3 text-xs font-semibold text-white transition hover:bg-[#15803d] disabled:cursor-not-allowed disabled:opacity-50 lg:h-9"
+                    >
+                      <MessageSquare className="h-3.5 w-3.5" />
+                      WhatsApp
+                    </button>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+          {feeMessagingRows.length === 0 ? (
+            <p className="rounded-xl bg-[#f8fafc] px-3 py-4 text-center text-sm text-[#64748b]">No students match fee filters.</p>
+          ) : null}
+        </div>
+        )}
       </section>
 
       {/* ── STUDENT LIST ── */}
@@ -1134,7 +1579,7 @@ export default function AdminStudentsPageClient({
                       <button
                         type="button"
                         onClick={() => setMobileActionStudent(student)}
-                        className="shrink-0 self-start rounded-xl p-1.5 text-[#9ca3af] hover:bg-[#f3f4f6] md:hidden"
+                        className="flex h-11 w-11 shrink-0 self-start items-center justify-center rounded-xl text-[#9ca3af] hover:bg-[#f3f4f6] md:hidden"
                         aria-label="Open student actions"
                       >
                         <MoreVertical className="h-4 w-4" />
@@ -1149,10 +1594,10 @@ export default function AdminStudentsPageClient({
                         <span className="text-[#6b7280]">Fee Status</span>
                         <span className={`font-semibold ${
                           student.feeStatus === 'PAID' ? 'text-[#16a34a]' :
-                          student.feeStatus === 'PENDING' ? 'text-[#d97706]' :
+                          student.feeStatus === 'UNPAID' || student.feeStatus === 'PARTIAL' ? 'text-[#d97706]' :
                           'text-[#dc2626]'
                         }`}>
-                          {student.feeStatus || 'PENDING'}
+                          {student.feeStatus || 'UNPAID'}
                         </span>
                       </div>
                     </div>
@@ -1177,7 +1622,7 @@ export default function AdminStudentsPageClient({
             <div className="hidden divide-y divide-[#f8fafc] md:block">
           {pagedStudents.map((student) => {
             const att = Math.max(0, Math.min(100, student.attendancePercentage ?? 0));
-            const feeStatus = student.feeStatus ?? 'PENDING';
+            const feeStatus = student.feeStatus ?? 'UNPAID';
             const isSelected = selected.has(student.id);
 
             return (
@@ -1269,85 +1714,59 @@ export default function AdminStudentsPageClient({
           })}
         </div>
 
-        {/* Mobile cards */}
+        {/* Mobile cards — compact 2-line layout */}
         <div className="divide-y divide-[#f8fafc] md:hidden">
           {pagedStudents.map((student) => {
             const att = Math.max(0, Math.min(100, student.attendancePercentage ?? 0));
-            const feeStatus = student.feeStatus ?? 'PENDING';
+            const feeStatus = student.feeStatus ?? 'UNPAID';
             const isSelected = selected.has(student.id);
-
-            const isExpanded = expandedIds.has(student.id);
-            const classLabel = student.class ? `${student.class.name}–${student.class.section}` : 'Unassigned';
+            const latestFee = student.fees?.[0];
+            const feeAmount = latestFee ? Math.max(Number(latestFee.amount) - Number(latestFee.discount), 0) : 0;
+            const dueDateStr = latestFee && latestFee.dueDate
+              ? new Date(latestFee.dueDate).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
+              : '—';
 
             return (
-              <div key={student.id} className={`p-3 sm:p-4 transition-colors ${isSelected ? 'bg-[#f0fdf4]' : ''}`}>
-                {/* Main row — always visible */}
-                <div className="flex items-center gap-2">
+              <div key={student.id} className={`p-3 transition-colors ${isSelected ? 'bg-[#f0fdf4]' : ''}`}>
+                {/* Checkbox + Avatar + Name + Status — line 1 */}
+                <div className="flex items-center gap-2 mb-2">
                   <input
                     type="checkbox"
                     checked={isSelected}
                     onChange={() => toggleSelect(student.id)}
-                    className="mt-0.5 h-5 w-5 rounded accent-[#16a34a] shrink-0"
+                    className="h-5 w-5 rounded accent-[#16a34a] shrink-0"
                   />
-                  <div className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-xs font-bold ${
-                    isSelected ? 'bg-[#bbf7d0] text-[#15803d]' : 'bg-[#f0fdf4] text-[#16a34a]'
-                  }`}>
-                    {initials(student.user.fullName)}
-                  </div>
-                  <div className="min-w-0 flex-1">
-                    <Link href={`/admin/students/${student.id}`} className="block truncate text-sm font-semibold text-[#111827]">
-                      {student.user.fullName}
-                    </Link>
-                    <div className="mt-0.5 flex items-center gap-1 flex-wrap text-xs">
-                      <span className="text-[#6b7280]">{classLabel}</span>
-                      <span className="text-[#9ca3af]">·</span>
-                      <span className="font-semibold" style={{ color: attendanceBarColor(att) }}>{att}%</span>
-                      <span className={`rounded-full px-1.5 py-0.5 text-[10px] font-bold ${feeBadgeClass(feeStatus)}`}>{feeStatus}</span>
-                    </div>
-                  </div>
-                  <button
-                    type="button"
-                    onClick={() => toggleExpand(student.id)}
-                    className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl text-[#9ca3af] hover:bg-[#f3f4f6] transition-transform"
-                    aria-label="Toggle student details"
+                  <Link
+                    href={`/admin/students/${student.id}`}
+                    className="flex-1 min-w-0 flex items-baseline gap-2"
                   >
-                    <ChevronDown className={`h-4 w-4 transition-transform ${isExpanded ? 'rotate-180' : ''}`} />
-                  </button>
+                    <span className="truncate text-sm font-semibold text-[#111827]">
+                      {student.user.fullName}
+                    </span>
+                    <span className={`shrink-0 rounded-full px-2 py-0.5 text-[10px] font-bold ${feeBadgeClass(feeStatus)}`}>
+                      {feeStatus}
+                    </span>
+                  </Link>
                   <button
                     type="button"
                     onClick={() => setMobileActionStudent(student)}
-                    className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl text-[#9ca3af] hover:bg-[#f3f4f6]"
+                    className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg text-[#9ca3af] hover:bg-[#f3f4f6] active:bg-[#e5e7eb]"
                     aria-label="Open student actions"
                   >
                     <MoreVertical className="h-4 w-4" />
                   </button>
                 </div>
 
-                {/* Expanded details — shown on tap */}
-                {isExpanded && (
-                  <div className="mt-2 ml-[50px] sm:ml-[62px] space-y-1 rounded-lg bg-[#f8fafc] p-2">
-                    <div className="flex items-center gap-2 text-xs text-[#6b7280]">
-                      <Mail className="h-3 w-3 shrink-0" />
-                      <span className="truncate">{student.user.email}</span>
-                    </div>
-                    <div className="flex items-center gap-2 text-xs text-[#6b7280]">
-                      <Hash className="h-3 w-3 shrink-0" />
-                      <span className="font-mono text-[10px]">{student.admissionNo}</span>
-                    </div>
-                    <div className="flex items-center justify-between text-xs gap-2">
-                      <span className={`rounded-full px-2 py-0.5 text-[10px] font-bold ${student.user.isActive ? 'bg-[#dcfce7] text-[#15803d]' : 'bg-[#fee2e2] text-[#b91c1c]'}`}>
-                        {student.user.isActive ? 'Active' : 'Inactive'}
-                      </span>
-                      <button
-                        type="button"
-                        onClick={() => openEdit(student)}
-                        className="text-[#1F5A5C] font-semibold hover:underline"
-                      >
-                        Edit
-                      </button>
-                    </div>
-                  </div>
-                )}
+                {/* Attendance • Amount • Due — line 2 */}
+                <div className="flex items-center gap-2 text-xs text-[#6b7280] pl-7 ml-0">
+                  <span style={{ color: attendanceBarColor(att) }} className="font-semibold shrink-0">
+                    {att}%
+                  </span>
+                  <span className="text-[#d1d5db]">•</span>
+                  <span className="shrink-0">AED {(feeAmount / 1000).toFixed(0)}K</span>
+                  <span className="text-[#d1d5db]">•</span>
+                  <span className="shrink-0">{dueDateStr}</span>
+                </div>
               </div>
             );
           })}
@@ -1495,6 +1914,65 @@ export default function AdminStudentsPageClient({
                 <Trash2 className="h-4 w-4 text-[#ef4444]" />
                 Remove Student
               </button>
+            </div>
+          </div>
+        </div>
+      ) : null}
+
+      {/* ── BULK WHATSAPP MODAL ── */}
+      {bulkWhatsAppModal ? (
+        <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/40 p-0 sm:items-center sm:p-4" onClick={() => setBulkWhatsAppModal(null)}>
+          <div className="h-[82vh] w-full overflow-hidden rounded-t-2xl bg-white shadow-2xl sm:h-auto sm:max-h-[80vh] sm:max-w-2xl sm:rounded-2xl" onClick={(e) => e.stopPropagation()}>
+            <div className="flex items-center justify-between border-b border-[#eef2f7] px-5 py-4">
+              <div>
+                <h3 className="font-headline text-base font-bold text-[#111827]">{bulkWhatsAppModal.title}</h3>
+                <p className="text-xs text-[#64748b]">
+                  Selected: <span className="font-semibold text-[#111827]">{bulkWhatsAppModal.rows.length}</span>
+                  {' '}| Skipped (no number): <span className="font-semibold text-[#111827]">{bulkWhatsAppModal.skippedCount}</span>
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={() => setBulkWhatsAppModal(null)}
+                className="flex h-9 w-9 items-center justify-center rounded-lg text-[#9ca3af] hover:bg-[#f3f4f6] hover:text-[#374151]"
+              >
+                <X className="h-4 w-4" />
+              </button>
+            </div>
+
+            <div className="max-h-[66vh] space-y-2 overflow-y-auto p-4 sm:max-h-[60vh]">
+              {bulkWhatsAppModal.rows.map((row) => (
+                <div key={row.studentId} className="rounded-xl border border-[#e5e7eb] bg-white p-3">
+                  <div className="flex flex-wrap items-center justify-between gap-2">
+                    <div className="min-w-0">
+                      <p className="truncate text-sm font-semibold text-[#111827]">{row.studentName}</p>
+                      <p className="text-xs text-[#64748b]">{row.classLabel}</p>
+                    </div>
+                    <span className={`rounded-full px-2.5 py-1 text-[10px] font-bold ${feeBadgeClass(row.feeStatus)}`}>
+                      {row.feeStatus}
+                    </span>
+                  </div>
+                  <div className="mt-2 grid grid-cols-1 gap-1 text-xs text-[#4b5563] sm:grid-cols-2">
+                    <p>Amount: <span className="font-semibold text-[#111827]">{formatPkr(row.amount)}</span></p>
+                    <p>Remaining: <span className="font-semibold text-[#111827]">{formatPkr(row.remaining)}</span></p>
+                    <p>Due: <span className="font-semibold text-[#111827]">{row.dueDate ? row.dueDate.toLocaleDateString('en-CA') : 'N/A'}</span></p>
+                    <p>WhatsApp: <span className="font-semibold text-[#111827]">{row.whatsApp ?? 'N/A'}</span></p>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => openWhatsApp(row)}
+                    className="mt-2 inline-flex h-9 items-center justify-center gap-2 rounded-lg bg-[#16a34a] px-3 text-xs font-semibold text-white transition hover:bg-[#15803d]"
+                  >
+                    <MessageSquare className="h-3.5 w-3.5" />
+                    {bulkWhatsAppModal.mode === 'paid' ? 'Open Confirmation' : 'Open Reminder'}
+                  </button>
+                </div>
+              ))}
+              {bulkWhatsAppModal.rows.length === 0 ? (
+                <p className="rounded-xl bg-[#f8fafc] px-3 py-4 text-center text-sm text-[#64748b]">
+                  No students available with valid WhatsApp numbers for this bulk action.
+                </p>
+              ) : null}
             </div>
           </div>
         </div>
