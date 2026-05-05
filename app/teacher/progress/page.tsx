@@ -339,6 +339,7 @@ export default function TeacherProgressPage() {
   const [reportQuery, setReportQuery] = useState('');
   const [reportDate, setReportDate] = useState('');
   const [openReportId, setOpenReportId] = useState<string | null>(null);
+  const [saveAndMoveNext, setSaveAndMoveNext] = useState(false);
 
   const [form, setForm] = useState({
     date: new Date().toISOString().slice(0, 10),
@@ -350,6 +351,7 @@ export default function TeacherProgressPage() {
       manzil: emptySection()
     }
   });
+  const [activeTab, setActiveTab] = useState<SectionKey>('sabaq');
 
   const addNotice = useCallback((type: NotificationItem['type'], text: string) => {
     const id = Date.now() + Math.floor(Math.random() * 999);
@@ -377,6 +379,27 @@ export default function TeacherProgressPage() {
     }),
     [progress, reportDate, reportQuery]
   );
+
+  const sectionBadges = useMemo(() => {
+    const badges: Record<SectionKey, { rangeCount: number; mistakeCount: number }> = {
+      sabaq: { rangeCount: 0, mistakeCount: 0 },
+      sabqi: { rangeCount: 0, mistakeCount: 0 },
+      manzil: { rangeCount: 0, mistakeCount: 0 }
+    };
+
+    sectionMeta.forEach(({ key }) => {
+      const section = form.sections[key];
+      const filledRanges = section.ranges.filter(r => r.surahId && r.fromAyah && r.toAyah).length;
+      const taj = Number(section.tajweeditotal) || 0;
+      const hifz = Number(section.hifztotal) || 0;
+      badges[key] = {
+        rangeCount: filledRanges,
+        mistakeCount: taj + hifz
+      };
+    });
+
+    return badges;
+  }, [form.sections]);
 
   const completionPercent = useMemo(() => {
     const baseDone = [form.date, form.classId, form.studentId].filter(Boolean).length;
@@ -613,6 +636,16 @@ export default function TeacherProgressPage() {
     addNotice('info', `Quick mistake profile applied: ${value}`);
   };
 
+  const applyQuickPerformanceToTab = (value: Exclude<KaifiyatValue, ''>) => {
+    setSectionValue(activeTab, { kaifiyat: value });
+    addNotice('info', `${activeTab.charAt(0).toUpperCase() + activeTab.slice(1)}: ${value}`);
+  };
+
+  const applyQuickMistakesToTab = (value: '0' | '1-2' | '3+') => {
+    const mistakeCount = value === '0' ? 0 : value === '1-2' ? 1 : 3;
+    setSectionValue(activeTab, { tajweeditotal: String(mistakeCount), hifztotal: String(mistakeCount) });
+  };
+
   const validateForm = () => {
     if (!form.date || !form.classId || !form.studentId) return 'Date, class, and student are required.';
 
@@ -726,14 +759,43 @@ export default function TeacherProgressPage() {
       }
 
       addNotice('success', 'Quran progress report saved successfully.');
-      setForm((prev) => ({
-        ...prev,
-        sections: {
-          sabaq: emptySection(),
-          sabqi: emptySection(),
-          manzil: emptySection()
+
+      if (saveAndMoveNext) {
+        setSaveAndMoveNext(false);
+        const nextStudent = selectedStudents.find((s) => s.id > form.studentId);
+        if (nextStudent) {
+          setForm((prev) => ({
+            ...prev,
+            studentId: nextStudent.id,
+            sections: {
+              sabaq: emptySection(),
+              sabqi: emptySection(),
+              manzil: emptySection()
+            }
+          }));
+          addNotice('info', `Moved to ${nextStudent.user.fullName}`);
+        } else {
+          setForm((prev) => ({
+            ...prev,
+            sections: {
+              sabaq: emptySection(),
+              sabqi: emptySection(),
+              manzil: emptySection()
+            }
+          }));
+          addNotice('info', 'No more students in this class.');
         }
-      }));
+      } else {
+        setForm((prev) => ({
+          ...prev,
+          sections: {
+            sabaq: emptySection(),
+            sabqi: emptySection(),
+            manzil: emptySection()
+          }
+        }));
+      }
+
       await loadProgressData();
     } catch {
       addNotice('error', 'Request failed. Please try again.');
@@ -743,7 +805,7 @@ export default function TeacherProgressPage() {
   };
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4 sm:space-y-6">
       <div>
         <PageHeader
           title="Teacher Daily Progress Report System"
@@ -769,8 +831,8 @@ export default function TeacherProgressPage() {
         )}
       </div>
 
-      <Card>
-        <div className="mb-4">
+      <Card className="p-3 sm:p-4">
+        <div className="mb-3 sm:mb-4">
           <div className="mb-2 flex items-center justify-between text-xs font-semibold text-[#6B7280]">
             <span>Form Completion</span>
             <span>{completionPercent}%</span>
@@ -781,7 +843,7 @@ export default function TeacherProgressPage() {
         </div>
       </Card>
 
-      <section className="grid gap-5 xl:grid-cols-[1.7fr_1fr]">
+      <section className="grid gap-5 xl:grid-cols-[1.7fr_1fr] pb-32">
         <Card>
           <form onSubmit={submit}>
             <div className="grid gap-3 md:grid-cols-3">
@@ -832,36 +894,65 @@ export default function TeacherProgressPage() {
               </select>
             </div>
 
-            <div className="mt-4 rounded-lg border border-[#E5E7EB] bg-[#F9FAFB] p-4">
-              <p className="text-xs font-bold uppercase tracking-widest text-[#6B7280]">Quick Actions</p>
-              <div className="mt-3 flex flex-wrap gap-2">
-                <button type="button" onClick={() => applyQuickPerformance('Good ⭐⭐⭐⭐')} className="rounded-lg bg-gradient-to-br from-[#1F5A5C] to-[#2a7579] shadow-[0_8px_20px_rgba(31,90,92,0.12)] active:scale-[0.98] transition-all px-3 py-1.5 text-xs font-semibold text-white">Good</button>
-                <button type="button" onClick={() => applyQuickPerformance('Average ⭐⭐⭐')} className="rounded-lg bg-gradient-to-br from-[#1F5A5C] to-[#2a7579] shadow-[0_8px_20px_rgba(31,90,92,0.12)] active:scale-[0.98] transition-all px-3 py-1.5 text-xs font-semibold text-white">Average</button>
-                <button type="button" onClick={() => applyQuickPerformance('Weak ⭐⭐')} className="rounded-lg bg-gradient-to-br from-[#1F5A5C] to-[#2a7579] shadow-[0_8px_20px_rgba(31,90,92,0.12)] active:scale-[0.98] transition-all px-3 py-1.5 text-xs font-semibold text-white">Weak</button>
-                <button type="button" onClick={() => applyQuickMistakes('0')} className="rounded-lg bg-gradient-to-br from-[#1F5A5C] to-[#2a7579] shadow-[0_8px_20px_rgba(31,90,92,0.12)] active:scale-[0.98] transition-all px-3 py-1.5 text-xs font-semibold text-white">No Mistake</button>
-                <button type="button" onClick={() => applyQuickMistakes('1-2')} className="rounded-lg bg-gradient-to-br from-[#1F5A5C] to-[#2a7579] shadow-[0_8px_20px_rgba(31,90,92,0.12)] active:scale-[0.98] transition-all px-3 py-1.5 text-xs font-semibold text-white">1-2</button>
-                <button type="button" onClick={() => applyQuickMistakes('3+')} className="rounded-lg bg-gradient-to-br from-[#1F5A5C] to-[#2a7579] shadow-[0_8px_20px_rgba(31,90,92,0.12)] active:scale-[0.98] transition-all px-3 py-1.5 text-xs font-semibold text-white">3+</button>
-              </div>
+            {/* Tab Navigation */}
+            <div className="mt-3 flex gap-1 border-b border-[#E5E7EB] overflow-x-auto sm:gap-2 md:mt-5 md:gap-4">
+              {sectionMeta.map((section) => {
+                const badge = sectionBadges[section.key];
+                const isActive = activeTab === section.key;
+                return (
+                  <button
+                    key={section.key}
+                    type="button"
+                    onClick={() => setActiveTab(section.key)}
+                    className={`whitespace-nowrap px-2 py-2 text-xs sm:px-3 sm:text-sm font-semibold transition border-b-2 -mb-px ${
+                      isActive
+                        ? 'border-[#1F5A5C] text-[#1F5A5C]'
+                        : 'border-transparent text-[#6B7280] hover:text-[#1F2937]'
+                    }`}
+                  >
+                    {section.icon} {section.title}
+                    <span className="hidden sm:inline ml-2 text-xs font-normal text-[#9CA3AF]">
+                      ({badge.rangeCount} {badge.rangeCount === 1 ? 'range' : 'ranges'}, {badge.mistakeCount} mistakes)
+                    </span>
+                  </button>
+                );
+              })}
             </div>
 
-            {suggestedNextSabaq ? (
-              <div className="mt-4 flex flex-wrap items-center gap-2 rounded-lg border border-[#D1FAE5] bg-[#F0FDF4] p-4 text-sm text-[#10B981]">
-                <Sparkles className="h-4 w-4" />
-                <span className="font-semibold">Auto Suggest Next Lesson:</span>
-                <span>{suggestedNextSabaq.label}</span>
-                <button type="button" onClick={applyAutoSuggestion} className="rounded-lg bg-[#10B981] px-3 py-1 text-xs font-semibold text-white hover:bg-[#059669]">
-                  Apply Suggestion
-                </button>
-              </div>
-            ) : null}
-
+            {/* Tab Content */}
             <div className="mt-5 space-y-4">
               {sectionMeta.map((section) => {
+                if (activeTab !== section.key) return null;
                 const formSection = form.sections[section.key];
 
                 return (
                   <div key={section.key} className="rounded-lg border border-[#E5E7EB] bg-[#FFFFFF] p-4">
                     <h3 className="mb-4 text-base font-bold text-[#1F2937]">{section.icon} {section.title}</h3>
+
+                    {/* Quick Actions (tab-scoped) */}
+                    <div className="mb-3 rounded-lg border border-[#E5E7EB] bg-[#F9FAFB] p-2 sm:p-3">
+                      <p className="text-xs font-bold uppercase tracking-widest text-[#6B7280] mb-2">Quick Actions</p>
+                      <div className="flex flex-wrap gap-1 sm:gap-2">
+                        <button type="button" onClick={() => applyQuickPerformanceToTab('Good ⭐⭐⭐⭐')} className="rounded-lg bg-gradient-to-br from-[#1F5A5C] to-[#2a7579] shadow-[0_8px_20px_rgba(31,90,92,0.12)] active:scale-[0.98] transition-all px-2 py-1 text-xs sm:px-3 sm:py-1.5 font-semibold text-white">Good</button>
+                        <button type="button" onClick={() => applyQuickPerformanceToTab('Average ⭐⭐⭐')} className="rounded-lg bg-gradient-to-br from-[#1F5A5C] to-[#2a7579] shadow-[0_8px_20px_rgba(31,90,92,0.12)] active:scale-[0.98] transition-all px-2 py-1 text-xs sm:px-3 sm:py-1.5 font-semibold text-white">Avg</button>
+                        <button type="button" onClick={() => applyQuickPerformanceToTab('Weak ⭐⭐')} className="rounded-lg bg-gradient-to-br from-[#1F5A5C] to-[#2a7579] shadow-[0_8px_20px_rgba(31,90,92,0.12)] active:scale-[0.98] transition-all px-2 py-1 text-xs sm:px-3 sm:py-1.5 font-semibold text-white">Weak</button>
+                        <button type="button" onClick={() => applyQuickMistakesToTab('0')} className="rounded-lg bg-gradient-to-br from-[#1F5A5C] to-[#2a7579] shadow-[0_8px_20px_rgba(31,90,92,0.12)] active:scale-[0.98] transition-all px-2 py-1 text-xs sm:px-3 sm:py-1.5 font-semibold text-white">0</button>
+                        <button type="button" onClick={() => applyQuickMistakesToTab('1-2')} className="rounded-lg bg-gradient-to-br from-[#1F5A5C] to-[#2a7579] shadow-[0_8px_20px_rgba(31,90,92,0.12)] active:scale-[0.98] transition-all px-2 py-1 text-xs sm:px-3 sm:py-1.5 font-semibold text-white">1-2</button>
+                        <button type="button" onClick={() => applyQuickMistakesToTab('3+')} className="rounded-lg bg-gradient-to-br from-[#1F5A5C] to-[#2a7579] shadow-[0_8px_20px_rgba(31,90,92,0.12)] active:scale-[0.98] transition-all px-2 py-1 text-xs sm:px-3 sm:py-1.5 font-semibold text-white">3+</button>
+                      </div>
+                    </div>
+
+                    {/* Auto Suggest (Sabaq only) */}
+                    {section.key === 'sabaq' && suggestedNextSabaq ? (
+                      <div className="mb-4 flex flex-wrap items-center gap-2 rounded-lg border border-[#D1FAE5] bg-[#F0FDF4] p-3 text-sm text-[#10B981]">
+                        <Sparkles className="h-4 w-4" />
+                        <span className="font-semibold">Auto Suggest:</span>
+                        <span>{suggestedNextSabaq.label}</span>
+                        <button type="button" onClick={applyAutoSuggestion} className="rounded-lg bg-[#10B981] px-3 py-1 text-xs font-semibold text-white hover:bg-[#059669]">
+                          Apply
+                        </button>
+                      </div>
+                    ) : null}
 
                     <div className="mb-4 space-y-3">
                       {formSection.ranges.map((range, rangeIdx) => {
@@ -979,39 +1070,29 @@ export default function TeacherProgressPage() {
 
                       <div>
                         <p className="mb-2 text-xs font-semibold text-[#6B7280]">Tajweedi Ghaltiyan (0-99)</p>
-                        <div className="flex flex-wrap items-center gap-2">
-                          <button
-                            type="button"
-                            onClick={() => setSectionValue(section.key, { tajweeditotal: String(Math.max(0, Number(formSection.tajweeditotal || 0) - 1)) })}
-                            className="h-9 w-9 rounded-lg border border-[#FEE2E2] text-[#991B1B] hover:bg-[#FEE2E2]"
-                          >
-                            −
-                          </button>
-                          <input
-                            type="number"
-                            min={0}
-                            max={99}
+                        <div className="flex flex-col gap-2">
+                          <select
                             value={formSection.tajweeditotal}
-                            onChange={(e) => {
-                              const value = Math.max(0, Math.min(99, Number(e.target.value || 0)));
-                              setSectionValue(section.key, { tajweeditotal: String(value) });
-                            }}
-                            className="h-9 w-16 rounded-lg border border-[#FEE2E2] px-2 text-center text-sm text-[#991B1B] outline-none focus:ring-2 focus:ring-[#EF4444]/20"
-                          />
-                          <button
-                            type="button"
-                            onClick={() => setSectionValue(section.key, { tajweeditotal: String(Math.min(99, Number(formSection.tajweeditotal || 0) + 1)) })}
-                            className="h-9 w-9 rounded-lg border border-[#FEE2E2] text-[#991B1B] hover:bg-[#FEE2E2]"
+                            onChange={(e) => setSectionValue(section.key, { tajweeditotal: e.target.value })}
+                            className="h-10 w-full rounded-lg border border-[#FEE2E2] px-3 text-sm text-[#1F2937] outline-none focus:ring-2 focus:ring-[#EF4444]/20"
+                            required
                           >
-                            +
-                          </button>
+                            <option value="">Select mistakes</option>
+                            <option value="0">0</option>
+                            <option value="1">1</option>
+                            <option value="2">2</option>
+                            <option value="3">3</option>
+                            <option value="4">4</option>
+                            <option value="5">5</option>
+                            <option value="10">5+</option>
+                          </select>
                           <div className="flex flex-wrap gap-1">
-                            {[0, 1, 2, 3, 5, 10].map(val => (
+                            {[0, 1, 2, 3, 5].map(val => (
                               <button
                                 key={val}
                                 type="button"
                                 onClick={() => setSectionValue(section.key, { tajweeditotal: String(val) })}
-                                className="rounded-lg border border-[#FEE2E2] px-2 py-1 text-xs text-[#991B1B] hover:bg-[#FEE2E2]"
+                                className="rounded-lg border border-[#FEE2E2] px-2 py-1 text-xs font-semibold text-[#991B1B] hover:bg-[#FEE2E2]"
                               >
                                 {val}
                               </button>
@@ -1022,39 +1103,29 @@ export default function TeacherProgressPage() {
 
                       <div>
                         <p className="mb-2 text-xs font-semibold text-[#6B7280]">Hifz Ghaltiyan (0-99)</p>
-                        <div className="flex flex-wrap items-center gap-2">
-                          <button
-                            type="button"
-                            onClick={() => setSectionValue(section.key, { hifztotal: String(Math.max(0, Number(formSection.hifztotal || 0) - 1)) })}
-                            className="h-9 w-9 rounded-lg border border-[#FEE2E2] text-[#991B1B] hover:bg-[#FEE2E2]"
-                          >
-                            −
-                          </button>
-                          <input
-                            type="number"
-                            min={0}
-                            max={99}
+                        <div className="flex flex-col gap-2">
+                          <select
                             value={formSection.hifztotal}
-                            onChange={(e) => {
-                              const value = Math.max(0, Math.min(99, Number(e.target.value || 0)));
-                              setSectionValue(section.key, { hifztotal: String(value) });
-                            }}
-                            className="h-9 w-16 rounded-lg border border-[#FEE2E2] px-2 text-center text-sm text-[#991B1B] outline-none focus:ring-2 focus:ring-[#EF4444]/20"
-                          />
-                          <button
-                            type="button"
-                            onClick={() => setSectionValue(section.key, { hifztotal: String(Math.min(99, Number(formSection.hifztotal || 0) + 1)) })}
-                            className="h-9 w-9 rounded-lg border border-[#FEE2E2] text-[#991B1B] hover:bg-[#FEE2E2]"
+                            onChange={(e) => setSectionValue(section.key, { hifztotal: e.target.value })}
+                            className="h-10 w-full rounded-lg border border-[#FEE2E2] px-3 text-sm text-[#1F2937] outline-none focus:ring-2 focus:ring-[#EF4444]/20"
+                            required
                           >
-                            +
-                          </button>
+                            <option value="">Select mistakes</option>
+                            <option value="0">0</option>
+                            <option value="1">1</option>
+                            <option value="2">2</option>
+                            <option value="3">3</option>
+                            <option value="4">4</option>
+                            <option value="5">5</option>
+                            <option value="10">5+</option>
+                          </select>
                           <div className="flex flex-wrap gap-1">
-                            {[0, 1, 2, 3, 5, 10].map(val => (
+                            {[0, 1, 2, 3, 5].map(val => (
                               <button
                                 key={val}
                                 type="button"
                                 onClick={() => setSectionValue(section.key, { hifztotal: String(val) })}
-                                className="rounded-lg border border-[#FEE2E2] px-2 py-1 text-xs text-[#991B1B] hover:bg-[#FEE2E2]"
+                                className="rounded-lg border border-[#FEE2E2] px-2 py-1 text-xs font-semibold text-[#991B1B] hover:bg-[#FEE2E2]"
                               >
                                 {val}
                               </button>
@@ -1068,19 +1139,10 @@ export default function TeacherProgressPage() {
               })}
             </div>
 
-            <div className="mt-5 flex flex-wrap items-center gap-3">
-              <button
-                disabled={saving || loading || featureDisabled}
-                className="h-11 rounded-lg bg-gradient-to-br from-[#1F5A5C] to-[#2a7579] shadow-[0_8px_20px_rgba(31,90,92,0.12)] active:scale-[0.98] transition-all px-6 font-semibold text-white disabled:cursor-not-allowed disabled:opacity-60"
-              >
-                {saving ? 'Saving...' : 'Save Daily Report'}
-              </button>
-              <p className="text-xs text-[#6B7280]">Validation active: empty fields and invalid ayah range blocked.</p>
-            </div>
           </form>
         </Card>
 
-        <aside className="space-y-4">
+        <aside className="space-y-4 hidden md:block">
           <Card>
             <div className="flex items-center gap-2 mb-3">
               <Sparkles className="h-4 w-4 text-[#1F5A5C]" />
@@ -1120,6 +1182,55 @@ export default function TeacherProgressPage() {
           </Card>
         </aside>
       </section>
+
+      {/* Mobile Auto Summary (collapsible) */}
+      <div className="md:hidden mb-4">
+        <details className="rounded-lg border border-[#E5E7EB] bg-white p-4">
+          <summary className="flex cursor-pointer items-center gap-2 font-semibold text-[#1F2937]">
+            <Sparkles className="h-4 w-4 text-[#1F5A5C]" />
+            <span>Performance Summary</span>
+            <span className="ml-auto text-xs text-[#6B7280]">▼</span>
+          </summary>
+          <div className="mt-4 space-y-2 text-sm text-[#6B7280]">
+            <p><span className="font-semibold text-[#1F2937]">Overall:</span> {summary.overallPerformance}</p>
+            <p><span className="font-semibold text-[#1F2937]">Mistakes:</span> {summary.totalMistakes}</p>
+            <p><span className="font-semibold text-[#1F2937]">Tip:</span> {summary.suggestion}</p>
+            <div className="flex items-center gap-1 pt-2">
+              {Array.from({ length: 5 }).map((_, i) => (
+                <Star key={i} className={`h-4 w-4 ${i < summary.avgStars ? 'fill-[#D69E3F] text-[#D69E3F]' : 'text-[#E5E7EB]'}`} />
+              ))}
+            </div>
+          </div>
+        </details>
+      </div>
+
+      {/* Sticky Footer */}
+      <div className="fixed bottom-0 left-0 right-0 border-t border-[#E5E7EB] bg-white p-3 sm:p-4 shadow-[0_-8px_20px_rgba(0,0,0,0.08)] z-40">
+        <div className="mx-auto max-w-7xl flex flex-col gap-2 sm:flex-row sm:justify-center sm:gap-3">
+          <button
+            type="button"
+            onClick={async () => {
+              setSaveAndMoveNext(false);
+              await submit({ preventDefault: () => {} } as React.FormEvent);
+            }}
+            disabled={saving || loading || featureDisabled}
+            className="h-11 rounded-lg bg-gradient-to-br from-[#1F5A5C] to-[#2a7579] shadow-[0_8px_20px_rgba(31,90,92,0.12)] active:scale-[0.98] transition-all px-4 sm:px-6 font-semibold text-sm sm:text-base text-white disabled:cursor-not-allowed disabled:opacity-60"
+          >
+            {saving ? 'Saving...' : 'Save Report'}
+          </button>
+          <button
+            type="button"
+            onClick={async () => {
+              setSaveAndMoveNext(true);
+              await submit({ preventDefault: () => {} } as React.FormEvent);
+            }}
+            disabled={saving || loading || featureDisabled || !selectedStudents.some((s) => s.id > form.studentId)}
+            className="h-11 rounded-lg border-2 border-[#1F5A5C] bg-white text-[#1F5A5C] font-semibold transition-all active:scale-[0.98] px-4 sm:px-6 text-sm sm:text-base disabled:cursor-not-allowed disabled:opacity-40"
+          >
+            {saving ? 'Saving...' : 'Save & Next →'}
+          </button>
+        </div>
+      </div>
 
       <Card>
         <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between mb-4">
