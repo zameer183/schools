@@ -805,12 +805,13 @@ export default function TeacherProgressPage() {
   };
 
   return (
-    <div className="space-y-4 sm:space-y-6">
-      <div>
-        <PageHeader
-          title="Teacher Daily Progress Report System"
-          subtitle="Smart Quran Tracking SaaS | Surah + Ayah structured progress"
-        />
+    <div className="min-h-screen bg-gradient-to-br from-[#f8f9fa] via-white to-[#f3f4f6] px-4 py-4 sm:py-6">
+      <div className="mx-auto max-w-4xl space-y-4 sm:space-y-6">
+        <div>
+          <PageHeader
+            title="Teacher Daily Progress Report System"
+            subtitle="Track Quran progress with precision"
+          />
         {notifications.length > 0 && (
           <div className="mt-4 grid gap-2 md:grid-cols-2">
             {notifications.map((notice) => (
@@ -831,71 +832,85 @@ export default function TeacherProgressPage() {
         )}
       </div>
 
-      <Card className="p-3 sm:p-4">
-        <div className="mb-3 sm:mb-4">
-          <div className="mb-2 flex items-center justify-between text-xs font-semibold text-[#6B7280]">
-            <span>Form Completion</span>
-            <span>{completionPercent}%</span>
+      <div className="rounded-2xl bg-white p-4 shadow-sm border border-[#E5E7EB]">
+        <div className="mb-3">
+          <div className="mb-3 flex items-center justify-between">
+            <span className="text-sm font-semibold text-[#1F2937]">Form Completion</span>
+            <span className="text-sm font-bold text-[#1F5A5C]">{completionPercent}%</span>
           </div>
           <div className="h-2 rounded-full bg-[#E5E7EB]">
             <div className="h-2 rounded-full bg-gradient-to-r from-[#1F5A5C] to-[#10B981] transition-all" style={{ width: `${completionPercent}%` }} />
           </div>
         </div>
-      </Card>
+      </div>
 
       <section className="grid gap-5 xl:grid-cols-[1.7fr_1fr] pb-32">
-        <Card>
+        <div className="space-y-4">
           <form onSubmit={submit}>
-            <div className="grid gap-3 md:grid-cols-3">
-              <input
-                type="date"
-                value={form.date}
-                onChange={(e) => setForm((prev) => ({ ...prev, date: e.target.value }))}
-                className="h-11 rounded-lg border border-[#E5E7EB] px-4 text-sm text-[#1F2937] outline-none focus:ring-2 focus:ring-[#1F5A5C]/20"
-                required
-              />
+            <div className="rounded-2xl bg-white p-4 sm:p-6 shadow-sm border border-[#E5E7EB] space-y-4">
+              <div className="grid gap-3 md:grid-cols-3">
+                <div>
+                  <label className="block text-xs font-semibold text-[#6B7280] mb-2">Date</label>
+                  <input
+                    type="date"
+                    value={form.date}
+                    onChange={(e) => setForm((prev) => ({ ...prev, date: e.target.value }))}
+                    className="h-11 w-full rounded-xl border border-[#E5E7EB] bg-[#F9FAFB] px-4 text-sm text-[#1F2937] outline-none focus:ring-2 focus:ring-[#1F5A5C]/20 transition"
+                    required
+                  />
+                </div>
 
-              <select
-                value={form.classId}
-                onChange={(e) => setForm((prev) => ({ ...prev, classId: e.target.value, studentId: '' }))}
-                className="h-11 rounded-lg border border-[#E5E7EB] px-4 text-sm text-[#1F2937] outline-none focus:ring-2 focus:ring-[#1F5A5C]/20"
-                required
-              >
-                <option value="">Select Class</option>
-                {classes.map((item) => (
-                  <option key={item.id} value={item.id}>
-                    {item.name} - {item.section}
-                  </option>
-                ))}
-              </select>
+                <div>
+                  <label className="block text-xs font-semibold text-[#6B7280] mb-2">Class</label>
+                  <select
+                    value={form.classId}
+                    onChange={(e) => setForm((prev) => ({ ...prev, classId: e.target.value, studentId: '' }))}
+                    className="h-11 w-full rounded-xl border border-[#E5E7EB] bg-[#F9FAFB] px-4 text-sm text-[#1F2937] outline-none focus:ring-2 focus:ring-[#1F5A5C]/20 transition"
+                    required
+                  >
+                    <option value="">Select Class</option>
+                    {classes.map((item) => (
+                      <option key={item.id} value={item.id}>
+                        {item.name} - {item.section}
+                      </option>
+                    ))}
+                  </select>
+                </div>
 
-              <div className="relative">
-                <Search className="pointer-events-none absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-[#9CA3AF]" />
-                <input
-                  value={studentSearch}
-                  onChange={(e) => setStudentSearch(e.target.value)}
-                  placeholder="Search student"
-                  className="h-11 w-full rounded-lg border border-[#E5E7EB] pl-10 pr-4 text-sm text-[#1F2937] placeholder:text-[#9CA3AF] outline-none focus:ring-2 focus:ring-[#1F5A5C]/20"
-                />
+                <div>
+                  <label className="block text-xs font-semibold text-[#6B7280] mb-2">Search</label>
+                  <div className="relative">
+                    <Search className="pointer-events-none absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-[#9CA3AF]" />
+                    <input
+                      value={studentSearch}
+                      onChange={(e) => setStudentSearch(e.target.value)}
+                      placeholder="Student name"
+                      className="h-11 w-full rounded-xl border border-[#E5E7EB] bg-[#F9FAFB] pl-10 pr-4 text-sm text-[#1F2937] placeholder:text-[#9CA3AF] outline-none focus:ring-2 focus:ring-[#1F5A5C]/20 transition"
+                    />
+                  </div>
+                </div>
               </div>
 
-              <select
-                value={form.studentId}
-                onChange={(e) => setForm((prev) => ({ ...prev, studentId: e.target.value }))}
-                className="h-11 rounded-lg border border-[#E5E7EB] px-4 text-sm text-[#1F2937] outline-none focus:ring-2 focus:ring-[#1F5A5C]/20 md:col-span-3"
-                required
-              >
-                <option value="">Select Student</option>
-                {selectedStudents.map((student) => (
-                  <option key={student.id} value={student.id}>
-                    {student.user.fullName} ({student.admissionNo})
-                  </option>
-                ))}
-              </select>
+              <div>
+                <label className="block text-xs font-semibold text-[#6B7280] mb-2">Student</label>
+                <select
+                  value={form.studentId}
+                  onChange={(e) => setForm((prev) => ({ ...prev, studentId: e.target.value }))}
+                  className="h-11 w-full rounded-xl border border-[#E5E7EB] bg-[#F9FAFB] px-4 text-sm text-[#1F2937] outline-none focus:ring-2 focus:ring-[#1F5A5C]/20 transition"
+                  required
+                >
+                  <option value="">Select Student</option>
+                  {selectedStudents.map((student) => (
+                    <option key={student.id} value={student.id}>
+                      {student.user.fullName} ({student.admissionNo})
+                    </option>
+                  ))}
+                </select>
+              </div>
             </div>
 
             {/* Tab Navigation */}
-            <div className="mt-3 flex gap-1 border-b border-[#E5E7EB] overflow-x-auto sm:gap-2 md:mt-5 md:gap-4">
+            <div className="mt-4 flex gap-2 overflow-x-auto pb-2">
               {sectionMeta.map((section) => {
                 const badge = sectionBadges[section.key];
                 const isActive = activeTab === section.key;
@@ -904,15 +919,15 @@ export default function TeacherProgressPage() {
                     key={section.key}
                     type="button"
                     onClick={() => setActiveTab(section.key)}
-                    className={`whitespace-nowrap px-2 py-2 text-xs sm:px-3 sm:text-sm font-semibold transition border-b-2 -mb-px ${
+                    className={`h-10 whitespace-nowrap rounded-xl px-4 py-2 text-xs sm:text-sm font-semibold transition-all ${
                       isActive
-                        ? 'border-[#1F5A5C] text-[#1F5A5C]'
-                        : 'border-transparent text-[#6B7280] hover:text-[#1F2937]'
+                        ? 'bg-[#1F5A5C] text-white shadow-md'
+                        : 'bg-[#F3F4F6] text-[#6B7280] hover:bg-[#E5E7EB]'
                     }`}
                   >
                     {section.icon} {section.title}
-                    <span className="hidden sm:inline ml-2 text-xs font-normal text-[#9CA3AF]">
-                      ({badge.rangeCount} {badge.rangeCount === 1 ? 'range' : 'ranges'}, {badge.mistakeCount} mistakes)
+                    <span className="hidden sm:inline ml-2 text-xs font-normal opacity-80">
+                      ({badge.rangeCount}, {badge.mistakeCount})
                     </span>
                   </button>
                 );
@@ -920,18 +935,18 @@ export default function TeacherProgressPage() {
             </div>
 
             {/* Tab Content */}
-            <div className="mt-5 space-y-4">
+            <div className="mt-4">
               {sectionMeta.map((section) => {
                 if (activeTab !== section.key) return null;
                 const formSection = form.sections[section.key];
 
                 return (
-                  <div key={section.key} className="rounded-lg border border-[#E5E7EB] bg-[#FFFFFF] p-4">
+                  <div key={section.key} className="rounded-2xl bg-white p-4 sm:p-6 shadow-sm border border-[#E5E7EB] space-y-4">
                     <h3 className="mb-4 text-base font-bold text-[#1F2937]">{section.icon} {section.title}</h3>
 
                     {/* Quick Actions (tab-scoped) */}
-                    <div className="mb-3 rounded-lg border border-[#E5E7EB] bg-[#F9FAFB] p-2 sm:p-3">
-                      <p className="text-xs font-bold uppercase tracking-widest text-[#6B7280] mb-2">Quick Actions</p>
+                    <div className="rounded-xl bg-[#F9FAFB] p-3 border border-[#E5E7EB]">
+                      <p className="text-xs font-semibold text-[#6B7280] mb-3">Quick Actions</p>
                       <div className="flex flex-wrap gap-1 sm:gap-2">
                         <button type="button" onClick={() => applyQuickPerformanceToTab('Good ⭐⭐⭐⭐')} className="rounded-lg bg-gradient-to-br from-[#1F5A5C] to-[#2a7579] shadow-[0_8px_20px_rgba(31,90,92,0.12)] active:scale-[0.98] transition-all px-2 py-1 text-xs sm:px-3 sm:py-1.5 font-semibold text-white">Good</button>
                         <button type="button" onClick={() => applyQuickPerformanceToTab('Average ⭐⭐⭐')} className="rounded-lg bg-gradient-to-br from-[#1F5A5C] to-[#2a7579] shadow-[0_8px_20px_rgba(31,90,92,0.12)] active:scale-[0.98] transition-all px-2 py-1 text-xs sm:px-3 sm:py-1.5 font-semibold text-white">Avg</button>
@@ -1140,25 +1155,36 @@ export default function TeacherProgressPage() {
             </div>
 
           </form>
-        </Card>
+        </div>
 
         <aside className="space-y-4 hidden md:block">
-          <Card>
-            <div className="flex items-center gap-2 mb-3">
-              <Sparkles className="h-4 w-4 text-[#1F5A5C]" />
-              <h3 className="font-bold text-[#1F2937]">Auto Summary</h3>
+          <div className="rounded-2xl bg-gradient-to-br from-[#F0FDF4] to-white p-4 sm:p-6 shadow-sm border border-[#E5E7EB] space-y-4">
+            <div className="flex items-center gap-3">
+              <div className="rounded-lg bg-[#D1FAE5] p-2">
+                <Sparkles className="h-5 w-5 text-[#1F5A5C]" />
+              </div>
+              <h3 className="font-bold text-[#1F2937]">Performance</h3>
             </div>
-            <div className="space-y-2 text-sm text-[#6B7280]">
-              <p><span className="font-semibold text-[#1F2937]">Overall Performance:</span> {summary.overallPerformance}</p>
-              <p><span className="font-semibold text-[#1F2937]">Total Mistakes:</span> {summary.totalMistakes}</p>
-              <p><span className="font-semibold text-[#1F2937]">Suggestion:</span> {summary.suggestion}</p>
-              <div className="flex items-center gap-1 pt-1">
+            <div className="space-y-3">
+              <div className="rounded-xl bg-white p-3 border border-[#E5E7EB]">
+                <p className="text-xs text-[#6B7280] mb-1">Overall</p>
+                <p className="font-bold text-[#1F5A5C]">{summary.overallPerformance}</p>
+              </div>
+              <div className="rounded-xl bg-white p-3 border border-[#E5E7EB]">
+                <p className="text-xs text-[#6B7280] mb-1">Mistakes</p>
+                <p className="font-bold text-[#991B1B]">{summary.totalMistakes}</p>
+              </div>
+              <div className="rounded-xl bg-white p-3 border border-[#E5E7EB]">
+                <p className="text-xs text-[#6B7280] mb-2">Suggestion</p>
+                <p className="text-sm text-[#1F2937]">{summary.suggestion}</p>
+              </div>
+              <div className="flex items-center justify-center gap-1 pt-2">
                 {Array.from({ length: 5 }).map((_, i) => (
-                  <Star key={i} className={`h-4 w-4 ${i < summary.avgStars ? 'fill-[#D69E3F] text-[#D69E3F]' : 'text-[#E5E7EB]'}`} />
+                  <Star key={i} className={`h-5 w-5 ${i < summary.avgStars ? 'fill-[#D69E3F] text-[#D69E3F]' : 'text-[#E5E7EB]'}`} />
                 ))}
               </div>
             </div>
-          </Card>
+          </div>
 
           <Card>
             <div className="flex items-center gap-2 mb-3">
@@ -1185,19 +1211,28 @@ export default function TeacherProgressPage() {
 
       {/* Mobile Auto Summary (collapsible) */}
       <div className="md:hidden mb-4">
-        <details className="rounded-lg border border-[#E5E7EB] bg-white p-4">
-          <summary className="flex cursor-pointer items-center gap-2 font-semibold text-[#1F2937]">
-            <Sparkles className="h-4 w-4 text-[#1F5A5C]" />
+        <details className="rounded-2xl border border-[#E5E7EB] bg-gradient-to-br from-[#F0FDF4] to-white p-4 shadow-sm">
+          <summary className="flex cursor-pointer items-center gap-3 font-semibold text-[#1F2937]">
+            <Sparkles className="h-5 w-5 text-[#1F5A5C]" />
             <span>Performance Summary</span>
             <span className="ml-auto text-xs text-[#6B7280]">▼</span>
           </summary>
-          <div className="mt-4 space-y-2 text-sm text-[#6B7280]">
-            <p><span className="font-semibold text-[#1F2937]">Overall:</span> {summary.overallPerformance}</p>
-            <p><span className="font-semibold text-[#1F2937]">Mistakes:</span> {summary.totalMistakes}</p>
-            <p><span className="font-semibold text-[#1F2937]">Tip:</span> {summary.suggestion}</p>
-            <div className="flex items-center gap-1 pt-2">
+          <div className="mt-4 space-y-3 text-sm">
+            <div className="flex items-center justify-between rounded-xl bg-white p-3 border border-[#E5E7EB]">
+              <span className="text-[#6B7280]">Overall Performance</span>
+              <span className="font-bold text-[#1F5A5C]">{summary.overallPerformance}</span>
+            </div>
+            <div className="flex items-center justify-between rounded-xl bg-white p-3 border border-[#E5E7EB]">
+              <span className="text-[#6B7280]">Total Mistakes</span>
+              <span className="font-bold text-[#991B1B]">{summary.totalMistakes}</span>
+            </div>
+            <div className="rounded-xl bg-white p-3 border border-[#E5E7EB]">
+              <p className="text-xs text-[#6B7280] mb-1">Suggestion</p>
+              <p className="text-sm text-[#1F2937] font-medium">{summary.suggestion}</p>
+            </div>
+            <div className="flex items-center justify-center gap-1 pt-2">
               {Array.from({ length: 5 }).map((_, i) => (
-                <Star key={i} className={`h-4 w-4 ${i < summary.avgStars ? 'fill-[#D69E3F] text-[#D69E3F]' : 'text-[#E5E7EB]'}`} />
+                <Star key={i} className={`h-5 w-5 ${i < summary.avgStars ? 'fill-[#D69E3F] text-[#D69E3F]' : 'text-[#E5E7EB]'}`} />
               ))}
             </div>
           </div>
@@ -1205,8 +1240,8 @@ export default function TeacherProgressPage() {
       </div>
 
       {/* Sticky Footer */}
-      <div className="fixed bottom-0 left-0 right-0 border-t border-[#E5E7EB] bg-white p-3 sm:p-4 shadow-[0_-8px_20px_rgba(0,0,0,0.08)] z-40">
-        <div className="mx-auto max-w-7xl flex flex-col gap-2 sm:flex-row sm:justify-center sm:gap-3">
+      <div className="fixed bottom-0 left-0 right-0 border-t border-[#E5E7EB] bg-white/95 backdrop-blur-md p-3 sm:p-4 shadow-[0_-12px_24px_rgba(0,0,0,0.1)] z-40">
+        <div className="mx-auto max-w-4xl px-4 flex flex-col gap-2 sm:flex-row sm:justify-end sm:gap-3">
           <button
             type="button"
             onClick={async () => {
@@ -1214,7 +1249,7 @@ export default function TeacherProgressPage() {
               await submit({ preventDefault: () => {} } as React.FormEvent);
             }}
             disabled={saving || loading || featureDisabled}
-            className="h-11 rounded-lg bg-gradient-to-br from-[#1F5A5C] to-[#2a7579] shadow-[0_8px_20px_rgba(31,90,92,0.12)] active:scale-[0.98] transition-all px-4 sm:px-6 font-semibold text-sm sm:text-base text-white disabled:cursor-not-allowed disabled:opacity-60"
+            className="h-11 w-full sm:w-auto rounded-xl bg-gradient-to-br from-[#1F5A5C] to-[#2a7579] shadow-md active:shadow-sm active:scale-[0.98] transition-all px-6 font-semibold text-sm text-white disabled:cursor-not-allowed disabled:opacity-50"
           >
             {saving ? 'Saving...' : 'Save Report'}
           </button>
@@ -1225,7 +1260,7 @@ export default function TeacherProgressPage() {
               await submit({ preventDefault: () => {} } as React.FormEvent);
             }}
             disabled={saving || loading || featureDisabled || !selectedStudents.some((s) => s.id > form.studentId)}
-            className="h-11 rounded-lg border-2 border-[#1F5A5C] bg-white text-[#1F5A5C] font-semibold transition-all active:scale-[0.98] px-4 sm:px-6 text-sm sm:text-base disabled:cursor-not-allowed disabled:opacity-40"
+            className="h-11 w-full sm:w-auto rounded-xl border-2 border-[#1F5A5C] bg-white text-[#1F5A5C] font-semibold transition-all active:scale-[0.98] px-6 text-sm disabled:cursor-not-allowed disabled:opacity-30"
           >
             {saving ? 'Saving...' : 'Save & Next →'}
           </button>
@@ -1298,7 +1333,8 @@ export default function TeacherProgressPage() {
             })}
           </div>
         )}
-      </Card>
+      </div>
+      </div>
     </div>
   );
 }
