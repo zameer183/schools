@@ -28,13 +28,13 @@ export default async function TeacherMessagesPage() {
       where: { userId: session.id },
       include: { message: { include: { sender: { select: { id: true, fullName: true, role: true } } } } },
       orderBy: { message: { createdAt: 'desc' } },
-      take: 100
+      take: 50
     }),
     prisma.message.findMany({
       where: { senderId: session.id },
       include: { recipients: { include: { user: { select: { id: true, fullName: true } } } } },
       orderBy: { createdAt: 'desc' },
-      take: 100
+      take: 50
     })
   ]);
 

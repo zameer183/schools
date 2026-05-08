@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useMemo, useState } from 'react';
-import { ChevronLeft, Circle, MessageSquarePlus, Search, Send, SlidersHorizontal } from 'lucide-react';
+import { ChevronLeft, Circle, MessageSquarePlus, Search, Send, SlidersHorizontal, Trash2 } from 'lucide-react';
 
 type SenderRole = 'ADMIN' | 'TEACHER' | 'STUDENT' | 'PARENT';
 type CategoryKey = 'all' | 'academic' | 'finance';
@@ -49,6 +49,23 @@ export type StudentInboxItem = {
 export type StudentOutgoingMap = Record<string, ChatMessage[]>;
 
 export type AvailableTeacher = { id: string; fullName: string };
+
+type InboxApiRow = {
+  id: string;
+  isRead: boolean;
+  readAt: string | null;
+  message: {
+    id: string;
+    subject: string;
+    body: string;
+    createdAt: string;
+    sender: {
+      id: string;
+      fullName: string;
+      role: SenderRole;
+    };
+  };
+};
 
 function initials(name: string) {
   return name
@@ -155,6 +172,7 @@ export function StudentMessagesChatClient({
   availableTeachers?: AvailableTeacher[];
 }) {
   const [mounted, setMounted] = useState(false);
+  const [liveInbox, setLiveInbox] = useState<StudentInboxItem[]>(initialInbox);
   const [category, setCategory] = useState<CategoryKey>('all');
   const [search, setSearch] = useState('');
   const [activeId, setActiveId] = useState<string | null>(null);
@@ -171,8 +189,8 @@ export function StudentMessagesChatClient({
   const [isComposeSending, setIsComposeSending] = useState(false);
 
   const conversations = useMemo(
-    () => buildConversations(initialInbox, localOutgoing, locallyRead),
-    [initialInbox, localOutgoing, locallyRead]
+    () => buildConversations(liveInbox, localOutgoing, locallyRead),
+    [liveInbox, localOutgoing, locallyRead]
   );
 
   const filteredConversations = useMemo(() => {
@@ -188,6 +206,43 @@ export function StudentMessagesChatClient({
   }, [conversations, category, search]);
 
   useEffect(() => { setMounted(true); }, []);
+  useEffect(() => { setLiveInbox(initialInbox); }, [initialInbox]);
+
+  useEffect(() => {
+    let cancelled = false;
+    const syncInbox = async () => {
+      try {
+        const response = await fetch('/api/messages?limit=50', { cache: 'no-store' });
+        if (!response.ok) return;
+        const rows = (await response.json()) as InboxApiRow[];
+        if (cancelled) return;
+        const merged = rows.map<StudentInboxItem>((item) => ({
+          id: item.id,
+          isRead: item.isRead,
+          readAt: item.readAt,
+          message: {
+            id: item.message.id,
+            subject: item.message.subject,
+            body: item.message.body,
+            createdAt: item.message.createdAt,
+            sender: item.message.sender
+          }
+        }));
+        setLiveInbox(merged);
+      } catch {
+        // ignore transient polling errors
+      }
+    };
+
+    const timer = window.setInterval(() => {
+      void syncInbox();
+    }, 8000);
+    void syncInbox();
+    return () => {
+      cancelled = true;
+      window.clearInterval(timer);
+    };
+  }, []);
 
   useEffect(() => {
     if (!activeId && filteredConversations[0]?.id) {
@@ -217,7 +272,7 @@ export function StudentMessagesChatClient({
     };
   }, [conversations]);
 
-  // After ALL hooks — safe early return. Server renders spinner, client hydrates spinner (no mismatch), then mounts full UI.
+  // After all hooks, render a stable loading state before mounting full UI.
   if (!mounted) {
     return (
       <div className="flex h-[60vh] items-center justify-center">
@@ -240,13 +295,13 @@ export function StudentMessagesChatClient({
         })
       });
       if (response.ok) {
-        const msg = await response.json() as { id: string; subject: string; body: string; createdAt: string };
+        const msg = await response.json() as { id?: string; subject?: string; body?: string; createdAt?: string };
         setLocalOutgoing((prev) => ({
           ...prev,
           [composeTeacherId]: [
             ...(prev[composeTeacherId] ?? []),
             {
-              id: msg.id,
+              id: msg.id ?? `temp-${Date.now()}`,
               body: composeBody.trim(),
               subject: composeSubject.trim() || 'New Message',
               createdAt: msg.createdAt ?? new Date().toISOString(),
@@ -305,14 +360,33 @@ export function StudentMessagesChatClient({
         return;
       }
 
+      const created = (await response.json()) as { id?: string; createdAt?: string };
       setLocalOutgoing((prev) => ({
         ...prev,
         [activeConversation.senderId]: (prev[activeConversation.senderId] ?? []).map((item) =>
-          item.id === tempId ? { ...item, pending: false } : item
+          item.id === tempId
+            ? { ...item, id: created.id ?? item.id, createdAt: created.createdAt ?? item.createdAt, pending: false }
+            : item
         )
       }));
     } finally {
       setIsSending(false);
+    }
+  };
+
+  const handleDeleteSentMessage = async (senderId: string, messageId: string) => {
+    if (!messageId || messageId.startsWith('temp-')) return;
+    const confirmed = window.confirm('Delete this sent message?');
+    if (!confirmed) return;
+    try {
+      const response = await fetch(`/api/messages?id=${messageId}`, { method: 'DELETE' });
+      if (!response.ok) return;
+      setLocalOutgoing((prev) => ({
+        ...prev,
+        [senderId]: (prev[senderId] ?? []).filter((item) => item.id !== messageId)
+      }));
+    } catch {
+      // no-op
     }
   };
 
@@ -446,8 +520,21 @@ export function StudentMessagesChatClient({
                   }`}
                 >
                   <p className="whitespace-pre-wrap">{message.body}</p>
-                  <div className={`mt-1 text-[10px] ${message.direction === 'out' ? 'text-[#d8f2f2]' : 'text-[#8aa0b3]'}`} suppressHydrationWarning>
-                    {mounted ? formatTime(message.createdAt) : ''} {message.pending ? '• Sending' : ''}
+                  <div className="mt-1 flex items-center justify-between gap-2">
+                    <div className={`text-[10px] ${message.direction === 'out' ? 'text-[#d8f2f2]' : 'text-[#8aa0b3]'}`} suppressHydrationWarning>
+                      {mounted ? formatTime(message.createdAt) : ''} {message.pending ? '- Sending...' : ''}
+                    </div>
+                    {message.direction === 'out' && !message.pending && !message.id.startsWith('temp-') ? (
+                      <button
+                        type="button"
+                        onClick={() => void handleDeleteSentMessage(activeConversation.senderId, message.id)}
+                        className="inline-flex items-center gap-1 rounded-md px-1.5 py-0.5 text-[10px] text-white/85 hover:bg-white/15"
+                        title="Delete message"
+                      >
+                        <Trash2 className="h-3 w-3" />
+                        Delete
+                      </button>
+                    ) : null}
                   </div>
                 </div>
               </div>
@@ -530,7 +617,7 @@ export function StudentMessagesChatClient({
               <button
                 onClick={() => setShowCompose(false)}
                 className="h-7 w-7 rounded-full bg-[#edeeef] flex items-center justify-center text-[#607080] hover:bg-[#dde0e2]"
-              >✕</button>
+              >X</button>
             </div>
 
             <div className="space-y-3">

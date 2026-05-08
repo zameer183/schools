@@ -20,7 +20,7 @@ export default async function StudentMessagesPage() {
       where: { userId: session.id },
       include: { message: { include: { sender: { select: { id: true, fullName: true, role: true } } } } },
       orderBy: { message: { createdAt: 'desc' } },
-      take: 100
+      take: 50
     }),
     prisma.message.findMany({
       where: { senderId: session.id },
@@ -32,7 +32,7 @@ export default async function StudentMessagesPage() {
         }
       },
       orderBy: { createdAt: 'desc' },
-      take: 100
+      take: 50
     }),
     prisma.student.findUnique({
       where: { userId: session.id },

@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useMemo, useState } from 'react';
-import { ChevronLeft, Circle, MessageSquarePlus, Search, Send, SlidersHorizontal, X } from 'lucide-react';
+import { ChevronLeft, Circle, MessageSquarePlus, Search, Send, SlidersHorizontal, Trash2, X } from 'lucide-react';
 
 type MessageDirection = 'received' | 'sent';
 
@@ -69,7 +69,50 @@ function formatFullDate(value: string) {
   const date = new Date(value);
   if (Number.isNaN(date.getTime())) return '-';
   return date.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' }) +
-    ' · ' + date.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' });
+    ' - ' + date.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' });
+}
+
+type InboxApiRow = {
+  id: string;
+  isRead: boolean;
+  message: {
+    id: string;
+    subject: string;
+    body: string;
+    createdAt: string;
+    sender: {
+      id: string;
+      fullName: string;
+      role: string;
+    };
+  };
+};
+
+function parseReceivedFromApi(rows: InboxApiRow[]): SerializedMessage[] {
+  return rows.map((item) => ({
+    id: item.message.id,
+    subject: item.message.subject,
+    body: item.message.body,
+    senderId: item.message.sender.id,
+    senderName: item.message.sender.fullName,
+    senderRole: item.message.sender.role,
+    createdAt: item.message.createdAt,
+    isRead: item.isRead,
+    direction: 'received' as const,
+    recipients: undefined
+  }));
+}
+
+function mergeReceivedMessages(existing: SerializedMessage[], incoming: SerializedMessage[]) {
+  const sent = existing.filter((m) => m.direction === 'sent');
+  const receivedMap = new Map<string, SerializedMessage>();
+  for (const item of [...existing.filter((m) => m.direction === 'received'), ...incoming]) {
+    const key = `${item.id}:${item.senderId ?? ''}`;
+    receivedMap.set(key, item);
+  }
+  return [...Array.from(receivedMap.values()), ...sent].sort(
+    (a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+  );
 }
 
 function buildConversations(
@@ -162,6 +205,7 @@ interface TeacherMessagesClientProps {
 
 export function TeacherMessagesClient({ messages, recipients }: TeacherMessagesClientProps) {
   const [mounted, setMounted] = useState(false);
+  const [liveMessages, setLiveMessages] = useState<SerializedMessage[]>(messages);
   const [category, setCategory] = useState<CategoryKey>('all');
   const [search, setSearch] = useState('');
   const [activeId, setActiveId] = useState<string | null>(null);
@@ -177,10 +221,36 @@ export function TeacherMessagesClient({ messages, recipients }: TeacherMessagesC
   const [isComposeSending, setIsComposeSending] = useState(false);
 
   useEffect(() => { setMounted(true); }, []);
+  useEffect(() => { setLiveMessages(messages); }, [messages]);
+
+  useEffect(() => {
+    let cancelled = false;
+    const syncInbox = async () => {
+      try {
+        const response = await fetch('/api/messages?limit=50', { cache: 'no-store' });
+        if (!response.ok) return;
+        const data = (await response.json()) as InboxApiRow[];
+        if (cancelled) return;
+        const received = parseReceivedFromApi(data);
+        setLiveMessages((prev) => mergeReceivedMessages(prev, received));
+      } catch {
+        // ignore transient polling errors
+      }
+    };
+
+    const timer = window.setInterval(() => {
+      void syncInbox();
+    }, 8000);
+    void syncInbox();
+    return () => {
+      cancelled = true;
+      window.clearInterval(timer);
+    };
+  }, []);
 
   const allConversations = useMemo(
-    () => buildConversations(messages, locallyRead, localSent),
-    [messages, locallyRead, localSent]
+    () => buildConversations(liveMessages, locallyRead, localSent),
+    [liveMessages, locallyRead, localSent]
   );
 
   const filtered = useMemo(() => {
@@ -212,7 +282,7 @@ export function TeacherMessagesClient({ messages, recipients }: TeacherMessagesC
     sent: allConversations.filter((c) => c.category === 'sent' || c.category === 'both').length,
   }), [allConversations]);
 
-  // After ALL hooks — safe early return. Server renders spinner, client hydrates spinner (no mismatch), then mounts full UI.
+  // After all hooks, render a stable loading state before mounting full UI.
   if (!mounted) {
     return (
       <div className="flex h-[60vh] items-center justify-center">
@@ -266,10 +336,13 @@ export function TeacherMessagesClient({ messages, recipients }: TeacherMessagesC
           return next;
         });
       } else {
+        const created = (await res.json()) as { id?: string; createdAt?: string };
         setLocalSent((prev) => {
           const next = new Map(prev);
           const arr = (next.get(activeConv.personId) ?? []).map((m) =>
-            m.id === tempId ? { ...m, pending: false } : m
+            m.id === tempId
+              ? { ...m, id: created.id ?? m.id, createdAt: created.createdAt ?? m.createdAt, pending: false }
+              : m
           );
           next.set(activeConv.personId, arr);
           return next;
@@ -277,6 +350,27 @@ export function TeacherMessagesClient({ messages, recipients }: TeacherMessagesC
       }
     } finally {
       setIsSending(false);
+    }
+  };
+
+  const handleDeleteSentMessage = async (messageId: string) => {
+    if (!messageId || messageId.startsWith('tmp-')) return;
+    const confirmed = window.confirm('Delete this sent message?');
+    if (!confirmed) return;
+    try {
+      const res = await fetch(`/api/messages?id=${messageId}`, { method: 'DELETE' });
+      if (!res.ok) return;
+
+      setLiveMessages((prev) => prev.filter((m) => !(m.direction === 'sent' && m.id === messageId)));
+      setLocalSent((prev) => {
+        const next = new Map(prev);
+        for (const [key, value] of next.entries()) {
+          next.set(key, value.filter((msg) => msg.id !== messageId));
+        }
+        return next;
+      });
+    } catch {
+      // no-op
     }
   };
 
@@ -329,7 +423,7 @@ export function TeacherMessagesClient({ messages, recipients }: TeacherMessagesC
     { key: 'sent', label: 'Sent', count: counts.sent }
   ];
 
-  /* ── Left panel ── */
+  /* -- Left panel -- */
   const leftPanel = (
     <div className="rounded-2xl bg-white shadow-[0_12px_40px_rgba(43,103,110,0.06)] p-4">
       <div className="mb-3 flex items-center justify-between">
@@ -388,7 +482,7 @@ export function TeacherMessagesClient({ messages, recipients }: TeacherMessagesC
     </div>
   );
 
-  /* ── Middle panel ── */
+  /* -- Middle panel -- */
   const middlePanel = (
     <div className="rounded-2xl bg-white shadow-[0_12px_40px_rgba(43,103,110,0.06)] p-4">
       <div className="relative mb-3">
@@ -452,7 +546,7 @@ export function TeacherMessagesClient({ messages, recipients }: TeacherMessagesC
     </div>
   );
 
-  /* ── Right chat panel ── */
+  /* -- Right chat panel -- */
   const rightPanel = (
     <div className="flex h-[72vh] flex-col rounded-2xl bg-white shadow-[0_12px_40px_rgba(43,103,110,0.06)]">
       {activeConv ? (
@@ -495,8 +589,21 @@ export function TeacherMessagesClient({ messages, recipients }: TeacherMessagesC
                     <p className="mb-1 text-[10px] font-bold uppercase tracking-wider text-[#8aa0b3]">{msg.subject}</p>
                   )}
                   <p className="whitespace-pre-wrap leading-relaxed">{msg.body}</p>
-                  <div className={`mt-1 text-[10px] ${msg.direction === 'out' ? 'text-[#d8f2f2]' : 'text-[#8aa0b3]'}`} suppressHydrationWarning>
-                    {mounted ? formatTime(msg.createdAt) : ''}{msg.pending ? ' · Sending…' : ''}
+                  <div className="mt-1 flex items-center justify-between gap-2">
+                    <div className={`text-[10px] ${msg.direction === 'out' ? 'text-[#d8f2f2]' : 'text-[#8aa0b3]'}`} suppressHydrationWarning>
+                      {mounted ? formatTime(msg.createdAt) : ''}{msg.pending ? ' - Sending...' : ''}
+                    </div>
+                    {msg.direction === 'out' && !msg.pending && !msg.id.startsWith('tmp-') ? (
+                      <button
+                        type="button"
+                        onClick={() => void handleDeleteSentMessage(msg.id)}
+                        className="inline-flex items-center gap-1 rounded-md px-1.5 py-0.5 text-[10px] text-white/85 hover:bg-white/15"
+                        title="Delete message"
+                      >
+                        <Trash2 className="h-3 w-3" />
+                        Delete
+                      </button>
+                    ) : null}
                   </div>
                 </div>
               </div>
@@ -512,7 +619,7 @@ export function TeacherMessagesClient({ messages, recipients }: TeacherMessagesC
                 onKeyDown={(e) => {
                   if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); void handleSend(); }
                 }}
-                placeholder={`Reply to ${activeConv.personName.split(' ')[0]}…`}
+                placeholder={`Reply to ${activeConv.personName.split(' ')[0]}...`}
                 className="h-11 flex-1 rounded-full bg-[#edeeef] border-none px-4 text-sm text-[#1a2b3d] outline-none focus:ring-2 focus:ring-[#1a5058]/20"
               />
               <button
@@ -587,7 +694,7 @@ export function TeacherMessagesClient({ messages, recipients }: TeacherMessagesC
               {/* Recipients */}
               <div>
                 <label className="block text-[10px] font-bold uppercase tracking-widest text-[#7c8b99] mb-1.5">
-                  To — {selectedRecipients.size > 0 ? `${selectedRecipients.size} selected` : 'Select students'}
+                  To - {selectedRecipients.size > 0 ? `${selectedRecipients.size} selected` : 'Select students'}
                 </label>
                 {recipients.length === 0 ? (
                   <p className="text-sm text-[#607080]">No students in your classes.</p>
