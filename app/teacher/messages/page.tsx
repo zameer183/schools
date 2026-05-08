@@ -67,9 +67,9 @@ export default async function TeacherMessagesPage() {
   const { access, teacher, inbox, sent } = await getCachedTeacherMessagesData(session.id);
   if (session.role === 'TEACHER' && access && !access.MESSAGES) {
     return (
-      <div className="rounded-2xl bg-white shadow-[0_12px_40px_rgba(0,70,73,0.06)] p-8">
-        <h2 className="font-headline text-3xl font-bold text-[#1a1c1c]">Messages Access Disabled</h2>
-        <p className="mt-2 text-sm text-[#6f7979]">Admin has disabled your in-app messages module.</p>
+      <div className="rounded-2xl bg-white shadow-[0_2px_8px_rgba(0,0,0,0.06)] p-8">
+        <h2 className="text-3xl font-bold text-[#1F2937]">Messages Access Disabled</h2>
+        <p className="mt-2 text-sm text-[#6B7280]">Admin has disabled your in-app messages module.</p>
       </div>
     );
   }
@@ -138,14 +138,14 @@ export default async function TeacherMessagesPage() {
 
             {uniqueRecipients.length > 0 && (
               <div className="mt-4">
-                <p className="text-[10px] font-bold uppercase tracking-widest text-[#6f7979] mb-3">Your Students</p>
+                <p className="text-[10px] font-bold uppercase tracking-widest text-[#6B7280] mb-3">Your Students</p>
                 <div className="flex gap-3 overflow-x-auto pb-1">
                   {uniqueRecipients.slice(0, 5).map((r) => (
                     <div key={r.userId} className="flex flex-col items-center gap-1 shrink-0">
-                      <div className="w-12 h-12 rounded-full bg-[#004649]/10 flex items-center justify-center text-sm font-bold text-[#004649] border-2 border-white ring-2 ring-[#e2e8e8]">
+                      <div className="w-12 h-12 rounded-full bg-[#E0EBEC] flex items-center justify-center text-sm font-bold text-[#1F5A5C] border-2 border-white ring-2 ring-[#e2e8e8]">
                         {initials(r.fullName)}
                       </div>
-                      <p className="text-[9px] text-[#6f7979] text-center max-w-[48px] truncate">{r.fullName.split(' ')[0]}</p>
+                      <p className="text-[9px] text-[#6B7280] text-center max-w-[48px] truncate">{r.fullName.split(' ')[0]}</p>
                     </div>
                   ))}
                 </div>
@@ -153,7 +153,7 @@ export default async function TeacherMessagesPage() {
             )}
 
             <div className="mt-4">
-              <p className="text-[10px] font-bold uppercase tracking-widest text-[#6f7979] mb-2">Categories</p>
+              <p className="text-[10px] font-bold uppercase tracking-widest text-[#6B7280] mb-2">Categories</p>
               <div className="space-y-1">
                 {[
                   { label: 'All Messages', count: allMessages.length, active: true },
@@ -161,9 +161,9 @@ export default async function TeacherMessagesPage() {
                   { label: 'Sent', count: sent.length, active: false },
                 ].map((cat) => (
                   <div key={cat.label} className={`flex items-center justify-between rounded-xl px-3 py-2 cursor-pointer ${cat.active ? 'bg-[#f0f2f5]' : 'hover:bg-[#f3f4f5]'}`}>
-                    <span className="text-sm font-medium text-[#1a1c1c]">{cat.label}</span>
+                    <span className="text-sm font-medium text-[#1F2937]">{cat.label}</span>
                     {cat.count > 0 && (
-                      <span className={`text-xs font-bold rounded-full px-2 py-0.5 ${cat.active ? 'bg-[#004649] text-white' : 'text-[#6f7979]'}`}>
+                      <span className={`text-xs font-bold rounded-full px-2 py-0.5 ${cat.active ? 'bg-[#004649] text-white' : 'text-[#6B7280]'}`}>
                         {cat.count}
                       </span>
                     )}
@@ -214,39 +214,39 @@ export default async function TeacherMessagesPage() {
           <p className="text-sm text-[#6B7280] mb-5">Send an update to your students.</p>
           <form action={sendMessageAction} className="space-y-4">
             <div>
-              <label className="block text-[10px] font-bold uppercase tracking-widest text-[#6f7979] mb-2">Subject</label>
+              <label className="block text-[10px] font-bold uppercase tracking-widest text-[#6B7280] mb-2">Subject</label>
               <input
                 name="subject"
                 required
                 placeholder="e.g. Assignment Reminder"
-                className="h-11 w-full rounded-xl bg-[#edeeef] border-none px-4 text-sm text-[#1a1c1c] placeholder:text-[#6f7979]/60 outline-none focus:ring-2 focus:ring-[#004649]/20"
+                className="h-11 w-full rounded-xl bg-[#F9FAFB] border border-[#E5E7EB] px-4 text-sm text-[#1F2937] placeholder:text-[#9CA3AF] outline-none focus:ring-2 focus:ring-[#1F5A5C]/20"
               />
             </div>
             <div>
-              <label className="block text-[10px] font-bold uppercase tracking-widest text-[#6f7979] mb-2">Message</label>
+              <label className="block text-[10px] font-bold uppercase tracking-widest text-[#6B7280] mb-2">Message</label>
               <textarea
                 name="body"
                 required
                 rows={5}
                 placeholder="Write your message here..."
-                className="w-full rounded-xl bg-[#edeeef] border-none px-4 py-3 text-sm text-[#1a1c1c] placeholder:text-[#6f7979]/60 outline-none focus:ring-2 focus:ring-[#004649]/20 resize-none"
+                className="w-full rounded-xl bg-[#F9FAFB] border border-[#E5E7EB] px-4 py-3 text-sm text-[#1F2937] placeholder:text-[#9CA3AF] outline-none focus:ring-2 focus:ring-[#1F5A5C]/20 resize-none"
               />
             </div>
             <div>
-              <label className="block text-[10px] font-bold uppercase tracking-widest text-[#6f7979] mb-2">Recipients - Your Students</label>
+              <label className="block text-[10px] font-bold uppercase tracking-widest text-[#6B7280] mb-2">Recipients - Your Students</label>
               {uniqueRecipients.length === 0 ? (
-                <p className="text-sm text-[#6f7979]">No students found in your assigned classes.</p>
+                <p className="text-sm text-[#6B7280]">No students found in your assigned classes.</p>
               ) : (
                 <div className="grid grid-cols-1 gap-2 max-h-56 overflow-y-auto sm:grid-cols-2">
                   {uniqueRecipients.map((r) => (
                     <label key={r.userId} className="flex cursor-pointer items-center gap-2.5 rounded-xl bg-[#f3f4f5] px-3 py-2.5 text-sm hover:bg-[#f3f4f5]">
                       <input type="checkbox" name="recipientIds" value={r.userId} className="accent-[#004649]" />
-                      <div className="w-7 h-7 rounded-full bg-[#004649]/10 flex items-center justify-center text-xs font-bold text-[#004649]">
+                      <div className="w-7 h-7 rounded-full bg-[#E0EBEC] flex items-center justify-center text-xs font-bold text-[#1F5A5C]">
                         {initials(r.fullName)}
                       </div>
                       <div className="min-w-0">
-                        <p className="font-medium text-[#1a1c1c] truncate">{r.fullName}</p>
-                        <p className="text-[10px] text-[#6f7979] truncate">{r.className}</p>
+                        <p className="font-medium text-[#1F2937] truncate">{r.fullName}</p>
+                        <p className="text-[10px] text-[#6B7280] truncate">{r.className}</p>
                       </div>
                     </label>
                   ))}

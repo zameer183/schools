@@ -1,5 +1,5 @@
 ﻿export function toCsv(rows: Record<string, unknown>[]) {
-  if (!rows.length) return '';
+  if (!rows.length) return 'No records found';
 
   const headers = Object.keys(rows[0]);
   const escaped = (value: unknown) => {

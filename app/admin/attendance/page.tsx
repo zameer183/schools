@@ -1,109 +1,213 @@
-import { AttendanceStatus } from '@prisma/client';
+import { AttendanceStatus, UserRole } from '@prisma/client';
+import { unstable_cache } from 'next/cache';
+import { requireAuth } from '@/lib/auth';
 import { prisma } from '@/lib/prisma';
+import { ensureStaffAttendanceTable } from '@/lib/staff-attendance';
+import AttendanceDashboardClient from './attendance-dashboard-client';
 
 export const dynamic = 'force-dynamic';
 
-type SearchParams = { date?: string; classId?: string };
+type SearchParams = { date?: string; classId?: string; tab?: string };
+
+type StaffDailyRow = {
+  teacherId: string;
+  userId: string;
+  fullName: string;
+  status: string;
+  note: string | null;
+};
+
+function startOfMonth(date: Date) {
+  const d = new Date(date);
+  d.setDate(1);
+  d.setHours(0, 0, 0, 0);
+  return d;
+}
+
+function toDateKey(value: Date | string | null | undefined, fallback: string) {
+  if (!value) return fallback;
+  if (value instanceof Date) return value.toISOString().slice(0, 10);
+  const parsed = new Date(value);
+  return Number.isNaN(parsed.getTime()) ? fallback : parsed.toISOString().slice(0, 10);
+}
+
+const getCachedAttendanceData = unstable_cache(
+  async (
+    selectedDate: string,
+    selectedClassId: string,
+    dayDateIso: string,
+    monthStartIso: string,
+    staffEnabledFlag: '1' | '0'
+  ) => {
+    const dayDate = new Date(dayDateIso);
+    const monthStart = new Date(monthStartIso);
+    const staffAttendanceEnabled = staffEnabledFlag === '1';
+
+    const [
+      classes,
+      dailyRows,
+      dailyStatusCounts,
+      monthStatusByDay,
+      classStudents,
+      teachers,
+      staffDailyRows
+    ] = await Promise.all([
+      prisma.class.findMany({ orderBy: [{ name: 'asc' }, { section: 'asc' }] }),
+      prisma.attendance.findMany({
+        where: { date: dayDate, classId: selectedClassId || undefined },
+        include: {
+          class: { select: { id: true, name: true, section: true } },
+          student: {
+            select: {
+              id: true,
+              admissionNo: true,
+              classId: true,
+              class: { select: { name: true, section: true } },
+              user: { select: { fullName: true } }
+            }
+          }
+        },
+        orderBy: [{ student: { admissionNo: 'asc' } }],
+        take: 2000
+      }),
+      prisma.attendance.groupBy({
+        by: ['status'],
+        where: { date: dayDate, classId: selectedClassId || undefined },
+        _count: { _all: true }
+      }),
+      prisma.attendance.groupBy({
+        by: ['date', 'status'],
+        where: {
+          classId: selectedClassId || undefined,
+          date: { gte: monthStart, lte: dayDate }
+        },
+        _count: { _all: true }
+      }),
+      prisma.student.findMany({
+        where: selectedClassId ? { classId: selectedClassId } : { classId: { not: null } },
+        select: {
+          id: true,
+          admissionNo: true,
+          classId: true,
+          class: { select: { id: true, name: true, section: true } },
+          user: { select: { fullName: true } }
+        },
+        orderBy: [{ user: { fullName: 'asc' } }],
+        take: 5000
+      }),
+      prisma.teacher.findMany({
+        select: {
+          id: true,
+          userId: true,
+          user: { select: { fullName: true } }
+        },
+        orderBy: [{ user: { fullName: 'asc' } }],
+        take: 500
+      }),
+      staffAttendanceEnabled
+        ? prisma.$queryRaw<StaffDailyRow[]>`
+          SELECT
+            sa."teacherId",
+            u."id" as "userId",
+            u."fullName",
+            sa."status",
+            sa."note"
+          FROM "StaffAttendance" sa
+          INNER JOIN "Teacher" t ON t."id" = sa."teacherId"
+          INNER JOIN "User" u ON u."id" = t."userId"
+          WHERE sa."date" = ${selectedDate}::date
+          ORDER BY u."fullName" ASC;
+        `
+        : Promise.resolve([] as StaffDailyRow[])
+    ]);
+
+    return {
+      classes,
+      dailyRows,
+      dailyStatusCounts,
+      monthStatusByDay,
+      classStudents,
+      teachers,
+      staffDailyRows
+    };
+  },
+  ['admin-attendance-dashboard-data'],
+  { revalidate: 20 }
+);
 
 export default async function AdminAttendancePage({ searchParams }: { searchParams?: Promise<SearchParams> }) {
+  await requireAuth([UserRole.ADMIN]);
+
   const params = (await searchParams) ?? {};
   const selectedDate = params.date ?? new Date().toISOString().slice(0, 10);
-  const selectedClassId = params.classId ?? '';
+  const selectedClassId = params.classId?.trim() ?? '';
+  const initialTab = params.tab === 'students' || params.tab === 'teachers' || params.tab === 'overview' ? params.tab : 'overview';
 
-  const where = {
-    date: new Date(selectedDate),
-    classId: selectedClassId || undefined
-  };
+  const dayDate = new Date(selectedDate);
+  dayDate.setHours(0, 0, 0, 0);
+  const monthStart = startOfMonth(dayDate);
 
-  const [classes, records, statusCounts] = await Promise.all([
-    prisma.class.findMany({ orderBy: [{ name: 'asc' }, { section: 'asc' }] }),
-    prisma.attendance.findMany({
-      where,
-      include: { class: true, student: { include: { user: { select: { fullName: true } } } } },
-      orderBy: [{ class: { name: 'asc' } }, { student: { admissionNo: 'asc' } }],
-      take: 400
-    }),
-    prisma.attendance.groupBy({ by: ['status'], where, _count: { _all: true } })
-  ]);
+  const staffAttendanceEnabled = await ensureStaffAttendanceTable();
+  const {
+    classes,
+    dailyRows,
+    dailyStatusCounts,
+    monthStatusByDay,
+    classStudents,
+    teachers,
+    staffDailyRows
+  } = await getCachedAttendanceData(
+    selectedDate,
+    selectedClassId,
+    dayDate.toISOString(),
+    monthStart.toISOString(),
+    staffAttendanceEnabled ? '1' : '0'
+  );
 
-  const countFor = (status: AttendanceStatus) => statusCounts.find((item) => item.status === status)?._count._all ?? 0;
+  const studentDailyMap = new Map(dailyRows.map((row) => [row.student.id, row.status]));
+  const staffDailyMap = new Map(staffDailyRows.map((row) => [row.teacherId, row.status]));
+
+  const serializedMonthStatusByDay = monthStatusByDay.map((row) => ({
+    date: toDateKey(row.date as Date | string, selectedDate),
+    status: row.status,
+    count: row._count._all
+  }));
+
+  const statusCount = (status: AttendanceStatus) =>
+    dailyStatusCounts.find((item) => item.status === status)?._count._all ?? 0;
+
+  const presentCount = statusCount(AttendanceStatus.PRESENT);
+  const absentCount = statusCount(AttendanceStatus.ABSENT);
+  const lateCount = statusCount(AttendanceStatus.LATE);
+  const totalCount = dailyStatusCounts.reduce((acc, item) => acc + item._count._all, 0);
+  const percentage = totalCount ? Math.round((presentCount / totalCount) * 100) : 0;
 
   return (
-    <div className="space-y-4">
-      <div className="rounded-xl bg-white border border-[#e2e8e8] p-6">
-        <h2 className="text-3xl font-bold text-[#1a1c1c]">Attendance</h2>
-        <p className="mt-1 text-sm text-[#6f7979]">Track daily attendance, absentee trends, and class-wise compliance.</p>
-
-        <form className="mt-5 flex flex-wrap gap-3">
-          <input
-            type="date"
-            name="date"
-            defaultValue={selectedDate}
-            className="h-10 rounded-lg border border-[#d4dee7] px-3 text-sm outline-none focus:border-[#004649]"
-          />
-          <select
-            name="classId"
-            defaultValue={selectedClassId}
-            className="h-10 rounded-lg border border-[#d4dee7] px-3 text-sm outline-none focus:border-[#004649]"
-          >
-            <option value="">All Classes</option>
-            {classes.map((item) => (
-              <option key={item.id} value={item.id}>{item.name} - {item.section}</option>
-            ))}
-          </select>
-          <button className="h-10 rounded-lg bg-[#004649] px-4 text-sm font-semibold text-white hover:bg-[#005a5e]">
-            Apply Filter
-          </button>
-        </form>
-      </div>
-
-      <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
-        {[
-          { label: 'Present', value: countFor('PRESENT'), color: 'text-[#004649]' },
-          { label: 'Absent', value: countFor('ABSENT'), color: 'text-[#ba1a1a]' },
-          { label: 'Late', value: countFor('LATE'), color: 'text-[#865300]' },
-          { label: 'Excused', value: countFor('EXCUSED'), color: 'text-[#1a1c1c]' },
-        ].map(({ label, value, color }) => (
-          <div key={label} className="rounded-xl bg-white border border-[#e2e8e8] p-4">
-            <p className="text-[10px] font-bold uppercase tracking-widest text-[#6f7979]">{label}</p>
-            <p className={`mt-2 text-3xl font-bold ${color}`}>{value}</p>
-          </div>
-        ))}
-      </div>
-
-      <div className="rounded-xl bg-white border border-[#e2e8e8] p-6">
-        <h3 className="font-semibold text-[#1a1c1c] mb-4">Attendance Register</h3>
-        <div className="overflow-x-auto">
-          <table className="w-full text-sm">
-            <thead>
-              <tr className="border-b border-[#e2e8e8]">
-                <th className="pb-2 text-left text-[10px] font-bold uppercase tracking-widest text-[#6f7979]">Student</th>
-                <th className="pb-2 text-left text-[10px] font-bold uppercase tracking-widest text-[#6f7979]">Class</th>
-                <th className="pb-2 text-left text-[10px] font-bold uppercase tracking-widest text-[#6f7979]">Status</th>
-                <th className="pb-2 text-left text-[10px] font-bold uppercase tracking-widest text-[#6f7979]">Remarks</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-[#e2e8e8]">
-              {records.map((record) => (
-                <tr key={record.id}>
-                  <td className="py-3 font-medium text-[#1a1c1c]">{record.student.user.fullName}</td>
-                  <td className="py-3 text-[#6f7979]">{record.class.name} - {record.class.section}</td>
-                  <td className="py-3">
-                    <span className={`rounded-full px-2.5 py-1 text-[10px] font-bold ${
-                      record.status === 'PRESENT' ? 'bg-[#e8f5e9] text-[#004649]' :
-                      record.status === 'ABSENT' ? 'bg-[#fde8e8] text-[#ba1a1a]' :
-                      record.status === 'LATE' ? 'bg-[#fff3e0] text-[#865300]' :
-                      'bg-[#f5f7f5] text-[#6f7979]'
-                    }`}>{record.status}</span>
-                  </td>
-                  <td className="py-3 text-[#6f7979]">{record.remarks ?? '-'}</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-          {records.length === 0 ? <p className="mt-4 text-sm text-[#6f7979]">No attendance rows found for this filter.</p> : null}
-        </div>
-      </div>
-    </div>
+    <AttendanceDashboardClient
+      initialTab={initialTab}
+      selectedDate={selectedDate}
+      selectedClassId={selectedClassId}
+      classes={classes.map((item) => ({ id: item.id, name: item.name, section: item.section }))}
+      students={classStudents.map((student) => ({
+        id: student.id,
+        fullName: student.user.fullName,
+        admissionNo: student.admissionNo,
+        classId: student.classId ?? '',
+        classLabel: student.class ? `${student.class.name} - ${student.class.section}` : 'No class',
+        status: studentDailyMap.get(student.id) ?? null
+      }))}
+      teachers={teachers.map((teacher) => ({
+        id: teacher.id,
+        fullName: teacher.user.fullName,
+        status: staffDailyMap.get(teacher.id) ?? null
+      }))}
+      overview={{
+        present: presentCount,
+        absent: absentCount,
+        late: lateCount,
+        percentage
+      }}
+      monthStatusByDay={serializedMonthStatusByDay}
+    />
   );
 }

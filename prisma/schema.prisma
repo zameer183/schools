@@ -61,6 +61,41 @@ enum LessonType {
   SURAH
 }
 
+enum CampaignType {
+  REMINDER
+  CONFIRMATION
+}
+
+enum CampaignStatus {
+  DRAFT
+  APPROVED
+  SENT
+}
+
+enum CampaignItemStatus {
+  PENDING
+  SENT
+  SKIPPED
+}
+
+enum AutomationRunStatus {
+  STARTED
+  COMPLETED
+  FAILED
+}
+
+enum AutomationAutoApproveMode {
+  OFF
+  SAFE
+}
+
+enum CampaignDispatchStatus {
+  PENDING
+  LOCKED
+  SENT
+  FAILED
+}
+
 model User {
   id             String         @id @default(cuid())
   email          String         @unique
@@ -90,7 +125,16 @@ model Student {
   dateOfBirth      DateTime?
   currentAddress   String?
   emergencyContact String?
+  guardianPhone    String?
+  guardianEmail    String?
   classId          String?
+  fatherName       String?
+  gender           String?
+  aadharNo         String?
+  rollNumber       String?
+  whatsApp         String?
+  schoolName       String?
+  joinDate         DateTime?
   createdAt        DateTime             @default(now())
   updatedAt        DateTime             @updatedAt
 
@@ -103,6 +147,10 @@ model Student {
   progressLogs StudentProgress[]
   parentLinks  ParentStudent[]
   notifications Notification[]      @relation("StudentNotifications")
+  campaignItems CampaignItem[]
+
+  @@index([classId])
+  @@index([createdAt])
 }
 
 model Teacher {
@@ -122,6 +170,11 @@ model Teacher {
   exams            Exam[]
   assignments      Assignment[]
   progressLogs     StudentProgress[]
+  accessControls   TeacherAccess[]
+  compensation     TeacherCompensation?
+  staffAttendance  StaffAttendance[]
+
+  @@index([createdAt])
 }
 
 model Parent {
@@ -167,6 +220,7 @@ model Class {
   progressLogs StudentProgress[]
 
   @@unique([name, section, academicYear])
+  @@index([createdAt])
 }
 
 model StudentProgress {
@@ -180,16 +234,38 @@ model StudentProgress {
   lessonNumber Int
   ayahFrom     Int?
   ayahTo       Int?
-  notes        String?
+  tajweeditotal Int?      // total tajweedi mistakes across all ranges (0-99)
+  hifzTotal    Int?       // total hifz mistakes across all ranges (0-99)
+  notes        String?    // backwards compat: old single-surah format or summary
   createdAt    DateTime   @default(now())
   updatedAt    DateTime   @updatedAt
 
   class        Class      @relation(fields: [classId], references: [id], onDelete: Cascade)
   student      Student    @relation(fields: [studentId], references: [id], onDelete: Cascade)
   teacher      Teacher    @relation(fields: [teacherId], references: [id], onDelete: Cascade)
+  surahRanges  SurahRange[]
 
   @@unique([studentId, date])
   @@index([classId, date])
+  @@index([teacherId, date])
+  @@index([date])
+}
+
+model SurahRange {
+  id           String   @id @default(cuid())
+  progressId   String
+  sectionKey   String   // "sabaq" | "sabqi" | "manzil"
+  surahId      Int
+  fromAyah     Int
+  toAyah       Int
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  progress     StudentProgress @relation(fields: [progressId], references: [id], onDelete: Cascade)
+
+  @@index([progressId])
+  @@index([progressId, sectionKey])
+  @@index([surahId])
 }
 
 model TeacherClass {
@@ -219,6 +295,9 @@ model Subject {
   exams       Exam[]
   assignments Assignment[]
   results     Result[]
+
+  @@index([classId])
+  @@index([teacherId])
 }
 
 model Attendance {
@@ -237,6 +316,8 @@ model Attendance {
 
   @@unique([studentId, date])
   @@index([classId, date])
+  @@index([studentId, date])
+  @@index([date, status])
 }
 
 model Exam {
@@ -255,6 +336,10 @@ model Exam {
   subject   Subject @relation(fields: [subjectId], references: [id], onDelete: Cascade)
   createdBy Teacher @relation(fields: [createdById], references: [id])
   results   Result[]
+
+  @@index([classId, examDate])
+  @@index([subjectId, examDate])
+  @@index([createdById])
 }
 
 model Result {
@@ -273,21 +358,34 @@ model Result {
   subject   Subject @relation(fields: [subjectId], references: [id], onDelete: Cascade)
 
   @@unique([examId, studentId])
+  @@index([studentId, createdAt])
+  @@index([subjectId, createdAt])
+  @@index([createdAt])
 }
 
 model Fee {
-  id            String        @id @default(cuid())
-  studentId      String
-  title          String
-  dueDate        DateTime
-  amount         Decimal       @db.Decimal(12, 2)
-  discount       Decimal       @default(0) @db.Decimal(12, 2)
-  status         PaymentStatus @default(PENDING)
-  createdAt      DateTime      @default(now())
-  updatedAt      DateTime      @updatedAt
+  id                   String        @id @default(cuid())
+  studentId             String
+  title                 String
+  dueDate               DateTime
+  amount                Decimal       @db.Decimal(12, 2)
+  discount              Decimal       @default(0) @db.Decimal(12, 2)
+  status                PaymentStatus @default(PENDING)
+  feeCategory           String?
+  feeType               String?
+  fromDate              DateTime?
+  toDate                DateTime?
+  partialFeeSupported   Boolean       @default(false)
+  collectOnMonthStart   Boolean       @default(false)
+  createdAt             DateTime      @default(now())
+  updatedAt             DateTime      @updatedAt
 
   student   Student   @relation(fields: [studentId], references: [id], onDelete: Cascade)
   payments  Payment[]
+
+  @@index([studentId, dueDate])
+  @@index([status, dueDate])
+  @@index([createdAt])
 }
 
 model Payment {
@@ -302,6 +400,10 @@ model Payment {
 
   fee      Fee     @relation(fields: [feeId], references: [id], onDelete: Cascade)
   parent   Parent? @relation(fields: [parentId], references: [id])
+
+  @@index([feeId])
+  @@index([parentId])
+  @@index([paidAt])
 }
 
 model Assignment {
@@ -322,6 +424,11 @@ model Assignment {
   teacher      Teacher               @relation(fields: [teacherId], references: [id], onDelete: Cascade)
   files        FileAsset[]           @relation("AssignmentFiles")
   submissions  AssignmentSubmission[]
+
+  @@index([classId, dueDate])
+  @@index([teacherId, createdAt])
+  @@index([subjectId])
+  @@index([status, dueDate])
 }
 
 model AssignmentSubmission {
@@ -341,6 +448,8 @@ model AssignmentSubmission {
   files      FileAsset[] @relation("SubmissionFiles")
 
   @@unique([assignmentId, studentId])
+  @@index([studentId, submittedAt])
+  @@index([assignmentId, submittedAt])
 }
 
 model Message {
@@ -352,6 +461,9 @@ model Message {
 
   sender      User               @relation("MessageSender", fields: [senderId], references: [id], onDelete: Cascade)
   recipients  MessageRecipient[]
+
+  @@index([senderId, createdAt])
+  @@index([createdAt])
 }
 
 model MessageRecipient {
@@ -365,6 +477,8 @@ model MessageRecipient {
   user      User    @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@unique([messageId, userId])
+  @@index([userId, isRead])
+  @@index([userId])
 }
 
 model Notification {
@@ -379,6 +493,49 @@ model Notification {
 
   user        User              @relation(fields: [userId], references: [id], onDelete: Cascade)
   student     Student?          @relation("StudentNotifications", fields: [studentId], references: [id])
+
+  @@index([userId, isRead, createdAt])
+  @@index([studentId, createdAt])
+  @@index([createdAt])
+}
+
+model TeacherAccess {
+  id        String   @id
+  teacherId String
+  module    String
+  enabled   Boolean  @default(true)
+  updatedAt DateTime @default(now())
+
+  teacher Teacher @relation(fields: [teacherId], references: [id], onDelete: Cascade)
+
+  @@unique([teacherId, module])
+  @@index([teacherId])
+}
+
+model TeacherCompensation {
+  id         String   @id
+  teacherId  String   @unique
+  baseSalary Decimal  @default(0) @db.Decimal(12, 2)
+  bonus      Decimal  @default(0) @db.Decimal(12, 2)
+  deduction  Decimal  @default(0) @db.Decimal(12, 2)
+  updatedAt  DateTime @default(now())
+
+  teacher Teacher @relation(fields: [teacherId], references: [id], onDelete: Cascade)
+}
+
+model StaffAttendance {
+  id       String   @id
+  teacherId String
+  date     DateTime @db.Date
+  status   String
+  note     String?
+  markedAt DateTime @default(now())
+
+  teacher Teacher @relation(fields: [teacherId], references: [id], onDelete: Cascade)
+
+  @@unique([teacherId, date])
+  @@index([date])
+  @@index([teacherId, date])
 }
 
 model FileAsset {
@@ -396,4 +553,104 @@ model FileAsset {
   uploadedBy     User                 @relation("Uploader", fields: [uploadedById], references: [id], onDelete: Cascade)
   assignment     Assignment?          @relation("AssignmentFiles", fields: [assignmentId], references: [id])
   submission     AssignmentSubmission? @relation("SubmissionFiles", fields: [submissionId], references: [id])
+
+  @@index([uploadedById, createdAt])
+  @@index([assignmentId, createdAt])
+  @@index([submissionId, createdAt])
+}
+
+model Campaign {
+  id               String         @id @default(cuid())
+  createdAt        DateTime       @default(now())
+  updatedAt        DateTime       @updatedAt
+  type             CampaignType
+  status           CampaignStatus @default(DRAFT)
+  totalStudents    Int            @default(0)
+  totalWithWhatsApp Int           @default(0)
+  totalSkipped     Int            @default(0)
+  scheduledAt      DateTime?
+
+  items            CampaignItem[]
+  dispatches       CampaignDispatch[]
+  automationRuns   AutomationRun[]
+
+  @@index([scheduledAt])
+  @@index([createdAt])
+  @@index([status, createdAt])
+  @@index([type, createdAt])
+}
+
+model CampaignItem {
+  id          String             @id @default(cuid())
+  campaignId  String
+  studentId   String?
+  studentName String
+  whatsApp    String?
+  hasWhatsApp Boolean            @default(false)
+  message     String
+  templateData Json?
+  status      CampaignItemStatus @default(PENDING)
+  sentAt      DateTime?
+  createdAt   DateTime           @default(now())
+
+  campaign    Campaign           @relation(fields: [campaignId], references: [id], onDelete: Cascade)
+  student     Student?           @relation(fields: [studentId], references: [id], onDelete: SetNull)
+  dispatches  CampaignDispatch[]
+
+  @@index([campaignId, status])
+  @@index([studentId])
+}
+
+model CampaignDispatch {
+  id            String               @id @default(cuid())
+  campaignId    String
+  campaignItemId String
+  status        CampaignDispatchStatus @default(PENDING)
+  attemptCount  Int                  @default(0)
+  nextAttemptAt DateTime             @default(now())
+  lockedAt      DateTime?
+  workerId      String?
+  sentAt        DateTime?
+  lastError     String?
+
+  campaign      Campaign             @relation(fields: [campaignId], references: [id], onDelete: Cascade)
+  campaignItem  CampaignItem         @relation(fields: [campaignItemId], references: [id], onDelete: Cascade)
+
+  @@unique([campaignItemId])
+  @@index([campaignId, status])
+  @@index([status, nextAttemptAt])
+}
+
+model AutomationConfig {
+  id                   String                    @id @default(cuid())
+  name                 String                    @unique @default("default")
+  enabled              Boolean                   @default(false)
+  dryRunOnly           Boolean                   @default(true)
+  autoApproveMode      AutomationAutoApproveMode @default(OFF)
+  maxAutoApproveStudents Int                     @default(200)
+  createdAt            DateTime                  @default(now())
+  updatedAt            DateTime                  @updatedAt
+
+  runs                 AutomationRun[]
+}
+
+model AutomationRun {
+  id               String              @id @default(cuid())
+  configId         String?
+  campaignId       String?
+  status           AutomationRunStatus @default(STARTED)
+  autoApproveMode  AutomationAutoApproveMode?
+  autoApproveDecision String?
+  totalStudents    Int                 @default(0)
+  totalWithWhatsApp Int                @default(0)
+  totalSkipped     Int                 @default(0)
+  error            String?
+  createdAt        DateTime            @default(now())
+  completedAt      DateTime?
+
+  config           AutomationConfig?   @relation(fields: [configId], references: [id], onDelete: SetNull)
+  campaign         Campaign?           @relation(fields: [campaignId], references: [id], onDelete: SetNull)
+
+  @@index([createdAt])
+  @@index([status, createdAt])
 }

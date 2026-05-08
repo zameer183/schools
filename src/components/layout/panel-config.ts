@@ -49,7 +49,8 @@ export const panelNavItems: Record<UserRole, PanelNavItem[]> = {
     { href: '/parent/performance', label: 'Performance', icon: BarChart3 },
     { href: '/parent/attendance', label: 'Attendance', icon: CalendarCheck2 },
     { href: '/parent/fees', label: 'Fees', icon: DollarSign },
-    { href: '/parent/notifications', label: 'Notifications', icon: Bell }
+    { href: '/parent/notifications', label: 'Notifications', icon: Bell },
+    { href: '/parent/settings', label: 'Settings', icon: Settings }
   ]
 };
 
@@ -57,7 +58,7 @@ export const panelSettingsHref: Partial<Record<UserRole, string>> = {
   ADMIN: '/admin/settings',
   TEACHER: '/teacher/settings',
   STUDENT: '/student/settings',
-  PARENT: '/parent'
+  PARENT: '/parent/settings'
 };
 
 const panelRouteMeta: Record<UserRole, Array<{ path: string; meta: PanelRouteMeta }>> = {
@@ -91,6 +92,7 @@ const panelRouteMeta: Record<UserRole, Array<{ path: string; meta: PanelRouteMet
     { path: '/student', meta: { eyebrow: 'Student Hub', title: 'Academic Overview', subtitle: 'Personal progress and recent activity' } }
   ],
   PARENT: [
+    { path: '/parent/settings', meta: { eyebrow: 'Parent Hub', title: 'Settings', subtitle: 'Profile preferences and account controls' } },
     { path: '/parent/notifications', meta: { eyebrow: 'Parent Hub', title: 'Notifications', subtitle: 'School notices and alerts' } },
     { path: '/parent/fees', meta: { eyebrow: 'Parent Hub', title: 'Fees', subtitle: 'Payments, dues, and billing history' } },
     { path: '/parent/attendance', meta: { eyebrow: 'Parent Hub', title: 'Attendance', subtitle: 'Presence summary and trends' } },

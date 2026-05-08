@@ -108,7 +108,7 @@ export function AppHeader({
               <p className="text-xs font-bold text-[#191c1d]">{fullName}</p>
               <p className="text-[10px] font-medium text-[#6f7979]">{roleLabel}</p>
             </div>
-            <div className="inline-flex h-10 w-10 items-center justify-center rounded-full border-2 border-white bg-[#004649] text-xs font-bold text-white shadow-sm">
+            <div className="inline-flex h-10 w-10 items-center justify-center rounded-full bg-[#1F5A5C] text-xs font-bold text-white shadow-sm">
               {initials || 'SA'}
             </div>
           </button>

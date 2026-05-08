@@ -9,9 +9,26 @@ export async function GET(request: Request) {
 
   const { searchParams } = new URL(request.url);
   const studentId = searchParams.get('studentId') ?? undefined;
+  const classId = searchParams.get('classId') ?? undefined;
+  const from = searchParams.get('from') ?? undefined;
+  const to = searchParams.get('to') ?? undefined;
+  const fromDate = from ? new Date(from) : undefined;
+  const toDate = to ? new Date(to) : undefined;
+  if (toDate) toDate.setHours(23, 59, 59, 999);
 
   const fees = await prisma.fee.findMany({
-    where: { studentId },
+    where: {
+      ...(studentId ? { studentId } : {}),
+      ...(classId ? { student: { classId } } : {}),
+      ...((fromDate || toDate)
+        ? {
+            dueDate: {
+              ...(fromDate ? { gte: fromDate } : {}),
+              ...(toDate ? { lte: toDate } : {})
+            }
+          }
+        : {})
+    },
     include: { student: { include: { user: true } }, payments: true },
     orderBy: { dueDate: 'asc' }
   });
@@ -52,7 +69,7 @@ export async function PATCH(request: Request) {
 }
 
 export async function PUT(request: Request) {
-  const auth = await ensureApiRole([UserRole.ADMIN, UserRole.PARENT]);
+  const auth = await ensureApiRole([UserRole.ADMIN]);
   if (!auth.authorized) return auth.response;
 
   const { feeId, amountPaid, method, transactionRef, parentId } = await request.json();

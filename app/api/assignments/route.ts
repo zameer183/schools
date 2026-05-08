@@ -2,24 +2,42 @@ import { AssignmentStatus, SubmissionStatus, UserRole } from '@prisma/client';
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { ensureApiRole } from '@/lib/rbac';
+import { hasTeacherAccessByUserId } from '@/lib/teacher-access';
 import { assignmentCreateSchema } from '@/lib/validators';
 
 async function getTeacherScope(userId: string) {
   const teacher = await prisma.teacher.findUnique({
     where: { userId },
-    select: { id: true, classAssignments: { select: { classId: true } } }
+    select: {
+      id: true,
+      classAssignments: { select: { classId: true } },
+      subjects: { select: { classId: true } }
+    }
   });
 
   if (!teacher) return null;
+  const classIds = Array.from(
+    new Set([
+      ...teacher.classAssignments.map((item) => item.classId),
+      ...teacher.subjects.map((item) => item.classId)
+    ])
+  );
+
   return {
     teacherId: teacher.id,
-    classIds: teacher.classAssignments.map((item) => item.classId)
+    classIds
   };
 }
 
 export async function GET(request: Request) {
   const auth = await ensureApiRole([UserRole.ADMIN, UserRole.TEACHER, UserRole.STUDENT]);
   if (!auth.authorized) return auth.response;
+  if (auth.session.role === UserRole.TEACHER) {
+    const canAccess = await hasTeacherAccessByUserId(auth.session.id, 'ASSIGNMENTS');
+    if (!canAccess) {
+      return NextResponse.json({ error: 'Assignments module access is disabled by admin.' }, { status: 403 });
+    }
+  }
 
   const { searchParams } = new URL(request.url);
   const classId = searchParams.get('classId') ?? undefined;
@@ -33,7 +51,11 @@ export async function GET(request: Request) {
         teacherId: teacherScope.teacherId,
         classId: classId ?? undefined
       },
-      include: { class: true, subject: true, submissions: true, files: true },
+      include: {
+        class: { select: { name: true, section: true } },
+        subject: { select: { name: true } },
+        _count: { select: { submissions: true } }
+      },
       orderBy: { dueDate: 'asc' }
     });
 
@@ -65,6 +87,12 @@ export async function GET(request: Request) {
 export async function POST(request: Request) {
   const auth = await ensureApiRole([UserRole.ADMIN, UserRole.TEACHER]);
   if (!auth.authorized) return auth.response;
+  if (auth.session.role === UserRole.TEACHER) {
+    const canAccess = await hasTeacherAccessByUserId(auth.session.id, 'ASSIGNMENTS');
+    if (!canAccess) {
+      return NextResponse.json({ error: 'Assignments module access is disabled by admin.' }, { status: 403 });
+    }
+  }
 
   const body = await request.json();
   const parsed = assignmentCreateSchema.safeParse(body);

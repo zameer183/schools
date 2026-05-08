@@ -5,7 +5,7 @@ import { requireAuth } from '@/lib/auth';
 import { prisma } from '@/lib/prisma';
 import { getTeacherAccessMapByTeacherId, TEACHER_ACCESS_MODULES } from '@/lib/teacher-access';
 import { PageHeader, KpiCard, Card, StatusBadge, SectionTitle } from '@/components/ui';
-import { BookOpen, Users2, ClipboardList, CheckCircle2 } from 'lucide-react';
+import { BookOpen, Users2, ClipboardList, CheckCircle2, AlertCircle } from 'lucide-react';
 
 export const dynamic = 'force-dynamic';
 
@@ -90,9 +90,18 @@ export default async function TeacherDashboardPage() {
 
   if (!teacher) {
     return (
-      <div className="rounded-2xl bg-white shadow-[0_12px_40px_rgba(0,70,73,0.06)] p-8">
-        <h2 className="font-headline text-3xl font-bold text-[#1a1c1c]">Teacher Profile Missing</h2>
-        <p className="mt-2 text-sm text-[#6f7979]">Your account is active but no teacher profile is linked yet. Contact admin.</p>
+      <div className="w-full min-w-0 space-y-5">
+        <section className="rounded-2xl bg-white p-6 shadow-[0_2px_8px_rgba(0,0,0,0.06),0_8px_32px_rgba(0,0,0,0.04)]">
+          <div className="flex flex-col items-center py-10 text-center">
+            <div className="flex h-16 w-16 items-center justify-center rounded-full bg-[#FEE2E2]">
+              <AlertCircle className="h-8 w-8 text-[#EF4444]" strokeWidth={1.5} />
+            </div>
+            <h2 className="mt-4 text-xl font-bold text-[#111827]">Teacher Profile Missing</h2>
+            <p className="mt-2 max-w-sm text-sm leading-relaxed text-[#6B7280]">
+              Your account is active but no teacher profile is linked yet. Please contact your administrator to link a teacher profile to this account.
+            </p>
+          </div>
+        </section>
       </div>
     );
   }

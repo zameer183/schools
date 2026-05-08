@@ -1,9 +1,7 @@
-﻿import { redirect } from 'next/navigation';
-import { getSession, roleHomePath } from '@/lib/auth';
+import { redirect } from 'next/navigation';
 
-export default async function HomePage() {
-  const session = await getSession();
-  if (!session) redirect('/login');
+export const dynamic = 'force-dynamic';
 
-  redirect(roleHomePath(session.role));
+export default function HomePage() {
+  redirect('/login');
 }

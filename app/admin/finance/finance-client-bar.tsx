@@ -107,7 +107,7 @@ export function FinanceClientBar({
               <button
                 key={chip.value}
                 onClick={() => updateFilter('status', chip.value)}
-                className={`shrink-0 h-9 px-3 rounded-xl text-xs font-semibold transition-all ${
+                className={`shrink-0 h-10 px-3 rounded-xl text-xs font-semibold transition-all ${
                   selectedStatus === chip.value
                     ? 'bg-gradient-to-br from-[#004649] to-[#1b5e62] text-white shadow-sm'
                     : 'bg-[#f0f2f5] text-[#2c3e50] hover:bg-[#e8ecf0]'
@@ -122,7 +122,7 @@ export function FinanceClientBar({
           <select
             value={selectedSort || 'dueDate'}
             onChange={e => updateFilter('sort', e.target.value)}
-            className="h-9 rounded-xl bg-[#f0f2f5] border-none px-3 text-xs font-semibold text-[#2c3e50] outline-none focus:ring-2 focus:ring-[#004649]/20"
+            className="h-10 rounded-xl bg-[#f0f2f5] border-none px-3 text-xs font-semibold text-[#2c3e50] outline-none focus:ring-2 focus:ring-[#004649]/20"
           >
             {sortOptions.map(opt => (
               <option key={opt.value} value={opt.value}>{opt.label}</option>

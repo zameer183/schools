@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import Link from 'next/link';
+import Image from 'next/image';
 
 export default function ForgotPasswordPage() {
   const [email, setEmail] = useState('');
@@ -17,17 +18,23 @@ export default function ForgotPasswordPage() {
   };
 
   return (
-    <div className="relative min-h-screen bg-[#f0f4f0] flex flex-col items-center justify-between p-6">
+    <div className="relative min-h-screen bg-[#f8f9fa] flex flex-col items-center justify-between p-6">
       <div className="flex-1 flex items-center justify-center w-full">
         <div className="w-full max-w-sm">
           <div className="text-center mb-8">
-            <p className="text-[11px] font-bold uppercase tracking-[0.3em] text-[#865300]">SCHOLARLY</p>
-            <div className="mx-auto mt-3 w-10 h-0.5 bg-[#865300] rounded-full" />
+            <Image
+              src="/manarah-mark.png"
+              alt="Manarah Institute logo"
+              width={220}
+              height={74}
+              className="mx-auto h-auto w-[220px] max-w-full"
+              priority
+            />
           </div>
 
-          <div className="bg-white rounded-2xl border border-[#e2e8e8] overflow-hidden">
-            <div className="h-44 bg-[#2a2a2a] relative flex items-center justify-center overflow-hidden">
-              <div className="absolute inset-0 bg-gradient-to-br from-[#1a1a1a] to-[#3a3a3a]" />
+          <div className="bg-white rounded-2xl shadow-[0_12px_40px_rgba(0,70,73,0.10)] overflow-hidden">
+            <div className="h-44 bg-[#1b5e62] relative flex items-center justify-center overflow-hidden">
+              <div className="absolute inset-0 bg-gradient-to-br from-[#004649] to-[#1b5e62]" />
               <svg className="absolute inset-0 w-full h-full opacity-10" viewBox="0 0 200 150" preserveAspectRatio="xMidYMid slice">
                 <rect x="20" y="70" width="160" height="4" rx="2" fill="white" />
                 <rect x="30" y="55" width="140" height="60" rx="3" fill="none" stroke="white" strokeWidth="1" />
@@ -47,7 +54,7 @@ export default function ForgotPasswordPage() {
                       <path strokeLinecap="round" strokeLinejoin="round" d="m4.5 12.75 6 6 9-13.5" />
                     </svg>
                   </div>
-                  <h2 className="text-2xl font-bold text-[#1a1c1c]">Check Your Inbox</h2>
+                  <h2 className="font-headline text-2xl font-bold text-[#1a1c1c]">Check Your Inbox</h2>
                   <p className="text-sm text-[#6f7979] leading-relaxed">
                     We sent a secure reset link to <span className="font-semibold text-[#1a1c1c]">{email}</span>. Please check your email.
                   </p>
@@ -63,7 +70,7 @@ export default function ForgotPasswordPage() {
                 </div>
               ) : (
                 <>
-                  <h2 className="text-2xl font-bold text-[#1a1c1c] mb-1">Account Recovery</h2>
+                  <h2 className="font-headline text-2xl font-bold text-[#1a1c1c] mb-1">Account Recovery</h2>
                   <p className="text-sm text-[#6f7979] leading-relaxed mb-6">
                     Enter the institutional email associated with your profile. We will dispatch a secure reset link to your inbox.
                   </p>
@@ -83,7 +90,7 @@ export default function ForgotPasswordPage() {
                           value={email}
                           onChange={(e) => setEmail(e.target.value)}
                           placeholder="name@university.edu"
-                          className="h-12 w-full rounded-xl bg-[#f0f2f0] pl-10 pr-4 text-sm text-[#1a1c1c] placeholder:text-[#6f7979]/60 outline-none ring-[#004649]/20 transition focus:ring-2"
+                          className="h-12 w-full rounded-xl bg-[#edeeef] border-none pl-10 pr-4 text-sm text-[#1a1c1c] placeholder:text-[#6f7979]/60 outline-none ring-[#004649]/20 transition focus:ring-2"
                         />
                       </div>
                     </div>
@@ -91,7 +98,7 @@ export default function ForgotPasswordPage() {
                     <button
                       type="submit"
                       disabled={loading}
-                      className="flex h-12 w-full items-center justify-center rounded-xl bg-[#004649] text-sm font-bold text-white transition hover:opacity-90 disabled:opacity-60"
+                      className="flex h-12 w-full items-center justify-center rounded-xl bg-gradient-to-br from-[#004649] to-[#1b5e62] text-sm font-bold text-white shadow-[0_8px_20px_rgba(0,70,73,0.15)] transition hover:opacity-90 active:scale-[0.98] disabled:opacity-60"
                     >
                       {loading ? 'Sending...' : 'Send Reset Link'}
                     </button>
@@ -116,8 +123,9 @@ export default function ForgotPasswordPage() {
       </div>
 
       <p className="text-[10px] text-[#6f7979] uppercase tracking-widest text-center mt-6">
-        Secure Student Portal &copy; 2024 Scholarly Editorial
+        Secure Student Portal &copy; 2026 Manarah Institute
       </p>
     </div>
   );
 }
+

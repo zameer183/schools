@@ -24,19 +24,20 @@ export async function getAdminKpis(): Promise<AdminKpi> {
 }
 
 export async function getEnrollmentTrend() {
-  const byMonth = await prisma.student.groupBy({
-    by: ['createdAt'],
-    _count: { _all: true },
-    orderBy: { createdAt: 'asc' }
-  });
+  const rows = await prisma.$queryRaw<{ month_key: string; students: number }[]>`
+    SELECT
+      to_char(date_trunc('month', "createdAt"), 'Mon') AS month_key,
+      COUNT(*)::int AS students
+    FROM "Student"
+    WHERE "createdAt" >= NOW() - INTERVAL '11 months'
+    GROUP BY date_trunc('month', "createdAt"), month_key
+    ORDER BY date_trunc('month', "createdAt") ASC;
+  `;
 
-  const monthlyMap = new Map<string, number>();
-  for (const row of byMonth) {
-    const month = row.createdAt.toLocaleString('en-US', { month: 'short' });
-    monthlyMap.set(month, (monthlyMap.get(month) ?? 0) + row._count._all);
-  }
-
-  return Array.from(monthlyMap.entries()).map(([month, students]) => ({ month, students }));
+  return rows.map((row) => ({
+    month: row.month_key,
+    students: Number(row.students)
+  }));
 }
 
 export async function getAttendanceSummary() {
@@ -44,11 +45,6 @@ export async function getAttendanceSummary() {
   const start = new Date(today);
   start.setDate(today.getDate() - 4);
   start.setHours(0, 0, 0, 0);
-
-  const rows = await prisma.attendance.findMany({
-    where: { date: { gte: start } },
-    select: { date: true, status: true }
-  });
 
   const dayOrder = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'] as const;
   const dayMap = new Map<string, { present: number; total: number }>();
@@ -59,12 +55,23 @@ export async function getAttendanceSummary() {
     dayMap.set(dayOrder[d.getDay()], { present: 0, total: 0 });
   }
 
+  const rows = await prisma.$queryRaw<{ day_date: Date; present_count: number; total_count: number }[]>`
+    SELECT
+      date_trunc('day', "date") AS day_date,
+      COUNT(*) FILTER (WHERE "status" = 'PRESENT')::int AS present_count,
+      COUNT(*)::int AS total_count
+    FROM "Attendance"
+    WHERE "date" >= ${start}
+    GROUP BY date_trunc('day', "date")
+    ORDER BY day_date ASC;
+  `;
+
   for (const row of rows) {
-    const day = dayOrder[row.date.getDay()];
+    const day = dayOrder[new Date(row.day_date).getDay()];
     const current = dayMap.get(day);
     if (!current) continue;
-    current.total += 1;
-    if (row.status === 'PRESENT') current.present += 1;
+    current.total += Number(row.total_count);
+    current.present += Number(row.present_count);
     dayMap.set(day, current);
   }
 

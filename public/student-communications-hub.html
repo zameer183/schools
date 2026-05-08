@@ -1,0 +1,338 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Student Communications Hub</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            brand: '#004649',
+            brandSoft: '#e9f5f4',
+            secondary: '#2563eb',
+            page: '#f4f7fb'
+          },
+          boxShadow: {
+            soft: '0 10px 30px rgba(16, 42, 67, 0.08)'
+          }
+        }
+      }
+    };
+  </script>
+</head>
+<body class="bg-page text-slate-800">
+  <main class="mx-auto max-w-[1500px] p-4 md:p-6">
+    <section class="mb-4 rounded-2xl border border-slate-200 bg-white p-5 shadow-soft">
+      <div class="flex items-center justify-between gap-3">
+        <div>
+          <h1 class="text-2xl font-bold">Communications Hub</h1>
+          <p class="text-sm text-slate-500">Modern student messaging experience</p>
+        </div>
+        <button id="mobilePanelsBtn" class="rounded-lg border border-slate-200 px-3 py-2 text-sm font-semibold lg:hidden">Panels</button>
+      </div>
+    </section>
+
+    <section class="grid gap-4 lg:grid-cols-[240px_360px_minmax(0,1fr)]">
+      <aside id="leftPanel" class="hidden rounded-2xl border border-slate-200 bg-white p-4 shadow-soft lg:block">
+        <div class="mb-3 flex items-center justify-between">
+          <h2 class="text-sm font-bold">Categories</h2>
+          <button class="rounded-lg bg-brand px-3 py-1.5 text-xs font-semibold text-white hover:bg-teal-800">New Message</button>
+        </div>
+        <div id="categories" class="space-y-2"></div>
+      </aside>
+
+      <section id="middlePanel" class="rounded-2xl border border-slate-200 bg-white p-4 shadow-soft">
+        <div class="relative mb-3">
+          <span class="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-slate-400">??</span>
+          <input id="searchInput" type="text" placeholder="Search chats..." class="h-11 w-full rounded-full border border-slate-200 bg-slate-50 pl-10 pr-4 text-sm outline-none focus:border-secondary" />
+        </div>
+        <div id="chatList" class="max-h-[68vh] space-y-2 overflow-auto pr-1"></div>
+      </section>
+
+      <section id="rightPanel" class="hidden min-h-[72vh] rounded-2xl border border-slate-200 bg-white shadow-soft lg:flex lg:flex-col">
+        <div id="emptyState" class="grid flex-1 place-items-center p-8">
+          <div class="max-w-sm rounded-2xl border border-dashed border-slate-300 bg-slate-50 p-8 text-center">
+            <h3 class="text-lg font-bold">No Chat Selected</h3>
+            <p class="mt-2 text-sm text-slate-500">Select any conversation to start messaging.</p>
+          </div>
+        </div>
+
+        <div id="chatWindow" class="hidden h-full flex-col">
+          <header class="flex items-center justify-between border-b border-slate-200 px-4 py-3">
+            <div class="flex items-center gap-3">
+              <button id="backBtn" class="rounded-lg border border-slate-200 px-2 py-1 text-sm lg:hidden">?</button>
+              <div id="activeAvatar" class="grid h-10 w-10 place-items-center rounded-full bg-brandSoft text-sm font-bold text-brand">SA</div>
+              <div>
+                <p id="activeName" class="text-sm font-bold">System Admin</p>
+                <p id="activeStatus" class="flex items-center gap-1 text-xs text-slate-500"><span class="h-2 w-2 rounded-full bg-green-500"></span>Online</p>
+              </div>
+            </div>
+          </header>
+
+          <div id="messageArea" class="flex-1 space-y-2 overflow-auto bg-slate-50 px-4 py-4"></div>
+
+          <div id="typingBar" class="hidden px-4 pb-2 text-xs text-slate-500">... typing</div>
+
+          <footer class="border-t border-slate-200 bg-white p-3">
+            <div class="flex items-center gap-2">
+              <input id="messageInput" type="text" placeholder="Write a message..." class="h-11 flex-1 rounded-full border border-slate-200 bg-slate-50 px-4 text-sm outline-none focus:border-secondary" />
+              <button id="sendBtn" class="grid h-11 w-11 place-items-center rounded-full bg-brand text-white hover:bg-teal-800">?</button>
+            </div>
+          </footer>
+        </div>
+      </section>
+    </section>
+  </main>
+
+  <script>
+    const state = {
+      activeCategory: 'all',
+      activeChatId: null,
+      search: '',
+      showPanelsMobile: false,
+      chats: [
+        {
+          id: 'c1',
+          category: 'academic',
+          name: 'System Admin',
+          online: true,
+          avatar: 'SA',
+          unread: 2,
+          messages: [
+            { side: 'left', text: 'Assalam o Alaikum ??', at: '11:18 PM' },
+            { side: 'right', text: 'Walaikum Salam, Sir.', at: '11:20 PM' },
+            { side: 'left', text: 'Kal test schedule check kar lena.', at: '11:22 PM' }
+          ]
+        },
+        {
+          id: 'c2',
+          category: 'finance',
+          name: 'Finance Desk',
+          online: false,
+          avatar: 'FD',
+          unread: 1,
+          messages: [
+            { side: 'left', text: 'Fee reminder: PKR 2,000 due.', at: '09:10 PM' },
+            { side: 'right', text: 'Received, I will inform parent.', at: '09:14 PM' }
+          ]
+        },
+        {
+          id: 'c3',
+          category: 'academic',
+          name: 'Amina Rao',
+          online: true,
+          avatar: 'AR',
+          unread: 0,
+          messages: [
+            { side: 'left', text: 'Great work in class today.', at: '08:00 PM' },
+            { side: 'right', text: 'Thank you ??', at: '08:03 PM' }
+          ]
+        }
+      ]
+    };
+
+    const categoriesEl = document.getElementById('categories');
+    const chatListEl = document.getElementById('chatList');
+    const searchInput = document.getElementById('searchInput');
+    const leftPanel = document.getElementById('leftPanel');
+    const middlePanel = document.getElementById('middlePanel');
+    const rightPanel = document.getElementById('rightPanel');
+    const emptyState = document.getElementById('emptyState');
+    const chatWindow = document.getElementById('chatWindow');
+    const activeAvatar = document.getElementById('activeAvatar');
+    const activeName = document.getElementById('activeName');
+    const activeStatus = document.getElementById('activeStatus');
+    const messageArea = document.getElementById('messageArea');
+    const typingBar = document.getElementById('typingBar');
+    const messageInput = document.getElementById('messageInput');
+    const sendBtn = document.getElementById('sendBtn');
+    const mobilePanelsBtn = document.getElementById('mobilePanelsBtn');
+    const backBtn = document.getElementById('backBtn');
+
+    function categoryCounts() {
+      return {
+        all: state.chats.length,
+        academic: state.chats.filter(c => c.category === 'academic').length,
+        finance: state.chats.filter(c => c.category === 'finance').length
+      };
+    }
+
+    function filteredChats() {
+      const q = state.search.toLowerCase();
+      return state.chats.filter(chat => {
+        const catMatch = state.activeCategory === 'all' || chat.category === state.activeCategory;
+        const text = chat.messages[chat.messages.length - 1]?.text || '';
+        const searchMatch = !q || chat.name.toLowerCase().includes(q) || text.toLowerCase().includes(q);
+        return catMatch && searchMatch;
+      });
+    }
+
+    function renderCategories() {
+      const counts = categoryCounts();
+      const items = [
+        { key: 'all', label: 'All Messages', count: counts.all },
+        { key: 'academic', label: 'Academic', count: counts.academic },
+        { key: 'finance', label: 'Finance', count: counts.finance }
+      ];
+
+      categoriesEl.innerHTML = items.map(item => {
+        const active = state.activeCategory === item.key;
+        return `
+          <button data-cat="${item.key}" class="flex w-full items-center justify-between rounded-lg border-l-4 px-3 py-2 text-left text-sm transition ${active ? 'border-l-brand bg-brandSoft text-brand' : 'border-l-transparent bg-slate-50 text-slate-600 hover:bg-slate-100'}">
+            <span class="font-medium">${item.label}</span>
+            <span class="rounded-full bg-blue-100 px-2 py-0.5 text-xs font-bold text-blue-700">${item.count}</span>
+          </button>
+        `;
+      }).join('');
+
+      categoriesEl.querySelectorAll('[data-cat]').forEach(btn => {
+        btn.addEventListener('click', () => {
+          state.activeCategory = btn.dataset.cat;
+          render();
+        });
+      });
+    }
+
+    function renderChatList() {
+      const chats = filteredChats();
+      chatListEl.innerHTML = chats.length ? chats.map(chat => {
+        const last = chat.messages[chat.messages.length - 1];
+        const active = state.activeChatId === chat.id;
+        return `
+          <button data-chat="${chat.id}" class="w-full rounded-xl border p-3 text-left transition ${active ? 'border-brand bg-brandSoft' : 'border-slate-200 bg-white hover:bg-slate-50'}">
+            <div class="flex items-start gap-3">
+              <div class="grid h-11 w-11 place-items-center rounded-full bg-brandSoft text-sm font-bold text-brand">${chat.avatar}</div>
+              <div class="min-w-0 flex-1">
+                <div class="flex items-start justify-between gap-2">
+                  <p class="truncate text-sm font-bold text-slate-800">${chat.name}</p>
+                  <p class="shrink-0 text-[11px] text-slate-400">${last?.at || '-'}</p>
+                </div>
+                <p class="truncate text-xs text-slate-600">${last?.text || ''}</p>
+              </div>
+            </div>
+            ${chat.unread ? `<div class="mt-2 flex justify-end"><span class="inline-flex min-h-5 min-w-5 items-center justify-center rounded-full bg-blue-600 px-1 text-[10px] font-bold text-white">${chat.unread}</span></div>` : ''}
+          </button>
+        `;
+      }).join('') : `<div class="rounded-xl border border-dashed border-slate-300 bg-slate-50 p-5 text-center text-sm text-slate-500">No conversations in this filter.</div>`;
+
+      chatListEl.querySelectorAll('[data-chat]').forEach(btn => {
+        btn.addEventListener('click', () => {
+          state.activeChatId = btn.dataset.chat;
+          const chat = state.chats.find(c => c.id === state.activeChatId);
+          if (chat) chat.unread = 0;
+          render();
+        });
+      });
+    }
+
+    function renderActiveChat() {
+      const chat = state.chats.find(c => c.id === state.activeChatId);
+      if (!chat) {
+        emptyState.classList.remove('hidden');
+        chatWindow.classList.add('hidden');
+        return;
+      }
+
+      emptyState.classList.add('hidden');
+      chatWindow.classList.remove('hidden');
+      activeAvatar.textContent = chat.avatar;
+      activeName.textContent = chat.name;
+      activeStatus.innerHTML = `<span class="h-2 w-2 rounded-full ${chat.online ? 'bg-green-500' : 'bg-slate-400'}"></span>${chat.online ? 'Online' : 'Offline'}`;
+
+      messageArea.innerHTML = chat.messages.map(m => `
+        <div class="flex ${m.side === 'right' ? 'justify-end' : 'justify-start'}">
+          <div class="max-w-[85%] rounded-2xl px-3 py-2 text-sm shadow-sm ${m.side === 'right' ? 'rounded-br-sm bg-brand text-white' : 'rounded-bl-sm bg-white text-slate-800'}">
+            <p>${m.text}</p>
+            <div class="mt-1 text-[10px] ${m.side === 'right' ? 'text-teal-100' : 'text-slate-400'}">${m.at}</div>
+          </div>
+        </div>
+      `).join('');
+
+      messageArea.scrollTop = messageArea.scrollHeight;
+    }
+
+    function mobileLayout() {
+      const isMobile = window.innerWidth < 1024;
+
+      if (!isMobile) {
+        leftPanel.classList.remove('hidden');
+        middlePanel.classList.remove('hidden');
+        rightPanel.classList.remove('hidden');
+        return;
+      }
+
+      leftPanel.classList.toggle('hidden', !state.showPanelsMobile);
+
+      if (state.activeChatId) {
+        middlePanel.classList.add('hidden');
+        rightPanel.classList.remove('hidden');
+      } else {
+        middlePanel.classList.remove('hidden');
+        rightPanel.classList.add('hidden');
+      }
+    }
+
+    function render() {
+      renderCategories();
+      renderChatList();
+      renderActiveChat();
+      mobileLayout();
+    }
+
+    searchInput.addEventListener('input', (e) => {
+      state.search = e.target.value;
+      render();
+    });
+
+    messageInput.addEventListener('input', () => {
+      typingBar.classList.toggle('hidden', messageInput.value.trim().length === 0);
+    });
+
+    function nowTime() {
+      return new Date().toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' });
+    }
+
+    function sendMessage() {
+      const text = messageInput.value.trim();
+      if (!text || !state.activeChatId) return;
+      const chat = state.chats.find(c => c.id === state.activeChatId);
+      if (!chat) return;
+
+      chat.messages.push({ side: 'right', text, at: nowTime() });
+      messageInput.value = '';
+      typingBar.classList.add('hidden');
+
+      setTimeout(() => {
+        chat.messages.push({ side: 'left', text: 'Received ?', at: nowTime() });
+        render();
+      }, 1000);
+
+      render();
+    }
+
+    sendBtn.addEventListener('click', sendMessage);
+    messageInput.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter' && !e.shiftKey) {
+        e.preventDefault();
+        sendMessage();
+      }
+    });
+
+    mobilePanelsBtn.addEventListener('click', () => {
+      state.showPanelsMobile = !state.showPanelsMobile;
+      mobileLayout();
+    });
+
+    backBtn.addEventListener('click', () => {
+      state.activeChatId = null;
+      render();
+    });
+
+    window.addEventListener('resize', mobileLayout);
+    render();
+  </script>
+</body>
+</html>

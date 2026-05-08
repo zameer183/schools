@@ -181,7 +181,7 @@ export function FeeBulkList({
                   <button
                     onClick={() => bulkUpdate('PAID')}
                     disabled={loading}
-                    className="h-9 flex items-center gap-1 rounded-xl bg-[#27ae60] px-3 text-xs font-bold text-white hover:bg-[#229954] active:scale-[0.98] disabled:opacity-60 transition-all"
+                    className="h-11 flex items-center gap-1 rounded-xl bg-[#27ae60] px-3 text-xs font-bold text-white hover:bg-[#229954] active:scale-[0.98] disabled:opacity-60 transition-all"
                   >
                     <CheckCircle className="h-4 w-4" />
                     Mark Paid
@@ -189,19 +189,19 @@ export function FeeBulkList({
                   <button
                     onClick={() => bulkUpdate('PENDING')}
                     disabled={loading}
-                    className="h-9 flex items-center gap-1 rounded-xl bg-[#f39c12] px-3 text-xs font-bold text-white hover:bg-[#e67e22] active:scale-[0.98] disabled:opacity-60 transition-all"
+                    className="h-11 flex items-center gap-1 rounded-xl bg-[#f39c12] px-3 text-xs font-bold text-white hover:bg-[#e67e22] active:scale-[0.98] disabled:opacity-60 transition-all"
                   >
                     Mark Unpaid
                   </button>
                   <Link href="/admin/finance/reminders">
-                    <button className="h-9 flex items-center gap-1 rounded-xl bg-[#25d366] px-3 text-xs font-bold text-white hover:bg-[#1fa456] active:scale-[0.98] transition-all">
+                    <button className="h-11 flex items-center gap-1 rounded-xl bg-[#25d366] px-3 text-xs font-bold text-white hover:bg-[#1fa456] active:scale-[0.98] transition-all">
                       <MessageCircle className="h-4 w-4" />
                       Send Reminder
                     </button>
                   </Link>
                   <button
                     onClick={exportCSV}
-                    className="h-9 flex items-center gap-1 rounded-xl bg-[#6f7979] px-3 text-xs font-bold text-white hover:bg-[#5a6264] active:scale-[0.98] transition-all"
+                    className="h-11 flex items-center gap-1 rounded-xl bg-[#6f7979] px-3 text-xs font-bold text-white hover:bg-[#5a6264] active:scale-[0.98] transition-all"
                   >
                     <Download className="h-4 w-4" />
                     Export
@@ -258,7 +258,7 @@ export function FeeBulkList({
                             <button
                               onClick={() => markOnePaid(fee.id)}
                               disabled={isLoading || fee.status === 'PAID'}
-                              className="h-8 flex items-center gap-1 rounded-lg bg-[#27ae60] px-2.5 text-xs font-bold text-white hover:bg-[#229954] active:scale-[0.98] disabled:opacity-50 transition-all"
+                              className="h-10 flex items-center gap-1 rounded-lg bg-[#27ae60] px-2.5 text-xs font-bold text-white hover:bg-[#229954] active:scale-[0.98] disabled:opacity-50 transition-all"
                             >
                               {isLoading ? '...' : '✓'} Paid
                             </button>
@@ -266,7 +266,7 @@ export function FeeBulkList({
                               onClick={() => waUrl && window.open(waUrl, '_blank')}
                               disabled={!waUrl}
                               title={waUrl ? 'Send WhatsApp reminder' : 'No phone number'}
-                              className="h-8 flex items-center gap-1 rounded-lg bg-[#25d366] px-2.5 text-xs font-bold text-white hover:bg-[#1fa456] active:scale-[0.98] disabled:opacity-50 transition-all"
+                              className="h-10 flex items-center gap-1 rounded-lg bg-[#25d366] px-2.5 text-xs font-bold text-white hover:bg-[#1fa456] active:scale-[0.98] disabled:opacity-50 transition-all"
                             >
                               📱 WhatsApp
                             </button>
@@ -305,14 +305,14 @@ export function FeeBulkList({
                             <button
                               onClick={() => markOnePaid(fee.id)}
                               disabled={isLoading || fee.status === 'PAID'}
-                              className="flex-1 h-8 rounded-lg bg-[#27ae60] px-2 text-xs font-bold text-white hover:bg-[#229954] active:scale-[0.98] disabled:opacity-50 transition-all"
+                              className="flex-1 h-11 rounded-lg bg-[#27ae60] px-2 text-xs font-bold text-white hover:bg-[#229954] active:scale-[0.98] disabled:opacity-50 transition-all"
                             >
                               {isLoading ? '...' : '✓'} Paid
                             </button>
                             <button
                               onClick={() => waUrl && window.open(waUrl, '_blank')}
                               disabled={!waUrl}
-                              className="flex-1 h-8 rounded-lg bg-[#25d366] px-2 text-xs font-bold text-white hover:bg-[#1fa456] active:scale-[0.98] disabled:opacity-50 transition-all"
+                              className="flex-1 h-11 rounded-lg bg-[#25d366] px-2 text-xs font-bold text-white hover:bg-[#1fa456] active:scale-[0.98] disabled:opacity-50 transition-all"
                             >
                               📱 WA
                             </button>

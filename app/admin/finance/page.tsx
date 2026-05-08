@@ -1,10 +1,11 @@
-import { PaymentStatus } from '@prisma/client';
+import { PaymentStatus, Prisma } from '@prisma/client';
 import { DollarSign, TrendingUp, Clock, AlertCircle, Percent } from 'lucide-react';
 import { prisma } from '@/lib/prisma';
 import { formatCurrency } from '@/lib/utils';
 import { KpiCard } from '@/components/ui';
 import { FinanceClientBar } from './finance-client-bar';
 import { FeeBulkList, type SerializedFeeItem } from './fee-bulk-list';
+import FeeMessagingClient, { type SerializedFeeRow } from './fee-messaging-client';
 
 export const dynamic = 'force-dynamic';
 
@@ -32,7 +33,7 @@ export default async function AdminFinancePage({ searchParams }: AdminFinancePag
   const selectedSort = params.sort ?? 'dueDate';
 
   // Determine fee status where clause
-  let feeStatusWhere: any = {};
+  let feeStatusWhere: Prisma.FeeWhereInput = {};
   if (selectedStatus === 'paid') {
     feeStatusWhere = { status: PaymentStatus.PAID };
   } else if (selectedStatus === 'unpaid') {
@@ -53,7 +54,7 @@ export default async function AdminFinancePage({ searchParams }: AdminFinancePag
   monthStart.setHours(0, 0, 0, 0);
 
   // Determine order by clause
-  let orderBy: any = [{ status: 'desc' }, { dueDate: 'asc' }];
+  let orderBy: Prisma.FeeOrderByWithRelationInput[] = [{ status: 'desc' }, { dueDate: 'asc' }];
   if (selectedSort === 'amount') {
     orderBy = [{ amount: 'desc' }];
   } else if (selectedSort === 'name') {
@@ -67,7 +68,8 @@ export default async function AdminFinancePage({ searchParams }: AdminFinancePag
     pendingCount,
     overdueCount,
     recentPayments,
-    dues
+    dues,
+    studentsForMessaging
   ] = await Promise.all([
     prisma.class.findMany({
       select: { id: true, name: true, section: true },
@@ -111,6 +113,29 @@ export default async function AdminFinancePage({ searchParams }: AdminFinancePag
       },
       orderBy,
       take: 50
+    }),
+    prisma.student.findMany({
+      where: { fees: { some: {} } },
+      select: {
+        id: true,
+        classId: true,
+        whatsApp: true,
+        guardianPhone: true,
+        schoolName: true,
+        user: { select: { fullName: true } },
+        class: { select: { id: true, name: true, section: true } },
+        fees: {
+          select: {
+            amount: true,
+            discount: true,
+            status: true,
+            dueDate: true,
+            payments: { select: { amountPaid: true } }
+          },
+          take: 1,
+          orderBy: { createdAt: 'desc' }
+        }
+      }
     })
   ]);
 
@@ -155,6 +180,56 @@ export default async function AdminFinancePage({ searchParams }: AdminFinancePag
       fee.studentName.toLowerCase().includes(searchValue.toLowerCase())
     );
   }
+
+  // Serialize students for Fee Messaging
+  const feeMessagingRows: SerializedFeeRow[] = studentsForMessaging.map(student => {
+    const latestFee = student.fees[0];
+    if (!latestFee) {
+      return {
+        studentId: student.id,
+        studentName: student.user.fullName,
+        classId: student.classId || '',
+        classLabel: student.class ? `${student.class.name} - ${student.class.section}` : 'Unassigned',
+        feeStatus: 'UNPAID' as const,
+        amount: 0,
+        remaining: 0,
+        dueDate: null,
+        month: '',
+        schoolName: student.schoolName?.trim() || 'Manarah Institute',
+        whatsApp: student.whatsApp
+      };
+    }
+
+    const amount = Number(latestFee.amount) - Number(latestFee.discount);
+    const paidAmount = latestFee.payments.reduce((sum, p) => sum + Number(p.amountPaid), 0);
+    const remaining = Math.max(amount - paidAmount, 0);
+
+    let feeStatus: 'PAID' | 'UNPAID' | 'PARTIAL' | 'OVERDUE' = 'UNPAID';
+    if (latestFee.status === PaymentStatus.PAID) {
+      feeStatus = 'PAID';
+    } else if (latestFee.status === PaymentStatus.PARTIAL) {
+      feeStatus = 'PARTIAL';
+    } else if (latestFee.status === PaymentStatus.OVERDUE) {
+      feeStatus = 'OVERDUE';
+    }
+
+    const dueDate = latestFee.dueDate.toISOString();
+    const month = latestFee.dueDate.toLocaleDateString('en-US', { month: 'long', year: 'numeric' });
+
+    return {
+      studentId: student.id,
+      studentName: student.user.fullName,
+      classId: student.classId || '',
+      classLabel: student.class ? `${student.class.name} - ${student.class.section}` : 'Unassigned',
+      feeStatus,
+      amount,
+      remaining,
+      dueDate,
+      month,
+      schoolName: student.schoolName?.trim() || 'Manarah Institute',
+      whatsApp: student.whatsApp
+    };
+  });
 
   const kpis = [
     { label: 'Total Billed',     value: formatCurrency(totalBilled) },
@@ -277,6 +352,9 @@ export default async function AdminFinancePage({ searchParams }: AdminFinancePag
           </div>
         </div>
       </div>
+
+      {/* ── Fee Messaging ── */}
+      <FeeMessagingClient rows={feeMessagingRows} classes={classes} />
     </div>
   );
 }

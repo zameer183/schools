@@ -3,27 +3,55 @@
 @tailwind utilities;
 
 :root {
-  --background: #f8f9fa;
-  --surface: #f8f9fa;
-  --surface-container-lowest: #ffffff;
-  --surface-container-low: #f3f4f5;
-  --surface-container: #edeeef;
-  --surface-container-high: #e7e8e9;
-  --surface-variant: #e1e3e4;
-  --on-surface: #191c1d;
-  --on-surface-variant: #3f4849;
-  --outline: #6f7979;
-  --outline-variant: #bfc8c9;
-  --primary: #004649;
-  --primary-container: #1b5e62;
-  --primary-fixed: #afedf2;
-  --primary-fixed-dim: #93d1d5;
-  --secondary: #865300;
-  --secondary-container: #fdb24f;
-  --secondary-fixed: #ffddb8;
-  --error: #ba1a1a;
-  --error-container: #ffdad6;
-  --border: #bfc8c9;
+  /* Brand Colors — from Manarah Institute logo */
+  --brand-primary: #1F5A5C;
+  --brand-primary-hover: #174548;
+  --brand-primary-light: #2D7578;
+  --brand-accent: #D69E3F;
+  --brand-accent-hover: #B8862E;
+  --brand-accent-light: #F5E6CC;
+
+  /* Neutrals */
+  --bg-primary: #F5F1E8;
+  --bg-card: #FFFFFF;
+  --bg-section: #FAFAF7;
+  --text-primary: #1F2937;
+  --text-secondary: #6B7280;
+  --text-tertiary: #9CA3AF;
+
+  /* KPI Card Variants */
+  --kpi-primary-bg: #E0EBEC;
+  --kpi-accent-bg: #F5E6CC;
+  --kpi-success-bg: #D1FAE5;
+  --kpi-danger-bg: #FEE2E2;
+
+  /* Helper Status Colors */
+  --success: #10B981;
+  --warning: #D69E3F;
+  --danger: #EF4444;
+
+  /* Legacy vars (keep for backwards compatibility during transition) */
+  --background: #F5F1E8;
+  --surface: #FFFFFF;
+  --surface-container-lowest: #FFFFFF;
+  --surface-container-low: #FAFAF7;
+  --surface-container: #F5F1E8;
+  --surface-container-high: #EEE9E0;
+  --surface-variant: #E0EBEC;
+  --on-surface: #1F2937;
+  --on-surface-variant: #6B7280;
+  --outline: #9CA3AF;
+  --outline-variant: #D1D5DB;
+  --primary: #1F5A5C;
+  --primary-container: #2D7578;
+  --primary-fixed: #E0EBEC;
+  --primary-fixed-dim: #C8DBDD;
+  --secondary: #D69E3F;
+  --secondary-container: #F5E6CC;
+  --secondary-fixed: #F5E6CC;
+  --error: #EF4444;
+  --error-container: #FEE2E2;
+  --border: #D1D5DB;
 }
 
 html {
@@ -74,4 +102,13 @@ body {
 
 .tonal-layer {
   box-shadow: 0 12px 40px rgba(0, 70, 73, 0.06);
+}
+
+@keyframes dropdownOpen {
+  from { opacity: 0; transform: scale(0.95) translateY(-6px); }
+  to   { opacity: 1; transform: scale(1)    translateY(0);    }
+}
+.animate-dropdown {
+  animation: dropdownOpen 0.15s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+  transform-origin: top right;
 }

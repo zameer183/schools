@@ -247,7 +247,7 @@ export default function AttendanceDashboardClient({
               key={item.key}
               type="button"
               onClick={() => setTab(item.key)}
-              className={`rounded-xl px-4 py-2 text-sm font-semibold transition ${
+              className={`flex h-11 items-center justify-center rounded-xl px-4 text-sm font-semibold transition ${
                 tab === item.key
                   ? 'bg-gradient-to-r from-[#004649] to-[#1b5e62] text-white shadow-sm'
                   : 'bg-[#f1f5f9] text-[#334155] hover:bg-[#e2e8f0]'
@@ -323,7 +323,7 @@ export default function AttendanceDashboardClient({
               <button
                 type="button"
                 onClick={() => setTab('overview')}
-                className="w-full rounded-xl bg-gradient-to-br from-[#004649] to-[#1b5e62] px-3 py-2 text-sm font-semibold text-white shadow-[0_8px_20px_rgba(0,70,73,0.12)] active:scale-[0.98] transition-all"
+                className="flex h-11 w-full items-center justify-center rounded-xl bg-gradient-to-br from-[#004649] to-[#1b5e62] px-3 text-sm font-semibold text-white shadow-[0_8px_20px_rgba(0,70,73,0.12)] active:scale-[0.98] transition-all"
               >
                 View Calendar
               </button>

@@ -1,11 +1,7 @@
-﻿import { NextRequest, NextResponse } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server';
 import { jwtVerify } from 'jose';
 
 const protectedRoutes: Record<string, string[]> = {
-  '/admin': ['ADMIN'],
-  '/teacher': ['TEACHER', 'ADMIN'],
-  '/student': ['STUDENT', 'ADMIN'],
-  '/parent': ['PARENT', 'ADMIN'],
   '/api/admin': ['ADMIN']
 };
 
@@ -23,10 +19,6 @@ async function getRoleFromToken(token?: string) {
 export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
 
-  if (pathname === '/login') {
-    return NextResponse.next();
-  }
-
   const matchedPrefix = Object.keys(protectedRoutes).find((prefix) => pathname.startsWith(prefix));
   if (!matchedPrefix) return NextResponse.next();
 
@@ -34,16 +26,17 @@ export async function middleware(request: NextRequest) {
   const role = await getRoleFromToken(request.cookies.get('hms_session')?.value);
 
   if (!role) {
-    return NextResponse.redirect(new URL('/login', request.url));
+    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
 
   if (!allowedRoles.includes(role)) {
-    return NextResponse.redirect(new URL('/unauthorized', request.url));
+    return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
   }
 
   return NextResponse.next();
 }
 
 export const config = {
-  matcher: ['/admin/:path*', '/teacher/:path*', '/student/:path*', '/parent/:path*', '/api/admin/:path*']
+  matcher: ['/api/admin/:path*']
 };
+

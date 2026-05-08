@@ -1,10 +1,34 @@
 import { NotificationType, UserRole } from '@prisma/client';
-import { revalidatePath } from 'next/cache';
+import { revalidatePath, revalidateTag, unstable_cache } from 'next/cache';
 import { requireAuth } from '@/lib/auth';
 import { prisma } from '@/lib/prisma';
+import AdminNotificationsWorkspace from './admin-notifications-workspace';
 
 export const dynamic = 'force-dynamic';
 const ALLOWED_TYPES: NotificationType[] = ['SYSTEM', 'ACADEMIC', 'FINANCIAL', 'ATTENDANCE', 'MESSAGE'];
+
+function toSafeDate(value: unknown) {
+  const date = value instanceof Date ? value : new Date(String(value));
+  return Number.isNaN(date.getTime()) ? null : date;
+}
+
+const getCachedAdminNotificationsData = unstable_cache(
+  async () => {
+    const [total, unread, recentRaw] = await Promise.all([
+      prisma.notification.count(),
+      prisma.notification.count({ where: { isRead: false } }),
+      prisma.notification.findMany({
+        include: { user: { select: { role: true } } },
+        orderBy: { createdAt: 'desc' },
+        take: 20
+      })
+    ]);
+
+    return { total, unread, recentRaw };
+  },
+  ['admin-notifications-page-data'],
+  { revalidate: 30, tags: ['admin-notifications'] }
+);
 
 async function broadcastNotification(formData: FormData) {
   'use server';
@@ -23,122 +47,92 @@ async function broadcastNotification(formData: FormData) {
   await prisma.notification.createMany({
     data: users.map((u) => ({ userId: u.id, title, body, type: typeRaw, isRead: false }))
   });
+  revalidateTag('admin-notifications');
   revalidatePath('/admin/notifications');
 }
 
 export default async function AdminNotificationsPage() {
-  const [total, unread, byType, recent] = await Promise.all([
-    prisma.notification.count(),
-    prisma.notification.count({ where: { isRead: false } }),
-    prisma.notification.groupBy({ by: ['type'], _count: { _all: true } }),
-    prisma.notification.findMany({
-      include: { user: { select: { fullName: true, role: true } } },
-      orderBy: { createdAt: 'desc' },
-      take: 20
-    })
-  ]);
+  await requireAuth([UserRole.ADMIN]);
 
-  const topType = byType.sort((a, b) => b._count._all - a._count._all)[0]?.type ?? 'N/A';
+  const { total, unread, recentRaw } = await getCachedAdminNotificationsData().catch((error) => {
+    console.error('[admin/notifications] failed to load notifications data', error);
+    return {
+      total: 0,
+      unread: 0,
+      recentRaw: [] as Awaited<ReturnType<typeof getCachedAdminNotificationsData>>['recentRaw']
+    };
+  });
+
+  const grouped = new Map<
+    string,
+    {
+    id: string;
+    title: string;
+    subtitle: string;
+    type: NotificationType;
+    createdAt: Date;
+    anyUnread: boolean;
+    roles: Set<UserRole>;
+  }
+  >();
+
+  for (const item of recentRaw) {
+    const createdAt = toSafeDate(item.createdAt);
+    if (!createdAt) continue;
+
+    // Group same broadcast rows together (created in same minute, same content/type)
+    const minuteBucket = Math.floor(createdAt.getTime() / 60000);
+    const key = `${item.title}|${item.body}|${item.type}|${minuteBucket}`;
+    const existing = grouped.get(key);
+    if (existing) {
+      existing.roles.add(item.user.role);
+      existing.anyUnread = existing.anyUnread || !item.isRead;
+      if (createdAt > existing.createdAt) existing.createdAt = createdAt;
+      continue;
+    }
+
+    grouped.set(key, {
+      id: item.id,
+      title: item.title,
+      subtitle: item.body,
+      type: item.type,
+      createdAt,
+      anyUnread: !item.isRead,
+      roles: new Set([item.user.role])
+    });
+  }
+
+  const recent = Array.from(grouped.values())
+    .sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime())
+    .slice(0, 20)
+    .map((item) => {
+      const target =
+        item.roles.size > 1
+          ? 'ALL'
+          : Array.from(item.roles)[0] ?? 'ALL';
+      return {
+        id: item.id,
+        title: item.title,
+        subtitle: item.subtitle,
+        type: item.type,
+        createdAt: item.createdAt.toISOString(),
+        status: item.anyUnread ? ('Unread' as const) : ('Sent' as const),
+        target
+      };
+    });
+
+  const readRate = total > 0 ? Math.round(((total - unread) / total) * 100) : 0;
 
   return (
-    <div className="space-y-4">
-      <div className="rounded-xl bg-white border border-[#e2e8e8] p-6">
-        <h2 className="text-2xl font-bold text-[#1a1c1c] sm:text-3xl">Notifications</h2>
-        <p className="mt-1 text-sm text-[#6f7979]">Broadcast institutional notices and monitor delivery status.</p>
-
-        <div className="mt-5 grid gap-3 sm:grid-cols-3">
-          <div className="rounded-lg bg-[#f5f7f5] p-4">
-            <p className="text-[10px] font-bold uppercase tracking-widest text-[#6f7979]">Total</p>
-            <p className="mt-2 text-3xl font-bold text-[#1a1c1c]">{total}</p>
-          </div>
-          <div className="rounded-lg bg-[#f5f7f5] p-4">
-            <p className="text-[10px] font-bold uppercase tracking-widest text-[#6f7979]">Unread</p>
-            <p className="mt-2 text-3xl font-bold text-[#1a1c1c]">{unread}</p>
-          </div>
-          <div className="rounded-lg bg-[#f5f7f5] p-4">
-            <p className="text-[10px] font-bold uppercase tracking-widest text-[#6f7979]">Top Type</p>
-            <p className="mt-2 text-2xl font-bold text-[#1a1c1c]">{topType}</p>
-          </div>
-        </div>
-      </div>
-
-      <div className="rounded-xl bg-white border border-[#e2e8e8] p-6">
-        <h3 className="font-semibold text-[#1a1c1c] mb-4">Create Broadcast</h3>
-        <form action={broadcastNotification} className="grid gap-3 sm:grid-cols-2">
-          <input
-            name="title"
-            required
-            placeholder="Notification title"
-            className="h-10 rounded-lg border border-[#d4dee7] px-3 text-sm outline-none focus:border-[#004649]"
-          />
-          <select name="type" className="h-10 rounded-lg border border-[#d4dee7] px-3 text-sm outline-none focus:border-[#004649]">
-            {ALLOWED_TYPES.map((t) => <option key={t} value={t}>{t}</option>)}
-          </select>
-          <select name="targetRole" className="h-10 rounded-lg border border-[#d4dee7] px-3 text-sm outline-none focus:border-[#004649]">
-            <option value="ALL">All Roles</option>
-            <option value="ADMIN">Admin</option>
-            <option value="TEACHER">Teacher</option>
-            <option value="STUDENT">Student</option>
-            <option value="PARENT">Parent</option>
-          </select>
-          <button className="h-10 rounded-lg bg-[#004649] px-4 text-sm font-semibold text-white hover:bg-[#005a5e] sm:w-fit">
-            Send Broadcast
-          </button>
-          <textarea
-            name="body"
-            required
-            placeholder="Write message..."
-            className="sm:col-span-2 min-h-24 rounded-lg border border-[#d4dee7] p-3 text-sm outline-none focus:border-[#004649]"
-          />
-        </form>
-      </div>
-
-      <div className="rounded-xl bg-white border border-[#e2e8e8] p-6">
-        <h3 className="font-semibold text-[#1a1c1c] mb-4">Recent Notifications</h3>
-        <div className="space-y-2 md:hidden">
-          {recent.map((item) => (
-            <div key={item.id} className="rounded-lg border border-[#e2e8e8] p-3">
-              <p className="font-semibold text-[#1a1c1c]">{item.title}</p>
-              <p className="text-xs text-[#6f7979] mt-0.5">{item.user.fullName} ({item.user.role})</p>
-              <div className="mt-2 flex items-center justify-between">
-                <span className="text-xs text-[#6f7979]">{item.type}</span>
-                <span className={`rounded-full px-2 py-0.5 text-[10px] font-bold ${item.isRead ? 'bg-[#f5f7f5] text-[#6f7979]' : 'bg-[#e8f5e9] text-[#004649]'}`}>
-                  {item.isRead ? 'Read' : 'Unread'}
-                </span>
-              </div>
-            </div>
-          ))}
-        </div>
-        <div className="overflow-x-auto">
-          <table className="hidden w-full min-w-[760px] text-sm md:table">
-            <thead>
-              <tr className="border-b border-[#e2e8e8]">
-                <th className="pb-2 text-left text-[10px] font-bold uppercase tracking-widest text-[#6f7979]">Title</th>
-                <th className="pb-2 text-left text-[10px] font-bold uppercase tracking-widest text-[#6f7979]">Target</th>
-                <th className="pb-2 text-left text-[10px] font-bold uppercase tracking-widest text-[#6f7979]">Type</th>
-                <th className="pb-2 text-left text-[10px] font-bold uppercase tracking-widest text-[#6f7979]">Status</th>
-                <th className="pb-2 text-left text-[10px] font-bold uppercase tracking-widest text-[#6f7979]">Date</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-[#e2e8e8]">
-              {recent.map((item) => (
-                <tr key={item.id}>
-                  <td className="py-3 font-medium text-[#1a1c1c]">{item.title}</td>
-                  <td className="py-3 text-[#6f7979]">{item.user.fullName} ({item.user.role})</td>
-                  <td className="py-3 text-[#6f7979]">{item.type}</td>
-                  <td className="py-3">
-                    <span className={`rounded-full px-2 py-0.5 text-[10px] font-bold ${item.isRead ? 'bg-[#f5f7f5] text-[#6f7979]' : 'bg-[#e8f5e9] text-[#004649]'}`}>
-                      {item.isRead ? 'Read' : 'Unread'}
-                    </span>
-                  </td>
-                  <td className="py-3 text-[#6f7979]">{item.createdAt.toISOString().slice(0, 10)}</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-          {recent.length === 0 ? <p className="mt-4 text-sm text-[#6f7979]">No notifications yet.</p> : null}
-        </div>
-      </div>
-    </div>
+    <AdminNotificationsWorkspace
+      stats={{
+        total,
+        unread,
+        sent: total,
+        readRate
+      }}
+      notifications={recent}
+      composeAction={broadcastNotification}
+    />
   );
 }

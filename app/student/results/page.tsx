@@ -99,11 +99,11 @@ export default async function StudentResultsPage() {
   }
 
   const gradeColor = (grade: string | null) => {
-    if (!grade) return 'text-[#6f7979]';
-    if (grade.startsWith('A')) return 'text-[#004649]';
-    if (grade.startsWith('B')) return 'text-[#1565c0]';
-    if (grade.startsWith('C')) return 'text-[#865300]';
-    return 'text-[#ba1a1a]';
+    if (!grade) return 'text-[#6B7280]';
+    if (grade.startsWith('A')) return 'text-[#10B981]';
+    if (grade.startsWith('B')) return 'text-[#1F5A5C]';
+    if (grade.startsWith('C')) return 'text-[#D69E3F]';
+    return 'text-[#EF4444]';
   };
 
   return (

@@ -1,14 +1,22 @@
-﻿import * as React from 'react';
-import { cn } from '@/lib/utils';
+import { ReactNode } from 'react';
 
-export function Card({ className, ...props }: React.HTMLAttributes<HTMLDivElement>) {
-  return <div className={cn('card p-6', className)} {...props} />;
+interface CardProps {
+  children: ReactNode;
+  padding?: 'none' | 'sm' | 'default' | 'lg';
+  className?: string;
 }
 
-export function CardTitle({ className, ...props }: React.HTMLAttributes<HTMLHeadingElement>) {
-  return <h3 className={cn('font-headline text-lg font-bold text-teal-900', className)} {...props} />;
-}
+export function Card({ children, padding = 'default', className = '' }: CardProps) {
+  const paddingClass = {
+    none: '',
+    sm: 'p-4',
+    default: 'p-6',
+    lg: 'p-8'
+  }[padding];
 
-export function CardDescription({ className, ...props }: React.HTMLAttributes<HTMLParagraphElement>) {
-  return <p className={cn('text-sm text-slate-500', className)} {...props} />;
+  return (
+    <div className={`rounded-xl bg-white border border-[#E5E7EB] shadow-sm hover:shadow-md transition-shadow ${paddingClass} ${className}`}>
+      {children}
+    </div>
+  );
 }

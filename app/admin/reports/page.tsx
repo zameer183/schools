@@ -1,14 +1,15 @@
 import { prisma } from '@/lib/prisma';
 import { KpiCard } from '@/components/ui';
-import { Users, GraduationCap, BookOpen, BarChart3, Download } from 'lucide-react';
+import { Users, GraduationCap, BookOpen, BarChart3, Download, FileText, ClipboardCheck, FileSpreadsheet, DollarSign } from 'lucide-react';
 import { PaymentStatus } from '@prisma/client';
+import type { ReactNode } from 'react';
 import { ReportsFilterBar } from './reports-filter-bar';
 import { StudentReportActions } from './reports-student-actions';
 
 export const dynamic = 'force-dynamic';
 
 type ReportsPageProps = {
-  searchParams?: Promise<{ classId?: string; period?: string }>;
+  searchParams?: Promise<{ classId?: string; studentId?: string; period?: string }>;
 };
 
 function formatMoney(value: number) {
@@ -20,24 +21,65 @@ function formatDate(value: Date | string) {
   return date.toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' });
 }
 
-function statusBadgeClass(status: string) {
-  if (status === 'PAID') return 'bg-[#f0fdf4] text-[#15803d]';
-  if (status === 'PENDING') return 'bg-[#fef2f2] text-[#b91c1c]';
-  if (status === 'OVERDUE') return 'bg-[#fef2f2] text-[#dc2626]';
-  if (status === 'PARTIAL') return 'bg-[#fff7ed] text-[#b45309]';
-  return 'bg-[#f3f4f5] text-[#6f7979]';
-}
-
 export default async function AdminReportsPage({ searchParams }: ReportsPageProps) {
   const params = (await searchParams) ?? {};
   const selectedClassId = params.classId ?? 'all';
+  const selectedStudentIdRaw = params.studentId ?? 'all';
   const selectedPeriod = params.period ?? 'monthly';
 
   const monthStart = new Date();
   monthStart.setDate(1);
   monthStart.setHours(0, 0, 0, 0);
 
-  const classFilter = selectedClassId && selectedClassId !== 'all' ? { student: { classId: selectedClassId } } : {};
+  const selectedClassFilter = selectedClassId !== 'all' ? { classId: selectedClassId } : {};
+
+  const classStudents = await prisma.student.findMany({
+    where: selectedClassFilter,
+    select: {
+      id: true,
+      admissionNo: true,
+      user: { select: { fullName: true } }
+    },
+    orderBy: { createdAt: 'desc' }
+  });
+
+  const selectedStudentId =
+    selectedStudentIdRaw !== 'all' && classStudents.some((student) => student.id === selectedStudentIdRaw)
+      ? selectedStudentIdRaw
+      : 'all';
+
+  const studentScopeFilter =
+    selectedStudentId !== 'all' ? { id: selectedStudentId } : selectedClassId !== 'all' ? { classId: selectedClassId } : {};
+  const attendanceFilter =
+    selectedStudentId !== 'all'
+      ? { studentId: selectedStudentId }
+      : selectedClassId !== 'all'
+        ? { classId: selectedClassId }
+        : {};
+  const resultFilter =
+    selectedStudentId !== 'all'
+      ? { studentId: selectedStudentId }
+      : selectedClassId !== 'all'
+        ? { student: { classId: selectedClassId } }
+        : {};
+  const feeFilter =
+    selectedStudentId !== 'all'
+      ? { studentId: selectedStudentId }
+      : selectedClassId !== 'all'
+        ? { student: { classId: selectedClassId } }
+        : {};
+  const paymentFilter =
+    selectedStudentId !== 'all'
+      ? { fee: { studentId: selectedStudentId } }
+      : selectedClassId !== 'all'
+        ? { fee: { student: { classId: selectedClassId } } }
+        : {};
+  const progressFilter =
+    selectedStudentId !== 'all'
+      ? { studentId: selectedStudentId }
+      : selectedClassId !== 'all'
+        ? { classId: selectedClassId }
+        : {};
 
   const [
     students,
@@ -49,22 +91,23 @@ export default async function AdminReportsPage({ searchParams }: ReportsPageProp
     feeStatusCounts,
     feeTotals,
     studentFeeSnapshot,
-    teacherSnapshot,
     recentProgressReports
   ] = await Promise.all([
-    prisma.student.count(),
+    prisma.student.count({ where: studentScopeFilter }),
     prisma.teacher.count(),
     prisma.class.findMany({ select: { id: true, name: true, section: true }, orderBy: { name: 'asc' } }),
-    prisma.result.count(),
-    prisma.attendance.count({ where: { date: { gte: monthStart }, ...classFilter } }),
+    prisma.result.count({ where: resultFilter }),
+    prisma.attendance.count({ where: { date: { gte: monthStart }, ...attendanceFilter } }),
     prisma.payment.findMany({
+      where: paymentFilter,
       select: { id: true, amountPaid: true, paidAt: true, fee: { select: { title: true } } },
       orderBy: { paidAt: 'desc' },
       take: 10
     }),
-    prisma.fee.groupBy({ by: ['status'], _count: { _all: true } }),
-    prisma.fee.aggregate({ _sum: { amount: true, discount: true }, _count: { _all: true } }),
+    prisma.fee.groupBy({ by: ['status'], where: feeFilter, _count: { _all: true } }),
+    prisma.fee.aggregate({ where: feeFilter, _sum: { amount: true, discount: true }, _count: { _all: true } }),
     prisma.student.findMany({
+      where: studentScopeFilter,
       select: {
         id: true,
         admissionNo: true,
@@ -77,19 +120,8 @@ export default async function AdminReportsPage({ searchParams }: ReportsPageProp
       orderBy: { createdAt: 'desc' },
       take: 8
     }),
-    prisma.teacher.findMany({
-      select: {
-        id: true,
-        employeeCode: true,
-        specialization: true,
-        user: { select: { fullName: true } },
-        classAssignments: { select: { classId: true } },
-        compensation: { select: { baseSalary: true, bonus: true, deduction: true } }
-      },
-      orderBy: { createdAt: 'desc' },
-      take: 8
-    }),
     prisma.studentProgress.findMany({
+      where: progressFilter,
       select: {
         id: true,
         date: true,
@@ -110,9 +142,12 @@ export default async function AdminReportsPage({ searchParams }: ReportsPageProp
   const totalFeeAmount = Number(feeTotals._sum.amount || 0);
   const totalDiscount = Number(feeTotals._sum.discount || 0);
   const netFeeAmount = totalFeeAmount - totalDiscount;
-  const paidRatio = feeTotals._count._all > 0 ? Math.round((feeCountByStatus.PAID / feeTotals._count._all) * 100) : 0;
 
-  const exportUrl = (type: string) => `/api/reports/export?type=${type}&period=${selectedPeriod}`;
+  const exportUrl = (type: string) => {
+    const query = new URLSearchParams({ type, period: selectedPeriod });
+    if (selectedStudentId !== 'all') query.set('studentId', selectedStudentId);
+    return `/api/reports/export?${query.toString()}`;
+  };
 
   return (
     <div className="space-y-4">
@@ -123,7 +158,70 @@ export default async function AdminReportsPage({ searchParams }: ReportsPageProp
       </div>
 
       {/* ── Filter Bar ── */}
-      <ReportsFilterBar classes={classes} selectedClassId={selectedClassId} selectedPeriod={selectedPeriod} />
+      <ReportsFilterBar
+        classes={classes}
+        students={classStudents}
+        selectedClassId={selectedClassId}
+        selectedStudentId={selectedStudentId}
+        selectedPeriod={selectedPeriod}
+      />
+
+      {/* ── Manual Report Templates ── */}
+      <div className="rounded-2xl bg-white p-4 shadow-[0_4px_12px_rgba(0,0,0,0.08)] sm:p-6">
+        <h2 className="text-lg font-bold text-[#1a1c1c]">Report Templates</h2>
+        <p className="mt-0.5 text-xs text-[#6f7979]">Individual Complete, Individual Attendance, and Class Attendance formats.</p>
+        <div className="mt-4 grid gap-3 sm:grid-cols-3">
+          <LinkCard
+            href="/admin/reports/individual-complete"
+            title="Individual Complete Report"
+            description="Daily progress + attendance + exam notes"
+            icon={<FileText className="h-4 w-4" />}
+          />
+          <LinkCard
+            href="/admin/reports/individual-attendance"
+            title="Individual Attendance Report"
+            description="Monthly attendance calendar with totals"
+            icon={<ClipboardCheck className="h-4 w-4" />}
+          />
+          <LinkCard
+            href="/admin/reports/class-attendance"
+            title="Class Attendance Report"
+            description="Student-wise month attendance sheet"
+            icon={<FileSpreadsheet className="h-4 w-4" />}
+          />
+        </div>
+      </div>
+
+      <div className="rounded-2xl bg-white p-4 shadow-[0_4px_12px_rgba(0,0,0,0.08)] sm:p-6">
+        <h2 className="text-lg font-bold text-[#1a1c1c]">Finance Report Templates</h2>
+        <p className="mt-0.5 text-xs text-[#6f7979]">Individual, Class, and All Students monthly finance reports.</p>
+        <div className="mt-4 grid gap-3 sm:grid-cols-3">
+          <LinkCard
+            href="/admin/reports/finance/individual"
+            title="Individual Finance Report"
+            description="12-month student fee, paid, unpaid report"
+            icon={<DollarSign className="h-4 w-4" />}
+          />
+          <LinkCard
+            href="/admin/reports/finance/class"
+            title="Class Finance Report"
+            description="Class total fee with paid and unpaid summary"
+            icon={<DollarSign className="h-4 w-4" />}
+          />
+          <LinkCard
+            href="/admin/reports/finance/all-students"
+            title="All Students Finance Report"
+            description="Monthly consolidated paid/unpaid student report"
+            icon={<DollarSign className="h-4 w-4" />}
+          />
+          <LinkCard
+            href="/admin/reports/finance/higher-students"
+            title="Higher Students Finance Report"
+            description="Monthly higher-session students paid/unpaid report"
+            icon={<DollarSign className="h-4 w-4" />}
+          />
+        </div>
+      </div>
 
       {/* ── Overview KPIs ── */}
       <div className="grid gap-3 sm:gap-4 sm:grid-cols-2 lg:grid-cols-4">
@@ -345,7 +443,7 @@ export default async function AdminReportsPage({ searchParams }: ReportsPageProp
             <tbody className="divide-y divide-[#e2e8e8]">
               {studentFeeSnapshot.length === 0 ? (
                 <tr>
-                  <td colSpan={5} className="py-6 text-center text-xs text-[#6f7979]">
+                  <td colSpan={6} className="py-6 text-center text-xs text-[#6f7979]">
                     No students found.
                   </td>
                 </tr>
@@ -437,5 +535,30 @@ export default async function AdminReportsPage({ searchParams }: ReportsPageProp
         </div>
       </div>
     </div>
+  );
+}
+
+function LinkCard({
+  href,
+  title,
+  description,
+  icon
+}: {
+  href: string;
+  title: string;
+  description: string;
+  icon: ReactNode;
+}) {
+  return (
+    <a
+      href={href}
+      className="group rounded-xl border border-[#e2e8e8] bg-[#f8fafb] p-3 transition hover:border-[#bfd9db] hover:bg-white"
+    >
+      <div className="inline-flex h-8 w-8 items-center justify-center rounded-lg bg-[#e8f3f4] text-[#004649]">
+        {icon}
+      </div>
+      <p className="mt-2 text-sm font-semibold text-[#1a1c1c]">{title}</p>
+      <p className="mt-1 text-xs text-[#6f7979]">{description}</p>
+    </a>
   );
 }

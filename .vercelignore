@@ -1,0 +1,7 @@
+apk-wrapper
+apk-wrapper2
+android
+.tmp
+.tmp-*
+*.apk
+.gradle

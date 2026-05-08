@@ -7,21 +7,52 @@ module.exports = {
   theme: {
     extend: {
       colors: {
+        /* Brand Colors from Manarah Institute Logo */
         brand: {
-          50: '#f2f7ff',
-          100: '#deecff',
-          200: '#bfd9ff',
-          300: '#91bbff',
-          400: '#5b93ff',
-          500: '#356dff',
-          600: '#1f51f0',
-          700: '#1940d3',
-          800: '#1c37aa',
-          900: '#1d3385'
+          primary: '#1F5A5C',
+          'primary-hover': '#174548',
+          'primary-light': '#2D7578',
+          accent: '#D69E3F',
+          'accent-hover': '#B8862E',
+          'accent-light': '#F5E6CC',
+          bg: '#F5F1E8',
+          'bg-card': '#FFFFFF',
+          'bg-section': '#FAFAF7'
+        },
+        /* KPI Card Variants */
+        kpi: {
+          'primary-bg': '#E0EBEC',
+          'accent-bg': '#F5E6CC',
+          'success-bg': '#D1FAE5',
+          'danger-bg': '#FEE2E2'
+        },
+        /* Text Colors */
+        text: {
+          primary: '#1F2937',
+          secondary: '#6B7280',
+          tertiary: '#9CA3AF'
+        },
+        /* Helper Status Colors */
+        success: {
+          soft: '#D1FAE5',
+          DEFAULT: '#10B981'
+        },
+        warning: {
+          soft: '#F5E6CC',
+          DEFAULT: '#D69E3F'
+        },
+        danger: {
+          soft: '#FEE2E2',
+          DEFAULT: '#EF4444'
+        },
+        info: {
+          soft: '#E0EBEC',
+          DEFAULT: '#1F5A5C'
         }
       },
       boxShadow: {
-        soft: '0 10px 25px -10px rgba(14, 24, 70, 0.2)'
+        soft: '0 10px 25px -10px rgba(31, 90, 92, 0.2)',
+        card: '0_2px_8px_rgba(0,0,0,0.06),0_8px_32px_rgba(0,0,0,0.04)'
       }
     }
   },

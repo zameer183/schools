@@ -39,7 +39,7 @@ export function StudentReportDetailActions({
   latestHifzTotal: number;
   examCount: number;
 }) {
-  const waPhone = whatsApp ?? guardianPhone;
+  const waPhone = whatsApp?.trim() || guardianPhone?.trim() || null;
   const hasWaPhone = Boolean(waPhone);
 
   const handlePrint = () => {

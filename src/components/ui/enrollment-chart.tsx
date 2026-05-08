@@ -1,7 +1,7 @@
 ﻿'use client';
 
 import { ResponsiveContainer, AreaChart, Area, Tooltip, XAxis, YAxis } from 'recharts';
-import { Card, CardTitle } from '@/components/ui/card';
+import { Card } from '@/components/ui';
 
 export function EnrollmentChart({
   data
@@ -10,7 +10,7 @@ export function EnrollmentChart({
 }) {
   return (
     <Card className="h-80">
-      <CardTitle className="mb-4">Enrollment Trend</CardTitle>
+      <h3 className="mb-4 text-sm font-semibold">Enrollment Trend</h3>
       <ResponsiveContainer width="100%" height="90%">
         <AreaChart data={data}>
           <defs>

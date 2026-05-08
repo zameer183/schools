@@ -1,5 +1,6 @@
-﻿import { NextResponse } from 'next/server';
+import { NextResponse } from 'next/server';
 import { getSession } from '@/lib/auth';
+import { getTeacherAccessMapByUserId } from '@/lib/teacher-access';
 
 export async function GET() {
   const session = await getSession();
@@ -7,5 +8,9 @@ export async function GET() {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
 
-  return NextResponse.json({ user: session });
+  const teacherAccess = session.role === 'TEACHER'
+    ? await getTeacherAccessMapByUserId(session.id)
+    : null;
+
+  return NextResponse.json({ user: session, teacherAccess });
 }

@@ -53,7 +53,7 @@ export function MobileBottomNav({
 
   return (
     <>
-      <nav className="fixed bottom-0 left-0 right-0 z-20 grid h-16 grid-cols-5 border-t border-[#e2e8e8] bg-white md:hidden">
+      <nav className="fixed bottom-0 left-0 right-0 z-40 grid h-[68px] grid-cols-5 border-t border-[#e2e8e8] bg-white pb-[env(safe-area-inset-bottom)] md:hidden">
         {primaryItems.map((item) => {
           const Icon = item.icon;
           const active = isActive(item.href);
@@ -61,7 +61,7 @@ export function MobileBottomNav({
             <Link
               key={item.href}
               href={item.href}
-              className={`flex flex-col items-center justify-center gap-1 text-[10px] font-semibold transition-colors ${
+              className={`flex flex-col items-center justify-center gap-0.5 px-1 text-[11px] font-semibold leading-tight transition-colors ${
                 active ? 'text-[#1F5A5C]' : 'text-[#6f7979] hover:text-[#1F5A5C]'
               }`}
             >
@@ -74,7 +74,7 @@ export function MobileBottomNav({
         {/* More button */}
         <button
           onClick={() => setMoreSheetOpen(true)}
-          className="flex flex-col items-center justify-center gap-1 text-[10px] font-semibold text-[#6f7979] transition-colors hover:text-[#1F5A5C]"
+          className="flex flex-col items-center justify-center gap-0.5 px-1 text-[11px] font-semibold leading-tight text-[#6f7979] transition-colors hover:text-[#1F5A5C]"
         >
           <MoreHorizontal className="h-5 w-5" />
           <span>More</span>

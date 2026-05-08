@@ -115,10 +115,45 @@ export async function PATCH(request: Request) {
   const auth = await ensureApiRole([UserRole.ADMIN, UserRole.TEACHER]);
   if (!auth.authorized) return auth.response;
 
-  const { id, classId, emergencyContact, currentAddress } = await request.json();
+  const body = await request.json();
+  const {
+    id,
+    classId,
+    currentAddress,
+    emergencyContact,
+    guardianPhone,
+    guardianEmail,
+    fatherName,
+    gender,
+    aadharNo,
+    rollNumber,
+    whatsApp,
+    schoolName,
+    dateOfBirth,
+    joinDate,
+    fullName,
+    email,
+    phone,
+    password,
+    shareCredentials,
+    feeAmount,
+    feeDueDate,
+    feeTitle,
+    feeCategory,
+    feeType,
+    fromDate,
+    toDate,
+    feeDiscount,
+    partialFeeSupported,
+    collectOnMonthStart
+  } = body;
+
   if (!id) return NextResponse.json({ error: 'id is required' }, { status: 400 });
 
-  const student = await prisma.student.findUnique({ where: { id }, select: { id: true, classId: true } });
+  const student = await prisma.student.findUnique({
+    where: { id },
+    select: { id: true, classId: true, userId: true, admissionNo: true }
+  });
   if (!student) return NextResponse.json({ error: 'Student not found' }, { status: 404 });
 
   if (auth.session.role === UserRole.TEACHER) {
@@ -134,9 +169,139 @@ export async function PATCH(request: Request) {
     }
   }
 
-  const updated = await prisma.student.update({
+  // Handle shareCredentials branch â€” hash and return credentials, then exit early
+  if (shareCredentials === true) {
+    if (!(typeof password === 'string' && password.length >= 6)) {
+      return NextResponse.json(
+        { error: 'Provide a new password (minimum 6 characters) before sharing credentials.' },
+        { status: 400 }
+      );
+    }
+    const rawPassword = password;
+    const hashed = await hash(rawPassword, 12);
+    await prisma.user.update({
+      where: { id: student.userId },
+      data: { passwordHash: hashed }
+    });
+    const userRecord = await prisma.user.findUnique({
+      where: { id: student.userId },
+      select: { email: true }
+    });
+    return NextResponse.json({
+      credentials: {
+        admissionNo: student.admissionNo,
+        email: userRecord?.email ?? '',
+        password: rawPassword
+      }
+    });
+  }
+
+  // Build student update object
+  const studentStringFields: Record<string, string | null | undefined> = {
+    classId,
+    currentAddress,
+    emergencyContact,
+    guardianPhone,
+    guardianEmail,
+    fatherName,
+    gender,
+    aadharNo,
+    rollNumber,
+    whatsApp,
+    schoolName
+  };
+
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const studentUpdate: Record<string, any> = {};
+
+  for (const [key, val] of Object.entries(studentStringFields)) {
+    if (val !== undefined) {
+      studentUpdate[key] = val === '' ? null : val;
+    }
+  }
+
+  if (dateOfBirth !== undefined) {
+    studentUpdate.dateOfBirth = dateOfBirth ? new Date(dateOfBirth) : null;
+  }
+  if (joinDate !== undefined) {
+    studentUpdate.joinDate = joinDate ? new Date(joinDate) : null;
+  }
+
+  // Build user update object
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const userUpdate: Record<string, any> = {};
+
+  if (fullName !== undefined) {
+    userUpdate.fullName = fullName;
+  }
+  if (phone !== undefined) {
+    userUpdate.phone = phone === '' ? null : phone;
+  }
+  if (email !== undefined && email !== '') {
+    // Check email uniqueness (exclude current user)
+    const existing = await prisma.user.findFirst({
+      where: { email, NOT: { id: student.userId } },
+      select: { id: true }
+    });
+    if (existing) {
+      return NextResponse.json({ error: 'Email is already in use by another account.' }, { status: 409 });
+    }
+    userUpdate.email = email;
+  }
+  if (typeof password === 'string' && password.length > 0) {
+    if (password.length < 6) {
+      return NextResponse.json({ error: 'Password must be at least 6 characters.' }, { status: 400 });
+    }
+    userUpdate.passwordHash = await hash(password, 12);
+  }
+
+  // Handle fee creation
+  if (feeAmount && Number(feeAmount) > 0 && feeDueDate) {
+    await prisma.fee.create({
+      data: {
+        studentId: id,
+        title: feeTitle ?? 'Fee',
+        amount: Number(feeAmount),
+        dueDate: new Date(feeDueDate),
+        discount: feeDiscount ? Number(feeDiscount) : 0,
+        feeCategory: feeCategory ?? null,
+        feeType: feeType ?? null,
+        fromDate: fromDate ? new Date(fromDate) : null,
+        toDate: toDate ? new Date(toDate) : null,
+        partialFeeSupported: Boolean(partialFeeSupported),
+        collectOnMonthStart: Boolean(collectOnMonthStart),
+        status: 'PENDING'
+      }
+    });
+  }
+
+  // Run student and user updates in parallel
+  const ops: Promise<unknown>[] = [];
+
+  if (Object.keys(studentUpdate).length > 0) {
+    ops.push(
+      prisma.student.update({
+        where: { id },
+        data: studentUpdate
+      })
+    );
+  }
+
+  if (Object.keys(userUpdate).length > 0) {
+    ops.push(
+      prisma.user.update({
+        where: { id: student.userId },
+        data: userUpdate
+      })
+    );
+  }
+
+  if (ops.length > 0) {
+    await Promise.all(ops);
+  }
+
+  const updated = await prisma.student.findUnique({
     where: { id },
-    data: { classId, emergencyContact, currentAddress },
     include: { user: true, class: true }
   });
 
@@ -155,9 +320,16 @@ export async function DELETE(request: Request) {
   if (!student) return NextResponse.json({ error: 'Student not found' }, { status: 404 });
 
   await prisma.$transaction(async (tx) => {
+    await tx.notification.deleteMany({
+      where: {
+        OR: [{ userId: student.userId }, { studentId: id }]
+      }
+    });
+
     await tx.student.delete({ where: { id } });
     await tx.user.delete({ where: { id: student.userId } });
   });
 
   return NextResponse.json({ success: true });
 }
+

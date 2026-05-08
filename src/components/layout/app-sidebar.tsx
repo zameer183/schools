@@ -75,7 +75,7 @@ export function AppSidebar({
           <Link href={homeHref} onClick={onClose} className="block">
             <p className="text-[10px] font-bold uppercase tracking-[0.35em] text-[#6f7979]">{roleLabel}</p>
             <h2 className="font-headline mt-1 text-xl font-extrabold leading-tight tracking-tight text-[#004649]">
-              Scholarly<br />Editorial
+              Manarah<br />Institute
             </h2>
           </Link>
           <button

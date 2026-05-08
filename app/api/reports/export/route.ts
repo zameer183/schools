@@ -54,6 +54,19 @@ function buildRange(searchParams: URLSearchParams) {
   return { period, start, end: now };
 }
 
+function buildMonthRange(monthParam: string | null) {
+  const now = new Date();
+  const parsed = monthParam && /^\d{4}-\d{2}$/.test(monthParam) ? monthParam : `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
+  const [yearStr, monthStr] = parsed.split('-');
+  const year = Number(yearStr);
+  const month = Number(monthStr);
+  const start = new Date(year, month - 1, 1);
+  start.setHours(0, 0, 0, 0);
+  const end = new Date(year, month, 0);
+  end.setHours(23, 59, 59, 999);
+  return { monthKey: parsed, start, end };
+}
+
 function dateOnly(date: Date) {
   return date.toISOString().split('T')[0];
 }
@@ -79,6 +92,7 @@ export async function GET(request: Request) {
   const { searchParams } = new URL(request.url);
   const type = searchParams.get('type') ?? 'results';
   const studentId = searchParams.get('studentId');
+  const classId = searchParams.get('classId');
   const { period, start, end } = buildRange(searchParams);
 
   const studentFilter = studentId ? { studentId } : {};
@@ -136,6 +150,208 @@ export async function GET(request: Request) {
       headers: {
         'Content-Type': 'text/csv',
         'Content-Disposition': `attachment; filename="fees-${period}.csv"`
+      }
+    });
+  }
+
+  if (type === 'finance-individual') {
+    if (!studentId) {
+      return new NextResponse('studentId is required', { status: 400 });
+    }
+
+    const year = Number(searchParams.get('year') || new Date().getFullYear());
+    const from = new Date(year, 0, 1);
+    const to = new Date(year, 11, 31, 23, 59, 59, 999);
+
+    const fees = await prisma.fee.findMany({
+      where: { studentId, dueDate: { gte: from, lte: to } },
+      include: { student: { include: { user: true } }, payments: true },
+      orderBy: { dueDate: 'asc' }
+    });
+
+    const monthRows = Array.from({ length: 12 }, (_, i) => ({
+      month: new Date(year, i, 1).toLocaleDateString('en-US', { month: 'short', year: 'numeric' }),
+      fee: 0,
+      discount: 0,
+      paid: 0,
+      unpaid: 0
+    }));
+
+    for (const fee of fees) {
+      const idx = fee.dueDate.getMonth();
+      const amount = Number(fee.amount || 0);
+      const discount = Number(fee.discount || 0);
+      const net = Math.max(amount - discount, 0);
+      const paid = fee.payments.reduce((sum, p) => sum + Number(p.amountPaid || 0), 0);
+      const unpaid = Math.max(net - paid, 0);
+      monthRows[idx].fee += net;
+      monthRows[idx].discount += discount;
+      monthRows[idx].paid += paid;
+      monthRows[idx].unpaid += unpaid;
+    }
+
+    const csv = toCsv(
+      monthRows.map((row) => ({
+        student: fees[0]?.student.user.fullName ?? studentId,
+        month: row.month,
+        fee: row.fee,
+        discount: row.discount,
+        paid: row.paid,
+        unpaid: row.unpaid
+      }))
+    );
+
+    return new NextResponse(csv, {
+      headers: {
+        'Content-Type': 'text/csv',
+        'Content-Disposition': `attachment; filename="finance-individual-${year}.csv"`
+      }
+    });
+  }
+
+  if (type === 'finance-class') {
+    if (!classId) {
+      return new NextResponse('classId is required', { status: 400 });
+    }
+
+    const { monthKey, start: monthStart, end: monthEnd } = buildMonthRange(searchParams.get('month'));
+    const classRecord = await prisma.class.findUnique({ where: { id: classId }, select: { name: true, section: true } });
+
+    const students = await prisma.student.findMany({
+      where: { classId },
+      select: {
+        user: { select: { fullName: true } },
+        fees: {
+          where: { dueDate: { gte: monthStart, lte: monthEnd } },
+          select: { amount: true, discount: true, payments: { select: { amountPaid: true } } }
+        }
+      },
+      orderBy: { user: { fullName: 'asc' } }
+    });
+
+    const rows = students.map((student) => {
+      const fee = student.fees.reduce((sum, item) => sum + Math.max(Number(item.amount || 0) - Number(item.discount || 0), 0), 0);
+      const paid = student.fees.reduce(
+        (sum, item) => sum + item.payments.reduce((inner, p) => inner + Number(p.amountPaid || 0), 0),
+        0
+      );
+      const unpaid = Math.max(fee - paid, 0);
+      return {
+        class: classRecord ? `${classRecord.name} ${classRecord.section}` : classId,
+        month: monthKey,
+        student: student.user.fullName,
+        fee,
+        paid,
+        unpaid,
+        status: unpaid > 0 ? 'UNPAID' : 'PAID'
+      };
+    });
+
+    const csv = toCsv(rows);
+    return new NextResponse(csv, {
+      headers: {
+        'Content-Type': 'text/csv',
+        'Content-Disposition': `attachment; filename="finance-class-${monthKey}.csv"`
+      }
+    });
+  }
+
+  if (type === 'finance-all') {
+    const { monthKey, start: monthStart, end: monthEnd } = buildMonthRange(searchParams.get('month'));
+    const students = await prisma.student.findMany({
+      where: classId ? { classId } : {},
+      select: {
+        user: { select: { fullName: true } },
+        class: { select: { name: true, section: true } },
+        fees: {
+          where: { dueDate: { gte: monthStart, lte: monthEnd } },
+          select: { amount: true, discount: true, payments: { select: { amountPaid: true } } }
+        }
+      },
+      orderBy: { user: { fullName: 'asc' } }
+    });
+
+    const rows = students.map((student) => {
+      const fee = student.fees.reduce((sum, item) => sum + Math.max(Number(item.amount || 0) - Number(item.discount || 0), 0), 0);
+      const paid = student.fees.reduce(
+        (sum, item) => sum + item.payments.reduce((inner, p) => inner + Number(p.amountPaid || 0), 0),
+        0
+      );
+      const unpaid = Math.max(fee - paid, 0);
+      return {
+        month: monthKey,
+        student: student.user.fullName,
+        class: student.class ? `${student.class.name} ${student.class.section}` : 'Unassigned',
+        fee,
+        paid,
+        unpaid,
+        status: unpaid > 0 ? 'UNPAID' : 'PAID'
+      };
+    });
+
+    const csv = toCsv(rows);
+    return new NextResponse(csv, {
+      headers: {
+        'Content-Type': 'text/csv',
+        'Content-Disposition': `attachment; filename="finance-all-${monthKey}.csv"`
+      }
+    });
+  }
+
+  if (type === 'finance-higher') {
+    const { monthKey, start: monthStart, end: monthEnd } = buildMonthRange(searchParams.get('month'));
+    const higherFilter =
+      classId
+        ? { classId }
+        : {
+            class: {
+              is: {
+                OR: [
+                  { name: { contains: 'hifz', mode: 'insensitive' as const } },
+                  { name: { contains: 'session', mode: 'insensitive' as const } },
+                  { section: { contains: 'hifz', mode: 'insensitive' as const } },
+                  { section: { contains: 'session', mode: 'insensitive' as const } }
+                ]
+              }
+            }
+          };
+
+    const students = await prisma.student.findMany({
+      where: higherFilter,
+      select: {
+        user: { select: { fullName: true } },
+        class: { select: { name: true, section: true } },
+        fees: {
+          where: { dueDate: { gte: monthStart, lte: monthEnd } },
+          select: { amount: true, discount: true, payments: { select: { amountPaid: true } } }
+        }
+      },
+      orderBy: { user: { fullName: 'asc' } }
+    });
+
+    const rows = students.map((student) => {
+      const fee = student.fees.reduce((sum, item) => sum + Math.max(Number(item.amount || 0) - Number(item.discount || 0), 0), 0);
+      const paid = student.fees.reduce(
+        (sum, item) => sum + item.payments.reduce((inner, p) => inner + Number(p.amountPaid || 0), 0),
+        0
+      );
+      const unpaid = Math.max(fee - paid, 0);
+      return {
+        month: monthKey,
+        student: student.user.fullName,
+        class: student.class ? `${student.class.name} ${student.class.section}` : 'Unassigned',
+        fee,
+        paid,
+        unpaid,
+        status: unpaid > 0 ? 'UNPAID' : 'PAID'
+      };
+    });
+
+    const csv = toCsv(rows);
+    return new NextResponse(csv, {
+      headers: {
+        'Content-Type': 'text/csv',
+        'Content-Disposition': `attachment; filename="finance-higher-${monthKey}.csv"`
       }
     });
   }

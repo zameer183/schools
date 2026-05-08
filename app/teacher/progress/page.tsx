@@ -806,7 +806,7 @@ export default function TeacherProgressPage() {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-[#f8f9fa] via-white to-[#f3f4f6] px-4 py-4 sm:py-6">
-      <div className="mx-auto max-w-4xl space-y-4 sm:space-y-6">
+      <div className="mx-auto max-w-4xl space-y-4 pb-[calc(10rem+env(safe-area-inset-bottom))] sm:space-y-6 md:pb-8">
         <div>
           <PageHeader
             title="Teacher Daily Progress Report System"
@@ -844,7 +844,7 @@ export default function TeacherProgressPage() {
         </div>
       </div>
 
-      <section className="grid gap-5 xl:grid-cols-[1.7fr_1fr] pb-32">
+      <section className="grid gap-5 pb-20 xl:grid-cols-[1.7fr_1fr] md:pb-32">
         <div className="space-y-4">
           <form onSubmit={submit}>
             <div className="rounded-2xl bg-white p-4 sm:p-6 shadow-sm border border-[#E5E7EB] space-y-4">
@@ -1240,7 +1240,7 @@ export default function TeacherProgressPage() {
       </div>
 
       {/* Sticky Footer */}
-      <div className="fixed bottom-0 left-0 right-0 border-t border-[#E5E7EB] bg-white/95 backdrop-blur-md p-3 sm:p-4 shadow-[0_-12px_24px_rgba(0,0,0,0.1)] z-40">
+      <div className="fixed left-0 right-0 z-30 border-t border-[#E5E7EB] bg-white/95 p-3 shadow-[0_-12px_24px_rgba(0,0,0,0.1)] backdrop-blur-md bottom-[calc(4.25rem+env(safe-area-inset-bottom))] sm:p-4 md:bottom-0 md:left-[220px]">
         <div className="mx-auto max-w-4xl px-4 flex flex-col gap-2 sm:flex-row sm:justify-end sm:gap-3">
           <button
             type="button"
@@ -1333,9 +1333,8 @@ export default function TeacherProgressPage() {
             })}
           </div>
         )}
-      </div>
+      </Card>
       </div>
     </div>
   );
 }
-

@@ -2,32 +2,59 @@ import { UserRole } from '@prisma/client';
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { ensureApiRole } from '@/lib/rbac';
+import { hasTeacherAccessByUserId } from '@/lib/teacher-access';
 import { attendanceSchema } from '@/lib/validators';
 
 export async function GET(request: Request) {
   const auth = await ensureApiRole([UserRole.ADMIN, UserRole.TEACHER, UserRole.PARENT, UserRole.STUDENT]);
   if (!auth.authorized) return auth.response;
+  if (auth.session.role === UserRole.TEACHER) {
+    const canAccess = await hasTeacherAccessByUserId(auth.session.id, 'ATTENDANCE');
+    if (!canAccess) {
+      return NextResponse.json({ error: 'Attendance module access is disabled by admin.' }, { status: 403 });
+    }
+  }
 
   const { searchParams } = new URL(request.url);
   const classId = searchParams.get('classId') ?? undefined;
   const studentId = searchParams.get('studentId') ?? undefined;
   const date = searchParams.get('date');
+  const from = searchParams.get('from') ?? undefined;
+  const to = searchParams.get('to') ?? undefined;
+  const fromDate = from ? new Date(from) : undefined;
+  const toDate = to ? new Date(to) : undefined;
+  if (toDate) toDate.setHours(23, 59, 59, 999);
 
   let teacherClassIds: string[] | null = null;
   if (auth.session.role === UserRole.TEACHER) {
     const teacher = await prisma.teacher.findUnique({
       where: { userId: auth.session.id },
-      select: { classAssignments: { select: { classId: true } } }
+      select: {
+        classAssignments: { select: { classId: true } },
+        subjects: { select: { classId: true } }
+      }
     });
     if (!teacher) return NextResponse.json({ error: 'Teacher profile missing' }, { status: 400 });
-    teacherClassIds = teacher.classAssignments.map((item) => item.classId);
+    teacherClassIds = Array.from(
+      new Set([
+        ...teacher.classAssignments.map((item) => item.classId),
+        ...teacher.subjects.map((item) => item.classId)
+      ])
+    );
   }
 
   const records = await prisma.attendance.findMany({
     where: {
       classId: teacherClassIds ? { in: teacherClassIds } : classId,
       studentId,
-      date: date ? new Date(date) : undefined
+      date: date
+        ? new Date(date)
+        : (fromDate || toDate)
+          ? {
+              ...(fromDate ? { gte: fromDate } : {}),
+              ...(toDate ? { lte: toDate } : {})
+            }
+          : undefined
     },
     include: { student: { include: { user: true } }, class: true },
     orderBy: { date: 'desc' }
@@ -39,6 +66,12 @@ export async function GET(request: Request) {
 export async function POST(request: Request) {
   const auth = await ensureApiRole([UserRole.ADMIN, UserRole.TEACHER]);
   if (!auth.authorized) return auth.response;
+  if (auth.session.role === UserRole.TEACHER) {
+    const canAccess = await hasTeacherAccessByUserId(auth.session.id, 'ATTENDANCE');
+    if (!canAccess) {
+      return NextResponse.json({ error: 'Attendance module access is disabled by admin.' }, { status: 403 });
+    }
+  }
 
   const parsed = attendanceSchema.safeParse(await request.json());
   if (!parsed.success) {
@@ -47,7 +80,11 @@ export async function POST(request: Request) {
 
   const teacher = await prisma.teacher.findFirst({
     where: { userId: auth.session.id },
-    select: { id: true, classAssignments: { select: { classId: true } } }
+    select: {
+      id: true,
+      classAssignments: { select: { classId: true } },
+      subjects: { select: { classId: true } }
+    }
   });
 
   if (auth.session.role === UserRole.TEACHER && !teacher) {
@@ -55,7 +92,12 @@ export async function POST(request: Request) {
   }
 
   if (auth.session.role === UserRole.TEACHER && teacher) {
-    const allowedClassIds = teacher.classAssignments.map((item) => item.classId);
+    const allowedClassIds = Array.from(
+      new Set([
+        ...teacher.classAssignments.map((item) => item.classId),
+        ...teacher.subjects.map((item) => item.classId)
+      ])
+    );
     if (!allowedClassIds.includes(parsed.data.classId)) {
       return NextResponse.json({ error: 'You can only mark attendance for your assigned classes.' }, { status: 403 });
     }

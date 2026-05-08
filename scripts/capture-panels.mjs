@@ -8,29 +8,39 @@ const outRoot = path.join(process.cwd(), 'screenshots', 'full-panels');
 const suites = [
   {
     role: 'admin',
-    email: 'shots_admin@stitchhms.com',
-    password: 'Pass@123',
+    credentials: [
+      { email: 'admin@stitchhms.com', password: 'Pass@123' },
+      { email: 'shots_admin@stitchhms.com', password: 'Pass@123' }
+    ],
     landing: '/admin',
     routes: ['/admin', '/admin/students', '/admin/teachers', '/admin/classes', '/admin/attendance', '/admin/finance', '/admin/reports', '/admin/notifications', '/admin/settings']
   },
   {
     role: 'teacher',
-    email: 'shots_teacher@stitchhms.com',
-    password: 'Pass@123',
+    credentials: [
+      { email: 'teacher@stitchhms.com', password: 'Pass@123' },
+      { email: 'teacher1@stitchhms.com', password: 'Pass@123' },
+      { email: 'shots_teacher@stitchhms.com', password: 'Pass@123' }
+    ],
     landing: '/teacher',
     routes: ['/teacher', '/teacher/students', '/teacher/progress', '/teacher/attendance', '/teacher/assignments', '/teacher/messages']
   },
   {
     role: 'student',
-    email: 'shots_student@stitchhms.com',
-    password: 'Pass@123',
+    credentials: [
+      { email: 'student@stitchhms.com', password: 'Pass@123' },
+      { email: 'student1@stitchhms.com', password: 'Pass@123' },
+      { email: 'shots_student@stitchhms.com', password: 'Pass@123' }
+    ],
     landing: '/student',
     routes: ['/student', '/student/schedule', '/student/assignments', '/student/results', '/student/fees']
   },
   {
     role: 'parent',
-    email: 'shots_parent@stitchhms.com',
-    password: 'Pass@123',
+    credentials: [
+      { email: 'parent@stitchhms.com', password: 'Pass@123' },
+      { email: 'shots_parent@stitchhms.com', password: 'Pass@123' }
+    ],
     landing: '/parent',
     routes: ['/parent', '/parent/performance', '/parent/attendance', '/parent/fees', '/parent/notifications']
   }
@@ -46,10 +56,31 @@ function routeToName(route) {
 
 async function login(page, suite) {
   await page.goto(`${baseUrl}/login`, { waitUntil: 'networkidle' });
-  await page.fill('input[placeholder="Email"]', suite.email);
-  await page.fill('input[placeholder="Password"]', suite.password);
-  await page.click('button:has-text("Sign In")');
-  await page.waitForURL((url) => url.pathname.startsWith(suite.landing), { timeout: 30000 });
+
+  const emailLocator = page.locator('#email');
+  const passwordLocator = page.locator('#password');
+  const signInButton = page.locator('button:has-text("Sign In to Portal")');
+
+  await emailLocator.waitFor({ state: 'visible', timeout: 30000 });
+  await passwordLocator.waitFor({ state: 'visible', timeout: 30000 });
+
+  let lastError = null;
+  for (const account of suite.credentials) {
+    try {
+      await emailLocator.fill(account.email);
+      await passwordLocator.fill(account.password);
+      await signInButton.click();
+      await page.waitForURL((url) => url.pathname.startsWith(suite.landing), { timeout: 20000 });
+      return;
+    } catch (error) {
+      lastError = error;
+      await page.goto(`${baseUrl}/login`, { waitUntil: 'networkidle' });
+      await emailLocator.waitFor({ state: 'visible', timeout: 30000 });
+      await passwordLocator.waitFor({ state: 'visible', timeout: 30000 });
+    }
+  }
+
+  throw new Error(`Login failed for role "${suite.role}". Last error: ${String(lastError)}`);
 }
 
 async function captureSuite(browser, suite) {
