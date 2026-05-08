@@ -121,7 +121,7 @@ export default async function TeacherAcademicsPage() {
             {exams.map((exam) => (
               <div
                 key={exam.id}
-                className={`rounded-xl border p-4 cursor-pointer transition-colors ${exam.id === activeExam?.id ? 'border-[#1a5058] bg-[#e8f5e9]' : 'border-[#e2e8e8] bg-white hover:bg-[#f3f4f5]'}`}
+                className={`rounded-xl border p-4 cursor-pointer transition-colors ${exam.id === activeExam?.id ? 'border-[#2b676e] bg-[#e8f4f5]' : 'border-[#e2e8e8] bg-white hover:bg-[#f3f4f5]'}`}
               >
                 <div className="flex items-start justify-between gap-2">
                   <div>
@@ -148,7 +148,7 @@ export default async function TeacherAcademicsPage() {
                   <p className="text-[10px] font-bold uppercase tracking-widest text-[#865300] mb-1">Examination Entry</p>
                   <h3 className="text-2xl font-bold text-[#1a1c1c]">{parseExamTitle(activeExam.title).title}</h3>
                   <div className="flex items-center gap-3 mt-2">
-                    <span className="text-xs font-semibold rounded-full bg-[#e8f5e9] px-3 py-1 text-[#1a5058]">
+                    <span className="text-xs font-semibold rounded-full bg-[#e8f4f5] px-3 py-1 text-[#1a5058]">
                       {parseExamTitle(activeExam.title).examType}
                     </span>
                     <span className="text-xs font-semibold bg-[#fff3e0] text-[#865300] px-3 py-1 rounded-full">
@@ -219,7 +219,7 @@ export default async function TeacherAcademicsPage() {
                 </div>
 
                 <div className="p-4 border-t border-[#e2e8e8]">
-                  <button className="flex w-full items-center justify-center gap-2 rounded-xl bg-gradient-to-br from-[#1a5058] to-[#1a5058] shadow-[0_8px_20px_rgba(43,103,110,0.12)] active:scale-[0.98] transition-all py-3 text-sm font-bold text-white">
+                  <button className="flex w-full items-center justify-center gap-2 rounded-xl bg-gradient-to-br from-[#2b676e] to-[#1a5058] shadow-[0_8px_20px_rgba(43,103,110,0.12)] active:scale-[0.98] transition-all py-3 text-sm font-bold text-white">
                     <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                       <path strokeLinecap="round" strokeLinejoin="round" d="M3 16.5v2.25A2.25 2.25 0 0 0 5.25 21h13.5A2.25 2.25 0 0 0 21 18.75V16.5m-13.5-9L12 3m0 0 4.5 4.5M12 3v13.5" />
                     </svg>

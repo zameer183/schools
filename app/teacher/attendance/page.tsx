@@ -358,7 +358,7 @@ export default function TeacherAttendancePage() {
           type="button"
           onClick={saveMyAttendance}
           disabled={savingMyAttendance}
-          className="mt-4 h-10 rounded-xl bg-gradient-to-br from-[#1a5058] to-[#1a5058] shadow-[0_8px_20px_rgba(43,103,110,0.12)] active:scale-[0.98] transition-all px-6 font-semibold text-white disabled:cursor-not-allowed disabled:opacity-60"
+          className="mt-4 h-10 rounded-xl bg-gradient-to-br from-[#2b676e] to-[#1a5058] shadow-[0_8px_20px_rgba(43,103,110,0.12)] active:scale-[0.98] transition-all px-6 font-semibold text-white disabled:cursor-not-allowed disabled:opacity-60"
         >
           {savingMyAttendance ? 'Saving...' : 'Save My Attendance'}
         </button>
@@ -371,7 +371,7 @@ export default function TeacherAttendancePage() {
             <button type="button" onClick={() => void sendStatusMessage('ABSENT')} disabled={broadcasting} className="rounded-xl border border-[#fca5a5] px-3 py-2 text-xs font-semibold text-[#ba1a1a] hover:bg-[#fde8e8] disabled:opacity-60">Message Absent</button>
             <button type="button" onClick={() => void sendStatusMessage('LATE')} disabled={broadcasting} className="rounded-xl border border-[#f5d0a9] px-3 py-2 text-xs font-semibold text-[#865300] hover:bg-[#fff3e0] disabled:opacity-60">Message Late</button>
             <button type="button" onClick={() => void sendStatusMessage('PRESENT')} disabled={broadcasting} className="rounded-xl border border-[#b7dfbc] px-3 py-2 text-xs font-semibold text-[#1a5058] hover:bg-[#e8f5e9] disabled:opacity-60">Message Present</button>
-            <button type="button" onClick={saveAttendance} disabled={saving || loading} className="h-10 rounded-xl bg-gradient-to-br from-[#1a5058] to-[#1a5058] shadow-[0_8px_20px_rgba(43,103,110,0.12)] active:scale-[0.98] transition-all px-6 font-semibold text-white disabled:cursor-not-allowed disabled:opacity-60">{saving ? 'Saving...' : 'Save Attendance'}</button>
+            <button type="button" onClick={saveAttendance} disabled={saving || loading} className="h-10 rounded-xl bg-gradient-to-br from-[#2b676e] to-[#1a5058] shadow-[0_8px_20px_rgba(43,103,110,0.12)] active:scale-[0.98] transition-all px-6 font-semibold text-white disabled:cursor-not-allowed disabled:opacity-60">{saving ? 'Saving...' : 'Save Attendance'}</button>
           </div>
         </div>
 

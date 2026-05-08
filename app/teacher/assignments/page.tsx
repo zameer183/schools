@@ -218,7 +218,7 @@ export default function TeacherAssignmentsPage() {
           <div className="md:col-span-2">
             <button
               disabled={saving || loading}
-              className="h-11 rounded-xl bg-gradient-to-br from-[#1a5058] to-[#1a5058] shadow-[0_8px_20px_rgba(43,103,110,0.12)] active:scale-[0.98] transition-all px-6 font-semibold text-white disabled:cursor-not-allowed disabled:opacity-60"
+              className="h-11 rounded-xl bg-gradient-to-br from-[#2b676e] to-[#1a5058] shadow-[0_8px_20px_rgba(43,103,110,0.12)] active:scale-[0.98] transition-all px-6 font-semibold text-white disabled:cursor-not-allowed disabled:opacity-60"
             >
               {saving ? 'Publishing...' : 'Publish Assignment'}
             </button>

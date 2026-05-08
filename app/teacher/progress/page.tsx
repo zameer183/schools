@@ -805,8 +805,7 @@ export default function TeacherProgressPage() {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-[#f8f9fa] via-white to-[#f3f4f6] px-4 py-4 sm:py-6">
-      <div className="mx-auto max-w-4xl space-y-4 sm:space-y-6">
+    <div className="space-y-4 sm:space-y-6">
         <div>
           <PageHeader
             title="Teacher Daily Progress Report System"
@@ -844,7 +843,7 @@ export default function TeacherProgressPage() {
         </div>
       </div>
 
-      <section className="grid gap-5 xl:grid-cols-[1.7fr_1fr] pb-32">
+      <section className="grid gap-5 xl:grid-cols-[1.7fr_1fr]">
         <div className="space-y-4">
           <form onSubmit={submit}>
             <div className="rounded-2xl bg-white p-4 sm:p-6 shadow-sm border border-[#E5E7EB] space-y-4">
@@ -1334,7 +1333,6 @@ export default function TeacherProgressPage() {
           </div>
         )}
       </Card>
-      </div>
     </div>
   );
 }
