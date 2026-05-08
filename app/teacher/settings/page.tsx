@@ -267,7 +267,7 @@ export default async function TeacherSettingsPage() {
               <option value="EXCUSED">Excused</option>
             </select>
             <input name="note" placeholder="Optional note" className="h-10 rounded-xl bg-[#edeeef] border-none px-3 text-sm outline-none focus:ring-2 focus:ring-[#1a5058]/20" />
-            <button className="h-10 rounded-xl bg-gradient-to-br from-[#1a5058] to-[#1a5058] shadow-[0_8px_20px_rgba(43,103,110,0.12)] active:scale-[0.98] transition-all px-4 text-sm font-semibold text-white">Mark Attendance</button>
+            <button className="h-10 rounded-xl bg-gradient-to-br from-[#2b676e] to-[#1a5058] shadow-[0_8px_20px_rgba(43,103,110,0.12)] active:scale-[0.98] transition-all px-4 text-sm font-semibold text-white">Mark Attendance</button>
           </form>
         ) : (
           <p className="mt-4 rounded-xl bg-[#fde8e8] px-4 py-3 text-sm text-[#ba1a1a]">Staff attendance module disabled by admin.</p>
