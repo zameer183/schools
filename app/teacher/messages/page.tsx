@@ -26,15 +26,15 @@ const getCachedTeacherMessagesData = unstable_cache(
       }),
       prisma.messageRecipient.findMany({
         where: { userId },
-        include: { message: { include: { sender: { select: { fullName: true, role: true } } } } },
+        include: { message: { include: { sender: { select: { id: true, fullName: true, role: true } } } } },
         orderBy: { message: { createdAt: 'desc' } },
-        take: 20
+        take: 50
       }),
       prisma.message.findMany({
         where: { senderId: userId },
-        include: { recipients: { include: { user: { select: { fullName: true } } } } },
+        include: { recipients: { include: { user: { select: { id: true, fullName: true } } } } },
         orderBy: { createdAt: 'desc' },
-        take: 10
+        take: 50
       })
     ]);
 
@@ -78,22 +78,25 @@ export default async function TeacherMessagesPage() {
       id: item.id,
       subject: item.message.subject,
       body: item.message.body,
+      senderId: item.message.sender.id,
       senderName: item.message.sender.fullName,
       senderRole: item.message.sender.role as string,
       createdAt: toIso(item.message.createdAt),
       isRead: item.isRead,
-      direction: 'received' as const
+      direction: 'received' as const,
+      recipients: undefined
     })),
     ...sent.map((msg) => ({
       id: msg.id,
       subject: msg.subject,
       body: msg.body,
+      senderId: undefined,
       senderName: 'You',
       senderRole: session.role as string,
       createdAt: toIso(msg.createdAt),
       isRead: true,
       direction: 'sent' as const,
-      recipientNames: msg.recipients.map((r) => r.user.fullName)
+      recipients: msg.recipients.map((r) => ({ id: r.user.id, name: r.user.fullName }))
     }))
   ].sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
 
