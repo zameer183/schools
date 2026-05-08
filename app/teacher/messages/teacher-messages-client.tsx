@@ -306,7 +306,7 @@ export function TeacherMessagesClient({ messages, recipients }: TeacherMessagesC
     const optimistic: ConvMessage = {
       id: tempId,
       body: text,
-      subject: `Re: ${activeConv.messages.find((m) => m.subject)?.subject ?? 'Message'}`,
+      subject: `Re: ${(activeConv.messages.find((m) => m.subject)?.subject ?? 'Message').replace(/^(re:\s*)+/i, '')}`,
       createdAt: new Date().toISOString(),
       direction: 'out',
       pending: true

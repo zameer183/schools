@@ -2,7 +2,6 @@ import { UserRole } from '@prisma/client';
 import { requireAuth } from '@/lib/auth';
 import { prisma } from '@/lib/prisma';
 import { getTeacherAccessMapByUserId } from '@/lib/teacher-access';
-import { PageHeader } from '@/components/ui';
 import { TeacherMessagesClient, type SerializedMessage, type RecipientOption } from './teacher-messages-client';
 
 export const dynamic = 'force-dynamic';
@@ -90,13 +89,5 @@ export default async function TeacherMessagesPage() {
     }))
   ].sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
 
-  return (
-    <div className="space-y-6">
-      <PageHeader
-        title="Communications Hub"
-        subtitle="Stay updated with your academic circle."
-      />
-      <TeacherMessagesClient messages={serializedMessages} recipients={uniqueRecipients} />
-    </div>
-  );
+  return <TeacherMessagesClient messages={serializedMessages} recipients={uniqueRecipients} />;
 }
