@@ -47,3 +47,5 @@ export function Table({ headers, rows, onRowClick, className = '' }: TableProps)
     </div>
   );
 }
+
+export const DataTable = Table;

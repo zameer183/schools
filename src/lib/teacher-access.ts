@@ -203,3 +203,47 @@ export async function setTeacherCompensation(
       "updatedAt" = NOW();
   `;
 }
+
+export async function upsertTeacherAccess(
+  teacherId: string,
+  access: Record<string, boolean>
+): Promise<void> {
+  const normalized: Partial<TeacherAccessMap> = {};
+  for (const moduleKey of TEACHER_ACCESS_MODULES) {
+    if (moduleKey in access) {
+      normalized[moduleKey] = Boolean(access[moduleKey]);
+    }
+  }
+  await setTeacherAccessMap(teacherId, normalized);
+}
+
+export async function upsertTeacherCompensation(
+  teacherId: string,
+  data: { baseSalary?: number; bonus?: number; deduction?: number }
+): Promise<void> {
+  await setTeacherCompensation(teacherId, data);
+}
+
+export async function getTeacherAccessMapsByTeacherIds(
+  teacherIds: string[]
+): Promise<Record<string, TeacherAccessMap>> {
+  const output: Record<string, TeacherAccessMap> = {};
+  await Promise.all(
+    teacherIds.map(async (teacherId) => {
+      output[teacherId] = await getTeacherAccessMapByTeacherId(teacherId);
+    })
+  );
+  return output;
+}
+
+export async function getTeacherCompensationsByTeacherIds(
+  teacherIds: string[]
+): Promise<Record<string, TeacherCompensation>> {
+  const output: Record<string, TeacherCompensation> = {};
+  await Promise.all(
+    teacherIds.map(async (teacherId) => {
+      output[teacherId] = await getTeacherCompensationByTeacherId(teacherId);
+    })
+  );
+  return output;
+}
