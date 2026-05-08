@@ -1,7 +1,7 @@
 'use client';
 
-import { useEffect, useMemo, useState } from 'react';
-import { ChevronLeft, Circle, MessageSquarePlus, Search, Send, SlidersHorizontal, Trash2, X } from 'lucide-react';
+import { useEffect, useMemo, useRef, useState } from 'react';
+import { ChevronLeft, MessageSquarePlus, Search, Send, SlidersHorizontal, Trash2, X } from 'lucide-react';
 
 type MessageDirection = 'received' | 'sent';
 
@@ -206,6 +206,7 @@ interface TeacherMessagesClientProps {
 export function TeacherMessagesClient({ messages, recipients }: TeacherMessagesClientProps) {
   const [mounted, setMounted] = useState(false);
   const [liveMessages, setLiveMessages] = useState<SerializedMessage[]>(messages);
+  const chatBottomRef = useRef<HTMLDivElement>(null);
   const [category, setCategory] = useState<CategoryKey>('all');
   const [search, setSearch] = useState('');
   const [activeId, setActiveId] = useState<string | null>(null);
@@ -240,7 +241,7 @@ export function TeacherMessagesClient({ messages, recipients }: TeacherMessagesC
 
     const timer = window.setInterval(() => {
       void syncInbox();
-    }, 8000);
+    }, 5000);
     void syncInbox();
     return () => {
       cancelled = true;
@@ -275,6 +276,10 @@ export function TeacherMessagesClient({ messages, recipients }: TeacherMessagesC
     if (!activeConv || activeConv.unreadCount === 0) return;
     setLocallyRead((prev) => new Set(prev).add(activeConv.personId));
   }, [activeConv]);
+
+  useEffect(() => {
+    chatBottomRef.current?.scrollIntoView({ behavior: 'smooth' });
+  }, [activeConv?.messages.length]);
 
   const counts = useMemo(() => ({
     all: allConversations.length,
@@ -565,10 +570,7 @@ export function TeacherMessagesClient({ messages, recipients }: TeacherMessagesC
               </div>
               <div>
                 <p className="text-sm font-bold text-[#1a2b3d]">{activeConv.personName}</p>
-                <p className="flex items-center gap-1 text-xs text-[#607080]">
-                  <Circle className="h-2.5 w-2.5 fill-current text-[#94a3b8]" />
-                  Offline
-                </p>
+                <p className="text-xs text-[#607080]">Student</p>
               </div>
             </div>
             <p className="hidden sm:block text-[10px] text-[#8293a3]" suppressHydrationWarning>
@@ -585,9 +587,6 @@ export function TeacherMessagesClient({ messages, recipients }: TeacherMessagesC
                     ? 'rounded-br-sm bg-[#1a5058] text-white'
                     : 'rounded-bl-sm bg-white text-[#1a2b3d]'
                 }`}>
-                  {msg.subject && msg.direction === 'in' && (
-                    <p className="mb-1 text-[10px] font-bold uppercase tracking-wider text-[#8aa0b3]">{msg.subject}</p>
-                  )}
                   <p className="whitespace-pre-wrap leading-relaxed">{msg.body}</p>
                   <div className="mt-1 flex items-center justify-between gap-2">
                     <div className={`text-[10px] ${msg.direction === 'out' ? 'text-[#d8f2f2]' : 'text-[#8aa0b3]'}`} suppressHydrationWarning>
@@ -609,6 +608,8 @@ export function TeacherMessagesClient({ messages, recipients }: TeacherMessagesC
               </div>
             ))}
           </div>
+
+          <div ref={chatBottomRef} />
 
           {/* Reply bar */}
           <div className="border-t border-[#e6edf2] bg-white p-3">

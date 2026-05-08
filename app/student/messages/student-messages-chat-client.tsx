@@ -1,7 +1,7 @@
 'use client';
 
-import { useEffect, useMemo, useState } from 'react';
-import { ChevronLeft, Circle, MessageSquarePlus, Search, Send, SlidersHorizontal, Trash2 } from 'lucide-react';
+import { useEffect, useMemo, useRef, useState } from 'react';
+import { ChevronLeft, MessageSquarePlus, Search, Send, SlidersHorizontal, Trash2 } from 'lucide-react';
 
 type SenderRole = 'ADMIN' | 'TEACHER' | 'STUDENT' | 'PARENT';
 type CategoryKey = 'all' | 'academic' | 'finance';
@@ -173,6 +173,7 @@ export function StudentMessagesChatClient({
 }) {
   const [mounted, setMounted] = useState(false);
   const [liveInbox, setLiveInbox] = useState<StudentInboxItem[]>(initialInbox);
+  const chatBottomRef = useRef<HTMLDivElement>(null);
   const [category, setCategory] = useState<CategoryKey>('all');
   const [search, setSearch] = useState('');
   const [activeId, setActiveId] = useState<string | null>(null);
@@ -236,7 +237,7 @@ export function StudentMessagesChatClient({
 
     const timer = window.setInterval(() => {
       void syncInbox();
-    }, 8000);
+    }, 5000);
     void syncInbox();
     return () => {
       cancelled = true;
@@ -261,6 +262,10 @@ export function StudentMessagesChatClient({
     if (activeConversation.unreadCount === 0) return;
     setLocallyRead((prev) => new Set(prev).add(activeConversation.id));
   }, [activeConversation]);
+
+  useEffect(() => {
+    chatBottomRef.current?.scrollIntoView({ behavior: 'smooth' });
+  }, [activeConversation?.messages.length]);
 
   const categoryCounts = useMemo(() => {
     const academic = conversations.filter((item) => item.category === 'academic').length;
@@ -328,7 +333,7 @@ export function StudentMessagesChatClient({
     const optimisticMessage: ChatMessage = {
       id: tempId,
       body: text,
-      subject: activeConversation.latestSubject ? `Re: ${activeConversation.latestSubject}` : 'Student Reply',
+      subject: `Re: ${(activeConversation.latestSubject || 'Message').replace(/^(re:\s*)+/i, '')}`,
       createdAt: new Date().toISOString(),
       direction: 'out',
       pending: true
@@ -501,10 +506,7 @@ export function StudentMessagesChatClient({
               </div>
               <div>
                 <p className="text-sm font-bold text-[#1a2b3d]">{activeConversation.senderName}</p>
-                <p className="flex items-center gap-1 text-xs text-[#607080]">
-                  <Circle className={`h-2.5 w-2.5 ${activeConversation.isOnline ? 'fill-[#22c55e] text-[#22c55e]' : 'fill-[#94a3b8] text-[#94a3b8]'}`} />
-                  {activeConversation.isOnline ? 'Online' : 'Offline'}
-                </p>
+                <p className="text-xs text-[#607080]">Teacher</p>
               </div>
             </div>
           </div>
@@ -539,13 +541,9 @@ export function StudentMessagesChatClient({
                 </div>
               </div>
             ))}
-            {isTyping ? (
-              <div className="flex items-center gap-2 text-xs text-[#607080]">
-                <span className="inline-flex h-7 w-12 items-center justify-center rounded-full bg-white text-lg">...</span>
-                Typing...
-              </div>
-            ) : null}
           </div>
+
+          <div ref={chatBottomRef} />
 
           <div className="border-t border-[#e6edf2] bg-white p-3">
             <div className="flex items-center gap-2">
