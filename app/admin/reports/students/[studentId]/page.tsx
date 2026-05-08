@@ -56,7 +56,7 @@ export default async function StudentDetailPage({ params }: StudentDetailPagePro
       where: { studentId },
       orderBy: { date: 'desc' },
       take: 10,
-      select: { date: true, lessonType: true, juzzNumber: true, lessonNumber: true, tajweeditotal: true, hifzTotal: true, notes: true }
+      select: { date: true, lessonType: true, juzzNumber: true, lessonNumber: true, notes: true }
     }),
     prisma.result.findMany({
       where: { studentId },
@@ -178,8 +178,7 @@ export default async function StudentDetailPage({ params }: StudentDetailPagePro
                     : `Lesson ${latestProgress.lessonNumber}`}
                 </p>
                 <div className="mt-2 flex gap-3 text-xs text-[#6f7979]">
-                  <span>Tajweedi: {latestProgress.tajweeditotal ?? 0} mistakes</span>
-                  <span>Hifz: {latestProgress.hifzTotal ?? 0} mistakes</span>
+                  <span>{latestProgress.lessonType} lesson #{latestProgress.lessonNumber}</span>
                 </div>
               </div>
             )}
@@ -202,8 +201,8 @@ export default async function StudentDetailPage({ params }: StudentDetailPagePro
                       <td className="py-2 px-3 text-[#1a1c1c]">
                         {p.lessonType === 'JUZZ' && p.juzzNumber ? `Juzz ${p.juzzNumber}` : `Lesson ${p.lessonNumber}`}
                       </td>
-                      <td className="py-2 px-3 text-[#6f7979]">{p.tajweeditotal ?? 0}</td>
-                      <td className="py-2 px-3 text-[#6f7979]">{p.hifzTotal ?? 0}</td>
+                      <td className="py-2 px-3 text-[#6f7979]">—</td>
+                      <td className="py-2 px-3 text-[#6f7979]">—</td>
                     </tr>
                   ))}
                 </tbody>
@@ -256,8 +255,8 @@ export default async function StudentDetailPage({ params }: StudentDetailPagePro
       <div className="fixed bottom-0 left-0 right-0 sm:static border-t border-[#e2e8e8] bg-white p-4 shadow-[0_-4px_12px_rgba(0,0,0,0.08)] sm:rounded-2xl sm:shadow-[0_4px_12px_rgba(0,0,0,0.08)] sm:border-none">
         <StudentReportDetailActions
           studentId={studentId}
-          whatsApp={student.whatsApp}
-          guardianPhone={student.guardianPhone}
+          whatsApp={student.user.phone ?? null}
+          guardianPhone={student.emergencyContact ?? null}
           studentName={student.user.fullName}
           className={className}
           admissionNo={admissionNo}
@@ -275,8 +274,8 @@ export default async function StudentDetailPage({ params }: StudentDetailPagePro
                 : `Lesson ${latestProgress.lessonNumber}`
               : 'None'
           }
-          latestTajweeditotal={latestProgress?.tajweeditotal ?? 0}
-          latestHifzTotal={latestProgress?.hifzTotal ?? 0}
+          latestTajweeditotal={0}
+          latestHifzTotal={0}
           examCount={results.length}
         />
       </div>

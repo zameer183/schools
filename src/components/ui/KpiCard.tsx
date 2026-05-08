@@ -11,17 +11,17 @@ export function KpiCard({ variant, icon, label, value }: KpiCardProps) {
   const variantConfig = {
     primary: {
       cardBg: 'bg-white',
-      borderAccent: 'border-l-[#1F5A5C]',
-      iconBg: 'bg-[#E0EBEC]',
-      iconColor: 'text-[#1F5A5C]',
-      valueColor: 'text-[#1F5A5C]',
+      borderAccent: 'border-l-[#2b676e]',
+      iconBg: 'bg-[#e0eff0]',
+      iconColor: 'text-[#2b676e]',
+      valueColor: 'text-[#2b676e]',
     },
     accent: {
       cardBg: 'bg-white',
-      borderAccent: 'border-l-[#D69E3F]',
-      iconBg: 'bg-[#F5E6CC]',
-      iconColor: 'text-[#D69E3F]',
-      valueColor: 'text-[#D69E3F]',
+      borderAccent: 'border-l-[#df8d29]',
+      iconBg: 'bg-[#fdf0e0]',
+      iconColor: 'text-[#df8d29]',
+      valueColor: 'text-[#df8d29]',
     },
     success: {
       cardBg: 'bg-white',

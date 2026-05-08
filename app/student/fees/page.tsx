@@ -2,8 +2,8 @@ import { UserRole } from '@prisma/client';
 import { unstable_cache } from 'next/cache';
 import { requireAuth } from '@/lib/auth';
 import { prisma } from '@/lib/prisma';
-import { PageHeader, Card, StatusBadge } from '@/components/ui';
-import { Wallet } from 'lucide-react';
+import { PageHeader, KpiCard, Card, StatusBadge } from '@/components/ui';
+import { Wallet, TrendingDown, CheckCircle2, AlertCircle } from 'lucide-react';
 
 export const dynamic = 'force-dynamic';
 
@@ -49,12 +49,52 @@ export default async function StudentFeesPage() {
   );
   const outstanding = Math.max(totalDue - totalPaid, 0);
 
+  const paidPercent = totalDue > 0 ? Math.round((totalPaid / totalDue) * 100) : 0;
+
   return (
     <div className="space-y-6">
       <PageHeader
         title="Fee Status"
-        subtitle={`Due: PKR ${totalDue.toLocaleString()} | Paid: PKR ${totalPaid.toLocaleString()} | Outstanding: PKR ${outstanding.toLocaleString()}`}
+        subtitle="Track your payments, dues, and outstanding balances."
+        badge={
+          outstanding > 0 ? (
+            <span className="inline-flex items-center gap-1.5 rounded-full bg-[#FEE2E2] px-3 py-1.5 text-xs font-bold text-[#DC2626]">
+              <AlertCircle className="h-3 w-3" />
+              Balance Due
+            </span>
+          ) : (
+            <span className="inline-flex items-center gap-1.5 rounded-full bg-[#D1FAE5] px-3 py-1.5 text-xs font-bold text-[#10B981]">
+              <CheckCircle2 className="h-3 w-3" />
+              All Clear
+            </span>
+          )
+        }
       />
+
+      <section className="grid grid-cols-1 gap-4 sm:grid-cols-3">
+        <KpiCard variant="primary" icon={<Wallet />} label="Total Fee" value={`PKR ${totalDue.toLocaleString()}`} />
+        <KpiCard variant="success" icon={<CheckCircle2 />} label="Amount Paid" value={`PKR ${totalPaid.toLocaleString()}`} />
+        <KpiCard variant={outstanding > 0 ? 'danger' : 'success'} icon={outstanding > 0 ? <TrendingDown /> : <CheckCircle2 />} label="Outstanding" value={outstanding > 0 ? `PKR ${outstanding.toLocaleString()}` : 'Paid'} />
+      </section>
+
+      {totalDue > 0 && (
+        <Card>
+          <div className="flex items-center justify-between mb-2">
+            <p className="text-sm font-semibold text-[#1F2937]">Payment Progress</p>
+            <span className="text-sm font-bold text-[#1F5A5C]">{paidPercent}%</span>
+          </div>
+          <div className="h-2.5 w-full rounded-full bg-[#E5E7EB]">
+            <div
+              className="h-full rounded-full transition-all"
+              style={{
+                width: `${paidPercent}%`,
+                backgroundColor: paidPercent >= 100 ? '#10B981' : paidPercent >= 50 ? '#D69E3F' : '#EF4444'
+              }}
+            />
+          </div>
+          <p className="mt-2 text-xs text-[#6B7280]">PKR {totalPaid.toLocaleString()} paid of PKR {totalDue.toLocaleString()} total</p>
+        </Card>
+      )}
 
       <Card>
 

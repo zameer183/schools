@@ -48,6 +48,8 @@ export type StudentInboxItem = {
 
 export type StudentOutgoingMap = Record<string, ChatMessage[]>;
 
+export type AvailableTeacher = { id: string; fullName: string };
+
 function initials(name: string) {
   return name
     .split(' ')
@@ -145,10 +147,12 @@ function buildConversations(inbox: StudentInboxItem[], outgoing: Record<string, 
 
 export function StudentMessagesChatClient({
   initialInbox,
-  initialOutgoing = {}
+  initialOutgoing = {},
+  availableTeachers = []
 }: {
   initialInbox: StudentInboxItem[];
   initialOutgoing?: StudentOutgoingMap;
+  availableTeachers?: AvailableTeacher[];
 }) {
   const [category, setCategory] = useState<CategoryKey>('all');
   const [search, setSearch] = useState('');
@@ -159,6 +163,11 @@ export function StudentMessagesChatClient({
   const [showMobileFilters, setShowMobileFilters] = useState(false);
   const [locallyRead, setLocallyRead] = useState<Set<string>>(new Set());
   const [localOutgoing, setLocalOutgoing] = useState<StudentOutgoingMap>(initialOutgoing);
+  const [showCompose, setShowCompose] = useState(false);
+  const [composeTeacherId, setComposeTeacherId] = useState('');
+  const [composeSubject, setComposeSubject] = useState('');
+  const [composeBody, setComposeBody] = useState('');
+  const [isComposeSending, setIsComposeSending] = useState(false);
 
   const conversations = useMemo(
     () => buildConversations(initialInbox, localOutgoing, locallyRead),
@@ -204,6 +213,45 @@ export function StudentMessagesChatClient({
       finance
     };
   }, [conversations]);
+
+  const handleComposeSend = async () => {
+    if (!composeTeacherId || composeBody.trim().length < 2 || isComposeSending) return;
+    setIsComposeSending(true);
+    try {
+      const response = await fetch('/api/messages', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          subject: composeSubject.trim() || 'New Message',
+          body: composeBody.trim(),
+          recipientIds: [composeTeacherId]
+        })
+      });
+      if (response.ok) {
+        const msg = await response.json() as { id: string; subject: string; body: string; createdAt: string };
+        setLocalOutgoing((prev) => ({
+          ...prev,
+          [composeTeacherId]: [
+            ...(prev[composeTeacherId] ?? []),
+            {
+              id: msg.id,
+              body: composeBody.trim(),
+              subject: composeSubject.trim() || 'New Message',
+              createdAt: msg.createdAt ?? new Date().toISOString(),
+              direction: 'out' as const,
+              pending: false
+            }
+          ]
+        }));
+        setShowCompose(false);
+        setComposeSubject('');
+        setComposeBody('');
+        setComposeTeacherId('');
+      }
+    } finally {
+      setIsComposeSending(false);
+    }
+  };
 
   const handleSend = async () => {
     if (!activeConversation || draft.trim().length < 2 || isSending) return;
@@ -263,10 +311,13 @@ export function StudentMessagesChatClient({
   ];
 
   const leftCategoriesPanel = (
-    <div className="rounded-2xl bg-white shadow-[0_2px_8px_rgba(0,0,0,0.06)] p-4">
+    <div className="rounded-2xl bg-white shadow-[0_12px_40px_rgba(0,70,73,0.06)] p-4">
       <div className="mb-3 flex items-center justify-between">
-        <h3 className="text-sm font-bold text-[#1F2937]">Categories</h3>
-        <button className="inline-flex items-center gap-1 rounded-xl bg-gradient-to-br from-[#004649] to-[#1b5e62] shadow-[0_8px_20px_rgba(0,70,73,0.12)] active:scale-[0.98] transition-all px-2.5 py-1.5 text-xs font-semibold text-white">
+        <h3 className="text-sm font-bold font-headline text-[#1a2b3d]">Categories</h3>
+        <button
+          onClick={() => setShowCompose(true)}
+          className="inline-flex items-center gap-1 rounded-xl bg-gradient-to-br from-[#004649] to-[#1b5e62] shadow-[0_8px_20px_rgba(0,70,73,0.12)] active:scale-[0.98] transition-all px-2.5 py-1.5 text-xs font-semibold text-white"
+        >
           <MessageSquarePlus className="h-3.5 w-3.5" />
           New
         </button>
@@ -291,14 +342,14 @@ export function StudentMessagesChatClient({
   );
 
   const middleChatListPanel = (
-    <div className="rounded-2xl bg-white shadow-[0_2px_8px_rgba(0,0,0,0.06)] p-4">
+    <div className="rounded-2xl bg-white shadow-[0_12px_40px_rgba(0,70,73,0.06)] p-4">
       <div className="relative mb-3">
         <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-[#7c8b99]" />
         <input
           value={search}
           onChange={(event) => setSearch(event.target.value)}
           placeholder="Search chats..."
-          className="h-11 w-full rounded-full bg-[#F3F4F6] border border-[#E5E7EB] pl-10 pr-4 text-sm text-[#1F2937] outline-none focus:ring-2 focus:ring-[#1F5A5C]/20"
+          className="h-11 w-full rounded-full bg-[#edeeef] border-none pl-10 pr-4 text-sm text-[#1a2b3d] outline-none focus:ring-2 focus:ring-[#004649]/20"
         />
       </div>
 
@@ -322,7 +373,7 @@ export function StudentMessagesChatClient({
               </div>
               <div className="min-w-0 flex-1">
                 <div className="flex items-start justify-between gap-2">
-                  <p className="truncate text-sm font-bold text-[#1F2937]">{chat.senderName}</p>
+                  <p className="truncate text-sm font-bold text-[#1a2b3d]">{chat.senderName}</p>
                   <p className="shrink-0 text-[11px] text-[#8293a3]">{formatTime(chat.latestAt)}</p>
                 </div>
                 <p className="truncate text-xs text-[#5b6b7c]">{chat.latestPreview}</p>
@@ -348,14 +399,14 @@ export function StudentMessagesChatClient({
   );
 
   const rightChatPanel = (
-    <div className="flex h-[72vh] flex-col rounded-2xl bg-white shadow-[0_2px_8px_rgba(0,0,0,0.06)]">
+    <div className="flex h-[72vh] flex-col rounded-2xl bg-white shadow-[0_12px_40px_rgba(0,70,73,0.06)]">
       {activeConversation ? (
         <>
           <div className="flex items-center justify-between border-b border-[#e6edf2] px-4 py-3">
             <div className="flex items-center gap-3">
               <button
                 onClick={() => setActiveId(null)}
-                className="inline-flex h-8 w-8 items-center justify-center rounded-xl border border-[#d7e2ea] text-[#6B7280] lg:hidden"
+                className="inline-flex h-8 w-8 items-center justify-center rounded-xl border border-[#d7e2ea] text-[#607080] lg:hidden"
               >
                 <ChevronLeft className="h-4 w-4" />
               </button>
@@ -363,8 +414,8 @@ export function StudentMessagesChatClient({
                 {initials(activeConversation.senderName)}
               </div>
               <div>
-                <p className="text-sm font-bold text-[#1F2937]">{activeConversation.senderName}</p>
-                <p className="flex items-center gap-1 text-xs text-[#6B7280]">
+                <p className="text-sm font-bold text-[#1a2b3d]">{activeConversation.senderName}</p>
+                <p className="flex items-center gap-1 text-xs text-[#607080]">
                   <Circle className={`h-2.5 w-2.5 ${activeConversation.isOnline ? 'fill-[#22c55e] text-[#22c55e]' : 'fill-[#94a3b8] text-[#94a3b8]'}`} />
                   {activeConversation.isOnline ? 'Online' : 'Offline'}
                 </p>
@@ -379,7 +430,7 @@ export function StudentMessagesChatClient({
                   className={`max-w-[85%] rounded-2xl px-3 py-2 text-sm shadow-sm ${
                     message.direction === 'out'
                       ? 'rounded-br-sm bg-[#004649] text-white'
-                      : 'rounded-bl-sm bg-white text-[#1F2937]'
+                      : 'rounded-bl-sm bg-white text-[#1a2b3d]'
                   }`}
                 >
                   <p className="whitespace-pre-wrap">{message.body}</p>
@@ -390,7 +441,7 @@ export function StudentMessagesChatClient({
               </div>
             ))}
             {isTyping ? (
-              <div className="flex items-center gap-2 text-xs text-[#6B7280]">
+              <div className="flex items-center gap-2 text-xs text-[#607080]">
                 <span className="inline-flex h-7 w-12 items-center justify-center rounded-full bg-white text-lg">...</span>
                 Typing...
               </div>
@@ -409,7 +460,7 @@ export function StudentMessagesChatClient({
                   }
                 }}
                 placeholder="Write a message..."
-                className="h-11 flex-1 rounded-full bg-[#F3F4F6] border border-[#E5E7EB] px-4 text-sm text-[#1F2937] outline-none focus:ring-2 focus:ring-[#1F5A5C]/20"
+                className="h-11 flex-1 rounded-full bg-[#edeeef] border-none px-4 text-sm text-[#1a2b3d] outline-none focus:ring-2 focus:ring-[#004649]/20"
               />
               <button
                 onClick={() => void handleSend()}
@@ -424,8 +475,8 @@ export function StudentMessagesChatClient({
       ) : (
         <div className="grid flex-1 place-items-center bg-[#f5f7fa] p-8">
           <div className="max-w-sm rounded-2xl border border-dashed border-[#ccd8e0] bg-white p-8 text-center">
-            <h3 className="text-lg font-bold text-[#1F2937]">No Chat Selected</h3>
-            <p className="mt-2 text-sm text-[#6B7280]">Choose a conversation from the chat list to start messaging.</p>
+            <h3 className="text-lg font-bold text-[#1a2b3d]">No Chat Selected</h3>
+            <p className="mt-2 text-sm text-[#607080]">Choose a conversation from the chat list to start messaging.</p>
           </div>
         </div>
       )}
@@ -434,15 +485,15 @@ export function StudentMessagesChatClient({
 
   return (
     <div className="space-y-4">
-      <div className="rounded-2xl bg-white shadow-[0_2px_8px_rgba(0,0,0,0.06)] p-5">
+      <div className="rounded-2xl bg-white shadow-[0_12px_40px_rgba(0,70,73,0.06)] p-5">
         <div className="flex items-center justify-between gap-3">
           <div>
-            <h2 className="text-2xl font-bold text-[#1F2937]">Communications Hub</h2>
-            <p className="text-sm text-[#6B7280]">Modern chat experience for academic and finance conversations.</p>
+            <h2 className="text-2xl font-bold font-headline text-[#1a2b3d]">Communications Hub</h2>
+            <p className="text-sm text-[#607080]">Modern chat experience for academic and finance conversations.</p>
           </div>
           <button
             onClick={() => setShowMobileFilters((prev) => !prev)}
-            className="inline-flex items-center gap-1 rounded-xl border border-[#d3e0e7] px-3 py-2 text-sm font-semibold text-[#1F2937] lg:hidden"
+            className="inline-flex items-center gap-1 rounded-xl border border-[#d3e0e7] px-3 py-2 text-sm font-semibold text-[#1a2b3d] lg:hidden"
           >
             <SlidersHorizontal className="h-4 w-4" />
             Panels
@@ -457,6 +508,63 @@ export function StudentMessagesChatClient({
 
         <div className={`${activeConversation ? 'block' : 'hidden lg:block'}`}>{rightChatPanel}</div>
       </div>
+
+      {/* Compose new message modal */}
+      {showCompose && (
+        <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/40 px-4 pb-4 sm:pb-0">
+          <div className="w-full max-w-md rounded-2xl bg-white p-5 shadow-2xl">
+            <div className="mb-4 flex items-center justify-between">
+              <h3 className="text-sm font-bold text-[#1a2b3d]">New Message</h3>
+              <button
+                onClick={() => setShowCompose(false)}
+                className="h-7 w-7 rounded-full bg-[#edeeef] flex items-center justify-center text-[#607080] hover:bg-[#dde0e2]"
+              >✕</button>
+            </div>
+
+            <div className="space-y-3">
+              <div>
+                <label className="block text-[10px] font-bold uppercase tracking-widest text-[#7c8b99] mb-1">To (Teacher)</label>
+                <select
+                  value={composeTeacherId}
+                  onChange={(e) => setComposeTeacherId(e.target.value)}
+                  className="h-10 w-full rounded-xl bg-[#edeeef] border-none px-3 text-sm text-[#1a2b3d] outline-none focus:ring-2 focus:ring-[#004649]/20"
+                >
+                  <option value="">Select teacher...</option>
+                  {availableTeachers.map((t) => (
+                    <option key={t.id} value={t.id}>{t.fullName}</option>
+                  ))}
+                </select>
+              </div>
+              <div>
+                <label className="block text-[10px] font-bold uppercase tracking-widest text-[#7c8b99] mb-1">Subject</label>
+                <input
+                  value={composeSubject}
+                  onChange={(e) => setComposeSubject(e.target.value)}
+                  placeholder="e.g. Question about homework"
+                  className="h-10 w-full rounded-xl bg-[#edeeef] border-none px-3 text-sm text-[#1a2b3d] outline-none focus:ring-2 focus:ring-[#004649]/20"
+                />
+              </div>
+              <div>
+                <label className="block text-[10px] font-bold uppercase tracking-widest text-[#7c8b99] mb-1">Message</label>
+                <textarea
+                  value={composeBody}
+                  onChange={(e) => setComposeBody(e.target.value)}
+                  rows={4}
+                  placeholder="Write your message..."
+                  className="w-full rounded-xl bg-[#edeeef] border-none px-3 py-2.5 text-sm text-[#1a2b3d] outline-none focus:ring-2 focus:ring-[#004649]/20 resize-none"
+                />
+              </div>
+              <button
+                onClick={() => void handleComposeSend()}
+                disabled={!composeTeacherId || composeBody.trim().length < 2 || isComposeSending}
+                className="flex w-full items-center justify-center gap-2 rounded-xl bg-[#004649] py-2.5 text-sm font-bold text-white hover:bg-[#005a5e] disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                {isComposeSending ? 'Sending...' : 'Send Message'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

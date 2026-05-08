@@ -4,7 +4,7 @@ import { unstable_cache } from 'next/cache';
 import { FileText, Download, BookOpen, Award } from 'lucide-react';
 import { requireAuth } from '@/lib/auth';
 import { prisma } from '@/lib/prisma';
-import { Card } from '@/components/ui/Card';
+import { Card } from '@/components/ui';
 
 export const dynamic = 'force-dynamic';
 

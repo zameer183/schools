@@ -96,7 +96,7 @@ const MODULE_LABEL: Record<TeacherAccessModule, string> = {
 };
 
 function getStatusColor(status: string) {
-  if (status === 'PRESENT') return 'bg-[#e8f5e9] text-[#004649]';
+  if (status === 'PRESENT') return 'bg-[#e8f5e9] text-[#1a5058]';
   if (status === 'LATE') return 'bg-[#fff3e0] text-[#865300]';
   if (status === 'ABSENT') return 'bg-[#fde8e8] text-[#ba1a1a]';
   return 'bg-[#e8f0ff] text-[#1a4bcc]';
@@ -119,9 +119,9 @@ export default async function TeacherSettingsPage() {
 
   if (!teacher) {
     return (
-      <div className="rounded-2xl bg-white shadow-[0_2px_8px_rgba(0,0,0,0.06)] p-8">
-        <h2 className="text-3xl font-bold text-[#1F2937]">Teacher Profile Missing</h2>
-        <p className="mt-2 text-sm text-[#6B7280]">Your account is active but no teacher profile is linked yet. Contact admin.</p>
+      <div className="rounded-2xl bg-white shadow-[0_12px_40px_rgba(43,103,110,0.06)] p-8">
+        <h2 className="font-headline text-3xl font-bold text-[#1a1c1c]">Teacher Profile Missing</h2>
+        <p className="mt-2 text-sm text-[#6f7979]">Your account is active but no teacher profile is linked yet. Contact admin.</p>
       </div>
     );
   }
@@ -207,8 +207,8 @@ export default async function TeacherSettingsPage() {
 
         <Card>
           <div className="flex items-center gap-2 mb-4">
-            <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-[#E0EBEC]">
-              <BookOpen className="h-4 w-4 text-[#1F5A5C]" />
+            <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-[#e0eff0]">
+              <BookOpen className="h-4 w-4 text-[#2b676e]" />
             </div>
             <h3 className="text-sm font-bold text-[#1F2937]">Class & Subject Scope</h3>
           </div>
@@ -232,8 +232,8 @@ export default async function TeacherSettingsPage() {
 
       <Card>
         <div className="flex items-center gap-2 mb-4">
-          <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-[#F5E6CC]">
-            <CheckCircle2 className="h-4 w-4 text-[#D69E3F]" />
+          <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-[#fdf0e0]">
+            <CheckCircle2 className="h-4 w-4 text-[#df8d29]" />
           </div>
           <h3 className="text-sm font-bold text-[#1F2937]">Access Granted By Admin</h3>
         </div>
@@ -255,40 +255,40 @@ export default async function TeacherSettingsPage() {
             <h3 className="font-semibold text-[#1F2937]">My Attendance</h3>
             <p className="mt-1 text-sm text-[#6B7280]">Mark your own daily attendance and review previous days.</p>
           </div>
-          <div className="rounded-full bg-[#F5E6CC] px-3 py-1 text-xs font-semibold text-[#D69E3F]">Today: {todayStatus}</div>
+          <div className="rounded-full bg-[#fdf0e0] px-3 py-1 text-xs font-semibold text-[#df8d29]">Today: {todayStatus}</div>
         </div>
 
         {access.STAFF_ATTENDANCE ? (
           <form action={markSelfAttendance} className="mt-4 grid gap-3 md:grid-cols-[220px_1fr_auto]">
-            <select name="status" className="h-10 rounded-xl bg-[#F9FAFB] border border-[#E5E7EB] px-3 text-sm outline-none focus:ring-2 focus:ring-[#1F5A5C]/20" defaultValue="PRESENT">
+            <select name="status" className="h-10 rounded-xl bg-[#edeeef] border-none px-3 text-sm outline-none focus:ring-2 focus:ring-[#1a5058]/20" defaultValue="PRESENT">
               <option value="PRESENT">Present</option>
               <option value="LATE">Late</option>
               <option value="ABSENT">Absent</option>
               <option value="EXCUSED">Excused</option>
             </select>
-            <input name="note" placeholder="Optional note" className="h-10 rounded-xl bg-[#F9FAFB] border border-[#E5E7EB] px-3 text-sm outline-none focus:ring-2 focus:ring-[#1F5A5C]/20" />
-            <button className="h-10 rounded-xl bg-[#1F5A5C] hover:bg-[#1a4a4d] active:scale-[0.98] transition-all px-4 text-sm font-semibold text-white">Mark Attendance</button>
+            <input name="note" placeholder="Optional note" className="h-10 rounded-xl bg-[#edeeef] border-none px-3 text-sm outline-none focus:ring-2 focus:ring-[#1a5058]/20" />
+            <button className="h-10 rounded-xl bg-gradient-to-br from-[#2b676e] to-[#1a5058] shadow-[0_8px_20px_rgba(43,103,110,0.12)] active:scale-[0.98] transition-all px-4 text-sm font-semibold text-white">Mark Attendance</button>
           </form>
         ) : (
-          <p className="mt-4 rounded-xl bg-[#FEE2E2] border border-[#FCA5A5] px-4 py-3 text-sm text-[#991B1B]">Staff attendance module disabled by admin.</p>
+          <p className="mt-4 rounded-xl bg-[#fde8e8] px-4 py-3 text-sm text-[#ba1a1a]">Staff attendance module disabled by admin.</p>
         )}
 
         <div className="mt-6">
-          <h4 className="mb-2 text-sm font-semibold text-[#1F2937]">Attendance Calendar ({currentMonth.toLocaleDateString('en-US', { month: 'long', year: 'numeric' })})</h4>
+          <h4 className="mb-2 text-sm font-semibold text-[#1a1c1c]">Attendance Calendar ({currentMonth.toLocaleDateString('en-US', { month: 'long', year: 'numeric' })})</h4>
           <div className="grid grid-cols-7 gap-2">
             {Array.from({ length: daysInMonth }, (_, idx) => idx + 1).map((day) => {
               const dateObj = new Date(currentMonth.getFullYear(), currentMonth.getMonth(), day);
               const key = dateObj.toISOString().slice(0, 10);
               const status = monthlyMap.get(key) ?? 'UNMARKED';
               const style = status === 'PRESENT'
-                ? 'bg-[#D1FAE5] text-[#10B981]'
+                ? 'bg-[#e8f5e9] text-[#1a5058]'
                 : status === 'LATE'
-                  ? 'bg-[#F5E6CC] text-[#D69E3F]'
+                  ? 'bg-[#fff3e0] text-[#865300]'
                   : status === 'ABSENT'
-                    ? 'bg-[#FEE2E2] text-[#EF4444]'
+                    ? 'bg-[#fde8e8] text-[#ba1a1a]'
                     : status === 'EXCUSED'
-                      ? 'bg-[#E0EBEC] text-[#1F5A5C]'
-                      : 'bg-[#F9FAFB] text-[#6B7280]';
+                      ? 'bg-[#e8f0ff] text-[#1a4bcc]'
+                      : 'bg-[#f3f4f5] text-[#6f7979]';
 
               return (
                 <div key={key} className={`rounded-xl px-2 py-2 text-center text-xs ${style}`}>
@@ -303,22 +303,22 @@ export default async function TeacherSettingsPage() {
         <div className="mt-6 overflow-x-auto">
           <table className="w-full min-w-[540px] text-sm">
             <thead>
-              <tr className="border-b border-[#E5E7EB]">
-                <th className="pb-2 text-left text-[10px] font-bold uppercase tracking-widest text-[#6B7280]">Date</th>
-                <th className="pb-2 text-left text-[10px] font-bold uppercase tracking-widest text-[#6B7280]">Status</th>
-                <th className="pb-2 text-left text-[10px] font-bold uppercase tracking-widest text-[#6B7280]">Note</th>
-                <th className="pb-2 text-left text-[10px] font-bold uppercase tracking-widest text-[#6B7280]">Updated</th>
+              <tr className="border-b border-[#e2e8e8]">
+                <th className="pb-2 text-left text-[10px] font-bold uppercase tracking-widest text-[#6f7979]">Date</th>
+                <th className="pb-2 text-left text-[10px] font-bold uppercase tracking-widest text-[#6f7979]">Status</th>
+                <th className="pb-2 text-left text-[10px] font-bold uppercase tracking-widest text-[#6f7979]">Note</th>
+                <th className="pb-2 text-left text-[10px] font-bold uppercase tracking-widest text-[#6f7979]">Updated</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-[#E5E7EB]">
+            <tbody className="divide-y divide-[#e2e8e8]">
               {recentAttendance.map((row) => (
                 <tr key={`${new Date(row.date).toISOString()}-${new Date(row.markedAt).toISOString()}`}>
-                  <td className="py-3 font-medium text-[#1F2937]">{new Date(row.date).toLocaleDateString('en-CA')}</td>
+                  <td className="py-3 font-medium text-[#1a1c1c]">{new Date(row.date).toLocaleDateString('en-CA')}</td>
                   <td className="py-3">
                     <span className={`rounded-full px-2 py-0.5 text-[10px] font-bold ${getStatusColor(row.status)}`}>{row.status}</span>
                   </td>
-                  <td className="py-3 text-[#6B7280]">{row.note || '-'}</td>
-                  <td className="py-3 text-[#6B7280]">{new Date(row.markedAt).toLocaleString('en-US', { hour: '2-digit', minute: '2-digit', year: 'numeric', month: '2-digit', day: '2-digit' })}</td>
+                  <td className="py-3 text-[#6f7979]">{row.note || '-'}</td>
+                  <td className="py-3 text-[#6f7979]">{new Date(row.markedAt).toLocaleString('en-US', { hour: '2-digit', minute: '2-digit', year: 'numeric', month: '2-digit', day: '2-digit' })}</td>
                 </tr>
               ))}
             </tbody>

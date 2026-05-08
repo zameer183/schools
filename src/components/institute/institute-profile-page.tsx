@@ -1,134 +1,78 @@
 import Link from 'next/link';
 import { prisma } from '@/lib/prisma';
+import { MapPin, Phone, Mail, Users, BookOpen, GraduationCap, ArrowLeft } from 'lucide-react';
+import { Card } from '@/components/ui';
 
-function asCurrency(value: unknown) {
-  return Number(value ?? 0).toLocaleString('en-US');
-}
-
-export async function InstituteProfilePage({
-  backHref,
-  backLabel
-}: {
+interface InstituteProfilePageProps {
   backHref: string;
   backLabel: string;
-}) {
-  const [
-    totalStudents,
-    totalTeachers,
-    totalParents,
-    totalClasses,
-    totalSubjects,
-    totalAttendance,
-    totalResults,
-    totalNotifications,
-    feeAgg,
-    paymentAgg,
-    latestClasses
-  ] = await Promise.all([
+}
+
+export async function InstituteProfilePage({ backHref, backLabel }: InstituteProfilePageProps) {
+  const [studentCount, teacherCount, classCount] = await Promise.all([
     prisma.student.count(),
     prisma.teacher.count(),
-    prisma.parent.count(),
     prisma.class.count(),
-    prisma.subject.count(),
-    prisma.attendance.count(),
-    prisma.result.count(),
-    prisma.notification.count(),
-    prisma.fee.aggregate({ _sum: { amount: true } }),
-    prisma.payment.aggregate({ _sum: { amountPaid: true } }),
-    prisma.class.findMany({
-      select: { id: true, name: true, section: true, academicYear: true },
-      orderBy: { createdAt: 'desc' },
-      take: 6
-    })
   ]);
 
+  const stats = [
+    { icon: <Users className="h-5 w-5 text-[#1F5A5C]" />, bg: 'bg-[#E0EBEC]', label: 'Total Students', value: studentCount },
+    { icon: <GraduationCap className="h-5 w-5 text-[#D69E3F]" />, bg: 'bg-[#F5E6CC]', label: 'Teaching Staff', value: teacherCount },
+    { icon: <BookOpen className="h-5 w-5 text-[#3B82F6]" />, bg: 'bg-[#DBEAFE]', label: 'Active Classes', value: classCount },
+  ];
+
   return (
-    <div className="space-y-4">
-      <section className="rounded-xl border border-[#e2e8e8] bg-white p-4 sm:p-6">
-        <p className="text-[10px] font-bold uppercase tracking-[0.22em] text-[#6f7979]">Institution Profile</p>
-        <h1 className="mt-2 break-words text-2xl font-bold text-[#1a1c1c] sm:text-3xl">Manarah Institute</h1>
-        <p className="mt-2 max-w-3xl text-sm leading-relaxed text-[#5c6668]">
-          Central profile for the institute across admin, teacher, and student panels. This page shows enrollment,
-          academics, attendance, assessment, communication, and fee overview in one place.
-        </p>
-        <div className="mt-4 grid gap-2 text-xs text-[#1a1c1c] sm:flex sm:flex-wrap">
-          <span className="rounded-full bg-[#f3f4f3] px-3 py-1 break-all sm:break-normal">Email: info@manarahinstitute.edu</span>
-          <span className="rounded-full bg-[#f3f4f3] px-3 py-1">Phone: +92 300 0000000</span>
-          <span className="rounded-full bg-[#f3f4f3] px-3 py-1">Campus: Main Academic Block</span>
+    <div className="space-y-6">
+      <div className="flex items-center gap-3">
+        <Link
+          href={backHref}
+          className="inline-flex items-center gap-1.5 rounded-xl border border-[#E5E7EB] bg-white px-3 py-2 text-sm font-medium text-[#374151] hover:bg-[#F9FAFB] transition-colors"
+        >
+          <ArrowLeft className="h-4 w-4" />
+          {backLabel}
+        </Link>
+      </div>
+
+      <div className="rounded-2xl bg-gradient-to-br from-[#1F5A5C] to-[#2a7579] p-8 text-white shadow-[0_8px_24px_rgba(31,90,92,0.2)]">
+        <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-white/20 text-2xl font-black backdrop-blur-sm">
+          🏫
         </div>
-        <div className="mt-5">
-          <Link href={backHref} className="inline-flex w-full justify-center rounded-lg border border-[#d4dee7] px-3 py-2 text-xs font-semibold text-[#1a1c1c] hover:bg-[#f5f7f5] sm:w-auto">
-            Back to {backLabel}
-          </Link>
+        <h1 className="mt-4 text-2xl font-black">School Management System</h1>
+        <p className="mt-1 text-sm text-white/70">Academic Institution</p>
+        <div className="mt-5 flex flex-wrap gap-2">
+          <span className="flex items-center gap-1.5 rounded-full bg-white/15 px-3 py-1 text-xs font-semibold">
+            <MapPin className="h-3 w-3" /> Pakistan
+          </span>
+          <span className="flex items-center gap-1.5 rounded-full bg-white/15 px-3 py-1 text-xs font-semibold">
+            <Phone className="h-3 w-3" /> Contact Admin
+          </span>
+          <span className="flex items-center gap-1.5 rounded-full bg-white/15 px-3 py-1 text-xs font-semibold">
+            <Mail className="h-3 w-3" /> admin@school.com
+          </span>
         </div>
-      </section>
+      </div>
 
-      <section className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-        <article className="rounded-xl border border-[#e2e8e8] bg-white p-4"><p className="text-[10px] font-bold uppercase tracking-widest text-[#6f7979]">Students</p><p className="mt-2 text-3xl font-bold text-[#1a1c1c]">{totalStudents}</p></article>
-        <article className="rounded-xl border border-[#e2e8e8] bg-white p-4"><p className="text-[10px] font-bold uppercase tracking-widest text-[#6f7979]">Teachers</p><p className="mt-2 text-3xl font-bold text-[#1a1c1c]">{totalTeachers}</p></article>
-        <article className="rounded-xl border border-[#e2e8e8] bg-white p-4"><p className="text-[10px] font-bold uppercase tracking-widest text-[#6f7979]">Parents</p><p className="mt-2 text-3xl font-bold text-[#1a1c1c]">{totalParents}</p></article>
-        <article className="rounded-xl border border-[#e2e8e8] bg-white p-4"><p className="text-[10px] font-bold uppercase tracking-widest text-[#6f7979]">Classes</p><p className="mt-2 text-3xl font-bold text-[#1a1c1c]">{totalClasses}</p></article>
-      </section>
-
-      <section className="grid gap-4 lg:grid-cols-3">
-        <article className="rounded-xl border border-[#e2e8e8] bg-white p-5">
-          <h2 className="text-lg font-bold text-[#1a1c1c]">Academic Overview</h2>
-          <p className="mt-3 text-sm text-[#5c6668]">Subjects: <span className="font-semibold text-[#1a1c1c]">{totalSubjects}</span></p>
-          <p className="mt-2 text-sm text-[#5c6668]">Results Published: <span className="font-semibold text-[#1a1c1c]">{totalResults}</span></p>
-          <p className="mt-2 text-sm text-[#5c6668]">Attendance Entries: <span className="font-semibold text-[#1a1c1c]">{totalAttendance}</span></p>
-        </article>
-
-        <article className="rounded-xl border border-[#e2e8e8] bg-white p-5">
-          <h2 className="text-lg font-bold text-[#1a1c1c]">Finance Overview</h2>
-          <p className="mt-3 text-sm text-[#5c6668]">Fee Assigned: <span className="font-semibold text-[#1a1c1c]">${asCurrency(feeAgg._sum.amount)}</span></p>
-          <p className="mt-2 text-sm text-[#5c6668]">Fee Collected: <span className="font-semibold text-[#1a1c1c]">${asCurrency(paymentAgg._sum.amountPaid)}</span></p>
-        </article>
-
-        <article className="rounded-xl border border-[#e2e8e8] bg-white p-5">
-          <h2 className="text-lg font-bold text-[#1a1c1c]">Communication</h2>
-          <p className="mt-3 text-sm text-[#5c6668]">Notifications Sent: <span className="font-semibold text-[#1a1c1c]">{totalNotifications}</span></p>
-        </article>
-      </section>
-
-      <section className="rounded-xl border border-[#e2e8e8] bg-white p-4 sm:p-6">
-        <h2 className="text-lg font-bold text-[#1a1c1c]">Latest Classes</h2>
-        <div className="mt-3 space-y-2 md:hidden">
-          {latestClasses.length === 0 ? (
-            <p className="rounded-lg border border-[#e2e8e8] p-3 text-xs text-[#6f7979]">No class record found.</p>
-          ) : (
-            latestClasses.map((item) => (
-              <div key={item.id} className="rounded-lg border border-[#e2e8e8] p-3">
-                <p className="font-semibold text-[#1a1c1c]">{item.name} - {item.section}</p>
-                <p className="mt-1 text-xs text-[#5c6668]">Academic Year: {item.academicYear}</p>
+      <div className="grid gap-4 sm:grid-cols-3">
+        {stats.map((stat) => (
+          <Card key={stat.label}>
+            <div className="flex items-center gap-3">
+              <div className={`flex h-11 w-11 items-center justify-center rounded-xl ${stat.bg}`}>{stat.icon}</div>
+              <div>
+                <p className="text-2xl font-black text-[#1F2937]">{stat.value.toLocaleString()}</p>
+                <p className="text-xs text-[#6B7280]">{stat.label}</p>
               </div>
-            ))
-          )}
-        </div>
-        <div className="mt-3 overflow-x-auto">
-          <table className="hidden w-full min-w-[540px] text-sm md:table">
-            <thead>
-              <tr className="border-b border-[#e2e8e8]">
-                <th className="pb-2 text-left text-[10px] font-bold uppercase tracking-widest text-[#6f7979]">Class</th>
-                <th className="pb-2 text-left text-[10px] font-bold uppercase tracking-widest text-[#6f7979]">Section</th>
-                <th className="pb-2 text-left text-[10px] font-bold uppercase tracking-widest text-[#6f7979]">Academic Year</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-[#e2e8e8]">
-              {latestClasses.length === 0 ? (
-                <tr><td colSpan={3} className="py-4 text-center text-xs text-[#6f7979]">No class record found.</td></tr>
-              ) : (
-                latestClasses.map((item) => (
-                  <tr key={item.id}>
-                    <td className="py-2.5 font-medium text-[#1a1c1c]">{item.name}</td>
-                    <td className="py-2.5 text-[#1a1c1c]">{item.section}</td>
-                    <td className="py-2.5 text-[#5c6668]">{item.academicYear}</td>
-                  </tr>
-                ))
-              )}
-            </tbody>
-          </table>
-        </div>
-      </section>
+            </div>
+          </Card>
+        ))}
+      </div>
+
+      <Card>
+        <h3 className="mb-4 text-sm font-bold text-[#1F2937]">About</h3>
+        <p className="text-sm text-[#6B7280] leading-relaxed">
+          This institution is committed to providing quality education. For detailed institutional
+          information, contact your administrator.
+        </p>
+      </Card>
     </div>
   );
 }

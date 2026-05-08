@@ -1,7 +1,6 @@
 'use client';
 
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import { PageHeader, Card } from '@/components/ui';
 
 type ClassItem = { id: string; name: string; section: string };
 type SubjectItem = { id: string; name: string; code: string; classId: string };
@@ -153,36 +152,34 @@ export default function TeacherAssignmentsPage() {
 
   return (
     <div className="space-y-6">
-      <PageHeader
-        title="Assignments"
-        subtitle="Create and manage assignments for your classes."
-      />
+      <div className="rounded-2xl bg-white shadow-[0_12px_40px_rgba(43,103,110,0.06)] p-4 sm:p-6">
+        <h2 className="font-headline text-2xl sm:text-3xl font-bold text-[#1a1c1c]">Assignments</h2>
+        <p className="mt-2 text-[#5c6668]">Create and manage assignments for your classes.</p>
 
-      <Card>
-        <form onSubmit={submit} className="grid gap-4 md:grid-cols-2">
+        <form onSubmit={submit} className="mt-6 grid gap-4 md:grid-cols-2">
           <input
-            className="h-11 rounded-xl bg-[#F9FAFB] border border-[#E5E7EB] px-4 text-sm text-[#1F2937] placeholder:text-[#6B7280] focus:ring-2 focus:ring-[#1F5A5C]/20 outline-none"
+            className="h-11 rounded-xl bg-[#edeeef] border-none px-3 text-sm text-[#1a1c1c] placeholder:text-[#6e7778] focus:ring-2 focus:ring-[#1a5058]/20 outline-none"
             placeholder="Assignment title"
             value={form.title}
             onChange={(e) => setForm((s) => ({ ...s, title: e.target.value }))}
             required
           />
           <input
-            className="h-11 rounded-xl bg-[#F9FAFB] border border-[#E5E7EB] px-3 text-sm text-[#1F2937] focus:ring-2 focus:ring-[#1F5A5C]/20 outline-none"
+            className="h-11 rounded-xl bg-[#edeeef] border-none px-3 text-sm text-[#1a1c1c] focus:ring-2 focus:ring-[#1a5058]/20 outline-none"
             type="date"
             value={form.dueDate}
             onChange={(e) => setForm((s) => ({ ...s, dueDate: e.target.value }))}
             required
           />
           <textarea
-            className="min-h-28 rounded-xl bg-[#F9FAFB] border border-[#E5E7EB] p-4 text-sm text-[#1F2937] placeholder:text-[#6B7280] focus:ring-2 focus:ring-[#1F5A5C]/20 outline-none md:col-span-2"
+            className="min-h-28 rounded-xl bg-[#edeeef] border-none p-3 text-sm text-[#1a1c1c] placeholder:text-[#6e7778] focus:border-[#1a5058] focus:outline-none md:col-span-2"
             placeholder="Assignment description"
             value={form.description}
             onChange={(e) => setForm((s) => ({ ...s, description: e.target.value }))}
             required
           />
           <select
-            className="h-11 rounded-xl bg-[#F9FAFB] border border-[#E5E7EB] px-4 text-sm text-[#1F2937] focus:ring-2 focus:ring-[#1F5A5C]/20 outline-none"
+            className="h-11 rounded-xl bg-[#edeeef] border-none px-3 text-sm text-[#1a1c1c] focus:ring-2 focus:ring-[#1a5058]/20 outline-none"
             value={form.classId}
             onChange={(e) => {
               const classId = e.target.value;
@@ -198,7 +195,7 @@ export default function TeacherAssignmentsPage() {
             ))}
           </select>
           <select
-            className="h-11 rounded-xl bg-[#F9FAFB] border border-[#E5E7EB] px-4 text-sm text-[#1F2937] focus:ring-2 focus:ring-[#1F5A5C]/20 outline-none"
+            className="h-11 rounded-xl bg-[#edeeef] border-none px-3 text-sm text-[#1a1c1c] focus:ring-2 focus:ring-[#1a5058]/20 outline-none"
             value={form.subjectId}
             onChange={(e) => setForm((s) => ({ ...s, subjectId: e.target.value }))}
             required
@@ -209,7 +206,7 @@ export default function TeacherAssignmentsPage() {
             ))}
           </select>
           <input
-            className="h-11 rounded-xl bg-[#F9FAFB] border border-[#E5E7EB] px-3 text-sm text-[#1F2937] focus:ring-2 focus:ring-[#1F5A5C]/20 outline-none"
+            className="h-11 rounded-xl bg-[#edeeef] border-none px-3 text-sm text-[#1a1c1c] focus:ring-2 focus:ring-[#1a5058]/20 outline-none"
             type="number"
             min={1}
             max={1000}
@@ -221,54 +218,54 @@ export default function TeacherAssignmentsPage() {
           <div className="md:col-span-2">
             <button
               disabled={saving || loading}
-              className="h-11 rounded-xl bg-gradient-to-br from-[#1F5A5C] to-[#2a7579] shadow-[0_8px_20px_rgba(31,90,92,0.12)] active:scale-[0.98] transition-all px-6 font-semibold text-white disabled:cursor-not-allowed disabled:opacity-60"
+              className="h-11 rounded-xl bg-gradient-to-br from-[#2b676e] to-[#1a5058] shadow-[0_8px_20px_rgba(43,103,110,0.12)] active:scale-[0.98] transition-all px-6 font-semibold text-white disabled:cursor-not-allowed disabled:opacity-60"
             >
               {saving ? 'Publishing...' : 'Publish Assignment'}
             </button>
           </div>
         </form>
 
-        {message ? <p className={`mt-4 rounded-lg px-4 py-3 text-sm font-medium ${message.includes('successfully') ? 'bg-[#D1FAE5] text-[#065F46]' : 'bg-[#FEE2E2] text-[#991B1B]'}`}>{message}</p> : null}
-      </Card>
+        {message ? <p className="mt-3 rounded-xl bg-[#f3f4f3] px-4 py-3 text-sm text-[#1a1c1c]">{message}</p> : null}
+      </div>
 
-      <Card>
-        <h3 className="font-semibold text-[#1F2937] mb-4">Published Assignments</h3>
-        <div className="space-y-2 md:hidden">
+      <div className="rounded-2xl bg-white shadow-[0_12px_40px_rgba(43,103,110,0.06)] p-4 sm:p-6">
+        <h3 className="font-headline font-semibold text-[#1a1c1c]">Published Assignments</h3>
+        <div className="mt-4 space-y-2 md:hidden">
           {assignments.map((assignment) => (
-            <div key={assignment.id} className="rounded-lg bg-[#F9FAFB] border border-[#E5E7EB] p-4">
-              <p className="text-sm font-semibold text-[#1F2937]">{assignment.title}</p>
-              <p className="mt-1 text-xs text-[#6B7280]">Class: {assignment.class.name} - {assignment.class.section}</p>
-              <p className="mt-1 text-xs text-[#6B7280]">Subject: {assignment.subject.name}</p>
-              <p className="mt-1 text-xs text-[#6B7280]">Due: {new Date(assignment.dueDate).toLocaleDateString()}</p>
-              <p className="mt-1 text-xs text-[#6B7280]">Submissions: {assignment._count.submissions}</p>
-              <span className={`mt-2 inline-flex rounded-full px-3 py-1 text-[10px] font-semibold ${assignment.status === 'PUBLISHED' ? 'bg-[#D1FAE5] text-[#065F46]' : assignment.status === 'CLOSED' ? 'bg-[#FEE2E2] text-[#991B1B]' : 'bg-[#F3F4F5] text-[#6B7280]'}`}>
+            <div key={assignment.id} className="rounded-xl bg-[#f3f4f5] p-3">
+              <p className="text-sm font-semibold text-[#1a1c1c]">{assignment.title}</p>
+              <p className="mt-1 text-xs text-[#596364]">Class: {assignment.class.name} - {assignment.class.section}</p>
+              <p className="mt-1 text-xs text-[#596364]">Subject: {assignment.subject.name}</p>
+              <p className="mt-1 text-xs text-[#596364]">Due: {new Date(assignment.dueDate).toLocaleDateString()}</p>
+              <p className="mt-1 text-xs text-[#596364]">Submissions: {assignment._count.submissions}</p>
+              <span className={`mt-2 inline-flex rounded-full px-2.5 py-1 text-[10px] font-semibold ${assignment.status === 'PUBLISHED' ? 'bg-emerald-100 text-emerald-700' : assignment.status === 'CLOSED' ? 'bg-rose-100 text-rose-700' : 'bg-[#f3f4f3] text-[#596364]'}`}>
                 {assignment.status}
               </span>
             </div>
           ))}
         </div>
-        <div className="overflow-x-auto">
+        <div className="mt-4 overflow-x-auto">
           <table className="hidden min-w-full text-sm md:table">
-            <thead className="bg-[#F9FAFB] text-[#6B7280] border-b border-[#E5E7EB]">
+            <thead className="bg-[#f3f4f3] text-[#596364]">
               <tr>
-                <th className="px-4 py-3 text-left text-[10px] font-bold uppercase tracking-widest">Title</th>
-                <th className="px-4 py-3 text-left text-[10px] font-bold uppercase tracking-widest">Class</th>
-                <th className="px-4 py-3 text-left text-[10px] font-bold uppercase tracking-widest">Subject</th>
-                <th className="px-4 py-3 text-left text-[10px] font-bold uppercase tracking-widest">Due Date</th>
-                <th className="px-4 py-3 text-left text-[10px] font-bold uppercase tracking-widest">Submissions</th>
-                <th className="px-4 py-3 text-left text-[10px] font-bold uppercase tracking-widest">Status</th>
+                <th className="px-3 py-3 text-left text-[10px] font-bold uppercase tracking-[0.18em]">Title</th>
+                <th className="px-3 py-3 text-left text-[10px] font-bold uppercase tracking-[0.18em]">Class</th>
+                <th className="px-3 py-3 text-left text-[10px] font-bold uppercase tracking-[0.18em]">Subject</th>
+                <th className="px-3 py-3 text-left text-[10px] font-bold uppercase tracking-[0.18em]">Due Date</th>
+                <th className="px-3 py-3 text-left text-[10px] font-bold uppercase tracking-[0.18em]">Submissions</th>
+                <th className="px-3 py-3 text-left text-[10px] font-bold uppercase tracking-[0.18em]">Status</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-[#E5E7EB]">
+            <tbody>
               {assignments.map((assignment) => (
-                <tr key={assignment.id} className="hover:bg-[#F9FAFB] transition-colors">
-                  <td className="px-4 py-3 font-semibold text-[#1F2937]">{assignment.title}</td>
-                  <td className="px-4 py-3 text-[#6B7280]">{assignment.class.name} - {assignment.class.section}</td>
-                  <td className="px-4 py-3 text-[#6B7280]">{assignment.subject.name}</td>
-                  <td className="px-4 py-3 text-[#6B7280]">{new Date(assignment.dueDate).toLocaleDateString()}</td>
-                  <td className="px-4 py-3 font-semibold text-[#1F5A5C]">{assignment._count.submissions}</td>
-                  <td className="px-4 py-3">
-                    <span className={`rounded-full px-3 py-1 text-xs font-semibold ${assignment.status === 'PUBLISHED' ? 'bg-[#D1FAE5] text-[#065F46]' : assignment.status === 'CLOSED' ? 'bg-[#FEE2E2] text-[#991B1B]' : 'bg-[#F3F4F5] text-[#6B7280]'}`}>
+                <tr key={assignment.id} className="border-b border-[#eef1f1]">
+                  <td className="px-3 py-3 font-semibold text-[#1a1c1c]">{assignment.title}</td>
+                  <td className="px-3 py-3 text-[#596364]">{assignment.class.name} - {assignment.class.section}</td>
+                  <td className="px-3 py-3 text-[#596364]">{assignment.subject.name}</td>
+                  <td className="px-3 py-3 text-[#596364]">{new Date(assignment.dueDate).toLocaleDateString()}</td>
+                  <td className="px-3 py-3 font-semibold text-[#1a5058]">{assignment._count.submissions}</td>
+                  <td className="px-3 py-3">
+                    <span className={`rounded-full px-2.5 py-1 text-xs font-semibold ${assignment.status === 'PUBLISHED' ? 'bg-emerald-100 text-emerald-700' : assignment.status === 'CLOSED' ? 'bg-rose-100 text-rose-700' : 'bg-[#f3f4f3] text-[#596364]'}`}>
                       {assignment.status}
                     </span>
                   </td>
@@ -277,8 +274,8 @@ export default function TeacherAssignmentsPage() {
             </tbody>
           </table>
         </div>
-        {assignments.length === 0 ? <p className="mt-4 text-sm text-[#6B7280]">No assignments in this class yet.</p> : null}
-      </Card>
+        {assignments.length === 0 ? <p className="mt-4 text-sm text-[#5c6668]">No assignments in this class yet.</p> : null}
+      </div>
     </div>
   );
 }

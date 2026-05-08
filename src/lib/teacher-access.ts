@@ -1,7 +1,17 @@
-import { Prisma } from '@prisma/client';
 import { prisma } from '@/lib/prisma';
 
-export const TEACHER_ACCESS_MODULES = [
+export type TeacherAccessModule =
+  | 'ACADEMICS'
+  | 'STUDENTS'
+  | 'ATTENDANCE'
+  | 'STAFF_ATTENDANCE'
+  | 'ASSIGNMENTS'
+  | 'PROGRESS'
+  | 'MESSAGES'
+  | 'EXAMS'
+  | 'FEES';
+
+export const TEACHER_ACCESS_MODULES: TeacherAccessModule[] = [
   'ACADEMICS',
   'STUDENTS',
   'ATTENDANCE',
@@ -10,13 +20,36 @@ export const TEACHER_ACCESS_MODULES = [
   'PROGRESS',
   'MESSAGES',
   'EXAMS',
-  'FEES'
-] as const;
+  'FEES',
+];
 
-export type TeacherAccessModule = (typeof TEACHER_ACCESS_MODULES)[number];
 export type TeacherAccessMap = Record<TeacherAccessModule, boolean>;
+export type TeacherCompensation = {
+  baseSalary: number;
+  bonus: number;
+  deduction: number;
+  netSalary: number;
+};
 
-export const DEFAULT_TEACHER_ACCESS: TeacherAccessMap = {
+type AccessRow = {
+  ACADEMICS: boolean;
+  STUDENTS: boolean;
+  ATTENDANCE: boolean;
+  STAFF_ATTENDANCE: boolean;
+  ASSIGNMENTS: boolean;
+  PROGRESS: boolean;
+  MESSAGES: boolean;
+  EXAMS: boolean;
+  FEES: boolean;
+};
+
+type CompensationRow = {
+  baseSalary: string | number;
+  bonus: string | number;
+  deduction: string | number;
+};
+
+const DEFAULT_ACCESS: TeacherAccessMap = {
   ACADEMICS: true,
   STUDENTS: true,
   ATTENDANCE: true,
@@ -25,251 +58,148 @@ export const DEFAULT_TEACHER_ACCESS: TeacherAccessMap = {
   PROGRESS: true,
   MESSAGES: true,
   EXAMS: true,
-  FEES: false
+  FEES: true,
 };
 
-type TeacherAccessRow = {
-  teacherId: string;
-  module: string;
-  enabled: boolean;
-};
-
-type TeacherCompensationRow = {
-  teacherId: string;
-  baseSalary: unknown;
-  bonus: unknown;
-  deduction: unknown;
-};
-
-let ensureTablesPromise: Promise<void> | null = null;
-let teacherControlTablesAvailable = true;
-
-function toNumber(value: unknown) {
-  if (typeof value === 'number') return value;
-  if (typeof value === 'string') {
-    const parsed = Number(value);
-    return Number.isFinite(parsed) ? parsed : 0;
+export async function ensureTeacherControlTables(): Promise<void> {
+  try {
+    await prisma.$executeRaw`
+      CREATE TABLE IF NOT EXISTS "TeacherAccess" (
+        "id" TEXT PRIMARY KEY,
+        "teacherId" TEXT NOT NULL UNIQUE REFERENCES "Teacher"("id") ON DELETE CASCADE,
+        "ACADEMICS" BOOLEAN NOT NULL DEFAULT true,
+        "STUDENTS" BOOLEAN NOT NULL DEFAULT true,
+        "ATTENDANCE" BOOLEAN NOT NULL DEFAULT true,
+        "STAFF_ATTENDANCE" BOOLEAN NOT NULL DEFAULT true,
+        "ASSIGNMENTS" BOOLEAN NOT NULL DEFAULT true,
+        "PROGRESS" BOOLEAN NOT NULL DEFAULT true,
+        "MESSAGES" BOOLEAN NOT NULL DEFAULT true,
+        "EXAMS" BOOLEAN NOT NULL DEFAULT true,
+        "FEES" BOOLEAN NOT NULL DEFAULT true,
+        "updatedAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP
+      );
+    `;
+    await prisma.$executeRaw`
+      CREATE TABLE IF NOT EXISTS "TeacherCompensation" (
+        "id" TEXT PRIMARY KEY,
+        "teacherId" TEXT NOT NULL UNIQUE REFERENCES "Teacher"("id") ON DELETE CASCADE,
+        "baseSalary" DECIMAL(12,2) NOT NULL DEFAULT 0,
+        "bonus" DECIMAL(12,2) NOT NULL DEFAULT 0,
+        "deduction" DECIMAL(12,2) NOT NULL DEFAULT 0,
+        "updatedAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP
+      );
+    `;
+  } catch (error) {
+    console.error('[teacher-access] ensureTeacherControlTables failed', error);
   }
-
-  if (value && typeof value === 'object' && 'toString' in value) {
-    const parsed = Number(String(value));
-    return Number.isFinite(parsed) ? parsed : 0;
-  }
-
-  return 0;
-}
-
-export async function ensureTeacherControlTables() {
-  if (!teacherControlTablesAvailable) return;
-
-  if (!ensureTablesPromise) {
-    ensureTablesPromise = (async () => {
-      try {
-        await prisma.$executeRaw`
-          CREATE TABLE IF NOT EXISTS "TeacherAccess" (
-            "id" TEXT PRIMARY KEY,
-            "teacherId" TEXT NOT NULL REFERENCES "Teacher"("id") ON DELETE CASCADE,
-            "module" TEXT NOT NULL,
-            "enabled" BOOLEAN NOT NULL DEFAULT TRUE,
-            "updatedAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
-            UNIQUE ("teacherId", "module")
-          );
-        `;
-
-        await prisma.$executeRaw`
-          CREATE TABLE IF NOT EXISTS "TeacherCompensation" (
-            "id" TEXT PRIMARY KEY,
-            "teacherId" TEXT NOT NULL UNIQUE REFERENCES "Teacher"("id") ON DELETE CASCADE,
-            "baseSalary" NUMERIC(12,2) NOT NULL DEFAULT 0,
-            "bonus" NUMERIC(12,2) NOT NULL DEFAULT 0,
-            "deduction" NUMERIC(12,2) NOT NULL DEFAULT 0,
-            "updatedAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP
-          );
-        `;
-      } catch (error) {
-        teacherControlTablesAvailable = false;
-        console.error('[teacher-access] unable to ensure control tables', error);
-      }
-    })();
-  }
-
-  await ensureTablesPromise;
 }
 
 export async function getTeacherAccessMapByTeacherId(teacherId: string): Promise<TeacherAccessMap> {
-  if (!teacherControlTablesAvailable) return { ...DEFAULT_TEACHER_ACCESS };
-
-  const rows = await prisma.$queryRaw<TeacherAccessRow[]>`
-    SELECT "teacherId", "module", "enabled"
-    FROM "TeacherAccess"
-    WHERE "teacherId" = ${teacherId};
-  `;
-
-  const map: TeacherAccessMap = { ...DEFAULT_TEACHER_ACCESS };
-
-  for (const row of rows) {
-    const moduleKey = row.module as TeacherAccessModule;
-    if (TEACHER_ACCESS_MODULES.includes(moduleKey)) {
-      map[moduleKey] = Boolean(row.enabled);
-    }
-  }
-
-  return map;
-}
-
-export async function getTeacherAccessMapByUserId(userId: string): Promise<TeacherAccessMap | null> {
-  await ensureTeacherControlTables();
-  const teacher = await prisma.teacher.findUnique({ where: { userId }, select: { id: true } });
-  if (!teacher) return null;
-  return getTeacherAccessMapByTeacherId(teacher.id);
-}
-
-export async function upsertTeacherAccess(teacherId: string, access: Partial<TeacherAccessMap>) {
-  await ensureTeacherControlTables();
-  if (!teacherControlTablesAvailable) return;
-
-  for (const moduleKey of TEACHER_ACCESS_MODULES) {
-    const enabled = access[moduleKey] ?? DEFAULT_TEACHER_ACCESS[moduleKey];
-    const rowId = `${teacherId}_${moduleKey}`;
-
-    await prisma.$executeRaw`
-      INSERT INTO "TeacherAccess" ("id", "teacherId", "module", "enabled", "updatedAt")
-      VALUES (${rowId}, ${teacherId}, ${moduleKey}, ${enabled}, NOW())
-      ON CONFLICT ("teacherId", "module")
-      DO UPDATE SET
-        "enabled" = EXCLUDED."enabled",
-        "updatedAt" = NOW();
+  try {
+    const rows = await prisma.$queryRaw<AccessRow[]>`
+      SELECT "ACADEMICS","STUDENTS","ATTENDANCE","STAFF_ATTENDANCE",
+             "ASSIGNMENTS","PROGRESS","MESSAGES","EXAMS","FEES"
+      FROM "TeacherAccess"
+      WHERE "teacherId" = ${teacherId}
+      LIMIT 1;
     `;
+    if (rows.length === 0) return { ...DEFAULT_ACCESS };
+    const row = rows[0];
+    return {
+      ACADEMICS: Boolean(row.ACADEMICS),
+      STUDENTS: Boolean(row.STUDENTS),
+      ATTENDANCE: Boolean(row.ATTENDANCE),
+      STAFF_ATTENDANCE: Boolean(row.STAFF_ATTENDANCE),
+      ASSIGNMENTS: Boolean(row.ASSIGNMENTS),
+      PROGRESS: Boolean(row.PROGRESS),
+      MESSAGES: Boolean(row.MESSAGES),
+      EXAMS: Boolean(row.EXAMS),
+      FEES: Boolean(row.FEES),
+    };
+  } catch {
+    return { ...DEFAULT_ACCESS };
   }
 }
 
-export async function getTeacherCompensationByTeacherId(teacherId: string) {
-  if (!teacherControlTablesAvailable) {
-    return {
-      baseSalary: 0,
-      bonus: 0,
-      deduction: 0,
-      netSalary: 0
-    };
+export async function getTeacherAccessMapByUserId(userId: string): Promise<TeacherAccessMap> {
+  try {
+    const teacher = await prisma.teacher.findUnique({ where: { userId }, select: { id: true } });
+    if (!teacher) return { ...DEFAULT_ACCESS };
+    return getTeacherAccessMapByTeacherId(teacher.id);
+  } catch {
+    return { ...DEFAULT_ACCESS };
   }
+}
 
-  const rows = await prisma.$queryRaw<TeacherCompensationRow[]>`
-    SELECT "teacherId", "baseSalary", "bonus", "deduction"
-    FROM "TeacherCompensation"
-    WHERE "teacherId" = ${teacherId}
-    LIMIT 1;
+export async function hasTeacherAccessByUserId(userId: string, module: TeacherAccessModule): Promise<boolean> {
+  const map = await getTeacherAccessMapByUserId(userId);
+  return map[module];
+}
+
+export async function setTeacherAccessMap(teacherId: string, map: Partial<TeacherAccessMap>): Promise<void> {
+  await ensureTeacherControlTables();
+  const id = `access_${teacherId}`;
+  const current = await getTeacherAccessMapByTeacherId(teacherId);
+  const merged = { ...current, ...map };
+  await prisma.$executeRaw`
+    INSERT INTO "TeacherAccess" (
+      "id","teacherId","ACADEMICS","STUDENTS","ATTENDANCE","STAFF_ATTENDANCE",
+      "ASSIGNMENTS","PROGRESS","MESSAGES","EXAMS","FEES","updatedAt"
+    ) VALUES (
+      ${id},${teacherId},${merged.ACADEMICS},${merged.STUDENTS},${merged.ATTENDANCE},
+      ${merged.STAFF_ATTENDANCE},${merged.ASSIGNMENTS},${merged.PROGRESS},
+      ${merged.MESSAGES},${merged.EXAMS},${merged.FEES},NOW()
+    )
+    ON CONFLICT ("teacherId") DO UPDATE SET
+      "ACADEMICS" = EXCLUDED."ACADEMICS",
+      "STUDENTS" = EXCLUDED."STUDENTS",
+      "ATTENDANCE" = EXCLUDED."ATTENDANCE",
+      "STAFF_ATTENDANCE" = EXCLUDED."STAFF_ATTENDANCE",
+      "ASSIGNMENTS" = EXCLUDED."ASSIGNMENTS",
+      "PROGRESS" = EXCLUDED."PROGRESS",
+      "MESSAGES" = EXCLUDED."MESSAGES",
+      "EXAMS" = EXCLUDED."EXAMS",
+      "FEES" = EXCLUDED."FEES",
+      "updatedAt" = NOW();
   `;
-
-  const row = rows[0];
-  if (!row) {
-    return {
-      baseSalary: 0,
-      bonus: 0,
-      deduction: 0,
-      netSalary: 0
-    };
-  }
-
-  const baseSalary = toNumber(row.baseSalary);
-  const bonus = toNumber(row.bonus);
-  const deduction = toNumber(row.deduction);
-
-  return {
-    baseSalary,
-    bonus,
-    deduction,
-    netSalary: baseSalary + bonus - deduction
-  };
 }
 
-export async function upsertTeacherCompensation(
+export async function getTeacherCompensationByTeacherId(teacherId: string): Promise<TeacherCompensation> {
+  try {
+    const rows = await prisma.$queryRaw<CompensationRow[]>`
+      SELECT "baseSalary","bonus","deduction"
+      FROM "TeacherCompensation"
+      WHERE "teacherId" = ${teacherId}
+      LIMIT 1;
+    `;
+    if (rows.length === 0) return { baseSalary: 0, bonus: 0, deduction: 0, netSalary: 0 };
+    const row = rows[0];
+    const baseSalary = Number(row.baseSalary);
+    const bonus = Number(row.bonus);
+    const deduction = Number(row.deduction);
+    return { baseSalary, bonus, deduction, netSalary: baseSalary + bonus - deduction };
+  } catch {
+    return { baseSalary: 0, bonus: 0, deduction: 0, netSalary: 0 };
+  }
+}
+
+export async function setTeacherCompensation(
   teacherId: string,
   data: { baseSalary?: number; bonus?: number; deduction?: number }
-) {
+): Promise<void> {
   await ensureTeacherControlTables();
-  if (!teacherControlTablesAvailable) return;
-
-  const baseSalary = Number.isFinite(data.baseSalary ?? NaN) ? Number(data.baseSalary) : 0;
-  const bonus = Number.isFinite(data.bonus ?? NaN) ? Number(data.bonus) : 0;
-  const deduction = Number.isFinite(data.deduction ?? NaN) ? Number(data.deduction) : 0;
-  const rowId = `${teacherId}_comp`;
-
+  const id = `comp_${teacherId}`;
+  const current = await getTeacherCompensationByTeacherId(teacherId);
+  const baseSalary = data.baseSalary ?? current.baseSalary;
+  const bonus = data.bonus ?? current.bonus;
+  const deduction = data.deduction ?? current.deduction;
   await prisma.$executeRaw`
-    INSERT INTO "TeacherCompensation" ("id", "teacherId", "baseSalary", "bonus", "deduction", "updatedAt")
-    VALUES (${rowId}, ${teacherId}, ${baseSalary}, ${bonus}, ${deduction}, NOW())
-    ON CONFLICT ("teacherId")
-    DO UPDATE SET
+    INSERT INTO "TeacherCompensation" ("id","teacherId","baseSalary","bonus","deduction","updatedAt")
+    VALUES (${id},${teacherId},${baseSalary},${bonus},${deduction},NOW())
+    ON CONFLICT ("teacherId") DO UPDATE SET
       "baseSalary" = EXCLUDED."baseSalary",
       "bonus" = EXCLUDED."bonus",
       "deduction" = EXCLUDED."deduction",
       "updatedAt" = NOW();
   `;
-}
-
-export async function hasTeacherAccessByUserId(userId: string, module: TeacherAccessModule) {
-  const map = await getTeacherAccessMapByUserId(userId);
-  if (!map) return false;
-  return map[module];
-}
-
-export async function getTeacherAccessMapsByTeacherIds(teacherIds: string[]) {
-  await ensureTeacherControlTables();
-  if (!teacherControlTablesAvailable) return {};
-
-  const result: Record<string, TeacherAccessMap> = {};
-  if (teacherIds.length === 0) return result;
-
-  const rows = await prisma.$queryRaw<TeacherAccessRow[]>(
-    Prisma.sql`
-      SELECT "teacherId", "module", "enabled"
-      FROM "TeacherAccess"
-      WHERE "teacherId" IN (${Prisma.join(teacherIds)});
-    `
-  );
-
-  for (const teacherId of teacherIds) {
-    result[teacherId] = { ...DEFAULT_TEACHER_ACCESS };
-  }
-
-  for (const row of rows) {
-    const moduleKey = row.module as TeacherAccessModule;
-    if (TEACHER_ACCESS_MODULES.includes(moduleKey)) {
-      result[row.teacherId][moduleKey] = Boolean(row.enabled);
-    }
-  }
-
-  return result;
-}
-
-export async function getTeacherCompensationsByTeacherIds(teacherIds: string[]) {
-  await ensureTeacherControlTables();
-
-  const result: Record<string, { baseSalary: number; bonus: number; deduction: number; netSalary: number }> = {};
-  if (teacherIds.length === 0) return result;
-
-  const rows = await prisma.$queryRaw<TeacherCompensationRow[]>(
-    Prisma.sql`
-      SELECT "teacherId", "baseSalary", "bonus", "deduction"
-      FROM "TeacherCompensation"
-      WHERE "teacherId" IN (${Prisma.join(teacherIds)});
-    `
-  );
-
-  for (const teacherId of teacherIds) {
-    result[teacherId] = { baseSalary: 0, bonus: 0, deduction: 0, netSalary: 0 };
-  }
-
-  for (const row of rows) {
-    const baseSalary = toNumber(row.baseSalary);
-    const bonus = toNumber(row.bonus);
-    const deduction = toNumber(row.deduction);
-    result[row.teacherId] = {
-      baseSalary,
-      bonus,
-      deduction,
-      netSalary: baseSalary + bonus - deduction
-    };
-  }
-
-  return result;
 }

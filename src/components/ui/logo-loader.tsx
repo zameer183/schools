@@ -1,29 +1,14 @@
-import Image from 'next/image';
-
-type LogoLoaderProps = {
+interface LogoLoaderProps {
   compact?: boolean;
-};
+}
 
-export default function LogoLoader({ compact = false }: LogoLoaderProps) {
+export default function LogoLoader({ compact }: LogoLoaderProps) {
   return (
-    <div className={`flex min-h-[40vh] w-full items-center justify-center ${compact ? '' : 'min-h-screen bg-[#f8f9fa]'}`}>
-      <div className="flex flex-col items-center gap-4">
-        <div className="rounded-2xl bg-white p-3 shadow-[0_10px_30px_rgba(0,70,73,0.12)] ring-1 ring-[#e2e8e8]">
-          <Image
-            src="/manarah-mark.png"
-            alt="Manarah Institute logo"
-            width={compact ? 170 : 220}
-            height={compact ? 57 : 74}
-            className="h-auto w-auto max-w-full"
-            priority
-          />
-        </div>
-        <div className="flex items-center gap-2 text-sm font-semibold text-[#004649]">
-          <span className="inline-block h-2 w-2 animate-pulse rounded-full bg-[#004649]" />
-          <span>Loading...</span>
-        </div>
+    <div className={`flex items-center justify-center ${compact ? 'py-12' : 'min-h-screen'}`}>
+      <div className="flex flex-col items-center gap-3">
+        <div className="h-10 w-10 animate-spin rounded-full border-4 border-[#e0eff0] border-t-[#2b676e]" />
+        {!compact && <p className="text-sm font-medium text-[#6B7280]">Loading...</p>}
       </div>
     </div>
   );
 }
-

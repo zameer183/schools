@@ -2,7 +2,7 @@ import { UserRole } from '@prisma/client';
 import { unstable_cache } from 'next/cache';
 import { requireAuth } from '@/lib/auth';
 import { prisma } from '@/lib/prisma';
-import { StudentMessagesChatClient, type StudentInboxItem, type StudentOutgoingMap } from './student-messages-chat-client';
+import { StudentMessagesChatClient, type StudentInboxItem, type StudentOutgoingMap, type AvailableTeacher } from './student-messages-chat-client';
 
 export const dynamic = 'force-dynamic';
 
@@ -15,7 +15,7 @@ function toIsoString(value: Date | string | null | undefined) {
 
 const getCachedStudentMessagesData = unstable_cache(
   async (userId: string) => {
-    const [inbox, sent] = await Promise.all([
+    const [inbox, sent, student] = await Promise.all([
       prisma.messageRecipient.findMany({
         where: { userId },
         include: { message: { include: { sender: { select: { id: true, fullName: true, role: true } } } } },
@@ -27,17 +27,51 @@ const getCachedStudentMessagesData = unstable_cache(
         include: {
           recipients: {
             include: {
-              user: {
-                select: { id: true }
-              }
+              user: { select: { id: true } }
             }
           }
         },
         orderBy: { createdAt: 'desc' },
         take: 100
+      }),
+      prisma.student.findUnique({
+        where: { userId },
+        select: {
+          classId: true,
+          class: {
+            select: {
+              subjects: {
+                select: {
+                  teacher: {
+                    select: { user: { select: { id: true, fullName: true } } }
+                  }
+                }
+              },
+              teacherLinks: {
+                select: {
+                  teacher: {
+                    select: { user: { select: { id: true, fullName: true } } }
+                  }
+                }
+              }
+            }
+          }
+        }
       })
     ]);
-    return { inbox, sent };
+
+    const teacherMap = new Map<string, string>();
+    if (student?.class) {
+      for (const sub of student.class.subjects) {
+        if (sub.teacher) teacherMap.set(sub.teacher.user.id, sub.teacher.user.fullName);
+      }
+      for (const ta of student.class.teacherLinks) {
+        teacherMap.set(ta.teacher.user.id, ta.teacher.user.fullName);
+      }
+    }
+    const teachers = Array.from(teacherMap.entries()).map(([id, fullName]) => ({ id, fullName }));
+
+    return { inbox, sent, teachers };
   },
   ['student-messages-page-data'],
   { revalidate: 30 }
@@ -45,7 +79,7 @@ const getCachedStudentMessagesData = unstable_cache(
 
 export default async function StudentMessagesPage() {
   const session = await requireAuth([UserRole.STUDENT]);
-  const { inbox, sent } = await getCachedStudentMessagesData(session.id);
+  const { inbox, sent, teachers } = await getCachedStudentMessagesData(session.id);
 
   const serializedInbox: StudentInboxItem[] = inbox.map((item) => ({
     id: item.id,
@@ -83,5 +117,5 @@ export default async function StudentMessagesPage() {
     }
   }
 
-  return <StudentMessagesChatClient initialInbox={serializedInbox} initialOutgoing={initialOutgoing} />;
+  return <StudentMessagesChatClient initialInbox={serializedInbox} initialOutgoing={initialOutgoing} availableTeachers={teachers} />;
 }

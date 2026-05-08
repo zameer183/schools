@@ -246,82 +246,71 @@ export default async function StudentDashboardPage() {
 
       {/* Daily Progress */}
       <Card>
-        <div className="flex items-center gap-2 mb-4">
-          <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-[#F5E6CC]">
-            <TrendingUp className="h-4 w-4 text-[#D69E3F]" />
+        <div className="flex items-center justify-between mb-1">
+          <div className="flex items-center gap-2">
+            <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-[#F5E6CC]">
+              <TrendingUp className="h-4 w-4 text-[#D69E3F]" />
+            </div>
+            <h3 className="text-sm font-bold text-[#1F2937]">Daily Progress Reports</h3>
           </div>
-          <h3 className="text-sm font-bold text-[#1F2937]">Daily Progress Reports</h3>
+          {progressRows.length > 0 && (
+            <span className="rounded-full bg-[#F5E6CC] px-2.5 py-1 text-[10px] font-bold text-[#D69E3F]">
+              {progressRows.length} entries
+            </span>
+          )}
         </div>
-        <p className="text-xs text-[#6B7280] mb-4">Teacher entered Sabaq, Sabqi, and Manzil notes.</p>
+        <p className="text-xs text-[#6B7280] mb-4 mt-1">Sabaq, Sabqi, and Manzil — entered by teacher daily.</p>
+
         {progressRows.length === 0 ? (
-          <div className="flex flex-col items-center justify-center py-8 text-center">
-            <TrendingUp className="h-10 w-10 text-[#E5E7EB]" />
-            <p className="mt-2 text-sm text-[#9CA3AF]">No progress report published yet</p>
+          <div className="flex flex-col items-center justify-center py-10 text-center">
+            <div className="flex h-14 w-14 items-center justify-center rounded-full bg-[#F9FAFB]">
+              <TrendingUp className="h-7 w-7 text-[#D1D5DB]" />
+            </div>
+            <p className="mt-3 text-sm font-semibold text-[#1F2937]">No progress reports yet</p>
+            <p className="mt-1 text-xs text-[#9CA3AF]">Your teacher will add daily entries here.</p>
           </div>
         ) : (
           <div className="space-y-4">
-            {progressRows.map((row) => (
-              <div key={row.id} className="rounded-lg bg-[#F9FAFB] p-4 border border-[#E5E7EB]">
-                <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-2 mb-3">
-                  <p className="text-sm font-semibold text-[#1F2937]">{toDateString(row.date)}</p>
-                  <p className="text-xs text-[#6B7280]">{(row.class?.name && row.class?.section) ? `${row.class.name} - ${row.class.section}` : 'Class not assigned'} | {row.teacher?.user?.fullName ?? 'Teacher'}</p>
-                </div>
-                {(() => {
-                  const parsed = parseProgressNotes(row.notes);
-                  if (!parsed) {
-                    return <pre className="mt-2 whitespace-pre-wrap text-sm text-[#3e4748]">{row.notes || '-'}</pre>;
-                  }
+            {progressRows.map((row) => {
+              const parsed = parseProgressNotes(row.notes);
+              const sectionThemes = [
+                { title: 'Sabaq', bg: 'bg-[#D1FAE5]', border: 'border-[#A7F3D0]', titleColor: 'text-[#10B981]', fields: parsed ? [{ label: 'Amount', value: parsed.sabaqMiqdar }, { label: 'Performance', value: parsed.sabaqKaifiyat }, { label: 'Tajweedi Errors', value: parsed.sabaqTajweedi }, { label: 'Hifz Errors', value: parsed.sabaqHifz }] : [] },
+                { title: 'Sabqi', bg: 'bg-[#FEF3C7]', border: 'border-[#FDE68A]', titleColor: 'text-[#D69E3F]', fields: parsed ? [{ label: 'Amount', value: parsed.sabqiMiqdar }, { label: 'Performance', value: parsed.sabqiKaifiyat }, { label: 'Tajweedi Errors', value: parsed.sabqiTajweedi }, { label: 'Hifz Errors', value: parsed.sabqiHifz }] : [] },
+                { title: 'Manzil', bg: 'bg-[#E0EBEC]', border: 'border-[#B2D8DB]', titleColor: 'text-[#1F5A5C]', fields: parsed ? [{ label: 'Amount', value: parsed.manzilMiqdar }, { label: 'Performance', value: parsed.manzilKaifiyat }, { label: 'Tajweedi Errors', value: parsed.manzilTajweedi }, { label: 'Hifz Errors', value: parsed.manzilHifz }] : [] },
+              ];
 
-                  const reportSections = [
-                    {
-                      title: 'Sabaq',
-                      fields: [
-                        { label: 'Amount', value: parsed.sabaqMiqdar },
-                        { label: 'Performance', value: parsed.sabaqKaifiyat },
-                        { label: 'Tajweedi', value: parsed.sabaqTajweedi },
-                        { label: 'Hifz', value: parsed.sabaqHifz }
-                      ]
-                    },
-                    {
-                      title: 'Sabqi',
-                      fields: [
-                        { label: 'Amount', value: parsed.sabqiMiqdar },
-                        { label: 'Performance', value: parsed.sabqiKaifiyat },
-                        { label: 'Tajweedi', value: parsed.sabqiTajweedi },
-                        { label: 'Hifz', value: parsed.sabqiHifz }
-                      ]
-                    },
-                    {
-                      title: 'Manzil',
-                      fields: [
-                        { label: 'Amount', value: parsed.manzilMiqdar },
-                        { label: 'Performance', value: parsed.manzilKaifiyat },
-                        { label: 'Tajweedi', value: parsed.manzilTajweedi },
-                        { label: 'Hifz', value: parsed.manzilHifz }
-                      ]
-                    }
-                  ];
-
-                  return (
-                    <div className="mt-3 grid gap-2 md:grid-cols-3">
-                      {reportSections.map((section) => (
-                        <div key={section.title} className="rounded-lg bg-white p-3 border border-[#E5E7EB]">
-                          <p className="text-xs font-bold text-[#1F5A5C]">{section.title}</p>
-                          <div className="mt-2 space-y-2">
+              return (
+                <div key={row.id} className="rounded-xl border border-[#E5E7EB] overflow-hidden">
+                  <div className="flex items-center justify-between bg-[#F9FAFB] px-4 py-2.5 border-b border-[#E5E7EB]">
+                    <p className="text-sm font-bold text-[#1F2937]">{toDateString(row.date)}</p>
+                    <p className="text-xs text-[#6B7280]">
+                      {row.class?.name && row.class?.section ? `${row.class.name} · ${row.class.section}` : 'No class'} &middot; {row.teacher?.user?.fullName ?? 'Teacher'}
+                    </p>
+                  </div>
+                  {!parsed ? (
+                    <pre className="p-4 whitespace-pre-wrap text-sm text-[#3e4748]">{row.notes || '-'}</pre>
+                  ) : (
+                    <div className="grid divide-y divide-[#E5E7EB] md:grid-cols-3 md:divide-x md:divide-y-0">
+                      {sectionThemes.map((section) => (
+                        <div key={section.title} className="p-4">
+                          <div className={`inline-flex items-center rounded-full px-2.5 py-1 text-[10px] font-black uppercase tracking-widest ${section.bg} ${section.titleColor} border ${section.border} mb-3`}>
+                            {section.title}
+                          </div>
+                          <div className="grid grid-cols-2 gap-x-3 gap-y-2">
                             {section.fields.map((field) => (
                               <div key={field.label}>
-                                <p className="text-[11px] font-semibold text-[#6B7280]">{field.label}</p>
-                                <p className="text-sm text-[#1F2937]">{field.value || '-'}</p>
+                                <p className="text-[10px] font-bold uppercase tracking-wider text-[#9CA3AF]">{field.label}</p>
+                                <p className="text-sm font-semibold text-[#1F2937] mt-0.5">{field.value || '—'}</p>
                               </div>
                             ))}
                           </div>
                         </div>
                       ))}
                     </div>
-                  );
-                })()}
-              </div>
-            ))}
+                  )}
+                </div>
+              );
+            })}
           </div>
         )}
       </Card>

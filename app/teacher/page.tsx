@@ -5,7 +5,7 @@ import { requireAuth } from '@/lib/auth';
 import { prisma } from '@/lib/prisma';
 import { getTeacherAccessMapByTeacherId, TEACHER_ACCESS_MODULES } from '@/lib/teacher-access';
 import { PageHeader, KpiCard, Card, StatusBadge, SectionTitle } from '@/components/ui';
-import { BookOpen, Users2, ClipboardList, CheckCircle2, AlertCircle } from 'lucide-react';
+import { BookOpen, Users2, ClipboardList, CheckCircle2 } from 'lucide-react';
 
 export const dynamic = 'force-dynamic';
 
@@ -90,18 +90,9 @@ export default async function TeacherDashboardPage() {
 
   if (!teacher) {
     return (
-      <div className="w-full min-w-0 space-y-5">
-        <section className="rounded-2xl bg-white p-6 shadow-[0_2px_8px_rgba(0,0,0,0.06),0_8px_32px_rgba(0,0,0,0.04)]">
-          <div className="flex flex-col items-center py-10 text-center">
-            <div className="flex h-16 w-16 items-center justify-center rounded-full bg-[#FEE2E2]">
-              <AlertCircle className="h-8 w-8 text-[#EF4444]" strokeWidth={1.5} />
-            </div>
-            <h2 className="mt-4 text-xl font-bold text-[#111827]">Teacher Profile Missing</h2>
-            <p className="mt-2 max-w-sm text-sm leading-relaxed text-[#6B7280]">
-              Your account is active but no teacher profile is linked yet. Please contact your administrator to link a teacher profile to this account.
-            </p>
-          </div>
-        </section>
+      <div className="rounded-2xl bg-white shadow-[0_12px_40px_rgba(43,103,110,0.06)] p-8">
+        <h2 className="font-headline text-3xl font-bold text-[#1a1c1c]">Teacher Profile Missing</h2>
+        <p className="mt-2 text-sm text-[#6f7979]">Your account is active but no teacher profile is linked yet. Contact admin.</p>
       </div>
     );
   }
@@ -145,12 +136,12 @@ export default async function TeacherDashboardPage() {
         <Card>
           <div className="flex items-center justify-between mb-4">
             <div className="flex items-center gap-2">
-              <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-[#F5E6CC]">
-                <ClipboardList className="h-4 w-4 text-[#D69E3F]" />
+              <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-[#fdf0e0]">
+                <ClipboardList className="h-4 w-4 text-[#df8d29]" />
               </div>
               <p className="text-sm font-bold text-[#1F2937]">Recent Assignments</p>
             </div>
-            <Link href="/teacher/assignments" className="text-xs font-semibold text-[#D69E3F] hover:underline">
+            <Link href="/teacher/assignments" className="text-xs font-semibold text-[#df8d29] hover:underline">
               Manage
             </Link>
           </div>
@@ -176,12 +167,12 @@ export default async function TeacherDashboardPage() {
         <Card>
           <div className="flex items-center justify-between mb-4">
             <div className="flex items-center gap-2">
-              <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-[#E0EBEC]">
-                <BookOpen className="h-4 w-4 text-[#1F5A5C]" />
+              <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-[#e0eff0]">
+                <BookOpen className="h-4 w-4 text-[#2b676e]" />
               </div>
               <p className="text-sm font-bold text-[#1F2937]">My Classes</p>
             </div>
-            <Link href="/teacher/attendance" className="text-xs font-semibold text-[#1F5A5C] hover:underline">
+            <Link href="/teacher/attendance" className="text-xs font-semibold text-[#2b676e] hover:underline">
               Mark attendance
             </Link>
           </div>
