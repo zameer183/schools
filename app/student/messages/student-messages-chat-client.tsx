@@ -99,7 +99,7 @@ function buildConversations(inbox: StudentInboxItem[], outgoing: Record<string, 
         senderId: sender.id,
         senderName: sender.fullName,
         senderRole: sender.role,
-        isOnline: Date.now() - new Date(row.message.createdAt).getTime() < 24 * 60 * 60 * 1000,
+        isOnline: false, // computed post-mount to avoid hydration mismatch
         unreadCount: row.isRead || locallyRead.has(sender.id) ? 0 : 1,
         latestAt: row.message.createdAt,
         latestPreview: row.message.body,
@@ -154,6 +154,7 @@ export function StudentMessagesChatClient({
   initialOutgoing?: StudentOutgoingMap;
   availableTeachers?: AvailableTeacher[];
 }) {
+  const [mounted, setMounted] = useState(false);
   const [category, setCategory] = useState<CategoryKey>('all');
   const [search, setSearch] = useState('');
   const [activeId, setActiveId] = useState<string | null>(null);
@@ -185,6 +186,8 @@ export function StudentMessagesChatClient({
       return categoryMatch && searchMatch;
     });
   }, [conversations, category, search]);
+
+  useEffect(() => { setMounted(true); }, []);
 
   useEffect(() => {
     if (!activeId && filteredConversations[0]?.id) {
@@ -374,7 +377,7 @@ export function StudentMessagesChatClient({
               <div className="min-w-0 flex-1">
                 <div className="flex items-start justify-between gap-2">
                   <p className="truncate text-sm font-bold text-[#1a2b3d]">{chat.senderName}</p>
-                  <p className="shrink-0 text-[11px] text-[#8293a3]">{formatTime(chat.latestAt)}</p>
+                  <p className="shrink-0 text-[11px] text-[#8293a3]" suppressHydrationWarning>{mounted ? formatTime(chat.latestAt) : ''}</p>
                 </div>
                 <p className="truncate text-xs text-[#5b6b7c]">{chat.latestPreview}</p>
               </div>
@@ -434,8 +437,8 @@ export function StudentMessagesChatClient({
                   }`}
                 >
                   <p className="whitespace-pre-wrap">{message.body}</p>
-                  <div className={`mt-1 text-[10px] ${message.direction === 'out' ? 'text-[#d8f2f2]' : 'text-[#8aa0b3]'}`}>
-                    {formatTime(message.createdAt)} {message.pending ? '• Sending' : ''}
+                  <div className={`mt-1 text-[10px] ${message.direction === 'out' ? 'text-[#d8f2f2]' : 'text-[#8aa0b3]'}`} suppressHydrationWarning>
+                    {mounted ? formatTime(message.createdAt) : ''} {message.pending ? '• Sending' : ''}
                   </div>
                 </div>
               </div>

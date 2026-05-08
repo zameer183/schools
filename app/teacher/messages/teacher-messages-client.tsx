@@ -88,7 +88,7 @@ function buildConversations(
         map.set(pid, {
           personId: pid,
           personName: msg.senderName,
-          isOnline: Date.now() - new Date(msg.createdAt).getTime() < 24 * 60 * 60 * 1000,
+          isOnline: false, // computed post-mount to avoid hydration mismatch
           unreadCount: msg.isRead || locallyRead.has(pid) ? 0 : 1,
           latestAt: msg.createdAt,
           latestPreview: msg.body,
@@ -161,6 +161,7 @@ interface TeacherMessagesClientProps {
 }
 
 export function TeacherMessagesClient({ messages, recipients }: TeacherMessagesClientProps) {
+  const [mounted, setMounted] = useState(false);
   const [category, setCategory] = useState<CategoryKey>('all');
   const [search, setSearch] = useState('');
   const [activeId, setActiveId] = useState<string | null>(null);
@@ -174,6 +175,8 @@ export function TeacherMessagesClient({ messages, recipients }: TeacherMessagesC
   const [composeBody, setComposeBody] = useState('');
   const [selectedRecipients, setSelectedRecipients] = useState<Set<string>>(new Set());
   const [isComposeSending, setIsComposeSending] = useState(false);
+
+  useEffect(() => { setMounted(true); }, []);
 
   const allConversations = useMemo(
     () => buildConversations(messages, locallyRead, localSent),
@@ -218,7 +221,7 @@ export function TeacherMessagesClient({ messages, recipients }: TeacherMessagesC
   };
 
   const handleSend = async () => {
-    if (!activeConv || draft.trim().length < 1 || isSending) return;
+    if (!activeConv || draft.trim().length < 2 || isSending) return;
     const text = draft.trim();
     const tempId = `tmp-${Date.now()}`;
     const optimistic: ConvMessage = {
@@ -414,7 +417,7 @@ export function TeacherMessagesClient({ messages, recipients }: TeacherMessagesC
                   <p className={`truncate text-sm font-bold text-[#1a2b3d] ${conv.unreadCount > 0 ? 'font-extrabold' : ''}`}>
                     {conv.personName}
                   </p>
-                  <p className="shrink-0 text-[11px] text-[#8293a3]">{formatTime(conv.latestAt)}</p>
+                  <p className="shrink-0 text-[11px] text-[#8293a3]" suppressHydrationWarning>{mounted ? formatTime(conv.latestAt) : ''}</p>
                 </div>
                 <p className={`truncate text-xs ${conv.unreadCount > 0 ? 'text-[#1a2b3d] font-semibold' : 'text-[#5b6b7c]'}`}>
                   {conv.latestPreview}
@@ -460,13 +463,13 @@ export function TeacherMessagesClient({ messages, recipients }: TeacherMessagesC
               <div>
                 <p className="text-sm font-bold text-[#1a2b3d]">{activeConv.personName}</p>
                 <p className="flex items-center gap-1 text-xs text-[#607080]">
-                  <Circle className={`h-2.5 w-2.5 fill-current ${activeConv.isOnline ? 'text-[#22c55e]' : 'text-[#94a3b8]'}`} />
-                  {activeConv.isOnline ? 'Online' : 'Offline'}
+                  <Circle className="h-2.5 w-2.5 fill-current text-[#94a3b8]" />
+                  Offline
                 </p>
               </div>
             </div>
-            <p className="hidden sm:block text-[10px] text-[#8293a3]">
-              {formatFullDate(activeConv.latestAt)}
+            <p className="hidden sm:block text-[10px] text-[#8293a3]" suppressHydrationWarning>
+              {mounted ? formatFullDate(activeConv.latestAt) : ''}
             </p>
           </div>
 
@@ -483,8 +486,8 @@ export function TeacherMessagesClient({ messages, recipients }: TeacherMessagesC
                     <p className="mb-1 text-[10px] font-bold uppercase tracking-wider text-[#8aa0b3]">{msg.subject}</p>
                   )}
                   <p className="whitespace-pre-wrap leading-relaxed">{msg.body}</p>
-                  <div className={`mt-1 text-[10px] ${msg.direction === 'out' ? 'text-[#d8f2f2]' : 'text-[#8aa0b3]'}`}>
-                    {formatTime(msg.createdAt)}{msg.pending ? ' · Sending…' : ''}
+                  <div className={`mt-1 text-[10px] ${msg.direction === 'out' ? 'text-[#d8f2f2]' : 'text-[#8aa0b3]'}`} suppressHydrationWarning>
+                    {mounted ? formatTime(msg.createdAt) : ''}{msg.pending ? ' · Sending…' : ''}
                   </div>
                 </div>
               </div>
