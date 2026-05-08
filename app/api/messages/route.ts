@@ -110,10 +110,20 @@ export async function DELETE(request: Request) {
     return NextResponse.json({ error: 'Message not found' }, { status: 404 });
   }
 
-  if (auth.session.role !== UserRole.ADMIN && existing.senderId !== auth.session.id) {
-    return NextResponse.json({ error: 'You can only delete your own sent messages.' }, { status: 403 });
+  // Admin or original sender: delete entire message (cascades to all recipients)
+  if (auth.session.role === UserRole.ADMIN || existing.senderId === auth.session.id) {
+    await prisma.message.delete({ where: { id } });
+    return NextResponse.json({ success: true });
   }
 
-  await prisma.message.delete({ where: { id } });
+  // Recipient deleting from their inbox: remove only their MessageRecipient row
+  const recipientRecord = await prisma.messageRecipient.findFirst({
+    where: { messageId: id, userId: auth.session.id },
+    select: { id: true }
+  });
+  if (!recipientRecord) {
+    return NextResponse.json({ error: 'Not authorized to delete this message.' }, { status: 403 });
+  }
+  await prisma.messageRecipient.delete({ where: { id: recipientRecord.id } });
   return NextResponse.json({ success: true });
 }

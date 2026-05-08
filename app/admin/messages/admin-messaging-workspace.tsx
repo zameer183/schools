@@ -216,6 +216,7 @@ export default function AdminMessagingWorkspace({
   composeAction: (formData: FormData) => Promise<void>;
 }) {
   const [activeTab, setActiveTab] = useState<TabKey>('messages');
+  const [receivedState, setReceivedState] = useState(receivedMessages);
   const [sentState, setSentState] = useState(sentMessages);
   const [search, setSearch] = useState('');
   const [draft, setDraft] = useState('');
@@ -230,8 +231,8 @@ export default function AdminMessagingWorkspace({
   const [classId, setClassId] = useState('');
 
   const conversations = useMemo(
-    () => buildConversations(receivedMessages, sentState, localOutgoing),
-    [receivedMessages, sentState, localOutgoing]
+    () => buildConversations(receivedState, sentState, localOutgoing),
+    [receivedState, sentState, localOutgoing]
   );
 
   const filteredConversations = useMemo(() => {
@@ -329,6 +330,14 @@ export default function AdminMessagingWorkspace({
     const response = await fetch(`/api/messages?id=${messageId}`, { method: 'DELETE' });
     if (!response.ok) return;
     setSentState((prev) => prev.filter((message) => message.id !== messageId));
+  }
+
+  async function handleDeleteReceivedMessage(messageId: string) {
+    const ok = window.confirm('Delete this message?');
+    if (!ok) return;
+    const response = await fetch(`/api/messages?id=${messageId}`, { method: 'DELETE' });
+    if (!response.ok) return;
+    setReceivedState((prev) => prev.filter((item) => item.message.id !== messageId));
   }
 
   return (
@@ -460,9 +469,16 @@ export default function AdminMessagingWorkspace({
                           }`}
                         >
                           <p className="text-sm leading-relaxed">{message.body}</p>
-                          <div className={`mt-1 flex items-center gap-2 text-[10px] ${incoming ? 'text-[#6b7280]' : 'text-white/80'}`}>
+                          <div className={`mt-1 flex items-center justify-between gap-2 text-[10px] ${incoming ? 'text-[#6b7280]' : 'text-white/80'}`}>
                             <span>{formatTime(message.createdAt)}</span>
-                            {!incoming ? <span>{message.pending ? 'Sending...' : message.status ?? 'Sent'}</span> : null}
+                            <button
+                              type="button"
+                              onClick={() => void (incoming ? handleDeleteReceivedMessage(message.id) : handleDeleteSentMessage(message.id.includes('-') ? message.id.split('-')[0] : message.id))}
+                              className={`inline-flex items-center gap-1 rounded px-1 py-0.5 ${incoming ? 'text-[#9ca3af] hover:text-[#b91c1c]' : 'text-white/60 hover:text-white'}`}
+                              title="Delete"
+                            >
+                              <Trash2 className="h-3 w-3" />
+                            </button>
                           </div>
                         </div>
                       </div>

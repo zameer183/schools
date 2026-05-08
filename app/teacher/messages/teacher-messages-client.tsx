@@ -358,22 +358,25 @@ export function TeacherMessagesClient({ messages, recipients }: TeacherMessagesC
     }
   };
 
-  const handleDeleteSentMessage = async (messageId: string) => {
+  const handleDeleteMessage = async (messageId: string, direction: 'in' | 'out') => {
     if (!messageId || messageId.startsWith('tmp-')) return;
-    const confirmed = window.confirm('Delete this sent message?');
+    const confirmed = window.confirm('Delete this message?');
     if (!confirmed) return;
     try {
       const res = await fetch(`/api/messages?id=${messageId}`, { method: 'DELETE' });
       if (!res.ok) return;
-
-      setLiveMessages((prev) => prev.filter((m) => !(m.direction === 'sent' && m.id === messageId)));
-      setLocalSent((prev) => {
-        const next = new Map(prev);
-        for (const [key, value] of next.entries()) {
-          next.set(key, value.filter((msg) => msg.id !== messageId));
-        }
-        return next;
-      });
+      if (direction === 'out') {
+        setLiveMessages((prev) => prev.filter((m) => !(m.direction === 'sent' && m.id === messageId)));
+        setLocalSent((prev) => {
+          const next = new Map(prev);
+          for (const [key, value] of next.entries()) {
+            next.set(key, value.filter((msg) => msg.id !== messageId));
+          }
+          return next;
+        });
+      } else {
+        setLiveMessages((prev) => prev.filter((m) => !(m.direction === 'received' && m.id === messageId)));
+      }
     } catch {
       // no-op
     }
@@ -592,11 +595,11 @@ export function TeacherMessagesClient({ messages, recipients }: TeacherMessagesC
                     <div className={`text-[10px] ${msg.direction === 'out' ? 'text-[#d8f2f2]' : 'text-[#8aa0b3]'}`} suppressHydrationWarning>
                       {mounted ? formatTime(msg.createdAt) : ''}{msg.pending ? ' - Sending...' : ''}
                     </div>
-                    {msg.direction === 'out' && !msg.pending && !msg.id.startsWith('tmp-') ? (
+                    {!msg.pending && !msg.id.startsWith('tmp-') ? (
                       <button
                         type="button"
-                        onClick={() => void handleDeleteSentMessage(msg.id)}
-                        className="inline-flex items-center gap-1 rounded-md px-1.5 py-0.5 text-[10px] text-white/85 hover:bg-white/15"
+                        onClick={() => void handleDeleteMessage(msg.id, msg.direction)}
+                        className={`inline-flex items-center gap-1 rounded-md px-1.5 py-0.5 text-[10px] ${msg.direction === 'out' ? 'text-white/85 hover:bg-white/15' : 'text-[#8aa0b3] hover:bg-[#e8eff3]'}`}
                         title="Delete message"
                       >
                         <Trash2 className="h-3 w-3" />

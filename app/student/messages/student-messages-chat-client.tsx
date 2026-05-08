@@ -379,17 +379,22 @@ export function StudentMessagesChatClient({
     }
   };
 
-  const handleDeleteSentMessage = async (senderId: string, messageId: string) => {
+  const handleDeleteMessage = async (messageId: string, direction: 'in' | 'out') => {
     if (!messageId || messageId.startsWith('temp-')) return;
-    const confirmed = window.confirm('Delete this sent message?');
+    if (!activeConversation) return;
+    const confirmed = window.confirm('Delete this message?');
     if (!confirmed) return;
     try {
       const response = await fetch(`/api/messages?id=${messageId}`, { method: 'DELETE' });
       if (!response.ok) return;
-      setLocalOutgoing((prev) => ({
-        ...prev,
-        [senderId]: (prev[senderId] ?? []).filter((item) => item.id !== messageId)
-      }));
+      if (direction === 'out') {
+        setLocalOutgoing((prev) => ({
+          ...prev,
+          [activeConversation.senderId]: (prev[activeConversation.senderId] ?? []).filter((item) => item.id !== messageId)
+        }));
+      } else {
+        setLiveInbox((prev) => prev.filter((item) => item.message.id !== messageId));
+      }
     } catch {
       // no-op
     }
@@ -526,11 +531,11 @@ export function StudentMessagesChatClient({
                     <div className={`text-[10px] ${message.direction === 'out' ? 'text-[#d8f2f2]' : 'text-[#8aa0b3]'}`} suppressHydrationWarning>
                       {mounted ? formatTime(message.createdAt) : ''} {message.pending ? '- Sending...' : ''}
                     </div>
-                    {message.direction === 'out' && !message.pending && !message.id.startsWith('temp-') ? (
+                    {!message.pending && !message.id.startsWith('temp-') ? (
                       <button
                         type="button"
-                        onClick={() => void handleDeleteSentMessage(activeConversation.senderId, message.id)}
-                        className="inline-flex items-center gap-1 rounded-md px-1.5 py-0.5 text-[10px] text-white/85 hover:bg-white/15"
+                        onClick={() => void handleDeleteMessage(message.id, message.direction)}
+                        className={`inline-flex items-center gap-1 rounded-md px-1.5 py-0.5 text-[10px] ${message.direction === 'out' ? 'text-white/85 hover:bg-white/15' : 'text-[#8aa0b3] hover:bg-[#e8eff3]'}`}
                         title="Delete message"
                       >
                         <Trash2 className="h-3 w-3" />
