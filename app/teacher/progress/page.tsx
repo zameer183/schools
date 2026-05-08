@@ -1333,7 +1333,7 @@ export default function TeacherProgressPage() {
             })}
           </div>
         )}
-      </div>
+      </Card>
       </div>
     </div>
   );

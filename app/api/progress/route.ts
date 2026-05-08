@@ -59,8 +59,7 @@ export async function GET(request: Request) {
       include: {
         student: { include: { user: true } },
         class: true,
-        teacher: { include: { user: true } },
-        surahRanges: true
+        teacher: { include: { user: true } }
       },
       orderBy: { date: 'desc' }
     });
@@ -151,8 +150,6 @@ export async function POST(request: Request) {
       lessonNumber: parsed.data.lessonNumber,
       ayahFrom: parsed.data.ayahFrom ?? null,
       ayahTo: parsed.data.ayahTo ?? null,
-      tajweeditotal: parsed.data.tajweeditotal ?? null,
-      hifzTotal: parsed.data.hifzTotal ?? null,
       notes: parsed.data.notes || null
     },
     create: {
@@ -165,40 +162,14 @@ export async function POST(request: Request) {
       lessonNumber: parsed.data.lessonNumber,
       ayahFrom: parsed.data.ayahFrom ?? null,
       ayahTo: parsed.data.ayahTo ?? null,
-      tajweeditotal: parsed.data.tajweeditotal ?? null,
-      hifzTotal: parsed.data.hifzTotal ?? null,
       notes: parsed.data.notes || null
     },
     include: {
       student: { include: { user: true } },
       class: true,
-      teacher: { include: { user: true } },
-      surahRanges: true
+      teacher: { include: { user: true } }
     }
   });
-
-  // Handle surah ranges if provided
-  if (parsed.data.surahRanges) {
-    // Delete existing ranges for this progress
-    await prisma.surahRange.deleteMany({
-      where: { progressId: progress.id }
-    });
-
-    // Create new ranges for each section
-    for (const [sectionKey, ranges] of Object.entries(parsed.data.surahRanges)) {
-      for (const range of ranges) {
-        await prisma.surahRange.create({
-          data: {
-            progressId: progress.id,
-            sectionKey,
-            surahId: range.surahId,
-            fromAyah: range.fromAyah,
-            toAyah: range.toAyah
-          }
-        });
-      }
-    }
-  }
 
   // Push the progress update to the target student as an in-app notification.
   await prisma.notification.create({

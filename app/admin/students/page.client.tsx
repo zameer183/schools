@@ -1300,7 +1300,7 @@ export default function AdminStudentsPageClient({
 
         {/* Content — show on desktop or when expanded on mobile */}
         {(feeMessagingSectionOpen || window.matchMedia('(min-width: 640px)').matches) && (
-
+        <>
         <div className="mt-3 space-y-3">
           <label className="flex h-10 items-center gap-2 rounded-xl bg-[#f3f4f5] px-3 focus-within:ring-2 focus-within:ring-[#16a34a]/30">
             <Search className="h-4 w-4 shrink-0 text-[#9ca3af]" />
@@ -1465,6 +1465,7 @@ export default function AdminStudentsPageClient({
             <p className="rounded-xl bg-[#f8fafc] px-3 py-4 text-center text-sm text-[#64748b]">No students match fee filters.</p>
           ) : null}
         </div>
+        </>
         )}
       </section>
 

@@ -68,9 +68,8 @@ export default async function AdminReportsPage({ searchParams }: ReportsPageProp
       select: {
         id: true,
         admissionNo: true,
-        whatsApp: true,
-        guardianPhone: true,
-        user: { select: { fullName: true } },
+        emergencyContact: true,
+        user: { select: { fullName: true, phone: true } },
         class: { select: { name: true, section: true } },
         fees: { select: { status: true, amount: true, discount: true, dueDate: true }, orderBy: { dueDate: 'desc' }, take: 5 }
       },
@@ -83,8 +82,7 @@ export default async function AdminReportsPage({ searchParams }: ReportsPageProp
         employeeCode: true,
         specialization: true,
         user: { select: { fullName: true } },
-        classAssignments: { select: { classId: true } },
-        compensation: { select: { baseSalary: true, bonus: true, deduction: true } }
+        classAssignments: { select: { classId: true } }
       },
       orderBy: { createdAt: 'desc' },
       take: 8
@@ -93,11 +91,11 @@ export default async function AdminReportsPage({ searchParams }: ReportsPageProp
       select: {
         id: true,
         date: true,
+        lessonType: true,
+        lessonNumber: true,
         class: { select: { name: true, section: true } },
         student: { select: { user: { select: { fullName: true } } } },
-        teacher: { select: { user: { select: { fullName: true } } } },
-        tajweeditotal: true,
-        hifzTotal: true
+        teacher: { select: { user: { select: { fullName: true } } } }
       },
       orderBy: { date: 'desc' },
       take: 8
@@ -316,8 +314,8 @@ export default async function AdminReportsPage({ searchParams }: ReportsPageProp
                   <div className="text-xs text-[#6f7979] mb-3">{student.class ? `${student.class.name} - ${student.class.section}` : 'Unassigned'}</div>
                   <StudentReportActions
                     studentId={student.id}
-                    whatsApp={student.whatsApp}
-                    guardianPhone={student.guardianPhone}
+                    whatsApp={student.user.phone ?? null}
+                    guardianPhone={student.emergencyContact ?? null}
                     studentName={student.user.fullName}
                     className={student.class ? `${student.class.name} ${student.class.section}` : '—'}
                     pendingCount={student.fees.filter((f) => f.status === PaymentStatus.PENDING).length}
@@ -364,8 +362,8 @@ export default async function AdminReportsPage({ searchParams }: ReportsPageProp
                       <td className="py-3 px-3">
                         <StudentReportActions
                           studentId={student.id}
-                          whatsApp={student.whatsApp}
-                          guardianPhone={student.guardianPhone}
+                          whatsApp={student.user.phone ?? null}
+                          guardianPhone={student.emergencyContact ?? null}
                           studentName={student.user.fullName}
                           className={student.class ? `${student.class.name} ${student.class.section}` : '—'}
                           pendingCount={student.fees.filter((f) => f.status === PaymentStatus.PENDING).length}
@@ -394,7 +392,7 @@ export default async function AdminReportsPage({ searchParams }: ReportsPageProp
               <div key={r.id} className="rounded-xl bg-[#f4f7f7] p-3">
                 <div className="flex items-baseline justify-between gap-2 mb-1">
                   <p className="font-semibold text-[#1a1c1c] flex-1 truncate">{r.student.user.fullName}</p>
-                  <span className="shrink-0 text-xs font-semibold text-[#004649]">T:{r.tajweeditotal ?? 0} H:{r.hifzTotal ?? 0}</span>
+                  <span className="shrink-0 text-xs font-semibold text-[#004649]">{r.lessonType} #{r.lessonNumber}</span>
                 </div>
                 <div className="text-xs text-[#6f7979]">{formatDate(r.date)} • {r.class.name} - {r.class.section}</div>
               </div>
@@ -428,7 +426,7 @@ export default async function AdminReportsPage({ searchParams }: ReportsPageProp
                     <td className="py-3 px-3 font-medium text-[#1a1c1c]">{r.student.user.fullName}</td>
                     <td className="py-3 px-3 text-[#445050]">{r.class.name} - {r.class.section}</td>
                     <td className="py-3 px-3 text-[#445050]">{r.teacher.user.fullName}</td>
-                    <td className="py-3 px-3 font-semibold text-[#004649]">T:{r.tajweeditotal ?? 0} / H:{r.hifzTotal ?? 0}</td>
+                    <td className="py-3 px-3 font-semibold text-[#004649]">{r.lessonType} #{r.lessonNumber}</td>
                   </tr>
                 ))
               )}

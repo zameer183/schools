@@ -102,9 +102,8 @@ export default async function AdminFinancePage({ searchParams }: AdminFinancePag
         student: {
           select: {
             id: true,
-            whatsApp: true,
-            guardianPhone: true,
-            user: { select: { fullName: true } }
+            emergencyContact: true,
+            user: { select: { fullName: true, phone: true } }
           }
         },
         payments: { select: { amountPaid: true } }
@@ -144,8 +143,8 @@ export default async function AdminFinancePage({ searchParams }: AdminFinancePag
       discount: Number(fee.discount),
       paidAmount,
       remaining,
-      whatsApp: fee.student.whatsApp,
-      guardianPhone: fee.student.guardianPhone
+      whatsApp: fee.student.user.phone ?? null,
+      guardianPhone: fee.student.emergencyContact ?? null
     };
   });
 
