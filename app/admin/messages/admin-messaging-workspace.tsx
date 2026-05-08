@@ -1,6 +1,6 @@
 'use client';
 
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import {
   CircleDot,
   Trash2,
@@ -222,6 +222,7 @@ export default function AdminMessagingWorkspace({
   const [sending, setSending] = useState(false);
   const [localOutgoing, setLocalOutgoing] = useState<Record<string, ChatMessage[]>>({});
   const [activeConversationId, setActiveConversationId] = useState<string | null>(presetRecipientId || null);
+  const chatBottomRef = useRef<HTMLDivElement>(null);
 
   const [composeMode, setComposeMode] = useState<ComposeMode>('individual_student');
   const [studentQuery, setStudentQuery] = useState('');
@@ -253,6 +254,11 @@ export default function AdminMessagingWorkspace({
 
   const isTyping = draft.trim().length > 0;
 
+  // Auto-scroll to latest message when active conversation messages change
+  useEffect(() => {
+    chatBottomRef.current?.scrollIntoView({ behavior: 'smooth' });
+  }, [activeConversation?.messages.length]);
+
   async function handleQuickSend() {
     if (!activeConversation || !draft.trim() || sending) return;
 
@@ -260,7 +266,7 @@ export default function AdminMessagingWorkspace({
     const tempId = `tmp-${Date.now()}`;
     const optimistic: ChatMessage = {
       id: tempId,
-      subject: activeConversation.messages.at(-1)?.subject || 'Admin Message',
+      subject: `Re: ${(activeConversation.messages.at(-1)?.subject ?? 'Message').replace(/^(re:\s*)+/i, '')}`,
       body,
       createdAt: new Date().toISOString(),
       direction: 'out',
@@ -406,8 +412,7 @@ export default function AdminMessagingWorkspace({
                               <p className="shrink-0 text-xs text-[#6b7280]">{formatTime(conversation.latestAt)}</p>
                             </div>
                             <p className="mt-0.5 max-w-full truncate text-[13px] leading-5 text-[#6b7280] sm:text-xs">{conversation.latestPreview}</p>
-                            <div className="mt-1 flex items-center justify-between">
-                              <p className="text-xs font-semibold text-[#004649]">{conversation.participantRole}</p>
+                            <div className="mt-1 flex items-center justify-end">
                               {conversation.unreadCount > 0 ? <CircleDot className="h-4 w-4 text-[#004649]" /> : null}
                             </div>
                           </div>
@@ -437,10 +442,7 @@ export default function AdminMessagingWorkspace({
                     </div>
                     <div>
                       <p className="text-sm font-bold text-[#111827]">{activeConversation.participantName}</p>
-                      <p className="flex items-center gap-1 text-xs text-[#16a34a]">
-                        <span className="inline-block h-2 w-2 rounded-full bg-[#22c55e]" />
-                        Online
-                      </p>
+                      <p className="text-xs text-[#6b7280]">{activeConversation.participantRole}</p>
                     </div>
                   </div>
                 </div>
@@ -457,8 +459,7 @@ export default function AdminMessagingWorkspace({
                               : 'rounded-br-sm bg-[#004649] text-white'
                           }`}
                         >
-                          <p className="text-[11px] font-semibold opacity-80">{message.subject}</p>
-                          <p className="mt-1 text-sm leading-relaxed">{message.body}</p>
+                          <p className="text-sm leading-relaxed">{message.body}</p>
                           <div className={`mt-1 flex items-center gap-2 text-[10px] ${incoming ? 'text-[#6b7280]' : 'text-white/80'}`}>
                             <span>{formatTime(message.createdAt)}</span>
                             {!incoming ? <span>{message.pending ? 'Sending...' : message.status ?? 'Sent'}</span> : null}
@@ -469,8 +470,8 @@ export default function AdminMessagingWorkspace({
                   })}
                 </div>
 
+                <div ref={chatBottomRef} />
                 <div className="shrink-0 border-t border-[#e4ece9] bg-white p-3">
-                  {isTyping ? <p className="mb-2 text-xs text-[#004649]">Typing...</p> : null}
                   <div className="flex items-center gap-2">
                     <input
                       value={draft}
