@@ -217,6 +217,15 @@ export function StudentMessagesChatClient({
     };
   }, [conversations]);
 
+  // After ALL hooks — safe early return. Server renders spinner, client hydrates spinner (no mismatch), then mounts full UI.
+  if (!mounted) {
+    return (
+      <div className="flex h-[60vh] items-center justify-center">
+        <div className="h-10 w-10 animate-spin rounded-full border-4 border-[#e0eff0] border-t-[#004649]" />
+      </div>
+    );
+  }
+
   const handleComposeSend = async () => {
     if (!composeTeacherId || composeBody.trim().length < 2 || isComposeSending) return;
     setIsComposeSending(true);

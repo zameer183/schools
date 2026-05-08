@@ -212,6 +212,15 @@ export function TeacherMessagesClient({ messages, recipients }: TeacherMessagesC
     sent: allConversations.filter((c) => c.category === 'sent' || c.category === 'both').length,
   }), [allConversations]);
 
+  // After ALL hooks — safe early return. Server renders spinner, client hydrates spinner (no mismatch), then mounts full UI.
+  if (!mounted) {
+    return (
+      <div className="flex h-[60vh] items-center justify-center">
+        <div className="h-10 w-10 animate-spin rounded-full border-4 border-[#e0eff0] border-t-[#2b676e]" />
+      </div>
+    );
+  }
+
   const toggleRecipient = (id: string) => {
     setSelectedRecipients((prev) => {
       const next = new Set(prev);
