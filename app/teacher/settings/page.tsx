@@ -96,7 +96,7 @@ const MODULE_LABEL: Record<TeacherAccessModule, string> = {
 };
 
 function getStatusColor(status: string) {
-  if (status === 'PRESENT') return 'bg-[#e8f5e9] text-[#004649]';
+  if (status === 'PRESENT') return 'bg-[#e8f5e9] text-[#1a5058]';
   if (status === 'LATE') return 'bg-[#fff3e0] text-[#865300]';
   if (status === 'ABSENT') return 'bg-[#fde8e8] text-[#ba1a1a]';
   return 'bg-[#e8f0ff] text-[#1a4bcc]';
@@ -119,7 +119,7 @@ export default async function TeacherSettingsPage() {
 
   if (!teacher) {
     return (
-      <div className="rounded-2xl bg-white shadow-[0_12px_40px_rgba(0,70,73,0.06)] p-8">
+      <div className="rounded-2xl bg-white shadow-[0_12px_40px_rgba(43,103,110,0.06)] p-8">
         <h2 className="font-headline text-3xl font-bold text-[#1a1c1c]">Teacher Profile Missing</h2>
         <p className="mt-2 text-sm text-[#6f7979]">Your account is active but no teacher profile is linked yet. Contact admin.</p>
       </div>
@@ -207,8 +207,8 @@ export default async function TeacherSettingsPage() {
 
         <Card>
           <div className="flex items-center gap-2 mb-4">
-            <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-[#E0EBEC]">
-              <BookOpen className="h-4 w-4 text-[#1F5A5C]" />
+            <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-[#e0eff0]">
+              <BookOpen className="h-4 w-4 text-[#2b676e]" />
             </div>
             <h3 className="text-sm font-bold text-[#1F2937]">Class & Subject Scope</h3>
           </div>
@@ -232,8 +232,8 @@ export default async function TeacherSettingsPage() {
 
       <Card>
         <div className="flex items-center gap-2 mb-4">
-          <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-[#F5E6CC]">
-            <CheckCircle2 className="h-4 w-4 text-[#D69E3F]" />
+          <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-[#fdf0e0]">
+            <CheckCircle2 className="h-4 w-4 text-[#df8d29]" />
           </div>
           <h3 className="text-sm font-bold text-[#1F2937]">Access Granted By Admin</h3>
         </div>
@@ -255,19 +255,19 @@ export default async function TeacherSettingsPage() {
             <h3 className="font-semibold text-[#1F2937]">My Attendance</h3>
             <p className="mt-1 text-sm text-[#6B7280]">Mark your own daily attendance and review previous days.</p>
           </div>
-          <div className="rounded-full bg-[#F5E6CC] px-3 py-1 text-xs font-semibold text-[#D69E3F]">Today: {todayStatus}</div>
+          <div className="rounded-full bg-[#fdf0e0] px-3 py-1 text-xs font-semibold text-[#df8d29]">Today: {todayStatus}</div>
         </div>
 
         {access.STAFF_ATTENDANCE ? (
           <form action={markSelfAttendance} className="mt-4 grid gap-3 md:grid-cols-[220px_1fr_auto]">
-            <select name="status" className="h-10 rounded-xl bg-[#edeeef] border-none px-3 text-sm outline-none focus:ring-2 focus:ring-[#004649]/20" defaultValue="PRESENT">
+            <select name="status" className="h-10 rounded-xl bg-[#edeeef] border-none px-3 text-sm outline-none focus:ring-2 focus:ring-[#1a5058]/20" defaultValue="PRESENT">
               <option value="PRESENT">Present</option>
               <option value="LATE">Late</option>
               <option value="ABSENT">Absent</option>
               <option value="EXCUSED">Excused</option>
             </select>
-            <input name="note" placeholder="Optional note" className="h-10 rounded-xl bg-[#edeeef] border-none px-3 text-sm outline-none focus:ring-2 focus:ring-[#004649]/20" />
-            <button className="h-10 rounded-xl bg-gradient-to-br from-[#004649] to-[#1b5e62] shadow-[0_8px_20px_rgba(0,70,73,0.12)] active:scale-[0.98] transition-all px-4 text-sm font-semibold text-white">Mark Attendance</button>
+            <input name="note" placeholder="Optional note" className="h-10 rounded-xl bg-[#edeeef] border-none px-3 text-sm outline-none focus:ring-2 focus:ring-[#1a5058]/20" />
+            <button className="h-10 rounded-xl bg-gradient-to-br from-[#1a5058] to-[#1a5058] shadow-[0_8px_20px_rgba(43,103,110,0.12)] active:scale-[0.98] transition-all px-4 text-sm font-semibold text-white">Mark Attendance</button>
           </form>
         ) : (
           <p className="mt-4 rounded-xl bg-[#fde8e8] px-4 py-3 text-sm text-[#ba1a1a]">Staff attendance module disabled by admin.</p>
@@ -281,7 +281,7 @@ export default async function TeacherSettingsPage() {
               const key = dateObj.toISOString().slice(0, 10);
               const status = monthlyMap.get(key) ?? 'UNMARKED';
               const style = status === 'PRESENT'
-                ? 'bg-[#e8f5e9] text-[#004649]'
+                ? 'bg-[#e8f5e9] text-[#1a5058]'
                 : status === 'LATE'
                   ? 'bg-[#fff3e0] text-[#865300]'
                   : status === 'ABSENT'

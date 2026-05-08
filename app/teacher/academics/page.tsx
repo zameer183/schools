@@ -60,7 +60,7 @@ export default async function TeacherAcademicsPage() {
   const { access, teacher } = await getCachedTeacherAcademicsData(session.id);
   if (access && !access.ACADEMICS) {
     return (
-      <div className="rounded-2xl bg-white shadow-[0_12px_40px_rgba(0,70,73,0.06)] p-8">
+      <div className="rounded-2xl bg-white shadow-[0_12px_40px_rgba(43,103,110,0.06)] p-8">
         <h2 className="font-headline text-3xl font-bold text-[#1a1c1c]">Academics Access Disabled</h2>
         <p className="mt-2 text-sm text-[#6f7979]">Admin has disabled your academics module access.</p>
       </div>
@@ -99,13 +99,13 @@ export default async function TeacherAcademicsPage() {
 
   return (
     <div className="space-y-4">
-      <div className="rounded-2xl bg-white shadow-[0_12px_40px_rgba(0,70,73,0.06)] p-6">
+      <div className="rounded-2xl bg-white shadow-[0_12px_40px_rgba(43,103,110,0.06)] p-6">
         <h2 className="font-headline text-3xl font-bold text-[#1a1c1c]">Academics</h2>
         <p className="mt-1 text-sm text-[#6f7979]">Manage exams and enter student marks for your classes.</p>
       </div>
 
       {exams.length === 0 ? (
-        <div className="rounded-2xl bg-white shadow-[0_12px_40px_rgba(0,70,73,0.06)] p-10 text-center">
+        <div className="rounded-2xl bg-white shadow-[0_12px_40px_rgba(43,103,110,0.06)] p-10 text-center">
           <div className="w-14 h-14 rounded-full bg-[#f3f4f5] flex items-center justify-center mx-auto mb-4">
             <svg className="h-6 w-6 text-[#6f7979]" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
               <path strokeLinecap="round" strokeLinejoin="round" d="M9 12h3.75M9 15h3.75M9 18h3.75m3 .75H18a2.25 2.25 0 0 0 2.25-2.25V6.108c0-1.135-.845-2.098-1.976-2.192a48.424 48.424 0 0 0-1.123-.08m-5.801 0c-.065.21-.1.433-.1.664 0 .414.336.75.75.75h4.5a.75.75 0 0 0 .75-.75 2.25 2.25 0 0 0-.1-.664m-5.8 0A2.251 2.251 0 0 1 13.5 2.25H15c1.012 0 1.867.668 2.15 1.586m-5.8 0c-.376.023-.75.05-1.124.08C9.095 4.01 8.25 4.973 8.25 6.108V8.25m0 0H4.875c-.621 0-1.125.504-1.125 1.125v11.25c0 .621.504 1.125 1.125 1.125h9.75c.621 0 1.125-.504 1.125-1.125V9.375c0-.621-.504-1.125-1.125-1.125H8.25ZM6.75 12h.008v.008H6.75V12Zm0 3h.008v.008H6.75V15Zm0 3h.008v.008H6.75V18Z" />
@@ -121,7 +121,7 @@ export default async function TeacherAcademicsPage() {
             {exams.map((exam) => (
               <div
                 key={exam.id}
-                className={`rounded-xl border p-4 cursor-pointer transition-colors ${exam.id === activeExam?.id ? 'border-[#004649] bg-[#e8f5e9]' : 'border-[#e2e8e8] bg-white hover:bg-[#f3f4f5]'}`}
+                className={`rounded-xl border p-4 cursor-pointer transition-colors ${exam.id === activeExam?.id ? 'border-[#1a5058] bg-[#e8f5e9]' : 'border-[#e2e8e8] bg-white hover:bg-[#f3f4f5]'}`}
               >
                 <div className="flex items-start justify-between gap-2">
                   <div>
@@ -141,14 +141,14 @@ export default async function TeacherAcademicsPage() {
             ))}
           </div>
 
-          <div className="lg:col-span-2 rounded-2xl bg-white shadow-[0_12px_40px_rgba(0,70,73,0.06)] overflow-hidden">
+          <div className="lg:col-span-2 rounded-2xl bg-white shadow-[0_12px_40px_rgba(43,103,110,0.06)] overflow-hidden">
             {activeExam && (
               <>
                 <div className="p-5 border-b border-[#e2e8e8]">
                   <p className="text-[10px] font-bold uppercase tracking-widest text-[#865300] mb-1">Examination Entry</p>
                   <h3 className="text-2xl font-bold text-[#1a1c1c]">{parseExamTitle(activeExam.title).title}</h3>
                   <div className="flex items-center gap-3 mt-2">
-                    <span className="text-xs font-semibold rounded-full bg-[#e8f5e9] px-3 py-1 text-[#004649]">
+                    <span className="text-xs font-semibold rounded-full bg-[#e8f5e9] px-3 py-1 text-[#1a5058]">
                       {parseExamTitle(activeExam.title).examType}
                     </span>
                     <span className="text-xs font-semibold bg-[#fff3e0] text-[#865300] px-3 py-1 rounded-full">
@@ -178,11 +178,11 @@ export default async function TeacherAcademicsPage() {
                       return (
                         <div key={student.id} className="flex items-center gap-4 px-5 py-4 hover:bg-[#f3f4f5]">
                           <div className="relative">
-                            <div className="w-11 h-11 rounded-full bg-[#f0f2f0] flex items-center justify-center text-sm font-bold text-[#004649]">
+                            <div className="w-11 h-11 rounded-full bg-[#f0f2f0] flex items-center justify-center text-sm font-bold text-[#1a5058]">
                               {initials(student.fullName)}
                             </div>
                             {hasMark && (
-                              <div className="absolute -bottom-0.5 -right-0.5 w-4 h-4 rounded-full bg-[#004649] flex items-center justify-center">
+                              <div className="absolute -bottom-0.5 -right-0.5 w-4 h-4 rounded-full bg-[#1a5058] flex items-center justify-center">
                                 <svg className="h-2.5 w-2.5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}>
                                   <path strokeLinecap="round" strokeLinejoin="round" d="m4.5 12.75 6 6 9-13.5" />
                                 </svg>
@@ -197,7 +197,7 @@ export default async function TeacherAcademicsPage() {
                             {hasMark ? (
                               <>
                                 <p className="text-xl font-bold text-[#1a1c1c]">{Math.round(Number(result!.marksObtained))}</p>
-                                <p className="text-[10px] font-bold uppercase tracking-widest text-[#004649]">Saved · {grade}</p>
+                                <p className="text-[10px] font-bold uppercase tracking-widest text-[#1a5058]">Saved · {grade}</p>
                               </>
                             ) : (
                               <>
@@ -206,7 +206,7 @@ export default async function TeacherAcademicsPage() {
                                   min={0}
                                   max={activeExam.totalMarks}
                                   placeholder="—"
-                                  className="w-16 rounded-lg bg-[#edeeef] border-none px-2 py-1.5 text-sm text-center text-[#1a1c1c] outline-none focus:ring-2 focus:ring-[#004649]/20"
+                                  className="w-16 rounded-lg bg-[#edeeef] border-none px-2 py-1.5 text-sm text-center text-[#1a1c1c] outline-none focus:ring-2 focus:ring-[#1a5058]/20"
                                 />
                                 <p className="text-[10px] font-bold uppercase tracking-widest text-[#865300] mt-0.5">Draft</p>
                               </>
@@ -219,7 +219,7 @@ export default async function TeacherAcademicsPage() {
                 </div>
 
                 <div className="p-4 border-t border-[#e2e8e8]">
-                  <button className="flex w-full items-center justify-center gap-2 rounded-xl bg-gradient-to-br from-[#004649] to-[#1b5e62] shadow-[0_8px_20px_rgba(0,70,73,0.12)] active:scale-[0.98] transition-all py-3 text-sm font-bold text-white">
+                  <button className="flex w-full items-center justify-center gap-2 rounded-xl bg-gradient-to-br from-[#1a5058] to-[#1a5058] shadow-[0_8px_20px_rgba(43,103,110,0.12)] active:scale-[0.98] transition-all py-3 text-sm font-bold text-white">
                     <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                       <path strokeLinecap="round" strokeLinejoin="round" d="M3 16.5v2.25A2.25 2.25 0 0 0 5.25 21h13.5A2.25 2.25 0 0 0 21 18.75V16.5m-13.5-9L12 3m0 0 4.5 4.5M12 3v13.5" />
                     </svg>

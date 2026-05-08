@@ -319,12 +319,12 @@ export function TeacherMessagesClient({ messages, recipients }: TeacherMessagesC
 
   /* ── Left panel ── */
   const leftPanel = (
-    <div className="rounded-2xl bg-white shadow-[0_12px_40px_rgba(0,70,73,0.06)] p-4">
+    <div className="rounded-2xl bg-white shadow-[0_12px_40px_rgba(43,103,110,0.06)] p-4">
       <div className="mb-3 flex items-center justify-between">
         <h3 className="text-sm font-bold font-headline text-[#1a2b3d]">Categories</h3>
         <button
           onClick={() => setShowCompose(true)}
-          className="inline-flex items-center gap-1 rounded-xl bg-gradient-to-br from-[#004649] to-[#1b5e62] shadow-[0_8px_20px_rgba(0,70,73,0.12)] active:scale-[0.98] transition-all px-2.5 py-1.5 text-xs font-semibold text-white"
+          className="inline-flex items-center gap-1 rounded-xl bg-gradient-to-br from-[#1a5058] to-[#1a5058] shadow-[0_8px_20px_rgba(43,103,110,0.12)] active:scale-[0.98] transition-all px-2.5 py-1.5 text-xs font-semibold text-white"
         >
           <MessageSquarePlus className="h-3.5 w-3.5" />
           New
@@ -337,7 +337,7 @@ export function TeacherMessagesClient({ messages, recipients }: TeacherMessagesC
             onClick={() => setCategory(item.key)}
             className={`flex w-full items-center justify-between rounded-xl border-l-4 px-3 py-2 text-left text-sm transition ${
               category === item.key
-                ? 'border-l-[#004649] bg-[#e9f5f4] text-[#004649]'
+                ? 'border-l-[#1a5058] bg-[#e9f5f4] text-[#1a5058]'
                 : 'border-l-transparent bg-[#f7fafb] text-[#5b6b7c] hover:bg-[#edf4f7]'
             }`}
           >
@@ -362,7 +362,7 @@ export function TeacherMessagesClient({ messages, recipients }: TeacherMessagesC
                 title={r.fullName}
                 className="flex flex-col items-center gap-1 group"
               >
-                <div className="h-9 w-9 rounded-full bg-[#004649]/10 flex items-center justify-center text-xs font-bold text-[#004649] ring-2 ring-white group-hover:ring-[#004649]/20 transition-all">
+                <div className="h-9 w-9 rounded-full bg-[#1a5058]/10 flex items-center justify-center text-xs font-bold text-[#1a5058] ring-2 ring-white group-hover:ring-[#1a5058]/20 transition-all">
                   {initials(r.fullName)}
                 </div>
                 <span className="text-[9px] text-[#8293a3] max-w-[36px] truncate text-center leading-none">
@@ -378,14 +378,14 @@ export function TeacherMessagesClient({ messages, recipients }: TeacherMessagesC
 
   /* ── Middle panel ── */
   const middlePanel = (
-    <div className="rounded-2xl bg-white shadow-[0_12px_40px_rgba(0,70,73,0.06)] p-4">
+    <div className="rounded-2xl bg-white shadow-[0_12px_40px_rgba(43,103,110,0.06)] p-4">
       <div className="relative mb-3">
         <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-[#7c8b99]" />
         <input
           value={search}
           onChange={(e) => setSearch(e.target.value)}
           placeholder="Search conversations..."
-          className="h-11 w-full rounded-full bg-[#edeeef] border-none pl-10 pr-4 text-sm text-[#1a2b3d] outline-none focus:ring-2 focus:ring-[#004649]/20"
+          className="h-11 w-full rounded-full bg-[#edeeef] border-none pl-10 pr-4 text-sm text-[#1a2b3d] outline-none focus:ring-2 focus:ring-[#1a5058]/20"
         />
       </div>
 
@@ -396,13 +396,13 @@ export function TeacherMessagesClient({ messages, recipients }: TeacherMessagesC
             onClick={() => { setActiveId(conv.personId); setShowMobileFilters(false); }}
             className={`w-full rounded-xl border p-3 text-left transition ${
               activeId === conv.personId
-                ? 'border-[#004649] bg-[#e9f5f4]'
+                ? 'border-[#1a5058] bg-[#e9f5f4]'
                 : 'border-[#e5edf2] bg-white hover:bg-[#f7fafb]'
             }`}
           >
             <div className="flex items-start gap-3">
               <div className="relative shrink-0">
-                <div className="grid h-11 w-11 place-items-center rounded-full bg-[#004649]/10 text-sm font-bold text-[#004649]">
+                <div className="grid h-11 w-11 place-items-center rounded-full bg-[#1a5058]/10 text-sm font-bold text-[#1a5058]">
                   {initials(conv.personName)}
                 </div>
                 {conv.isOnline && (
@@ -442,7 +442,7 @@ export function TeacherMessagesClient({ messages, recipients }: TeacherMessagesC
 
   /* ── Right chat panel ── */
   const rightPanel = (
-    <div className="flex h-[72vh] flex-col rounded-2xl bg-white shadow-[0_12px_40px_rgba(0,70,73,0.06)]">
+    <div className="flex h-[72vh] flex-col rounded-2xl bg-white shadow-[0_12px_40px_rgba(43,103,110,0.06)]">
       {activeConv ? (
         <>
           {/* Header */}
@@ -454,7 +454,7 @@ export function TeacherMessagesClient({ messages, recipients }: TeacherMessagesC
               >
                 <ChevronLeft className="h-4 w-4" />
               </button>
-              <div className="grid h-10 w-10 place-items-center rounded-full bg-[#004649]/10 text-sm font-bold text-[#004649]">
+              <div className="grid h-10 w-10 place-items-center rounded-full bg-[#1a5058]/10 text-sm font-bold text-[#1a5058]">
                 {initials(activeConv.personName)}
               </div>
               <div>
@@ -476,7 +476,7 @@ export function TeacherMessagesClient({ messages, recipients }: TeacherMessagesC
               <div key={msg.id} className={`flex ${msg.direction === 'out' ? 'justify-end' : 'justify-start'}`}>
                 <div className={`max-w-[80%] rounded-2xl px-3 py-2 text-sm shadow-sm ${
                   msg.direction === 'out'
-                    ? 'rounded-br-sm bg-[#004649] text-white'
+                    ? 'rounded-br-sm bg-[#1a5058] text-white'
                     : 'rounded-bl-sm bg-white text-[#1a2b3d]'
                 }`}>
                   {msg.subject && msg.direction === 'in' && (
@@ -501,12 +501,12 @@ export function TeacherMessagesClient({ messages, recipients }: TeacherMessagesC
                   if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); void handleSend(); }
                 }}
                 placeholder={`Reply to ${activeConv.personName.split(' ')[0]}…`}
-                className="h-11 flex-1 rounded-full bg-[#edeeef] border-none px-4 text-sm text-[#1a2b3d] outline-none focus:ring-2 focus:ring-[#004649]/20"
+                className="h-11 flex-1 rounded-full bg-[#edeeef] border-none px-4 text-sm text-[#1a2b3d] outline-none focus:ring-2 focus:ring-[#1a5058]/20"
               />
               <button
                 onClick={() => void handleSend()}
                 disabled={isSending || draft.trim().length < 1}
-                className="inline-flex h-11 w-11 items-center justify-center rounded-full bg-[#004649] text-white hover:bg-[#005a5e] disabled:cursor-not-allowed disabled:opacity-50 transition-colors"
+                className="inline-flex h-11 w-11 items-center justify-center rounded-full bg-[#1a5058] text-white hover:bg-[#1a5058] disabled:cursor-not-allowed disabled:opacity-50 transition-colors"
               >
                 <Send className="h-4 w-4" />
               </button>
@@ -520,7 +520,7 @@ export function TeacherMessagesClient({ messages, recipients }: TeacherMessagesC
             <p className="mt-2 text-sm text-[#607080]">Choose a conversation from the list to start messaging.</p>
             <button
               onClick={() => setShowCompose(true)}
-              className="mt-4 inline-flex items-center gap-1.5 rounded-xl bg-gradient-to-br from-[#004649] to-[#1b5e62] px-4 py-2 text-sm font-semibold text-white shadow-[0_8px_20px_rgba(0,70,73,0.12)]"
+              className="mt-4 inline-flex items-center gap-1.5 rounded-xl bg-gradient-to-br from-[#1a5058] to-[#1a5058] px-4 py-2 text-sm font-semibold text-white shadow-[0_8px_20px_rgba(43,103,110,0.12)]"
             >
               <MessageSquarePlus className="h-4 w-4" />
               New Message
@@ -534,7 +534,7 @@ export function TeacherMessagesClient({ messages, recipients }: TeacherMessagesC
   return (
     <div className="space-y-4">
       {/* Page header card */}
-      <div className="rounded-2xl bg-white shadow-[0_12px_40px_rgba(0,70,73,0.06)] p-5">
+      <div className="rounded-2xl bg-white shadow-[0_12px_40px_rgba(43,103,110,0.06)] p-5">
         <div className="flex items-center justify-between gap-3">
           <div>
             <h2 className="text-2xl font-bold font-headline text-[#1a2b3d]">Communications Hub</h2>
@@ -592,9 +592,9 @@ export function TeacherMessagesClient({ messages, recipients }: TeacherMessagesC
                             type="checkbox"
                             checked={checked}
                             onChange={() => toggleRecipient(r.userId)}
-                            className="accent-[#004649] h-3.5 w-3.5"
+                            className="accent-[#1a5058] h-3.5 w-3.5"
                           />
-                          <div className="h-7 w-7 rounded-full bg-[#004649]/10 flex items-center justify-center text-xs font-bold text-[#004649]">
+                          <div className="h-7 w-7 rounded-full bg-[#1a5058]/10 flex items-center justify-center text-xs font-bold text-[#1a5058]">
                             {initials(r.fullName)}
                           </div>
                           <div className="min-w-0 flex-1">
@@ -614,7 +614,7 @@ export function TeacherMessagesClient({ messages, recipients }: TeacherMessagesC
                   value={composeSubject}
                   onChange={(e) => setComposeSubject(e.target.value)}
                   placeholder="e.g. Assignment Reminder"
-                  className="h-10 w-full rounded-xl bg-[#edeeef] border-none px-3 text-sm text-[#1a2b3d] outline-none focus:ring-2 focus:ring-[#004649]/20"
+                  className="h-10 w-full rounded-xl bg-[#edeeef] border-none px-3 text-sm text-[#1a2b3d] outline-none focus:ring-2 focus:ring-[#1a5058]/20"
                 />
               </div>
 
@@ -625,14 +625,14 @@ export function TeacherMessagesClient({ messages, recipients }: TeacherMessagesC
                   onChange={(e) => setComposeBody(e.target.value)}
                   rows={4}
                   placeholder="Write your message..."
-                  className="w-full rounded-xl bg-[#edeeef] border-none px-3 py-2.5 text-sm text-[#1a2b3d] outline-none focus:ring-2 focus:ring-[#004649]/20 resize-none"
+                  className="w-full rounded-xl bg-[#edeeef] border-none px-3 py-2.5 text-sm text-[#1a2b3d] outline-none focus:ring-2 focus:ring-[#1a5058]/20 resize-none"
                 />
               </div>
 
               <button
                 onClick={() => void handleComposeSend()}
                 disabled={selectedRecipients.size === 0 || !composeBody.trim() || isComposeSending}
-                className="flex w-full items-center justify-center gap-2 rounded-xl bg-gradient-to-br from-[#004649] to-[#1b5e62] py-2.5 text-sm font-bold text-white shadow-[0_8px_20px_rgba(0,70,73,0.12)] hover:shadow-[0_8px_28px_rgba(0,70,73,0.22)] disabled:opacity-50 disabled:cursor-not-allowed transition-all"
+                className="flex w-full items-center justify-center gap-2 rounded-xl bg-gradient-to-br from-[#1a5058] to-[#1a5058] py-2.5 text-sm font-bold text-white shadow-[0_8px_20px_rgba(43,103,110,0.12)] hover:shadow-[0_8px_28px_rgba(43,103,110,0.22)] disabled:opacity-50 disabled:cursor-not-allowed transition-all"
               >
                 <Send className="h-4 w-4" />
                 {isComposeSending

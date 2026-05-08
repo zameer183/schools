@@ -52,7 +52,7 @@ export default async function TeacherNotificationsPage() {
           </form>
         }
         badge={
-          <span className="inline-flex items-center rounded-full bg-[#F5E6CC] px-3 py-1 text-xs font-bold text-[#D69E3F]">
+          <span className="inline-flex items-center rounded-full bg-[#fdf0e0] px-3 py-1 text-xs font-bold text-[#df8d29]">
             {unread} unread
           </span>
         }

@@ -50,7 +50,7 @@ export default async function TeacherMessagesPage() {
 
   if (session.role === 'TEACHER' && access && !access.MESSAGES) {
     return (
-      <div className="rounded-2xl bg-white shadow-[0_12px_40px_rgba(0,70,73,0.06)] p-8">
+      <div className="rounded-2xl bg-white shadow-[0_12px_40px_rgba(43,103,110,0.06)] p-8">
         <h2 className="font-headline text-3xl font-bold text-[#1a1c1c]">Messages Access Disabled</h2>
         <p className="mt-2 text-sm text-[#6f7979]">Admin has disabled your in-app messages module.</p>
       </div>

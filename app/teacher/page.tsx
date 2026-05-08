@@ -90,7 +90,7 @@ export default async function TeacherDashboardPage() {
 
   if (!teacher) {
     return (
-      <div className="rounded-2xl bg-white shadow-[0_12px_40px_rgba(0,70,73,0.06)] p-8">
+      <div className="rounded-2xl bg-white shadow-[0_12px_40px_rgba(43,103,110,0.06)] p-8">
         <h2 className="font-headline text-3xl font-bold text-[#1a1c1c]">Teacher Profile Missing</h2>
         <p className="mt-2 text-sm text-[#6f7979]">Your account is active but no teacher profile is linked yet. Contact admin.</p>
       </div>
@@ -136,12 +136,12 @@ export default async function TeacherDashboardPage() {
         <Card>
           <div className="flex items-center justify-between mb-4">
             <div className="flex items-center gap-2">
-              <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-[#F5E6CC]">
-                <ClipboardList className="h-4 w-4 text-[#D69E3F]" />
+              <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-[#fdf0e0]">
+                <ClipboardList className="h-4 w-4 text-[#df8d29]" />
               </div>
               <p className="text-sm font-bold text-[#1F2937]">Recent Assignments</p>
             </div>
-            <Link href="/teacher/assignments" className="text-xs font-semibold text-[#D69E3F] hover:underline">
+            <Link href="/teacher/assignments" className="text-xs font-semibold text-[#df8d29] hover:underline">
               Manage
             </Link>
           </div>
@@ -167,12 +167,12 @@ export default async function TeacherDashboardPage() {
         <Card>
           <div className="flex items-center justify-between mb-4">
             <div className="flex items-center gap-2">
-              <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-[#E0EBEC]">
-                <BookOpen className="h-4 w-4 text-[#1F5A5C]" />
+              <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-[#e0eff0]">
+                <BookOpen className="h-4 w-4 text-[#2b676e]" />
               </div>
               <p className="text-sm font-bold text-[#1F2937]">My Classes</p>
             </div>
-            <Link href="/teacher/attendance" className="text-xs font-semibold text-[#1F5A5C] hover:underline">
+            <Link href="/teacher/attendance" className="text-xs font-semibold text-[#2b676e] hover:underline">
               Mark attendance
             </Link>
           </div>

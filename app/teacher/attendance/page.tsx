@@ -291,27 +291,27 @@ export default function TeacherAttendancePage() {
 
   return (
     <div className="space-y-6">
-      <div className="rounded-2xl bg-white shadow-[0_12px_40px_rgba(0,70,73,0.06)] p-4 sm:p-6">
+      <div className="rounded-2xl bg-white shadow-[0_12px_40px_rgba(43,103,110,0.06)] p-4 sm:p-6">
         <h2 className="font-headline text-2xl sm:text-3xl font-bold text-[#1a1c1c]">Attendance Marking</h2>
         <p className="mt-2 text-[#5c6668]">Daily marking with weekly/monthly attendance report and status messages.</p>
 
         <div className="mt-6 grid gap-4 md:grid-cols-3">
-          <select className="h-11 rounded-xl bg-[#edeeef] border-none px-3 text-sm text-[#1a1c1c] focus:ring-2 focus:ring-[#004649]/20 outline-none" value={selectedClassId} onChange={(e) => setSelectedClassId(e.target.value)}>
+          <select className="h-11 rounded-xl bg-[#edeeef] border-none px-3 text-sm text-[#1a1c1c] focus:ring-2 focus:ring-[#1a5058]/20 outline-none" value={selectedClassId} onChange={(e) => setSelectedClassId(e.target.value)}>
             <option value="">Select class</option>
             {classes.map((cls) => (
               <option key={cls.id} value={cls.id}>{cls.name} - {cls.section}</option>
             ))}
           </select>
 
-          <input type="date" className="h-11 rounded-xl bg-[#edeeef] border-none px-3 text-sm text-[#1a1c1c] focus:ring-2 focus:ring-[#004649]/20 outline-none" value={date} onChange={(e) => setDate(e.target.value)} />
+          <input type="date" className="h-11 rounded-xl bg-[#edeeef] border-none px-3 text-sm text-[#1a1c1c] focus:ring-2 focus:ring-[#1a5058]/20 outline-none" value={date} onChange={(e) => setDate(e.target.value)} />
 
-          <button type="button" onClick={markAllPresent} className="h-11 rounded-xl border border-[#004649] px-4 font-semibold text-[#004649] hover:bg-[#f0f7f7]">Mark All Present</button>
+          <button type="button" onClick={markAllPresent} className="h-11 rounded-xl border border-[#1a5058] px-4 font-semibold text-[#1a5058] hover:bg-[#f0f7f7]">Mark All Present</button>
         </div>
       </div>
 
       <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4">
         {[{ label: 'Daily Present', value: countByStatus(dailyRows, 'PRESENT') }, { label: 'Weekly Present', value: countByStatus(weeklyRows, 'PRESENT') }, { label: 'Monthly Present', value: countByStatus(monthlyRows, 'PRESENT') }, { label: 'Monthly Absent', value: countByStatus(monthlyRows, 'ABSENT') }].map((item) => (
-          <div key={item.label} className="rounded-2xl bg-white shadow-[0_12px_40px_rgba(0,70,73,0.06)] p-4">
+          <div key={item.label} className="rounded-2xl bg-white shadow-[0_12px_40px_rgba(43,103,110,0.06)] p-4">
             <p className="text-[10px] font-bold uppercase tracking-widest text-[#6f7979]">{item.label}</p>
             <p className="mt-2 text-3xl font-bold text-[#1a1c1c]">{item.value}</p>
           </div>
@@ -325,19 +325,19 @@ export default function TeacherAttendancePage() {
           { label: 'My Monthly Present', value: countByStatus(myMonthlyStaffRows, 'PRESENT') },
           { label: 'My Monthly Absent', value: countByStatus(myMonthlyStaffRows, 'ABSENT') }
         ].map((item) => (
-          <div key={item.label} className="rounded-2xl bg-white shadow-[0_12px_40px_rgba(0,70,73,0.06)] p-4">
+          <div key={item.label} className="rounded-2xl bg-white shadow-[0_12px_40px_rgba(43,103,110,0.06)] p-4">
             <p className="text-[10px] font-bold uppercase tracking-widest text-[#6f7979]">{item.label}</p>
             <p className="mt-2 text-2xl font-bold text-[#1a1c1c]">{item.value}</p>
           </div>
         ))}
       </div>
 
-      <div className="rounded-2xl bg-white shadow-[0_12px_40px_rgba(0,70,73,0.06)] p-4 sm:p-6">
+      <div className="rounded-2xl bg-white shadow-[0_12px_40px_rgba(43,103,110,0.06)] p-4 sm:p-6">
         <h3 className="font-headline font-semibold text-[#1a1c1c]">Mark My Attendance</h3>
         <p className="mt-1 text-sm text-[#5c6668]">Teacher can mark own attendance for selected date.</p>
         <div className="mt-4 grid gap-3 md:grid-cols-3">
           <select
-            className="h-11 rounded-xl bg-[#edeeef] border-none px-3 text-sm text-[#1a1c1c] focus:ring-2 focus:ring-[#004649]/20 outline-none"
+            className="h-11 rounded-xl bg-[#edeeef] border-none px-3 text-sm text-[#1a1c1c] focus:ring-2 focus:ring-[#1a5058]/20 outline-none"
             value={myStatus}
             onChange={(e) => setMyStatus(e.target.value as AttendanceStatus)}
           >
@@ -348,7 +348,7 @@ export default function TeacherAttendancePage() {
             ))}
           </select>
           <input
-            className="h-11 rounded-xl bg-[#edeeef] border-none px-3 text-sm text-[#1a1c1c] focus:ring-2 focus:ring-[#004649]/20 outline-none md:col-span-2"
+            className="h-11 rounded-xl bg-[#edeeef] border-none px-3 text-sm text-[#1a1c1c] focus:ring-2 focus:ring-[#1a5058]/20 outline-none md:col-span-2"
             placeholder="Note (optional)"
             value={myNote}
             onChange={(e) => setMyNote(e.target.value)}
@@ -358,20 +358,20 @@ export default function TeacherAttendancePage() {
           type="button"
           onClick={saveMyAttendance}
           disabled={savingMyAttendance}
-          className="mt-4 h-10 rounded-xl bg-gradient-to-br from-[#004649] to-[#1b5e62] shadow-[0_8px_20px_rgba(0,70,73,0.12)] active:scale-[0.98] transition-all px-6 font-semibold text-white disabled:cursor-not-allowed disabled:opacity-60"
+          className="mt-4 h-10 rounded-xl bg-gradient-to-br from-[#1a5058] to-[#1a5058] shadow-[0_8px_20px_rgba(43,103,110,0.12)] active:scale-[0.98] transition-all px-6 font-semibold text-white disabled:cursor-not-allowed disabled:opacity-60"
         >
           {savingMyAttendance ? 'Saving...' : 'Save My Attendance'}
         </button>
       </div>
 
-      <div className="rounded-2xl bg-white shadow-[0_12px_40px_rgba(0,70,73,0.06)] p-4 sm:p-6">
+      <div className="rounded-2xl bg-white shadow-[0_12px_40px_rgba(43,103,110,0.06)] p-4 sm:p-6">
         <div className="mb-5 flex flex-wrap items-center justify-between gap-3">
           <h3 className="font-headline font-semibold text-[#1a1c1c]">Students ({classStudents.length})</h3>
           <div className="flex flex-wrap gap-2">
             <button type="button" onClick={() => void sendStatusMessage('ABSENT')} disabled={broadcasting} className="rounded-xl border border-[#fca5a5] px-3 py-2 text-xs font-semibold text-[#ba1a1a] hover:bg-[#fde8e8] disabled:opacity-60">Message Absent</button>
             <button type="button" onClick={() => void sendStatusMessage('LATE')} disabled={broadcasting} className="rounded-xl border border-[#f5d0a9] px-3 py-2 text-xs font-semibold text-[#865300] hover:bg-[#fff3e0] disabled:opacity-60">Message Late</button>
-            <button type="button" onClick={() => void sendStatusMessage('PRESENT')} disabled={broadcasting} className="rounded-xl border border-[#b7dfbc] px-3 py-2 text-xs font-semibold text-[#004649] hover:bg-[#e8f5e9] disabled:opacity-60">Message Present</button>
-            <button type="button" onClick={saveAttendance} disabled={saving || loading} className="h-10 rounded-xl bg-gradient-to-br from-[#004649] to-[#1b5e62] shadow-[0_8px_20px_rgba(0,70,73,0.12)] active:scale-[0.98] transition-all px-6 font-semibold text-white disabled:cursor-not-allowed disabled:opacity-60">{saving ? 'Saving...' : 'Save Attendance'}</button>
+            <button type="button" onClick={() => void sendStatusMessage('PRESENT')} disabled={broadcasting} className="rounded-xl border border-[#b7dfbc] px-3 py-2 text-xs font-semibold text-[#1a5058] hover:bg-[#e8f5e9] disabled:opacity-60">Message Present</button>
+            <button type="button" onClick={saveAttendance} disabled={saving || loading} className="h-10 rounded-xl bg-gradient-to-br from-[#1a5058] to-[#1a5058] shadow-[0_8px_20px_rgba(43,103,110,0.12)] active:scale-[0.98] transition-all px-6 font-semibold text-white disabled:cursor-not-allowed disabled:opacity-60">{saving ? 'Saving...' : 'Save Attendance'}</button>
           </div>
         </div>
 
@@ -380,12 +380,12 @@ export default function TeacherAttendancePage() {
             <div key={student.id} className="rounded-xl bg-[#f3f4f5] p-3">
               <p className="text-sm font-semibold text-[#1a1c1c]">{student.user.fullName}</p>
               <p className="mt-0.5 text-xs text-[#596364]">Admission: {student.admissionNo}</p>
-              <select className="mt-2 h-10 w-full rounded-xl bg-[#edeeef] border-none px-2 text-sm focus:ring-2 focus:ring-[#004649]/20 outline-none" value={records[student.id]?.status ?? 'PRESENT'} onChange={(e) => updateStatus(student.id, e.target.value as AttendanceStatus)}>
+              <select className="mt-2 h-10 w-full rounded-xl bg-[#edeeef] border-none px-2 text-sm focus:ring-2 focus:ring-[#1a5058]/20 outline-none" value={records[student.id]?.status ?? 'PRESENT'} onChange={(e) => updateStatus(student.id, e.target.value as AttendanceStatus)}>
                 {statusOptions.map((status) => (
                   <option key={status} value={status}>{status}</option>
                 ))}
               </select>
-              <input className="mt-2 h-10 w-full rounded-xl bg-[#edeeef] border-none px-2 text-sm focus:ring-2 focus:ring-[#004649]/20 outline-none" placeholder="Optional remark" value={records[student.id]?.remarks ?? ''} onChange={(e) => updateRemarks(student.id, e.target.value)} />
+              <input className="mt-2 h-10 w-full rounded-xl bg-[#edeeef] border-none px-2 text-sm focus:ring-2 focus:ring-[#1a5058]/20 outline-none" placeholder="Optional remark" value={records[student.id]?.remarks ?? ''} onChange={(e) => updateRemarks(student.id, e.target.value)} />
             </div>
           ))}
         </div>
@@ -406,14 +406,14 @@ export default function TeacherAttendancePage() {
                   <td className="px-3 py-3 font-semibold text-[#1a1c1c]">{student.user.fullName}</td>
                   <td className="px-3 py-3 text-[#596364]">{student.admissionNo}</td>
                   <td className="px-3 py-3">
-                    <select className="h-10 rounded-xl bg-[#edeeef] border-none px-2 text-sm focus:ring-2 focus:ring-[#004649]/20 outline-none" value={records[student.id]?.status ?? 'PRESENT'} onChange={(e) => updateStatus(student.id, e.target.value as AttendanceStatus)}>
+                    <select className="h-10 rounded-xl bg-[#edeeef] border-none px-2 text-sm focus:ring-2 focus:ring-[#1a5058]/20 outline-none" value={records[student.id]?.status ?? 'PRESENT'} onChange={(e) => updateStatus(student.id, e.target.value as AttendanceStatus)}>
                       {statusOptions.map((status) => (
                         <option key={status} value={status}>{status}</option>
                       ))}
                     </select>
                   </td>
                   <td className="px-3 py-3">
-                    <input className="h-10 w-full rounded-xl bg-[#edeeef] border-none px-2 text-sm focus:ring-2 focus:ring-[#004649]/20 outline-none" placeholder="Optional remark" value={records[student.id]?.remarks ?? ''} onChange={(e) => updateRemarks(student.id, e.target.value)} />
+                    <input className="h-10 w-full rounded-xl bg-[#edeeef] border-none px-2 text-sm focus:ring-2 focus:ring-[#1a5058]/20 outline-none" placeholder="Optional remark" value={records[student.id]?.remarks ?? ''} onChange={(e) => updateRemarks(student.id, e.target.value)} />
                   </td>
                 </tr>
               ))}
@@ -425,7 +425,7 @@ export default function TeacherAttendancePage() {
         {message ? <p className="mt-4 rounded-xl bg-[#f3f4f3] px-4 py-3 text-sm text-[#1a1c1c]">{message}</p> : null}
       </div>
 
-      <div className="rounded-2xl bg-white shadow-[0_12px_40px_rgba(0,70,73,0.06)] p-4 sm:p-6">
+      <div className="rounded-2xl bg-white shadow-[0_12px_40px_rgba(43,103,110,0.06)] p-4 sm:p-6">
         <h3 className="font-headline font-semibold text-[#1a1c1c]">My Staff Attendance Record</h3>
         <div className="mt-4 space-y-2 md:hidden">
           {myMonthlyStaffRows.map((row) => (

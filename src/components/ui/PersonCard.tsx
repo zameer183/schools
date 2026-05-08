@@ -17,7 +17,7 @@ export function PersonCard({ name, detail, avatar }: PersonCardProps) {
       {avatar ? (
         <img src={avatar} alt={name} className="h-9 w-9 rounded-full object-cover" />
       ) : (
-        <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-[#E0EBEC] text-xs font-bold text-[#1F5A5C]">
+        <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-[#e0eff0] text-xs font-bold text-[#2b676e]">
           {initials}
         </div>
       )}
