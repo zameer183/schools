@@ -92,7 +92,8 @@ export default async function TeacherMessagesPage() {
       senderRole: session.role as string,
       createdAt: toIso(msg.createdAt),
       isRead: true,
-      direction: 'sent' as const
+      direction: 'sent' as const,
+      recipientNames: msg.recipients.map((r) => r.user.fullName)
     }))
   ].sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
 
