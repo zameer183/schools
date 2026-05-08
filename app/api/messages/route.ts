@@ -1,5 +1,6 @@
 ﻿import { UserRole } from '@prisma/client';
 import { NextResponse } from 'next/server';
+import { revalidatePath } from 'next/cache';
 import { prisma } from '@/lib/prisma';
 import { ensureApiRole } from '@/lib/rbac';
 import { hasTeacherAccessByUserId } from '@/lib/teacher-access';
@@ -58,6 +59,11 @@ export async function POST(request: Request) {
     },
     include: { recipients: true }
   });
+
+  // bust sender + all recipient page caches so messages appear immediately on refresh
+  revalidatePath('/teacher/messages');
+  revalidatePath('/student/messages');
+  revalidatePath('/admin/messages');
 
   return NextResponse.json(message, { status: 201 });
 }

@@ -1,5 +1,4 @@
 import { UserRole } from '@prisma/client';
-import { unstable_cache } from 'next/cache';
 import { requireAuth } from '@/lib/auth';
 import { prisma } from '@/lib/prisma';
 import { StudentMessagesChatClient, type StudentInboxItem, type StudentOutgoingMap, type AvailableTeacher } from './student-messages-chat-client';
@@ -13,73 +12,64 @@ function toIsoString(value: Date | string | null | undefined) {
   return Number.isNaN(parsed.getTime()) ? null : parsed.toISOString();
 }
 
-const getCachedStudentMessagesData = unstable_cache(
-  async (userId: string) => {
-    const [inbox, sent, student] = await Promise.all([
-      prisma.messageRecipient.findMany({
-        where: { userId },
-        include: { message: { include: { sender: { select: { id: true, fullName: true, role: true } } } } },
-        orderBy: { message: { createdAt: 'desc' } },
-        take: 100
-      }),
-      prisma.message.findMany({
-        where: { senderId: userId },
-        include: {
-          recipients: {
-            include: {
-              user: { select: { id: true } }
-            }
+export default async function StudentMessagesPage() {
+  const session = await requireAuth([UserRole.STUDENT]);
+
+  const [inbox, sent, student] = await Promise.all([
+    prisma.messageRecipient.findMany({
+      where: { userId: session.id },
+      include: { message: { include: { sender: { select: { id: true, fullName: true, role: true } } } } },
+      orderBy: { message: { createdAt: 'desc' } },
+      take: 100
+    }),
+    prisma.message.findMany({
+      where: { senderId: session.id },
+      include: {
+        recipients: {
+          include: {
+            user: { select: { id: true } }
           }
-        },
-        orderBy: { createdAt: 'desc' },
-        take: 100
-      }),
-      prisma.student.findUnique({
-        where: { userId },
-        select: {
-          classId: true,
-          class: {
-            select: {
-              subjects: {
-                select: {
-                  teacher: {
-                    select: { user: { select: { id: true, fullName: true } } }
-                  }
+        }
+      },
+      orderBy: { createdAt: 'desc' },
+      take: 100
+    }),
+    prisma.student.findUnique({
+      where: { userId: session.id },
+      select: {
+        classId: true,
+        class: {
+          select: {
+            subjects: {
+              select: {
+                teacher: {
+                  select: { user: { select: { id: true, fullName: true } } }
                 }
-              },
-              teacherLinks: {
-                select: {
-                  teacher: {
-                    select: { user: { select: { id: true, fullName: true } } }
-                  }
+              }
+            },
+            teacherLinks: {
+              select: {
+                teacher: {
+                  select: { user: { select: { id: true, fullName: true } } }
                 }
               }
             }
           }
         }
-      })
-    ]);
+      }
+    })
+  ]);
 
-    const teacherMap = new Map<string, string>();
-    if (student?.class) {
-      for (const sub of student.class.subjects) {
-        if (sub.teacher) teacherMap.set(sub.teacher.user.id, sub.teacher.user.fullName);
-      }
-      for (const ta of student.class.teacherLinks) {
-        teacherMap.set(ta.teacher.user.id, ta.teacher.user.fullName);
-      }
+  const teacherMap = new Map<string, string>();
+  if (student?.class) {
+    for (const sub of student.class.subjects) {
+      if (sub.teacher) teacherMap.set(sub.teacher.user.id, sub.teacher.user.fullName);
     }
-    const teachers = Array.from(teacherMap.entries()).map(([id, fullName]) => ({ id, fullName }));
-
-    return { inbox, sent, teachers };
-  },
-  ['student-messages-page-data'],
-  { revalidate: 30 }
-);
-
-export default async function StudentMessagesPage() {
-  const session = await requireAuth([UserRole.STUDENT]);
-  const { inbox, sent, teachers } = await getCachedStudentMessagesData(session.id);
+    for (const ta of student.class.teacherLinks) {
+      teacherMap.set(ta.teacher.user.id, ta.teacher.user.fullName);
+    }
+  }
+  const teachers = Array.from(teacherMap.entries()).map(([id, fullName]) => ({ id, fullName }));
 
   const serializedInbox: StudentInboxItem[] = inbox.map((item) => ({
     id: item.id,

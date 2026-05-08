@@ -1,4 +1,3 @@
-import { unstable_cache } from 'next/cache';
 import { UserRole } from '@prisma/client';
 import { requireAuth } from '@/lib/auth';
 import { prisma } from '@/lib/prisma';
@@ -8,45 +7,36 @@ import { TeacherMessagesClient, type SerializedMessage, type RecipientOption } f
 
 export const dynamic = 'force-dynamic';
 
-const getCachedTeacherMessagesData = unstable_cache(
-  async (userId: string) => {
-    const [access, teacher, inbox, sent] = await Promise.all([
-      getTeacherAccessMapByUserId(userId),
-      prisma.teacher.findUnique({
-        where: { userId },
-        include: {
-          classAssignments: {
-            include: {
-              class: {
-                include: { students: { include: { user: true }, orderBy: { createdAt: 'desc' } } }
-              }
+export default async function TeacherMessagesPage() {
+  const session = await requireAuth([UserRole.TEACHER, UserRole.ADMIN]);
+
+  const [access, teacher, inbox, sent] = await Promise.all([
+    getTeacherAccessMapByUserId(session.id),
+    prisma.teacher.findUnique({
+      where: { userId: session.id },
+      include: {
+        classAssignments: {
+          include: {
+            class: {
+              include: { students: { include: { user: true }, orderBy: { createdAt: 'desc' } } }
             }
           }
         }
-      }),
-      prisma.messageRecipient.findMany({
-        where: { userId },
-        include: { message: { include: { sender: { select: { id: true, fullName: true, role: true } } } } },
-        orderBy: { message: { createdAt: 'desc' } },
-        take: 50
-      }),
-      prisma.message.findMany({
-        where: { senderId: userId },
-        include: { recipients: { include: { user: { select: { id: true, fullName: true } } } } },
-        orderBy: { createdAt: 'desc' },
-        take: 50
-      })
-    ]);
-
-    return { access, teacher, inbox, sent };
-  },
-  ['teacher-messages-page-data'],
-  { revalidate: 30 }
-);
-
-export default async function TeacherMessagesPage() {
-  const session = await requireAuth([UserRole.TEACHER, UserRole.ADMIN]);
-  const { access, teacher, inbox, sent } = await getCachedTeacherMessagesData(session.id);
+      }
+    }),
+    prisma.messageRecipient.findMany({
+      where: { userId: session.id },
+      include: { message: { include: { sender: { select: { id: true, fullName: true, role: true } } } } },
+      orderBy: { message: { createdAt: 'desc' } },
+      take: 100
+    }),
+    prisma.message.findMany({
+      where: { senderId: session.id },
+      include: { recipients: { include: { user: { select: { id: true, fullName: true } } } } },
+      orderBy: { createdAt: 'desc' },
+      take: 100
+    })
+  ]);
 
   if (session.role === 'TEACHER' && access && !access.MESSAGES) {
     return (
