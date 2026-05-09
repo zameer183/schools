@@ -246,12 +246,6 @@ export function StudentMessagesChatClient({
   }, []);
 
   useEffect(() => {
-    if (!activeId && filteredConversations[0]?.id) {
-      setActiveId(filteredConversations[0].id);
-    }
-  }, [activeId, filteredConversations]);
-
-  useEffect(() => {
     setIsTyping(draft.trim().length > 0);
   }, [draft]);
 

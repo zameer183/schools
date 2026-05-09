@@ -269,10 +269,6 @@ export function TeacherMessagesClient({ messages, recipients }: TeacherMessagesC
   const activeConv = filtered.find((c) => c.personId === activeId) ?? null;
 
   useEffect(() => {
-    if (!activeId && filtered[0]?.personId) setActiveId(filtered[0].personId);
-  }, [activeId, filtered]);
-
-  useEffect(() => {
     if (!activeConv || activeConv.unreadCount === 0) return;
     setLocallyRead((prev) => new Set(prev).add(activeConv.personId));
   }, [activeConv]);
