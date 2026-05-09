@@ -1,5 +1,6 @@
 'use client';
 
+import Link from 'next/link';
 import { useEffect, useState } from 'react';
 
 type TeacherItem = {
@@ -7,7 +8,7 @@ type TeacherItem = {
   employeeCode: string;
   qualification?: string | null;
   specialization?: string | null;
-  user: { fullName: string; email: string };
+  user: { fullName: string; email: string; isActive: boolean };
 };
 
 const initialForm = {
@@ -196,7 +197,7 @@ export default function AdminTeachersPage() {
           {filtered.map((teacher, i) => {
             const dept = getDept(teacher.specialization);
             const title = getTitle(teacher.qualification);
-            const isActive = i % 5 !== 3;
+            const isActive = teacher.user.isActive;
             const colorClass = avatarColors[i % avatarColors.length];
 
             return (
@@ -235,7 +236,7 @@ export default function AdminTeachersPage() {
                       Message
                     </button>
                     <button className="text-[10px] font-bold text-[#1a1c1c] px-2 py-1.5 hover:bg-[#f5f7f5] rounded-lg transition">Edit</button>
-                    <button className="text-[10px] font-bold text-[#1a1c1c] px-2 py-1.5 hover:bg-[#f5f7f5] rounded-lg transition">Profile</button>
+                    <Link href={`/admin/teachers/${teacher.id}`} className="text-[10px] font-bold text-[#1a1c1c] px-2 py-1.5 hover:bg-[#f5f7f5] rounded-lg transition">Profile</Link>
                   </div>
                 </div>
               </div>
