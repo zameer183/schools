@@ -510,9 +510,9 @@ export function StudentMessagesChatClient({
             </div>
           </div>
 
-          <div className="flex-1 space-y-2 overflow-auto bg-[#f5f7fa] px-4 py-4">
+          <div className="flex-1 space-y-2 overflow-auto bg-[#eef2f5] px-4 py-4">
             {activeConversation.messages.map((message) => (
-              <div key={message.id} className={`flex ${message.direction === 'out' ? 'justify-end' : 'justify-start'}`}>
+              <div key={message.id} className={`group flex ${message.direction === 'out' ? 'justify-end' : 'justify-start'}`}>
                 <div
                   className={`max-w-[85%] rounded-2xl px-3 py-2 text-sm shadow-sm ${
                     message.direction === 'out'
@@ -523,17 +523,16 @@ export function StudentMessagesChatClient({
                   <p className="whitespace-pre-wrap">{message.body}</p>
                   <div className="mt-1 flex items-center justify-between gap-2">
                     <div className={`text-[10px] ${message.direction === 'out' ? 'text-[#d8f2f2]' : 'text-[#8aa0b3]'}`} suppressHydrationWarning>
-                      {mounted ? formatTime(message.createdAt) : ''} {message.pending ? '- Sending...' : ''}
+                      {mounted ? formatTime(message.createdAt) : ''}{message.pending ? ' · Sending...' : ''}
                     </div>
                     {!message.pending && !message.id.startsWith('temp-') ? (
                       <button
                         type="button"
                         onClick={() => void handleDeleteMessage(message.id, message.direction)}
-                        className={`inline-flex items-center gap-1 rounded-md px-1.5 py-0.5 text-[10px] ${message.direction === 'out' ? 'text-white/85 hover:bg-white/15' : 'text-[#8aa0b3] hover:bg-[#e8eff3]'}`}
-                        title="Delete message"
+                        className={`opacity-0 group-hover:opacity-100 transition-opacity ${message.direction === 'out' ? 'text-white/70 hover:text-white' : 'text-[#8aa0b3] hover:text-red-400'}`}
+                        title="Delete"
                       >
                         <Trash2 className="h-3 w-3" />
-                        Delete
                       </button>
                     ) : null}
                   </div>
@@ -555,7 +554,7 @@ export function StudentMessagesChatClient({
                     void handleSend();
                   }
                 }}
-                placeholder="Write a message..."
+                placeholder={`Message ${activeConversation.senderName.split(' ')[0]}...`}
                 className="h-11 flex-1 rounded-full bg-[#edeeef] border-none px-4 text-sm text-[#1a2b3d] outline-none focus:ring-2 focus:ring-[#004649]/20"
               />
               <button
@@ -569,10 +568,15 @@ export function StudentMessagesChatClient({
           </div>
         </>
       ) : (
-        <div className="grid flex-1 place-items-center bg-[#f5f7fa] p-8">
-          <div className="max-w-sm rounded-2xl border border-dashed border-[#ccd8e0] bg-white p-8 text-center">
-            <h3 className="text-lg font-bold text-[#1a2b3d]">No Chat Selected</h3>
-            <p className="mt-2 text-sm text-[#607080]">Choose a conversation from the chat list to start messaging.</p>
+        <div className="grid flex-1 place-items-center bg-[#eef2f5] p-8">
+          <div className="flex flex-col items-center gap-3 text-center">
+            <div className="flex h-20 w-20 items-center justify-center rounded-full bg-[#d4eaeb]">
+              <MessageSquarePlus className="h-9 w-9 text-[#004649]" />
+            </div>
+            <div>
+              <h3 className="text-base font-bold text-[#1a2b3d]">Select a conversation</h3>
+              <p className="mt-1 text-sm text-[#607080]">Tap any chat to open messages.</p>
+            </div>
           </div>
         </div>
       )}

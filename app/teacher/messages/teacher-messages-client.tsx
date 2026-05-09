@@ -578,9 +578,9 @@ export function TeacherMessagesClient({ messages, recipients }: TeacherMessagesC
           </div>
 
           {/* Bubbles */}
-          <div className="flex-1 space-y-2 overflow-auto bg-[#f5f7fa] px-4 py-4">
+          <div className="flex-1 space-y-2 overflow-auto bg-[#eef2f5] px-4 py-4">
             {activeConv.messages.map((msg) => (
-              <div key={msg.id} className={`flex ${msg.direction === 'out' ? 'justify-end' : 'justify-start'}`}>
+              <div key={msg.id} className={`group flex ${msg.direction === 'out' ? 'justify-end' : 'justify-start'}`}>
                 <div className={`max-w-[80%] rounded-2xl px-3 py-2 text-sm shadow-sm ${
                   msg.direction === 'out'
                     ? 'rounded-br-sm bg-[#1a5058] text-white'
@@ -589,17 +589,16 @@ export function TeacherMessagesClient({ messages, recipients }: TeacherMessagesC
                   <p className="whitespace-pre-wrap leading-relaxed">{msg.body}</p>
                   <div className="mt-1 flex items-center justify-between gap-2">
                     <div className={`text-[10px] ${msg.direction === 'out' ? 'text-[#d8f2f2]' : 'text-[#8aa0b3]'}`} suppressHydrationWarning>
-                      {mounted ? formatTime(msg.createdAt) : ''}{msg.pending ? ' - Sending...' : ''}
+                      {mounted ? formatTime(msg.createdAt) : ''}{msg.pending ? ' · Sending...' : ''}
                     </div>
                     {!msg.pending && !msg.id.startsWith('tmp-') ? (
                       <button
                         type="button"
                         onClick={() => void handleDeleteMessage(msg.id, msg.direction)}
-                        className={`inline-flex items-center gap-1 rounded-md px-1.5 py-0.5 text-[10px] ${msg.direction === 'out' ? 'text-white/85 hover:bg-white/15' : 'text-[#8aa0b3] hover:bg-[#e8eff3]'}`}
-                        title="Delete message"
+                        className={`opacity-0 group-hover:opacity-100 transition-opacity ${msg.direction === 'out' ? 'text-white/70 hover:text-white' : 'text-[#8aa0b3] hover:text-red-400'}`}
+                        title="Delete"
                       >
                         <Trash2 className="h-3 w-3" />
-                        Delete
                       </button>
                     ) : null}
                   </div>
@@ -634,12 +633,17 @@ export function TeacherMessagesClient({ messages, recipients }: TeacherMessagesC
         </>
       ) : (
         <div className="grid flex-1 place-items-center bg-[#f5f7fa] p-8">
-          <div className="max-w-sm rounded-2xl border border-dashed border-[#ccd8e0] bg-white p-8 text-center">
-            <h3 className="text-lg font-bold text-[#1a2b3d]">No Chat Selected</h3>
-            <p className="mt-2 text-sm text-[#607080]">Choose a conversation from the list to start messaging.</p>
+          <div className="flex flex-col items-center gap-4 text-center">
+            <div className="flex h-20 w-20 items-center justify-center rounded-full bg-[#e0f0f1]">
+              <MessageSquarePlus className="h-9 w-9 text-[#2b676e]" />
+            </div>
+            <div>
+              <h3 className="text-base font-bold text-[#1a2b3d]">Select a conversation</h3>
+              <p className="mt-1 text-sm text-[#607080]">Or start a new message to your students.</p>
+            </div>
             <button
               onClick={() => setShowCompose(true)}
-              className="mt-4 inline-flex items-center gap-1.5 rounded-xl bg-gradient-to-br from-[#2b676e] to-[#1a5058] px-4 py-2 text-sm font-semibold text-white shadow-[0_8px_20px_rgba(43,103,110,0.12)]"
+              className="inline-flex items-center gap-1.5 rounded-xl bg-gradient-to-br from-[#2b676e] to-[#1a5058] px-4 py-2 text-sm font-semibold text-white shadow-[0_8px_20px_rgba(43,103,110,0.12)] active:scale-[0.98] transition-all"
             >
               <MessageSquarePlus className="h-4 w-4" />
               New Message
