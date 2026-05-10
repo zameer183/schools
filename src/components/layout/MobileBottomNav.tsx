@@ -15,7 +15,7 @@ type NavItem = {
 const mobilePrimaryByRole: Record<UserRole, string[]> = {
   ADMIN: ['/admin', '/admin/students', '/admin/attendance', '/admin/finance'],
   TEACHER: ['/teacher', '/teacher/students', '/teacher/attendance', '/teacher/messages'],
-  STUDENT: ['/student', '/student/schedule', '/student/assignments', '/student/messages'],
+  STUDENT: ['/student', '/student/attendance', '/student/progress', '/student/fees', '/student/messages'],
   PARENT: ['/parent', '/parent/performance', '/parent/fees', '/parent/attendance'],
 };
 

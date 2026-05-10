@@ -1,93 +1,129 @@
-import { UserRole } from '@prisma/client';
-import { hash } from 'bcryptjs';
-import { requireAuth, verifyPassword } from '@/lib/auth';
+import { requireAuth } from '@/lib/auth';
 import { prisma } from '@/lib/prisma';
-import SettingsWorkspace from './settings-workspace';
+import { UserRole } from '@prisma/client';
+import Link from 'next/link';
+import { ArrowRight, BarChart3, Building2, Lock, MessageSquare, ShieldCheck, UserRound } from 'lucide-react';
 
 export const dynamic = 'force-dynamic';
 
-type SaveState = { ok: boolean; message: string };
-
-async function saveSettingsAction(userId: string, prev: SaveState, formData: FormData): Promise<SaveState> {
-  'use server';
-
-  const fullName = String(formData.get('fullName') ?? '').trim();
-  const email = String(formData.get('email') ?? '').trim().toLowerCase();
-  const phone = String(formData.get('phone') ?? '').trim();
-  const avatarDataUrl = String(formData.get('avatarDataUrl') ?? '').trim();
-  const currentPassword = String(formData.get('currentPassword') ?? '');
-  const newPassword = String(formData.get('newPassword') ?? '');
-  const confirmPassword = String(formData.get('confirmPassword') ?? '');
-
-  if (!fullName || !email) return { ok: false, message: 'Name and email are required.' };
-
-  const currentUser = await prisma.user.findUnique({ where: { id: userId } });
-  if (!currentUser) return { ok: false, message: 'Admin user not found.' };
-
-  const duplicate = await prisma.user.findFirst({
-    where: { email, NOT: { id: userId } },
-    select: { id: true }
-  });
-  if (duplicate) return { ok: false, message: 'Email already in use by another account.' };
-
-  if (newPassword || confirmPassword || currentPassword) {
-    if (newPassword.length < 6) return { ok: false, message: 'New password must be at least 6 characters.' };
-    if (newPassword !== confirmPassword) return { ok: false, message: 'Password confirmation does not match.' };
-    const isCurrentValid = await verifyPassword(currentPassword, currentUser.passwordHash);
-    if (!isCurrentValid) return { ok: false, message: 'Current password is incorrect.' };
-  }
-
-  await prisma.user.update({
-    where: { id: userId },
-    data: {
-      fullName,
-      email,
-      phone: phone || null,
-      avatarUrl: avatarDataUrl || currentUser.avatarUrl || null,
-      ...(newPassword ? { passwordHash: await hash(newPassword, 12) } : {})
-    }
-  });
-
-  return { ok: true, message: 'Settings saved successfully.' };
+function initials(name: string) {
+  return name
+    .split(' ')
+    .filter(Boolean)
+    .slice(0, 2)
+    .map((part) => part[0]?.toUpperCase() ?? '')
+    .join('');
 }
+
+const categories = [
+  {
+    title: 'Profile',
+    href: '/admin/settings/profile',
+    icon: UserRound,
+    iconBg: 'bg-[#fdf6e9]',
+    iconColor: 'text-[#C9952A]',
+    description: 'Name, email, phone, avatar',
+  },
+  {
+    title: 'Institution',
+    href: '/admin/settings/institution',
+    icon: Building2,
+    iconBg: 'bg-[#f0f7f3]',
+    iconColor: 'text-[#0C3D2E]',
+    description: 'Brand, address, contact info',
+  },
+  {
+    title: 'Security',
+    href: '/admin/settings/security',
+    icon: ShieldCheck,
+    iconBg: 'bg-[#fdf6e9]',
+    iconColor: 'text-[#C9952A]',
+    description: 'Password, 2FA, access control',
+  },
+  {
+    title: 'SMS Templates',
+    href: '/admin/settings/sms-templates',
+    icon: MessageSquare,
+    iconBg: 'bg-[#f0f7f3]',
+    iconColor: 'text-[#0C3D2E]',
+    description: 'WhatsApp & SMS message bodies',
+  },
+  {
+    title: 'System',
+    href: '/admin/settings/system',
+    icon: BarChart3,
+    iconBg: 'bg-[#fdf6e9]',
+    iconColor: 'text-[#C9952A]',
+    description: 'Usage stats and platform health',
+  },
+  {
+    title: 'Roles & Permissions',
+    href: '/admin/roles',
+    icon: Lock,
+    iconBg: 'bg-[#f0f7f3]',
+    iconColor: 'text-[#0C3D2E]',
+    description: 'Manage admin access levels',
+  },
+];
 
 export default async function AdminSettingsPage() {
   const session = await requireAuth([UserRole.ADMIN]);
 
-  const [admin, userCounts, teacherCount, studentCount, totalStorage] = await Promise.all([
-    prisma.user.findUnique({
-      where: { id: session.id },
-      select: { fullName: true, email: true, phone: true, avatarUrl: true, createdAt: true }
-    }),
-    prisma.user.count(),
-    prisma.teacher.count(),
-    prisma.student.count(),
-    prisma.fileAsset.aggregate({ _sum: { sizeInBytes: true } })
-  ]);
+  const admin = await prisma.user.findUnique({
+    where: { id: session.id },
+    select: { fullName: true, email: true, avatarUrl: true },
+  });
 
-  if (!admin) {
-    return <div className="rounded-2xl bg-white p-6 text-sm text-[#6f7979]">Admin profile not found.</div>;
-  }
-
-  const storageMb = (Number(totalStorage._sum.sizeInBytes ?? 0) / (1024 * 1024)).toFixed(1);
+  const name = admin?.fullName ?? 'Admin';
+  const email = admin?.email ?? '';
+  const avatarUrl = admin?.avatarUrl ?? '';
+  const initStr = initials(name) || 'AD';
 
   return (
-    <SettingsWorkspace
-      admin={{
-        fullName: admin.fullName,
-        email: admin.email,
-        phone: admin.phone ?? '',
-        avatarUrl: admin.avatarUrl ?? '',
-        createdAtLabel: new Date(admin.createdAt).toLocaleDateString('en-CA')
-      }}
-      system={{
-        totalUsers: userCounts,
-        totalStorageMb: storageMb,
-        activeTeachers: teacherCount,
-        activeStudents: studentCount
-      }}
-      action={saveSettingsAction.bind(null, session.id)}
-    />
+    <div className="space-y-6">
+      {/* Hero banner */}
+      <div className="rounded-2xl bg-gradient-to-r from-[#0C3D2E] to-[#1a5c41] px-6 py-8 sm:px-8 shadow-[0_4px_20px_rgba(12,61,46,0.25)]">
+        <div className="flex items-center gap-4">
+          <div className="relative h-16 w-16 shrink-0 overflow-hidden rounded-2xl border-2 border-white/20 bg-white/10">
+            {avatarUrl ? (
+              // eslint-disable-next-line @next/next/no-img-element
+              <img src={avatarUrl} alt={name} className="h-full w-full object-cover" />
+            ) : (
+              <div className="flex h-full w-full items-center justify-center text-xl font-bold text-white">
+                {initStr}
+              </div>
+            )}
+          </div>
+          <div>
+            <p className="text-xs font-semibold uppercase tracking-[0.14em] text-white/60">Admin Settings</p>
+            <h1 className="mt-0.5 text-2xl font-bold text-white sm:text-3xl">{name}</h1>
+            <p className="mt-0.5 text-sm text-white/70">{email}</p>
+          </div>
+        </div>
+      </div>
+
+      {/* Category grid */}
+      <div className="grid gap-4 sm:grid-cols-2">
+        {categories.map((cat) => {
+          const Icon = cat.icon;
+          return (
+            <Link
+              key={cat.href}
+              href={cat.href}
+              className="group rounded-2xl bg-white border border-[#e5e7eb] p-5 hover:shadow-[0_4px_16px_rgba(12,61,46,0.10)] hover:border-l-4 hover:border-l-[#C9952A] transition-all cursor-pointer flex items-center gap-4"
+            >
+              <div className={`shrink-0 inline-flex h-12 w-12 items-center justify-center rounded-xl ${cat.iconBg}`}>
+                <Icon className={`h-5 w-5 ${cat.iconColor}`} />
+              </div>
+              <div className="flex-1 min-w-0">
+                <p className="text-sm font-semibold text-[#0f172a] group-hover:text-[#0C3D2E] transition">{cat.title}</p>
+                <p className="mt-0.5 text-xs text-[#64748b]">{cat.description}</p>
+              </div>
+              <ArrowRight className="h-4 w-4 shrink-0 text-[#94a3b8] group-hover:text-[#C9952A] transition" />
+            </Link>
+          );
+        })}
+      </div>
+    </div>
   );
 }
-

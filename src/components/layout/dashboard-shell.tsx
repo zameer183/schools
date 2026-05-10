@@ -49,6 +49,8 @@ const navByRole: Record<UserRole, NavItem[]> = {
   ],
   STUDENT: [
     { href: '/student', label: 'Dashboard', icon: Home },
+    { href: '/student/attendance', label: 'Attendance', icon: CalendarCheck2 },
+    { href: '/student/progress', label: 'Progress', icon: BarChart3 },
     { href: '/student/schedule', label: 'Schedule', icon: BookOpen },
     { href: '/student/assignments', label: 'Assignments', icon: CalendarCheck2 },
     { href: '/student/results', label: 'Results', icon: BarChart3 },
@@ -137,9 +139,9 @@ export function DashboardShell({
   }, [pathname]);
 
   return (
-    <div className="flex min-h-screen overflow-x-clip bg-[#f3f4f5]">
+    <div className="flex min-h-screen overflow-x-clip print:overflow-visible bg-[#f3f4f5]">
       {/* Desktop sidebar - always visible on md+ */}
-      <aside className="fixed left-0 top-0 z-40 hidden h-screen w-[220px] flex-col border-r border-[#e2e8e8]/60 bg-[#f3f4f5] md:flex">
+      <aside className="fixed left-0 top-0 z-40 hidden h-screen w-[220px] flex-col border-r border-[#e2e8e8]/60 bg-[#f3f4f5] md:flex print:hidden">
         {/* Branding */}
         <div className="border-b border-[#e2e8e8] px-5 pb-5 pt-6">
           <Link href={instituteProfilePath}>
@@ -189,6 +191,7 @@ export function DashboardShell({
       </aside>
 
       {/* Mobile drawer */}
+      <div className="print:hidden">
       <MobileDrawer
         isOpen={sidebarOpen}
         onClose={() => setSidebarOpen(false)}
@@ -198,12 +201,13 @@ export function DashboardShell({
         doLogout={doLogout}
         pathname={pathname}
       />
+      </div>
 
       {/* Main area */}
-      <div className="flex min-h-screen w-full min-w-0 flex-1 flex-col md:pl-[220px]">
+      <div className="flex min-h-screen w-full min-w-0 flex-1 flex-col md:pl-[220px] print:pl-0">
         {/* Header */}
         {!hideHeader ? (
-        <header className="fixed left-0 right-0 top-0 z-20 flex h-14 items-center justify-between bg-white/90 backdrop-blur-md border-b border-[#e2e8e8]/60 shadow-[0_1px_20px_rgba(0,70,73,0.06)] px-4 md:left-[220px] md:px-6">
+        <header className="fixed left-0 right-0 top-0 z-20 flex h-14 items-center justify-between bg-white/90 backdrop-blur-md border-b border-[#e2e8e8]/60 shadow-[0_1px_20px_rgba(0,70,73,0.06)] px-4 md:left-[220px] md:px-6 print:hidden">
           <div className="flex min-w-0 items-center">
             <Link href={instituteProfilePath} className="md:hidden">
               <Image
@@ -265,13 +269,15 @@ export function DashboardShell({
         ) : null}
 
         {/* Page content */}
-        <main className={`w-full min-w-0 flex-1 overflow-x-hidden px-4 pb-24 md:pb-6 ${hideHeader ? 'pt-4' : 'pt-16'} md:px-6`}>
+        <main className={`w-full min-w-0 flex-1 overflow-x-hidden print:overflow-visible px-4 pb-24 md:pb-6 print:pb-0 print:px-0 ${hideHeader ? 'pt-4' : 'pt-16'} md:px-6 print:pt-0`}>
           {children}
         </main>
       </div>
 
       {/* Mobile bottom navigation */}
-      <MobileBottomNav navItems={navItems} role={role} doLogout={doLogout} pathname={pathname} />
+      <div className="print:hidden">
+        <MobileBottomNav navItems={navItems} role={role} doLogout={doLogout} pathname={pathname} />
+      </div>
     </div>
   );
 }

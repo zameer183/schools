@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import { ChevronDown, MessageSquare, Search, SlidersHorizontal, X } from 'lucide-react';
 
 type FeeFilter = 'all' | 'paid' | 'unpaid' | 'partial' | 'overdue';
@@ -50,7 +50,22 @@ function toWaRecipient(phone: string | null | undefined) {
   return digits.length >= 10 ? digits : null;
 }
 
-function buildPaidTemplate(row: SerializedFeeRow) {
+function applyTemplate(body: string, vars: Record<string, string>): string {
+  return body.replace(/\{(\w+)\}/g, (_, key) => vars[key] ?? `{${key}}`);
+}
+
+function buildPaidTemplate(row: SerializedFeeRow, templateBody?: string) {
+  if (templateBody) {
+    return applyTemplate(templateBody, {
+      studentName: row.studentName,
+      guardianName: 'Parent/Guardian',
+      amount: formatPkr(row.amount),
+      date: new Date().toLocaleDateString('en-CA'),
+      receiptNo: '—',
+      instituteName: row.schoolName,
+      month: row.month,
+    });
+  }
   return [
     'Assalamualaikum,',
     `This is to confirm that the fee for ${row.studentName} has been successfully received.`,
@@ -61,7 +76,17 @@ function buildPaidTemplate(row: SerializedFeeRow) {
   ].join('\n');
 }
 
-function buildReminderTemplate(row: SerializedFeeRow) {
+function buildReminderTemplate(row: SerializedFeeRow, templateBody?: string) {
+  if (templateBody) {
+    return applyTemplate(templateBody, {
+      studentName: row.studentName,
+      guardianName: 'Parent/Guardian',
+      amount: formatPkr(row.remaining),
+      dueDate: row.dueDate ? new Date(row.dueDate).toLocaleDateString('en-CA') : 'N/A',
+      instituteName: row.schoolName,
+      month: row.month,
+    });
+  }
   return [
     'Assalamualaikum,',
     `This is a reminder that the fee for ${row.studentName} is still pending.`,
@@ -85,6 +110,21 @@ export default function FeeMessagingClient({ rows, classes }: Props) {
   const [feeClassFilter, setFeeClassFilter] = useState('');
   const [feeStatusFilter, setFeeStatusFilter] = useState<FeeFilter>('all');
   const [feeMessagingSectionOpen, setFeeMessagingSectionOpen] = useState(false);
+  const [reminderTemplateBody, setReminderTemplateBody] = useState<string | undefined>(undefined);
+  const [paidTemplateBody, setPaidTemplateBody] = useState<string | undefined>(undefined);
+
+  useEffect(() => {
+    fetch('/api/sms-templates')
+      .then((r) => r.ok ? r.json() : [])
+      .then((templates: { key: string; body: string; isActive: boolean }[]) => {
+        const reminder = templates.find((t) => t.key === 'fee_reminder' && t.isActive);
+        const receipt = templates.find((t) => t.key === 'fee_receipt' && t.isActive);
+        if (reminder) setReminderTemplateBody(reminder.body);
+        if (receipt) setPaidTemplateBody(receipt.body);
+      })
+      .catch(() => {});
+  }, []);
+
   const [bulkWhatsAppModal, setBulkWhatsAppModal] = useState<{
     title: string;
     mode: 'paid' | 'unpaid';
@@ -123,7 +163,7 @@ export default function FeeMessagingClient({ rows, classes }: Props) {
       setMessage(`WhatsApp number missing for ${row.studentName}.`);
       return;
     }
-    const text = row.feeStatus === 'PAID' ? buildPaidTemplate(row) : buildReminderTemplate(row);
+    const text = row.feeStatus === 'PAID' ? buildPaidTemplate(row, paidTemplateBody) : buildReminderTemplate(row, reminderTemplateBody);
     const url = `https://wa.me/${recipient}?text=${encodeURIComponent(text)}`;
     window.open(url, '_blank', 'noopener,noreferrer');
   };

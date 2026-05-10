@@ -1,5 +1,6 @@
 ﻿import Link from 'next/link';
 import { prisma } from '@/lib/prisma';
+import { PrintButton } from '@/components/reports/print-button';
 
 export const dynamic = 'force-dynamic';
 
@@ -101,7 +102,8 @@ export default async function AllStudentsFinanceReportPage({ searchParams }: Pag
       </div>
 
       <div className="rounded-2xl bg-white p-4 shadow-[0_4px_12px_rgba(0,0,0,0.08)] sm:p-6">
-        <div className="mb-3 flex justify-end">
+        <div className="mb-3 flex justify-end gap-2 print:hidden">
+          <PrintButton label="Print / PDF" />
           <a
             href={`/api/reports/export?type=finance-all&month=${monthKey}${selectedClassId !== 'all' ? `&classId=${selectedClassId}` : ''}`}
             download

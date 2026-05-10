@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { AlertCircle, CheckCircle, MessageCircle, Download } from 'lucide-react';
+import { PrintButton } from '@/components/reports/print-button';
 import Link from 'next/link';
 import { formatCurrency } from '@/lib/utils';
 import { FinanceToast } from './finance-toast';
@@ -199,6 +200,7 @@ export function FeeBulkList({
                       Send Reminder
                     </button>
                   </Link>
+                  <PrintButton label="Print / PDF" />
                   <button
                     onClick={exportCSV}
                     className="h-11 flex items-center gap-1 rounded-xl bg-[#6f7979] px-3 text-xs font-bold text-white hover:bg-[#5a6264] active:scale-[0.98] transition-all"

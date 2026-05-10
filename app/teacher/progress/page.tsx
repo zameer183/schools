@@ -1,7 +1,7 @@
 'use client';
 
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import { Bell, BookOpen, Search, Sparkles, Star, TrendingUp } from 'lucide-react';
+import { BookOpen, Search, Sparkles, Star, TrendingUp } from 'lucide-react';
 import { PageHeader, Card } from '@/components/ui';
 
 type ClassItem = { id: string; name: string; section: string };
@@ -325,6 +325,18 @@ function computeReportMistakes(parsed: ParsedReport | null) {
     const hifz = section.hifztotal || 0;
     return sum + taj + hifz;
   }, 0);
+}
+
+function getSectionLabelFromNotes(notes: string | null, sectionKey: string): string {
+  if (!notes) return '-';
+  const upper = sectionKey.toUpperCase();
+  const block = notes.match(new RegExp(`\\[${upper}\\]([\\s\\S]*?)(?=\\[|$)`))?.[1] ?? null;
+  if (!block) return '-';
+  const surahName = block.match(/SurahName:([^\n\r]+)/)?.[1]?.trim();
+  const from = block.match(/FromAyah:(\d+)/)?.[1];
+  const to = block.match(/ToAyah:(\d+)/)?.[1];
+  if (surahName && from && to && surahName !== '-') return `${surahName} (${from}–${to})`;
+  return '-';
 }
 
 export default function TeacherProgressPage() {
@@ -805,10 +817,10 @@ export default function TeacherProgressPage() {
   };
 
   return (
-    <div className="space-y-4 sm:space-y-6">
+    <div className="space-y-4 sm:space-y-6 pb-28">
         <div>
           <PageHeader
-            title="Teacher Daily Progress Report System"
+            title="Daily Progress Report"
             subtitle="Track Quran progress with precision"
           />
         {notifications.length > 0 && (
@@ -831,17 +843,6 @@ export default function TeacherProgressPage() {
         )}
       </div>
 
-      <div className="rounded-2xl bg-white p-4 shadow-sm border border-[#E5E7EB]">
-        <div className="mb-3">
-          <div className="mb-3 flex items-center justify-between">
-            <span className="text-sm font-semibold text-[#1F2937]">Form Completion</span>
-            <span className="text-sm font-bold text-[#2b676e]">{completionPercent}%</span>
-          </div>
-          <div className="h-2 rounded-full bg-[#E5E7EB]">
-            <div className="h-2 rounded-full bg-gradient-to-r from-[#2b676e] to-[#10B981] transition-all" style={{ width: `${completionPercent}%` }} />
-          </div>
-        </div>
-      </div>
 
       <section className="grid gap-5 xl:grid-cols-[1.7fr_1fr]">
         <div className="space-y-4">
@@ -854,7 +855,7 @@ export default function TeacherProgressPage() {
                     type="date"
                     value={form.date}
                     onChange={(e) => setForm((prev) => ({ ...prev, date: e.target.value }))}
-                    className="h-11 w-full rounded-xl border border-[#E5E7EB] bg-[#F9FAFB] px-4 text-sm text-[#1F2937] outline-none focus:ring-2 focus:ring-[#2b676e]/20 transition"
+                    className="h-11 w-full rounded-xl border border-[#E5E7EB] bg-[#F9FAFB] px-4 text-sm text-[#1F2937] outline-none focus:ring-2 focus:ring-[#004649]/20 transition"
                     required
                   />
                 </div>
@@ -864,7 +865,7 @@ export default function TeacherProgressPage() {
                   <select
                     value={form.classId}
                     onChange={(e) => setForm((prev) => ({ ...prev, classId: e.target.value, studentId: '' }))}
-                    className="h-11 w-full rounded-xl border border-[#E5E7EB] bg-[#F9FAFB] px-4 text-sm text-[#1F2937] outline-none focus:ring-2 focus:ring-[#2b676e]/20 transition"
+                    className="h-11 w-full rounded-xl border border-[#E5E7EB] bg-[#F9FAFB] px-4 text-sm text-[#1F2937] outline-none focus:ring-2 focus:ring-[#004649]/20 transition"
                     required
                   >
                     <option value="">Select Class</option>
@@ -884,7 +885,7 @@ export default function TeacherProgressPage() {
                       value={studentSearch}
                       onChange={(e) => setStudentSearch(e.target.value)}
                       placeholder="Student name"
-                      className="h-11 w-full rounded-xl border border-[#E5E7EB] bg-[#F9FAFB] pl-10 pr-4 text-sm text-[#1F2937] placeholder:text-[#9CA3AF] outline-none focus:ring-2 focus:ring-[#2b676e]/20 transition"
+                      className="h-11 w-full rounded-xl border border-[#E5E7EB] bg-[#F9FAFB] pl-10 pr-4 text-sm text-[#1F2937] placeholder:text-[#9CA3AF] outline-none focus:ring-2 focus:ring-[#004649]/20 transition"
                     />
                   </div>
                 </div>
@@ -895,7 +896,7 @@ export default function TeacherProgressPage() {
                 <select
                   value={form.studentId}
                   onChange={(e) => setForm((prev) => ({ ...prev, studentId: e.target.value }))}
-                  className="h-11 w-full rounded-xl border border-[#E5E7EB] bg-[#F9FAFB] px-4 text-sm text-[#1F2937] outline-none focus:ring-2 focus:ring-[#2b676e]/20 transition"
+                  className="h-11 w-full rounded-xl border border-[#E5E7EB] bg-[#F9FAFB] px-4 text-sm text-[#1F2937] outline-none focus:ring-2 focus:ring-[#004649]/20 transition"
                   required
                 >
                   <option value="">Select Student</option>
@@ -920,13 +921,13 @@ export default function TeacherProgressPage() {
                     onClick={() => setActiveTab(section.key)}
                     className={`h-10 whitespace-nowrap rounded-xl px-4 py-2 text-xs sm:text-sm font-semibold transition-all ${
                       isActive
-                        ? 'bg-[#2b676e] text-white shadow-md'
+                        ? 'bg-[#004649] text-white shadow-md'
                         : 'bg-[#F3F4F6] text-[#6B7280] hover:bg-[#E5E7EB]'
                     }`}
                   >
                     {section.icon} {section.title}
                     <span className="hidden sm:inline ml-2 text-xs font-normal opacity-80">
-                      ({badge.rangeCount}, {badge.mistakeCount})
+                      {badge.rangeCount} · {badge.mistakeCount}✗
                     </span>
                   </button>
                 );
@@ -946,13 +947,20 @@ export default function TeacherProgressPage() {
                     {/* Quick Actions (tab-scoped) */}
                     <div className="rounded-xl bg-[#F9FAFB] p-3 border border-[#E5E7EB]">
                       <p className="text-xs font-semibold text-[#6B7280] mb-3">Quick Actions</p>
-                      <div className="flex flex-wrap gap-1 sm:gap-2">
-                        <button type="button" onClick={() => applyQuickPerformanceToTab('Good ⭐⭐⭐⭐')} className="rounded-lg bg-gradient-to-br from-[#2b676e] to-[#1a5058] shadow-[0_8px_20px_rgba(43,103,110,0.12)] active:scale-[0.98] transition-all px-2 py-1 text-xs sm:px-3 sm:py-1.5 font-semibold text-white">Good</button>
-                        <button type="button" onClick={() => applyQuickPerformanceToTab('Average ⭐⭐⭐')} className="rounded-lg bg-gradient-to-br from-[#2b676e] to-[#1a5058] shadow-[0_8px_20px_rgba(43,103,110,0.12)] active:scale-[0.98] transition-all px-2 py-1 text-xs sm:px-3 sm:py-1.5 font-semibold text-white">Avg</button>
-                        <button type="button" onClick={() => applyQuickPerformanceToTab('Weak ⭐⭐')} className="rounded-lg bg-gradient-to-br from-[#2b676e] to-[#1a5058] shadow-[0_8px_20px_rgba(43,103,110,0.12)] active:scale-[0.98] transition-all px-2 py-1 text-xs sm:px-3 sm:py-1.5 font-semibold text-white">Weak</button>
-                        <button type="button" onClick={() => applyQuickMistakesToTab('0')} className="rounded-lg bg-gradient-to-br from-[#2b676e] to-[#1a5058] shadow-[0_8px_20px_rgba(43,103,110,0.12)] active:scale-[0.98] transition-all px-2 py-1 text-xs sm:px-3 sm:py-1.5 font-semibold text-white">0</button>
-                        <button type="button" onClick={() => applyQuickMistakesToTab('1-2')} className="rounded-lg bg-gradient-to-br from-[#2b676e] to-[#1a5058] shadow-[0_8px_20px_rgba(43,103,110,0.12)] active:scale-[0.98] transition-all px-2 py-1 text-xs sm:px-3 sm:py-1.5 font-semibold text-white">1-2</button>
-                        <button type="button" onClick={() => applyQuickMistakesToTab('3+')} className="rounded-lg bg-gradient-to-br from-[#2b676e] to-[#1a5058] shadow-[0_8px_20px_rgba(43,103,110,0.12)] active:scale-[0.98] transition-all px-2 py-1 text-xs sm:px-3 sm:py-1.5 font-semibold text-white">3+</button>
+                      <div className="flex flex-wrap gap-3">
+                        <div className="flex flex-wrap gap-1">
+                          <span className="self-center text-[10px] font-semibold text-[#9ca3af]">Rating:</span>
+                          <button type="button" onClick={() => applyQuickPerformanceToTab('Excellent ⭐⭐⭐⭐⭐')} className="rounded-lg bg-[#004649] px-2 py-1 text-xs font-semibold text-white hover:bg-[#1b5e62] transition">Ex</button>
+                          <button type="button" onClick={() => applyQuickPerformanceToTab('Good ⭐⭐⭐⭐')} className="rounded-lg bg-[#004649] px-2 py-1 text-xs font-semibold text-white hover:bg-[#1b5e62] transition">Good</button>
+                          <button type="button" onClick={() => applyQuickPerformanceToTab('Average ⭐⭐⭐')} className="rounded-lg bg-[#004649] px-2 py-1 text-xs font-semibold text-white hover:bg-[#1b5e62] transition">Avg</button>
+                          <button type="button" onClick={() => applyQuickPerformanceToTab('Weak ⭐⭐')} className="rounded-lg bg-[#004649] px-2 py-1 text-xs font-semibold text-white hover:bg-[#1b5e62] transition">Weak</button>
+                        </div>
+                        <div className="flex flex-wrap gap-1">
+                          <span className="self-center text-[10px] font-semibold text-[#9ca3af]">Mistakes:</span>
+                          <button type="button" onClick={() => applyQuickMistakesToTab('0')} className="rounded-lg border border-[#fca5a5] bg-[#fff1f2] px-2 py-1 text-xs font-semibold text-[#be123c] hover:bg-[#fee2e2] transition">0</button>
+                          <button type="button" onClick={() => applyQuickMistakesToTab('1-2')} className="rounded-lg border border-[#fca5a5] bg-[#fff1f2] px-2 py-1 text-xs font-semibold text-[#be123c] hover:bg-[#fee2e2] transition">1–2</button>
+                          <button type="button" onClick={() => applyQuickMistakesToTab('3+')} className="rounded-lg border border-[#fca5a5] bg-[#fff1f2] px-2 py-1 text-xs font-semibold text-[#be123c] hover:bg-[#fee2e2] transition">3+</button>
+                        </div>
                       </div>
                     </div>
 
@@ -996,7 +1004,7 @@ export default function TeacherProgressPage() {
                                   value={range.surahInput}
                                   onChange={(e) => handleSurahInput(section.key, rangeIdx, e.target.value)}
                                   placeholder="Type Surah name or number"
-                                  className="h-9 w-full rounded-lg border border-[#E5E7EB] px-3 text-sm text-[#1F2937] outline-none focus:ring-2 focus:ring-[#2b676e]/20"
+                                  className="h-9 w-full rounded-lg border border-[#E5E7EB] px-3 text-sm text-[#1F2937] outline-none focus:ring-2 focus:ring-[#004649]/20"
                                   required
                                 />
                                 <datalist id={`surah-list-${section.key}-${rangeIdx}`}>
@@ -1023,7 +1031,7 @@ export default function TeacherProgressPage() {
                                     updatedRanges[rangeIdx] = { ...updatedRanges[rangeIdx], fromAyah: safeValue };
                                     setForm(prev => ({ ...prev, sections: { ...prev.sections, [section.key]: { ...formSection, ranges: updatedRanges } } }));
                                   }}
-                                  className="h-9 w-full rounded-lg border border-[#E5E7EB] px-3 text-sm text-[#1F2937] outline-none focus:ring-2 focus:ring-[#2b676e]/20"
+                                  className="h-9 w-full rounded-lg border border-[#E5E7EB] px-3 text-sm text-[#1F2937] outline-none focus:ring-2 focus:ring-[#004649]/20"
                                   disabled={!selectedSurah}
                                   placeholder="From"
                                 />
@@ -1046,7 +1054,7 @@ export default function TeacherProgressPage() {
                                     updatedRanges[rangeIdx] = { ...updatedRanges[rangeIdx], toAyah: safeValue };
                                     setForm(prev => ({ ...prev, sections: { ...prev.sections, [section.key]: { ...formSection, ranges: updatedRanges } } }));
                                   }}
-                                  className="h-9 w-full rounded-lg border border-[#E5E7EB] px-3 text-sm text-[#1F2937] outline-none focus:ring-2 focus:ring-[#2b676e]/20"
+                                  className="h-9 w-full rounded-lg border border-[#E5E7EB] px-3 text-sm text-[#1F2937] outline-none focus:ring-2 focus:ring-[#004649]/20"
                                   disabled={!selectedSurah}
                                   placeholder="To"
                               />
@@ -1060,7 +1068,7 @@ export default function TeacherProgressPage() {
                     <button
                       type="button"
                       onClick={() => handleAddRange(section.key)}
-                      className="mb-4 text-xs font-semibold text-[#2b676e] hover:text-[#1a5058]"
+                      className="mb-4 text-xs font-semibold text-[#004649] hover:text-[#1b5e62]"
                     >
                       + Add Another Surah Range
                     </button>
@@ -1085,28 +1093,23 @@ export default function TeacherProgressPage() {
                       <div>
                         <p className="mb-2 text-xs font-semibold text-[#6B7280]">Tajweedi Ghaltiyan (0-99)</p>
                         <div className="flex flex-col gap-2">
-                          <select
+                          <input
+                            type="number"
+                            min={0}
+                            max={99}
                             value={formSection.tajweeditotal}
                             onChange={(e) => setSectionValue(section.key, { tajweeditotal: e.target.value })}
-                            className="h-10 w-full rounded-lg border border-[#FEE2E2] px-3 text-sm text-[#1F2937] outline-none focus:ring-2 focus:ring-[#EF4444]/20"
+                            placeholder="0"
+                            className="h-10 w-full rounded-lg border border-[#FEE2E2] px-3 text-sm text-[#1F2937] outline-none focus:ring-2 focus:ring-red-200"
                             required
-                          >
-                            <option value="">Select mistakes</option>
-                            <option value="0">0</option>
-                            <option value="1">1</option>
-                            <option value="2">2</option>
-                            <option value="3">3</option>
-                            <option value="4">4</option>
-                            <option value="5">5</option>
-                            <option value="10">5+</option>
-                          </select>
+                          />
                           <div className="flex flex-wrap gap-1">
-                            {[0, 1, 2, 3, 5].map(val => (
+                            {[0, 1, 2, 3, 5, 10].map(val => (
                               <button
                                 key={val}
                                 type="button"
                                 onClick={() => setSectionValue(section.key, { tajweeditotal: String(val) })}
-                                className="rounded-lg border border-[#FEE2E2] px-2 py-1 text-xs font-semibold text-[#991B1B] hover:bg-[#FEE2E2]"
+                                className={`rounded-lg border px-2 py-1 text-xs font-semibold transition ${formSection.tajweeditotal === String(val) ? 'bg-[#fee2e2] border-[#fca5a5] text-[#991B1B]' : 'border-[#FEE2E2] text-[#991B1B] hover:bg-[#FEE2E2]'}`}
                               >
                                 {val}
                               </button>
@@ -1118,28 +1121,23 @@ export default function TeacherProgressPage() {
                       <div>
                         <p className="mb-2 text-xs font-semibold text-[#6B7280]">Hifz Ghaltiyan (0-99)</p>
                         <div className="flex flex-col gap-2">
-                          <select
+                          <input
+                            type="number"
+                            min={0}
+                            max={99}
                             value={formSection.hifztotal}
                             onChange={(e) => setSectionValue(section.key, { hifztotal: e.target.value })}
-                            className="h-10 w-full rounded-lg border border-[#FEE2E2] px-3 text-sm text-[#1F2937] outline-none focus:ring-2 focus:ring-[#EF4444]/20"
+                            placeholder="0"
+                            className="h-10 w-full rounded-lg border border-[#FEE2E2] px-3 text-sm text-[#1F2937] outline-none focus:ring-2 focus:ring-red-200"
                             required
-                          >
-                            <option value="">Select mistakes</option>
-                            <option value="0">0</option>
-                            <option value="1">1</option>
-                            <option value="2">2</option>
-                            <option value="3">3</option>
-                            <option value="4">4</option>
-                            <option value="5">5</option>
-                            <option value="10">5+</option>
-                          </select>
+                          />
                           <div className="flex flex-wrap gap-1">
-                            {[0, 1, 2, 3, 5].map(val => (
+                            {[0, 1, 2, 3, 5, 10].map(val => (
                               <button
                                 key={val}
                                 type="button"
                                 onClick={() => setSectionValue(section.key, { hifztotal: String(val) })}
-                                className="rounded-lg border border-[#FEE2E2] px-2 py-1 text-xs font-semibold text-[#991B1B] hover:bg-[#FEE2E2]"
+                                className={`rounded-lg border px-2 py-1 text-xs font-semibold transition ${formSection.hifztotal === String(val) ? 'bg-[#fee2e2] border-[#fca5a5] text-[#991B1B]' : 'border-[#FEE2E2] text-[#991B1B] hover:bg-[#FEE2E2]'}`}
                               >
                                 {val}
                               </button>
@@ -1160,14 +1158,14 @@ export default function TeacherProgressPage() {
           <div className="rounded-2xl bg-gradient-to-br from-[#F0FDF4] to-white p-4 sm:p-6 shadow-sm border border-[#E5E7EB] space-y-4">
             <div className="flex items-center gap-3">
               <div className="rounded-lg bg-[#D1FAE5] p-2">
-                <Sparkles className="h-5 w-5 text-[#2b676e]" />
+                <Sparkles className="h-5 w-5 text-[#004649]" />
               </div>
               <h3 className="font-bold text-[#1F2937]">Performance</h3>
             </div>
             <div className="space-y-3">
               <div className="rounded-xl bg-white p-3 border border-[#E5E7EB]">
                 <p className="text-xs text-[#6B7280] mb-1">Overall</p>
-                <p className="font-bold text-[#2b676e]">{summary.overallPerformance}</p>
+                <p className="font-bold text-[#004649]">{summary.overallPerformance}</p>
               </div>
               <div className="rounded-xl bg-white p-3 border border-[#E5E7EB]">
                 <p className="text-xs text-[#6B7280] mb-1">Mistakes</p>
@@ -1185,18 +1183,10 @@ export default function TeacherProgressPage() {
             </div>
           </div>
 
-          <Card>
-            <div className="flex items-center gap-2 mb-3">
-              <BookOpen className="h-4 w-4 text-[#10B981]" />
-              <h3 className="font-bold text-[#1F2937]">Quran Tracking JSON</h3>
-            </div>
-            <p className="text-sm text-[#6B7280]">Embedded Surah JSON count: {SURAH_LIST.length} Surahs</p>
-            <p className="text-xs text-[#9CA3AF]">Ayah ranges are dynamic per selected Surah.</p>
-          </Card>
 
           <Card>
             <div className="flex items-center gap-2 mb-3">
-              <TrendingUp className="h-4 w-4 text-[#2b676e]" />
+              <TrendingUp className="h-4 w-4 text-[#004649]" />
               <h3 className="font-bold text-[#1F2937]">Teacher Guidance</h3>
             </div>
             <ul className="space-y-1 text-sm text-[#6B7280]">
@@ -1212,14 +1202,14 @@ export default function TeacherProgressPage() {
       <div className="md:hidden mb-4">
         <details className="rounded-2xl border border-[#E5E7EB] bg-gradient-to-br from-[#F0FDF4] to-white p-4 shadow-sm">
           <summary className="flex cursor-pointer items-center gap-3 font-semibold text-[#1F2937]">
-            <Sparkles className="h-5 w-5 text-[#2b676e]" />
+            <Sparkles className="h-5 w-5 text-[#004649]" />
             <span>Performance Summary</span>
             <span className="ml-auto text-xs text-[#6B7280]">▼</span>
           </summary>
           <div className="mt-4 space-y-3 text-sm">
             <div className="flex items-center justify-between rounded-xl bg-white p-3 border border-[#E5E7EB]">
               <span className="text-[#6B7280]">Overall Performance</span>
-              <span className="font-bold text-[#2b676e]">{summary.overallPerformance}</span>
+              <span className="font-bold text-[#004649]">{summary.overallPerformance}</span>
             </div>
             <div className="flex items-center justify-between rounded-xl bg-white p-3 border border-[#E5E7EB]">
               <span className="text-[#6B7280]">Total Mistakes</span>
@@ -1248,7 +1238,7 @@ export default function TeacherProgressPage() {
               await submit({ preventDefault: () => {} } as React.FormEvent);
             }}
             disabled={saving || loading || featureDisabled}
-            className="h-11 w-full sm:w-auto rounded-xl bg-gradient-to-br from-[#2b676e] to-[#1a5058] shadow-md active:shadow-sm active:scale-[0.98] transition-all px-6 font-semibold text-sm text-white disabled:cursor-not-allowed disabled:opacity-50"
+            className="h-11 w-full sm:w-auto rounded-xl bg-gradient-to-br from-[#004649] to-[#1b5e62] shadow-md active:shadow-sm active:scale-[0.98] transition-all px-6 font-semibold text-sm text-white disabled:cursor-not-allowed disabled:opacity-50"
           >
             {saving ? 'Saving...' : 'Save Report'}
           </button>
@@ -1259,7 +1249,7 @@ export default function TeacherProgressPage() {
               await submit({ preventDefault: () => {} } as React.FormEvent);
             }}
             disabled={saving || loading || featureDisabled || !selectedStudents.some((s) => s.id > form.studentId)}
-            className="h-11 w-full sm:w-auto rounded-xl border-2 border-[#2b676e] bg-white text-[#2b676e] font-semibold transition-all active:scale-[0.98] px-6 text-sm disabled:cursor-not-allowed disabled:opacity-30"
+            className="h-11 w-full sm:w-auto rounded-xl border-2 border-[#004649] bg-white text-[#004649] font-semibold transition-all active:scale-[0.98] px-6 text-sm disabled:cursor-not-allowed disabled:opacity-30"
           >
             {saving ? 'Saving...' : 'Save & Next →'}
           </button>
@@ -1274,13 +1264,13 @@ export default function TeacherProgressPage() {
               type="date"
               value={reportDate}
               onChange={(e) => setReportDate(e.target.value)}
-              className="h-10 rounded-lg border border-[#E5E7EB] px-4 text-sm text-[#1F2937] outline-none focus:ring-2 focus:ring-[#2b676e]/20"
+              className="h-10 rounded-lg border border-[#E5E7EB] px-4 text-sm text-[#1F2937] outline-none focus:ring-2 focus:ring-[#004649]/20"
             />
             <input
               value={reportQuery}
               onChange={(e) => setReportQuery(e.target.value)}
               placeholder="Search student"
-              className="h-10 rounded-lg border border-[#E5E7EB] px-4 text-sm text-[#1F2937] placeholder:text-[#6B7280] outline-none focus:ring-2 focus:ring-[#2b676e]/20"
+              className="h-10 rounded-lg border border-[#E5E7EB] px-4 text-sm text-[#1F2937] placeholder:text-[#6B7280] outline-none focus:ring-2 focus:ring-[#004649]/20"
             />
           </div>
         </div>
@@ -1293,16 +1283,14 @@ export default function TeacherProgressPage() {
               const parsed = parseStructuredNotes(item.notes);
               const stars = computeStars(parsed);
               const mistakes = computeReportMistakes(parsed);
-              const sabaq = parsed?.sections.sabaq;
-              const firstRange = sabaq?.ranges && sabaq.ranges.length > 0 ? sabaq.ranges[0] : null;
-              const surahLabel = firstRange?.surahName && firstRange.surahName !== '-' ? `${firstRange.surahName} (${firstRange.fromAyah ?? '-'}-${firstRange.toAyah ?? '-'})` : 'Not structured';
+              const surahLabel = getSectionLabelFromNotes(item.notes, 'sabaq');
 
               return (
                 <div key={item.id} className="rounded-xl border border-[#E5E7EB] bg-[#F9FAFB] p-4">
                   <p className="text-xs font-semibold uppercase tracking-widest text-[#6B7280]">{formatDateYMD(item.date)}</p>
                   <p className="mt-1 text-base font-bold text-[#1F2937]">{item.student.user.fullName}</p>
                   <p className="text-xs text-[#9CA3AF]">{item.class.name} - {item.class.section}</p>
-                  <p className="mt-2 text-sm text-[#2b676e]"><span className="font-semibold">Sabaq:</span> {surahLabel}</p>
+                  <p className="mt-2 text-sm text-[#004649]"><span className="font-semibold">Sabaq:</span> {surahLabel}</p>
 
                   <div className="mt-2 flex items-center gap-1">
                     {Array.from({ length: 5 }).map((_, i) => (
@@ -1317,15 +1305,34 @@ export default function TeacherProgressPage() {
                   <button
                     type="button"
                     onClick={() => setOpenReportId((prev) => (prev === item.id ? null : item.id))}
-                    className="mt-3 rounded-lg bg-gradient-to-br from-[#2b676e] to-[#1a5058] shadow-[0_8px_20px_rgba(43,103,110,0.12)] active:scale-[0.98] transition-all px-3 py-1.5 text-xs font-semibold text-white"
+                    className="mt-3 rounded-lg bg-gradient-to-br from-[#004649] to-[#1b5e62] shadow-[0_8px_20px_rgba(43,103,110,0.12)] active:scale-[0.98] transition-all px-3 py-1.5 text-xs font-semibold text-white"
                   >
                     View Details
                   </button>
 
                   {openReportId === item.id ? (
-                    <pre className="mt-3 max-h-60 overflow-auto whitespace-pre-wrap rounded-lg border border-[#E5E7EB] bg-white p-3 text-xs text-[#6B7280]">
-                      {item.notes || '-'}
-                    </pre>
+                    <div className="mt-3 rounded-lg border border-[#E5E7EB] bg-white p-3 space-y-2 text-xs">
+                      {parsed ? (
+                        <>
+                          {sectionMeta.map(({ key, title, icon }) => {
+                            const sec = parsed.sections[key];
+                            const rangeLabel = getSectionLabelFromNotes(item.notes, key);
+                            return (
+                              <div key={key}>
+                                <p className="font-semibold text-[#374151]">{icon} {title}</p>
+                                <p className="text-[#6B7280]">{rangeLabel} · {sec.kaifiyat || '-'} · T:{sec.tajweeditotal} H:{sec.hifztotal}</p>
+                              </div>
+                            );
+                          })}
+                          <div className="pt-1 border-t border-[#E5E7EB] flex justify-between">
+                            <span className="text-[#6B7280]">Overall: <span className="font-semibold text-[#004649]">{parsed.overall}</span></span>
+                            <span className="text-[#6B7280]">Mistakes: <span className="font-semibold text-[#be123c]">{parsed.totalMistakes}</span></span>
+                          </div>
+                        </>
+                      ) : (
+                        <p className="text-[#9CA3AF]">No structured data available.</p>
+                      )}
+                    </div>
                   ) : null}
                 </div>
               );

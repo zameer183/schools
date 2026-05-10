@@ -3,6 +3,7 @@
 import Link from 'next/link';
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
+import { PrintButton } from '@/components/reports/print-button';
 import {
   ChevronLeft,
   Download,
@@ -494,7 +495,8 @@ export default function StudentFeesClient({
         </div>
 
         {/* Bottom Action Buttons */}
-        <div className="flex gap-3">
+        <div className="flex gap-3 print:hidden">
+          <PrintButton label="Print / PDF" orientation="portrait" />
           <button
             onClick={handleDownload}
             className="h-11 flex flex-1 items-center justify-center gap-2 rounded-xl bg-[#004649] text-white font-semibold hover:bg-[#1b5e62] transition"

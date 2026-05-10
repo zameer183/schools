@@ -4,7 +4,7 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import {
-  AlertCircle, BadgeCheck, BookOpen, Calendar, Check,
+  AlertCircle, BarChart3, BadgeCheck, BookOpen, Calendar, Check,
   ChevronDown, ChevronLeft, ChevronRight,
   DollarSign, Eye, Grid3X3, Hash, KeyRound, Lock, List,
   Mail, MapPin, MessageSquare, MoreVertical, Pencil,
@@ -250,6 +250,7 @@ function StudentActionMenu({
   onMessage,
   onViewAttendance,
   onViewFees,
+  onViewProgress,
 }: {
   student: StudentItem;
   onEdit: () => void;
@@ -259,6 +260,7 @@ function StudentActionMenu({
   onMessage?: () => void;
   onViewAttendance?: () => void;
   onViewFees?: () => void;
+  onViewProgress?: () => void;
 }) {
   const [open, setOpen] = useState(false);
   const [focusedIndex, setFocusedIndex] = useState(-1);
@@ -274,8 +276,9 @@ function StudentActionMenu({
     { kind: 'link', label: 'View Profile',       icon: Eye,      href: `/admin/students/${student.id}` },
     { kind: 'btn',  label: 'Edit Student',        icon: Pencil,   onClick: onEdit },
     { kind: 'btn',  label: 'Send Message',        icon: MessageSquare, onClick: onMessage || (() => {}) },
-    { kind: 'btn',  label: 'View Attendance',     icon: Calendar, onClick: onViewAttendance || (() => {}) },
+    { kind: 'btn',  label: 'View Attendance',     icon: Calendar,   onClick: onViewAttendance || (() => {}) },
     { kind: 'btn',  label: 'View Fees',           icon: DollarSign, onClick: onViewFees || (() => {}) },
+    { kind: 'btn',  label: 'View Progress',       icon: BarChart3,  onClick: onViewProgress || (() => {}) },
     { kind: 'btn',  label: canShare ? 'Share Credentials' : 'No WhatsApp number', icon: KeyRound, onClick: onShare, disabled: !canShare },
     { kind: 'btn',  label: 'Remove Student',      icon: Trash2,   onClick: onRemoveClick, danger: true, divider: true },
   ];
@@ -1274,6 +1277,7 @@ export default function AdminStudentsPageClient({
                           onMessage={() => router.push('/admin/messages')}
                           onViewAttendance={() => router.push(`/admin/students/${student.id}/attendance`)}
                           onViewFees={() => router.push(`/admin/students/${student.id}/fees`)}
+                          onViewProgress={() => router.push(`/admin/reports/individual-complete?studentId=${student.id}`)}
                         />
                       </div>
                       <button
@@ -1408,6 +1412,7 @@ export default function AdminStudentsPageClient({
                     onMessage={() => router.push('/admin/messages')}
                     onViewAttendance={() => router.push(`/admin/students/${student.id}/attendance`)}
                     onViewFees={() => router.push(`/admin/students/${student.id}/fees`)}
+                    onViewProgress={() => router.push(`/admin/reports/individual-complete?studentId=${student.id}`)}
                   />
                 </div>
               </div>

@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import Link from 'next/link';
+import { PrintButton } from '@/components/reports/print-button';
 import {
   ChevronLeft,
   ChevronRight,
@@ -226,8 +227,19 @@ export default function StudentAttendanceClient({ student }: { student: StudentD
     <div className="min-h-screen bg-[#f8fafb] p-4">
       <div className="mx-auto max-w-2xl space-y-4">
 
+        {/* Print-only header */}
+        <div className="hidden print:block mb-4 border-b pb-3">
+          <h1 className="text-lg font-bold text-[#1a1c1c]">Student Attendance Report</h1>
+          <div className="mt-1 flex flex-wrap gap-4 text-sm text-[#374151]">
+            <span><span className="font-semibold">Student:</span> {student.user.fullName}</span>
+            <span><span className="font-semibold">Class:</span> {student.class ? `${student.class.name} ${student.class.section}` : 'Unassigned'}</span>
+            <span><span className="font-semibold">Admission No:</span> {student.admissionNo}</span>
+            <span><span className="font-semibold">Month:</span> {monthName}</span>
+          </div>
+        </div>
+
         {/* Back */}
-        <Link href={`/admin/students/${student.id}`} className="inline-flex items-center gap-1 text-xs font-semibold text-[#004649] hover:text-[#1b5e62] transition">
+        <Link href={`/admin/students/${student.id}`} className="inline-flex items-center gap-1 text-xs font-semibold text-[#004649] hover:text-[#1b5e62] transition print:hidden">
           <ChevronLeft className="h-4 w-4" />
           Back to Profile
         </Link>
@@ -336,7 +348,8 @@ export default function StudentAttendanceClient({ student }: { student: StudentD
         </div>
 
         {/* Bottom buttons */}
-        <div className="flex gap-3">
+        <div className="flex gap-3 print:hidden">
+          <PrintButton label="Print / PDF" orientation="portrait" />
           <button
             onClick={handleDownload}
             className="h-11 flex flex-1 items-center justify-center gap-2 rounded-xl bg-[#004649] text-white font-semibold hover:bg-[#1b5e62] transition"

@@ -6,6 +6,7 @@ import { useState } from 'react';
 import {
   AlertCircle,
   ArrowLeft,
+  BarChart3,
   BookOpen,
   Calendar,
   CreditCard,
@@ -656,6 +657,13 @@ export default function StudentProfileClient({
               >
                 <DollarSign className="h-4 w-4" />
                 View Fees
+              </Link>
+              <Link
+                href={`/admin/reports/individual-complete?studentId=${student.id}`}
+                className="h-11 flex flex-1 items-center justify-center gap-2 rounded-xl bg-[#f0f2f5] text-[#1a1c1c] text-sm font-semibold hover:bg-[#e2e8e8] transition"
+              >
+                <BarChart3 className="h-4 w-4" />
+                View Progress
               </Link>
             </div>
           </div>
