@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import Link from 'next/link';
-import { ChevronLeft, ChevronRight, Share2 } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Download, Share2 } from 'lucide-react';
 
 type AttendanceRecord = {
   date: string | Date;
@@ -76,6 +76,40 @@ export default function StudentAttendanceClient({ student }: { student: StudentD
 
   const handleNextMonth = () => {
     setCurrentMonth(new Date(currentMonth.getFullYear(), currentMonth.getMonth() + 1, 1));
+  };
+
+  const handleDownload = () => {
+    const rows = [
+      ['Date', 'Day', 'Status'],
+      ...monthAttendance
+        .map((r) => {
+          const d = new Date(r.date);
+          return [
+            d.toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' }),
+            d.toLocaleDateString('en-US', { weekday: 'long' }),
+            r.status
+          ];
+        })
+        .sort((a, b) => new Date(a[0]).getTime() - new Date(b[0]).getTime())
+    ];
+
+    const header = [
+      `Student: ${student.user.fullName}`,
+      `Admission No: ${student.admissionNo}`,
+      `Class: ${classInfo}`,
+      `Month: ${monthName}`,
+      `Present: ${stats.present}  Absent: ${stats.absent}  Late: ${stats.late}  Leave: ${stats.leave}`,
+      ''
+    ].join('\n');
+
+    const csv = header + rows.map((r) => r.join(',')).join('\n');
+    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `attendance_${student.user.fullName.replace(/\s+/g, '_')}_${monthName.replace(/\s+/g, '_')}.csv`;
+    a.click();
+    URL.revokeObjectURL(url);
   };
 
   const handleShare = () => {
@@ -197,19 +231,28 @@ export default function StudentAttendanceClient({ student }: { student: StudentD
           </div>
         </div>
 
-        {/* Share Button */}
-        <button
-          onClick={handleShare}
-          disabled={!student.whatsApp && !student.guardianPhone}
-          className={`h-11 w-full flex items-center justify-center gap-2 rounded-xl font-semibold transition ${
-            student.whatsApp || student.guardianPhone
-              ? 'bg-[#25d366] text-white hover:scale-105 active:scale-[0.98]'
-              : 'bg-[#f0f2f5] text-[#6f7979] cursor-not-allowed opacity-60'
-          }`}
-        >
-          <Share2 className="h-4 w-4" />
-          Share via WhatsApp
-        </button>
+        {/* Action Buttons */}
+        <div className="flex gap-3">
+          <button
+            onClick={handleDownload}
+            className="h-11 flex flex-1 items-center justify-center gap-2 rounded-xl bg-[#004649] text-white font-semibold hover:bg-[#1b5e62] transition"
+          >
+            <Download className="h-4 w-4" />
+            Download CSV
+          </button>
+          <button
+            onClick={handleShare}
+            disabled={!student.whatsApp && !student.guardianPhone}
+            className={`h-11 flex flex-1 items-center justify-center gap-2 rounded-xl font-semibold transition ${
+              student.whatsApp || student.guardianPhone
+                ? 'bg-[#25d366] text-white hover:scale-105 active:scale-[0.98]'
+                : 'bg-[#f0f2f5] text-[#6f7979] cursor-not-allowed opacity-60'
+            }`}
+          >
+            <Share2 className="h-4 w-4" />
+            WhatsApp
+          </button>
+        </div>
       </div>
     </div>
   );
