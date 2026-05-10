@@ -29,7 +29,7 @@ async function getStudentFeesData(studentId: string) {
         discount: true,
         status: true,
         payments: {
-          select: { amountPaid: true }
+          select: { id: true, amountPaid: true, method: true, paidAt: true, transactionRef: true }
         }
       },
       orderBy: { dueDate: 'desc' }
@@ -53,7 +53,11 @@ export default async function StudentFeesPage({ params }: { params: Promise<{ id
     discount: typeof f.discount === 'number' ? f.discount : Number(f.discount),
     status: f.status,
     payments: f.payments.map((p) => ({
-      amountPaid: typeof p.amountPaid === 'number' ? p.amountPaid : Number(p.amountPaid)
+      id: p.id,
+      amountPaid: typeof p.amountPaid === 'number' ? p.amountPaid : Number(p.amountPaid),
+      method: p.method,
+      paidAt: p.paidAt.toISOString(),
+      transactionRef: p.transactionRef ?? null
     }))
   }));
 
