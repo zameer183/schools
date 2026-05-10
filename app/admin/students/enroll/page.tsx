@@ -45,8 +45,6 @@ type Form4 = {
   feeAmount: string;
   feeDiscount: string;
   feeDueDate: string;
-  partialFeeSupported: boolean;
-  collectOnMonthStart: boolean;
 };
 
 type Errors = Record<string, string>;
@@ -294,7 +292,6 @@ export default function EnrollStudentPage() {
     feeCategory: '', feeType: '', feeTitle: 'Monthly Tuition Fee',
     feeAmount: '', feeDiscount: '0',
     feeDueDate: (() => { const d = new Date(); d.setDate(1); return d.toISOString().slice(0, 10); })(),
-    partialFeeSupported: false, collectOnMonthStart: false
   });
 
   useEffect(() => {
@@ -378,8 +375,6 @@ export default function EnrollStudentPage() {
           feeAmount:   form4.feeAmount,
           feeDiscount: form4.feeDiscount,
           feeDueDate:  form4.feeDueDate,
-          partialFeeSupported:  form4.partialFeeSupported,
-          collectOnMonthStart:  form4.collectOnMonthStart,
         })
       });
       const data = await res.json();
@@ -743,34 +738,8 @@ export default function EnrollStudentPage() {
                 </div>
               </div>
 
-              {/* Toggles */}
-              <div className="space-y-3 rounded-xl bg-[#f8fafc] p-4">
-                <p className="mb-1 text-xs font-bold uppercase tracking-wider text-[#64748b]">Payment Options</p>
-
-                <div className="flex items-center justify-between gap-4">
-                  <div>
-                    <p className="text-sm font-semibold text-[#0f172a]">Partial Fee Supported</p>
-                    <p className="text-xs text-[#94a3b8]">Allow student to pay fee in installments</p>
-                  </div>
-                  <Toggle
-                    checked={form4.partialFeeSupported}
-                    onChange={() => setForm4(p => ({ ...p, partialFeeSupported: !p.partialFeeSupported }))}
-                  />
-                </div>
-
                 <div className="h-px bg-[#e2e8f0]" />
 
-                <div className="flex items-center justify-between gap-4">
-                  <div>
-                    <p className="text-sm font-semibold text-[#0f172a]">Collect Fee On Month Start</p>
-                    <p className="text-xs text-[#94a3b8]">Auto-generate fee record on 1st of each month</p>
-                  </div>
-                  <Toggle
-                    checked={form4.collectOnMonthStart}
-                    onChange={() => setForm4(p => ({ ...p, collectOnMonthStart: !p.collectOnMonthStart }))}
-                  />
-                </div>
-              </div>
             </div>
           )}
 
