@@ -17,8 +17,9 @@ async function getStudentAttendanceData(studentId: string) {
       guardianPhone: true,
       user: { select: { fullName: true, isActive: true } },
       class: { select: { name: true, section: true } },
+      classId: true,
       attendance: {
-        select: { date: true, status: true },
+        select: { id: true, date: true, status: true, remarks: true },
         orderBy: { date: 'desc' }
       },
       fees: {
@@ -41,13 +42,16 @@ export default async function StudentAttendancePage({ params }: { params: Promis
   const serializedStudent = {
     id: student.id,
     admissionNo: student.admissionNo,
+    classId: student.classId,
     user: student.user,
     class: student.class,
     whatsApp: student.whatsApp,
     guardianPhone: student.guardianPhone,
     attendance: student.attendance.map((a) => ({
+      id: a.id,
       date: a.date instanceof Date ? a.date.toISOString() : a.date,
-      status: a.status
+      status: a.status,
+      remarks: a.remarks ?? null
     })),
     joinDate: student.joinDate instanceof Date ? student.joinDate.toISOString() : student.joinDate
   };
