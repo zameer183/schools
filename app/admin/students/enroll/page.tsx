@@ -295,7 +295,7 @@ export default function EnrollStudentPage() {
   const [form4, setForm4] = useState<Form4>({
     feeCategory: '', feeType: '', feeTitle: 'Monthly Tuition Fee',
     fromDate: '', toDate: '', feeAmount: '', feeDiscount: '0',
-    feeDueDate: new Date().toISOString().slice(0, 10),
+    feeDueDate: (() => { const d = new Date(); d.setDate(1); return d.toISOString().slice(0, 10); })(),
     partialFeeSupported: false, collectOnMonthStart: false
   });
 
@@ -339,7 +339,7 @@ export default function EnrollStudentPage() {
       if (!form4.feeCategory) errs.feeCategory = 'Fee category is required';
       if (!form4.feeType)     errs.feeType     = 'Fee type is required';
       if (!form4.fromDate)    errs.fromDate    = 'From date is required';
-      if (!form4.toDate)      errs.toDate      = 'To date is required';
+
       if (!form4.feeAmount || Number(form4.feeAmount) <= 0)
         errs.feeAmount = 'Enter a valid fee amount';
       if (!form4.feeDueDate) errs.feeDueDate = 'Due date is required';
@@ -714,7 +714,7 @@ export default function EnrollStudentPage() {
                 </div>
 
                 <div>
-                  <label className={labelCls}>To Date *</label>
+                  <label className={labelCls}>To Date (optional)</label>
                   <input
                     type="date"
                     value={form4.toDate}
