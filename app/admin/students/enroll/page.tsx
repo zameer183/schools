@@ -42,8 +42,6 @@ type Form4 = {
   feeCategory: string;
   feeType: string;
   feeTitle: string;
-  fromDate: string;
-  toDate: string;
   feeAmount: string;
   feeDiscount: string;
   feeDueDate: string;
@@ -294,7 +292,7 @@ export default function EnrollStudentPage() {
   });
   const [form4, setForm4] = useState<Form4>({
     feeCategory: '', feeType: '', feeTitle: 'Monthly Tuition Fee',
-    fromDate: '', toDate: '', feeAmount: '', feeDiscount: '0',
+    feeAmount: '', feeDiscount: '0',
     feeDueDate: (() => { const d = new Date(); d.setDate(1); return d.toISOString().slice(0, 10); })(),
     partialFeeSupported: false, collectOnMonthStart: false
   });
@@ -338,7 +336,6 @@ export default function EnrollStudentPage() {
     if (step === 4) {
       if (!form4.feeCategory) errs.feeCategory = 'Fee category is required';
       if (!form4.feeType)     errs.feeType     = 'Fee type is required';
-      if (!form4.fromDate)    errs.fromDate    = 'From date is required';
 
       if (!form4.feeAmount || Number(form4.feeAmount) <= 0)
         errs.feeAmount = 'Enter a valid fee amount';
@@ -378,8 +375,6 @@ export default function EnrollStudentPage() {
           feeCategory: form4.feeCategory,
           feeType:     form4.feeType,
           feeTitle:    form4.feeTitle,
-          fromDate:    form4.fromDate,
-          toDate:      form4.toDate,
           feeAmount:   form4.feeAmount,
           feeDiscount: form4.feeDiscount,
           feeDueDate:  form4.feeDueDate,
@@ -700,29 +695,6 @@ export default function EnrollStudentPage() {
                     className={inputCls()}
                   />
                 </Field>
-
-                {/* Date Range */}
-                <div>
-                  <label className={labelCls}>From Date *</label>
-                  <input
-                    type="date"
-                    value={form4.fromDate}
-                    onChange={e => setForm4(p => ({ ...p, fromDate: e.target.value }))}
-                    className={inputCls(errors.fromDate)}
-                  />
-                  {errors.fromDate && <p className="mt-1.5 flex items-center gap-1 text-xs text-[#ef4444]"><span>⚠</span>{errors.fromDate}</p>}
-                </div>
-
-                <div>
-                  <label className={labelCls}>To Date (optional)</label>
-                  <input
-                    type="date"
-                    value={form4.toDate}
-                    onChange={e => setForm4(p => ({ ...p, toDate: e.target.value }))}
-                    className={inputCls(errors.toDate)}
-                  />
-                  {errors.toDate && <p className="mt-1.5 flex items-center gap-1 text-xs text-[#ef4444]"><span>⚠</span>{errors.toDate}</p>}
-                </div>
 
                 {/* Fee Amount — highlighted */}
                 <div className="sm:col-span-2">
