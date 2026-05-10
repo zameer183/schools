@@ -2,8 +2,15 @@
 
 import Link from 'next/link';
 import { useState } from 'react';
-import { ChevronLeft, Download, DollarSign, MessageCircle, Check, Loader2 } from 'lucide-react';
 import { useRouter } from 'next/navigation';
+import {
+  ChevronLeft,
+  Download,
+  Share2,
+  Check,
+  Loader2,
+  DollarSign
+} from 'lucide-react';
 
 type FeeRecord = {
   id: string;
@@ -34,35 +41,25 @@ type Props = {
 };
 
 function initials(name: string): string {
-  return name
-    .trim()
-    .split(/\s+/)
-    .slice(0, 2)
-    .map((w) => w[0]?.toUpperCase() ?? '')
-    .join('');
+  return name.trim().split(/\s+/).slice(0, 2).map((w) => w[0]?.toUpperCase() ?? '').join('');
 }
 
-function formatCurrency(v: number): string {
+function fmtCurrency(v: number): string {
   return new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(v);
 }
 
-function formatDate(v: string): string {
+function fmtDate(v: string): string {
   try {
     return new Date(v).toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' });
-  } catch {
-    return '—';
-  }
+  } catch { return '—'; }
 }
 
-function getStatusColor(status: string): { bg: string; text: string; borderColor: string } {
-  const map: Record<string, { bg: string; text: string; borderColor: string }> = {
-    PAID: { bg: 'bg-[#dcfce7]', text: 'text-[#15803d]', borderColor: 'border-l-[#27ae60]' },
-    PENDING: { bg: 'bg-[#fef3c7]', text: 'text-[#b45309]', borderColor: 'border-l-[#f39c12]' },
-    PARTIAL: { bg: 'bg-[#eff6ff]', text: 'text-[#1d4ed8]', borderColor: 'border-l-[#3498db]' },
-    OVERDUE: { bg: 'bg-[#fef2f2]', text: 'text-[#b91c1c]', borderColor: 'border-l-[#e74c3c]' }
-  };
-  return map[status.toUpperCase()] || { bg: 'bg-[#f0f2f5]', text: 'text-[#6b7280]', borderColor: 'border-l-[#9ca3af]' };
-}
+const STATUS_STYLE: Record<string, { badge: string; bar: string }> = {
+  PAID:    { badge: 'bg-[#dcfce7] text-[#15803d]',  bar: 'bg-[#22c55e]' },
+  PENDING: { badge: 'bg-[#fef3c7] text-[#b45309]',  bar: 'bg-[#f59e0b]' },
+  PARTIAL: { badge: 'bg-[#eff6ff] text-[#1d4ed8]',  bar: 'bg-[#3b82f6]' },
+  OVERDUE: { badge: 'bg-[#fee2e2] text-[#b91c1c]',  bar: 'bg-[#ef4444]' },
+};
 
 export default function StudentFeesClient({
   student,
@@ -76,6 +73,7 @@ export default function StudentFeesClient({
   const [markingPaid, setMarkingPaid] = useState<string | null>(null);
 
   const classInfo = student.class ? `${student.class.name} ${student.class.section || ''}` : 'N/A';
+  const waPhone = (student.whatsApp || student.guardianPhone || '').replace(/[^0-9+]/g, '');
 
   const handleMarkPaid = async (feeId: string) => {
     setMarkingPaid(feeId);
@@ -85,61 +83,58 @@ export default function StudentFeesClient({
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ ids: [feeId], status: 'PAID' })
       });
-      if (res.ok) {
-        router.refresh();
-      }
+      if (res.ok) router.refresh();
     } finally {
       setMarkingPaid(null);
     }
   };
 
-  const getWhatsAppUrl = (fee: FeeRecord): string | null => {
-    const phone = (student.whatsApp || student.guardianPhone || '').replace(/[^0-9+]/g, '');
-    if (!phone) return null;
-    const netAmount = fee.amount - fee.discount;
-    const paid = fee.payments.reduce((s, p) => s + p.amountPaid, 0);
-    const remaining = Math.max(netAmount - paid, 0);
-    const msg = `Reminder: ${fee.title} of ${formatCurrency(remaining)} is due by ${formatDate(fee.dueDate)}. Please pay promptly.`;
-    return `https://wa.me/${phone}?text=${encodeURIComponent(msg)}`;
-  };
-
-  const handleExportCSV = () => {
-    const headers = ['Student', 'Title', 'Due Date', 'Status', 'Amount', 'Paid', 'Remaining'];
-    const rows = fees.map((f) => {
-      const netAmount = f.amount - f.discount;
-      const paid = f.payments.reduce((s, p) => s + p.amountPaid, 0);
-      const remaining = Math.max(netAmount - paid, 0);
-      return [
-        student.user.fullName,
-        f.title,
-        formatDate(f.dueDate),
-        f.status,
-        netAmount.toFixed(2),
-        paid.toFixed(2),
-        remaining.toFixed(2)
-      ];
-    });
-
-    const csv = [
-      headers.join(','),
-      ...rows.map((r) => r.map((v) => `"${v}"`).join(','))
+  const handleDownload = () => {
+    const header = [
+      `Student: ${student.user.fullName}`,
+      `Admission No: ${student.admissionNo}`,
+      `Class: ${classInfo}`,
+      `Total Assigned: ${fmtCurrency(totalAssigned)}`,
+      `Total Paid: ${fmtCurrency(totalPaid)}`,
+      `Remaining: ${fmtCurrency(totalRemaining)}`,
+      `Overdue: ${fmtCurrency(totalOverdue)}`,
+      ''
     ].join('\n');
 
+    const rows = [
+      ['Title', 'Due Date', 'Status', 'Amount', 'Paid', 'Remaining'],
+      ...fees.map((f) => {
+        const net = f.amount - f.discount;
+        const paid = f.payments.reduce((s, p) => s + p.amountPaid, 0);
+        return [f.title, fmtDate(f.dueDate), f.status, net.toFixed(2), paid.toFixed(2), Math.max(net - paid, 0).toFixed(2)];
+      })
+    ];
+
+    const csv = header + rows.map((r) => r.map((v) => `"${v}"`).join(',')).join('\n');
     const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
     const url = URL.createObjectURL(blob);
-    const link = document.createElement('a');
-    link.href = url;
-    link.download = `fees-${student.user.fullName.replace(/\s+/g, '-')}-${new Date().toISOString().slice(0, 10)}.csv`;
-    link.click();
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `fees_${student.user.fullName.replace(/\s+/g, '_')}_${new Date().toISOString().slice(0, 10)}.csv`;
+    a.click();
+    URL.revokeObjectURL(url);
+  };
+
+  const handleShareSummary = () => {
+    if (!waPhone) return;
+    const msg = `Fee Summary — ${student.user.fullName}\n\nAssigned: ${fmtCurrency(totalAssigned)}\nPaid: ${fmtCurrency(totalPaid)}\nRemaining: ${fmtCurrency(totalRemaining)}\nOverdue: ${fmtCurrency(totalOverdue)}`;
+    window.open(`https://wa.me/${waPhone}?text=${encodeURIComponent(msg)}`, '_blank');
   };
 
   return (
     <div className="min-h-screen bg-[#f8fafb] p-4">
-      <div className="mx-auto max-w-4xl space-y-4">
+      <div className="mx-auto max-w-2xl space-y-4">
 
         {/* Back Link */}
-        <Link href={`/admin/students/${student.id}`}
-          className="inline-flex items-center gap-1 text-xs font-semibold text-[#004649] hover:text-[#1b5e62] transition">
+        <Link
+          href={`/admin/students/${student.id}`}
+          className="inline-flex items-center gap-1 text-xs font-semibold text-[#004649] hover:text-[#1b5e62] transition"
+        >
           <ChevronLeft className="h-4 w-4" />
           Back to Profile
         </Link>
@@ -166,195 +161,127 @@ export default function StudentFeesClient({
           </div>
         </div>
 
-        {/* KPI Cards */}
-        <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+        {/* Summary Cards */}
+        <div className="grid grid-cols-2 gap-3">
           <div className="rounded-xl bg-[#f8fafc] p-4">
             <p className="text-[10px] font-semibold uppercase tracking-wider text-[#9ca3af]">Total Assigned</p>
-            <p className="mt-1.5 text-lg font-bold text-[#111827]">{formatCurrency(totalAssigned)}</p>
+            <p className="mt-1.5 text-2xl font-bold text-[#111827]">{fmtCurrency(totalAssigned)}</p>
           </div>
           <div className="rounded-xl bg-[#f0fdf4] p-4">
             <p className="text-[10px] font-semibold uppercase tracking-wider text-[#9ca3af]">Paid</p>
-            <p className="mt-1.5 text-lg font-bold text-[#15803d]">{formatCurrency(totalPaid)}</p>
+            <p className="mt-1.5 text-2xl font-bold text-[#15803d]">{fmtCurrency(totalPaid)}</p>
           </div>
           <div className="rounded-xl bg-[#fef9f0] p-4">
             <p className="text-[10px] font-semibold uppercase tracking-wider text-[#9ca3af]">Remaining</p>
-            <p className="mt-1.5 text-lg font-bold text-[#b45309]">{formatCurrency(totalRemaining)}</p>
+            <p className="mt-1.5 text-2xl font-bold text-[#b45309]">{fmtCurrency(totalRemaining)}</p>
           </div>
           <div className="rounded-xl bg-[#fef2f2] p-4">
             <p className="text-[10px] font-semibold uppercase tracking-wider text-[#9ca3af]">Overdue</p>
-            <p className="mt-1.5 text-lg font-bold text-[#b91c1c]">{formatCurrency(totalOverdue)}</p>
+            <p className="mt-1.5 text-2xl font-bold text-[#b91c1c]">{fmtCurrency(totalOverdue)}</p>
           </div>
         </div>
 
-        {/* Fee Ledger */}
-        <div className="rounded-2xl bg-white shadow-[0_2px_8px_rgba(0,0,0,0.06),0_8px_32px_rgba(0,0,0,0.04)] overflow-hidden">
-          {/* Header */}
-          <div className="border-b border-[#f1f5f9] px-5 py-4 flex items-center justify-between">
+        {/* Fee Cards */}
+        <div className="rounded-2xl bg-white shadow-[0_2px_8px_rgba(0,0,0,0.06),0_8px_32px_rgba(0,0,0,0.04)]">
+          <div className="border-b border-[#f1f5f9] px-5 py-4">
             <h2 className="font-semibold text-[#111827]">Fee Ledger</h2>
-            <button
-              onClick={handleExportCSV}
-              className="h-10 flex items-center justify-center gap-1.5 rounded-lg bg-[#f0f2f5] text-[#2c3e50] text-xs font-semibold hover:bg-[#e2e8e8] transition"
-            >
-              <Download className="h-3.5 w-3.5" />
-              <span className="hidden sm:inline">CSV</span>
-            </button>
           </div>
 
-          {/* Mobile Cards */}
-          <div className="sm:hidden space-y-0 divide-y divide-[#f1f5f9]">
-            {fees.length === 0 ? (
-              <div className="p-5 text-center text-sm text-[#6b7280]">No fees found.</div>
-            ) : (
-              fees.map((f) => {
-                const netAmount = f.amount - f.discount;
+          {fees.length === 0 ? (
+            <div className="flex flex-col items-center gap-3 py-10 text-center">
+              <DollarSign className="h-10 w-10 text-[#d1d5db]" />
+              <p className="text-sm text-[#9ca3af]">No fees assigned yet.</p>
+            </div>
+          ) : (
+            <div className="divide-y divide-[#f1f5f9]">
+              {fees.map((f) => {
+                const net = f.amount - f.discount;
                 const paid = f.payments.reduce((s, p) => s + p.amountPaid, 0);
-                const remaining = Math.max(netAmount - paid, 0);
-                const waUrl = getWhatsAppUrl(f);
-                const colors = getStatusColor(f.status);
+                const remaining = Math.max(net - paid, 0);
+                const paidPct = net > 0 ? Math.min(Math.round((paid / net) * 100), 100) : 100;
+                const style = STATUS_STYLE[f.status.toUpperCase()] ?? { badge: 'bg-[#f1f5f9] text-[#6b7280]', bar: 'bg-[#9ca3af]' };
 
                 return (
-                  <div key={f.id} className={`${colors.borderColor} border-l-4 p-4 space-y-2`}>
+                  <div key={f.id} className="p-4 space-y-3">
+                    {/* Title + status */}
                     <div className="flex items-start justify-between gap-2">
-                      <div className="flex-1">
+                      <div>
                         <p className="text-sm font-semibold text-[#111827]">{f.title}</p>
-                        <p className="text-xs text-[#6b7280]">Due: {formatDate(f.dueDate)}</p>
+                        <p className="mt-0.5 text-xs text-[#6b7280]">Due: {fmtDate(f.dueDate)}</p>
                       </div>
-                      <span className={`rounded-full px-2.5 py-0.5 text-[10px] font-bold whitespace-nowrap ${colors.bg} ${colors.text}`}>
+                      <span className={`rounded-full px-2.5 py-0.5 text-[10px] font-bold whitespace-nowrap ${style.badge}`}>
                         {f.status}
                       </span>
                     </div>
-                    <div className="flex gap-2 text-xs">
-                      <div className="flex-1">
-                        <p className="text-[#6b7280]">Amount</p>
-                        <p className="font-semibold text-[#111827]">{formatCurrency(netAmount)}</p>
+
+                    {/* Progress bar */}
+                    <div className="h-1.5 w-full rounded-full bg-[#f1f5f9] overflow-hidden">
+                      <div className={`h-full rounded-full transition-all ${style.bar}`} style={{ width: `${paidPct}%` }} />
+                    </div>
+
+                    {/* Amounts */}
+                    <div className="flex gap-4 text-xs">
+                      <div>
+                        <p className="text-[#9ca3af]">Amount</p>
+                        <p className="font-semibold text-[#111827]">{fmtCurrency(net)}</p>
                       </div>
-                      <div className="flex-1">
-                        <p className="text-[#6b7280]">Paid</p>
-                        <p className="font-semibold text-[#15803d]">{formatCurrency(paid)}</p>
+                      <div>
+                        <p className="text-[#9ca3af]">Paid</p>
+                        <p className="font-semibold text-[#15803d]">{fmtCurrency(paid)}</p>
                       </div>
-                      <div className="flex-1">
-                        <p className="text-[#6b7280]">Remaining</p>
-                        <p className="font-semibold text-[#b45309]">{formatCurrency(remaining)}</p>
+                      <div>
+                        <p className="text-[#9ca3af]">Remaining</p>
+                        <p className="font-semibold text-[#b45309]">{fmtCurrency(remaining)}</p>
                       </div>
                     </div>
-                    <div className="flex gap-2 pt-2">
+
+                    {/* Mark paid button */}
+                    {f.status !== 'PAID' && (
                       <button
                         onClick={() => handleMarkPaid(f.id)}
-                        disabled={f.status === 'PAID' || markingPaid === f.id}
-                        className={`h-11 flex-1 flex items-center justify-center gap-1.5 rounded-lg text-xs font-semibold transition ${
-                          f.status === 'PAID'
-                            ? 'bg-[#f0f2f5] text-[#9ca3af] cursor-not-allowed'
-                            : 'bg-[#004649] text-white hover:bg-[#1b5e62]'
-                        }`}
+                        disabled={markingPaid === f.id}
+                        className="h-9 w-full flex items-center justify-center gap-1.5 rounded-xl bg-[#004649] text-white text-xs font-semibold hover:bg-[#1b5e62] transition disabled:opacity-60"
                       >
                         {markingPaid === f.id ? (
                           <Loader2 className="h-3.5 w-3.5 animate-spin" />
                         ) : (
                           <>
                             <Check className="h-3.5 w-3.5" />
-                            <span>Mark Paid</span>
+                            Mark as Paid
                           </>
                         )}
                       </button>
-                      <a
-                        href={waUrl || '#'}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        onClick={(e) => !waUrl && e.preventDefault()}
-                        className={`h-11 flex-1 flex items-center justify-center gap-1.5 rounded-lg text-xs font-semibold transition ${
-                          waUrl
-                            ? 'bg-[#25d366] text-white hover:scale-105 active:scale-[0.98]'
-                            : 'bg-[#f0f2f5] text-[#9ca3af] cursor-not-allowed opacity-60'
-                        }`}
-                      >
-                        <MessageCircle className="h-3.5 w-3.5" />
-                      </a>
-                    </div>
+                    )}
                   </div>
                 );
-              })
-            )}
-          </div>
-
-          {/* Desktop Table */}
-          <div className="hidden sm:block overflow-x-auto">
-            <table className="w-full min-w-[800px]">
-              <thead>
-                <tr className="bg-[#fafafa]">
-                  <th className="rounded-l-xl px-4 py-3 text-left text-[11px] font-bold uppercase tracking-[0.12em] text-[#9ca3af]">Title</th>
-                  <th className="px-4 py-3 text-left text-[11px] font-bold uppercase tracking-[0.12em] text-[#9ca3af]">Due Date</th>
-                  <th className="px-4 py-3 text-left text-[11px] font-bold uppercase tracking-[0.12em] text-[#9ca3af]">Amount</th>
-                  <th className="px-4 py-3 text-left text-[11px] font-bold uppercase tracking-[0.12em] text-[#9ca3af]">Paid</th>
-                  <th className="px-4 py-3 text-left text-[11px] font-bold uppercase tracking-[0.12em] text-[#9ca3af]">Remaining</th>
-                  <th className="px-4 py-3 text-left text-[11px] font-bold uppercase tracking-[0.12em] text-[#9ca3af]">Status</th>
-                  <th className="rounded-r-xl px-4 py-3 text-left text-[11px] font-bold uppercase tracking-[0.12em] text-[#9ca3af]">Actions</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-[#f8fafc]">
-                {fees.length === 0 ? (
-                  <tr>
-                    <td colSpan={7} className="px-4 py-8 text-center text-sm text-[#6b7280]">
-                      No fees found.
-                    </td>
-                  </tr>
-                ) : (
-                  fees.map((f) => {
-                    const netAmount = f.amount - f.discount;
-                    const paid = f.payments.reduce((s, p) => s + p.amountPaid, 0);
-                    const remaining = Math.max(netAmount - paid, 0);
-                    const waUrl = getWhatsAppUrl(f);
-                    const colors = getStatusColor(f.status);
-
-                    return (
-                      <tr key={f.id} className="hover:bg-[#fafafa]">
-                        <td className="px-4 py-3 text-sm font-medium text-[#111827]">{f.title}</td>
-                        <td className="px-4 py-3 text-sm text-[#6b7280]">{formatDate(f.dueDate)}</td>
-                        <td className="px-4 py-3 text-sm font-medium text-[#111827]">{formatCurrency(netAmount)}</td>
-                        <td className="px-4 py-3 text-sm font-medium text-[#15803d]">{formatCurrency(paid)}</td>
-                        <td className="px-4 py-3 text-sm font-medium text-[#b45309]">{formatCurrency(remaining)}</td>
-                        <td className="px-4 py-3">
-                          <span className={`inline-block rounded-full px-2.5 py-0.5 text-[10px] font-bold ${colors.bg} ${colors.text}`}>
-                            {f.status}
-                          </span>
-                        </td>
-                        <td className="px-4 py-3 flex gap-1.5">
-                          <button
-                            onClick={() => handleMarkPaid(f.id)}
-                            disabled={f.status === 'PAID' || markingPaid === f.id}
-                            className={`h-9 flex items-center justify-center px-2.5 rounded-lg text-xs font-semibold transition ${
-                              f.status === 'PAID'
-                                ? 'bg-[#f0f2f5] text-[#9ca3af] cursor-not-allowed'
-                                : 'bg-[#004649] text-white hover:bg-[#1b5e62]'
-                            }`}
-                          >
-                            {markingPaid === f.id ? (
-                              <Loader2 className="h-3.5 w-3.5 animate-spin" />
-                            ) : (
-                              <Check className="h-3.5 w-3.5" />
-                            )}
-                          </button>
-                          <a
-                            href={waUrl || '#'}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            onClick={(e) => !waUrl && e.preventDefault()}
-                            className={`h-9 flex items-center justify-center px-2.5 rounded-lg text-xs font-semibold transition ${
-                              waUrl
-                                ? 'bg-[#25d366] text-white hover:scale-105 active:scale-[0.98]'
-                                : 'bg-[#f0f2f5] text-[#9ca3af] cursor-not-allowed opacity-60'
-                            }`}
-                          >
-                            <MessageCircle className="h-3.5 w-3.5" />
-                          </a>
-                        </td>
-                      </tr>
-                    );
-                  })
-                )}
-              </tbody>
-            </table>
-          </div>
+              })}
+            </div>
+          )}
         </div>
+
+        {/* Action Buttons */}
+        <div className="flex gap-3">
+          <button
+            onClick={handleDownload}
+            className="h-11 flex flex-1 items-center justify-center gap-2 rounded-xl bg-[#004649] text-white font-semibold hover:bg-[#1b5e62] transition"
+          >
+            <Download className="h-4 w-4" />
+            Download CSV
+          </button>
+          <button
+            onClick={handleShareSummary}
+            disabled={!waPhone}
+            className={`h-11 flex flex-1 items-center justify-center gap-2 rounded-xl font-semibold transition ${
+              waPhone
+                ? 'bg-[#25d366] text-white hover:scale-105 active:scale-[0.98]'
+                : 'bg-[#f0f2f5] text-[#6f7979] cursor-not-allowed opacity-60'
+            }`}
+          >
+            <Share2 className="h-4 w-4" />
+            WhatsApp
+          </button>
+        </div>
+
       </div>
     </div>
   );
