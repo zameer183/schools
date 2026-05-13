@@ -437,7 +437,7 @@ export default function EnrollStudentPage() {
 
           <div className="mt-6 flex gap-3">
             <button
-              onClick={() => { setResult(null); setStep(1); setForm1({ studentName:'', fatherName:'', dateOfBirth:'', aadharNo:'', gender:'' }); setForm2({ whatsappCode:'+92', whatsappNumber:'', mobileNumber:'', email:'', address:'' }); setForm3({ schoolName:'', rollNumber:'', classId:'', joinDate: new Date().toISOString().slice(0,10) }); setForm4({ feeCategory:'', feeType:'', feeTitle:'Monthly Tuition Fee', fromDate:'', toDate:'', feeAmount:'', feeDiscount:'0', feeDueDate: new Date().toISOString().slice(0,10), partialFeeSupported:false, collectOnMonthStart:false }); }}
+              onClick={() => { setResult(null); setStep(1); setForm1({ studentName:'', fatherName:'', dateOfBirth:'', aadharNo:'', gender:'' }); setForm2({ whatsappCode:'+92', whatsappNumber:'', mobileNumber:'', email:'', address:'' }); setForm3({ schoolName:'', rollNumber:'', classId:'', joinDate: new Date().toISOString().slice(0,10) }); setForm4({ feeCategory:'', feeType:'', feeTitle:'Monthly Tuition Fee', feeAmount:'', feeDiscount:'0', feeDueDate: new Date().toISOString().slice(0,10), partialFeeSupported:false, collectOnMonthStart:false }); }}
               className="flex-1 rounded-xl border border-[#e2e8f0] py-2.5 text-sm font-semibold text-[#374151] transition hover:bg-[#f8fafc]"
             >
               Enroll Another

@@ -35,10 +35,10 @@ export default function GlobalError({
         <div className="flex min-h-screen items-center justify-center bg-[#f8f9fa] p-6">
           <div className="w-full max-w-md rounded-2xl bg-white shadow-[0_4px_12px_rgba(0,0,0,0.08)] p-6 text-center">
             <Image
-              src="/manarah-mark.png"
+              src="/manarah-p4.png"
               alt="Manarah Institute logo"
-              width={220}
-              height={74}
+              width={1382}
+              height={504}
               className="mx-auto h-auto w-[220px] max-w-full"
               priority
             />

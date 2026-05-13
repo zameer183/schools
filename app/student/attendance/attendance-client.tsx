@@ -4,7 +4,7 @@ import { useRouter } from 'next/navigation';
 
 type AttendanceStatus = 'PRESENT' | 'ABSENT' | 'LATE' | 'EXCUSED';
 
-type Record = {
+type AttendanceRecord = {
   date: string;
   status: AttendanceStatus;
   remarks: string | null;
@@ -16,7 +16,7 @@ type Props = {
   className: string;
   isActive: boolean;
   monthKey: string; // "2026-05"
-  records: Record[];
+  records: AttendanceRecord[];
 };
 
 const DAY_NAMES = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
@@ -86,7 +86,7 @@ export default function AttendanceClient({
   const todayStr = new Date().toISOString().slice(0, 10);
 
   // Build a map dateStr → record
-  const recordMap = new Map<string, Record>();
+  const recordMap = new Map<string, AttendanceRecord>();
   for (const rec of records) {
     recordMap.set(rec.date, rec);
   }

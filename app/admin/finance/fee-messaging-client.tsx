@@ -132,7 +132,11 @@ export default function FeeMessagingClient({ rows, classes }: Props) {
     skippedCount: number;
   } | null>(null);
   const [message, setMessage] = useState('');
-  const isDesktop = typeof window !== 'undefined' && window.innerWidth >= 768;
+  const [isDesktop, setIsDesktop] = useState(false);
+
+  useEffect(() => {
+    setIsDesktop(window.innerWidth >= 768);
+  }, []);
 
   const feeMessagingRows = useMemo(() => {
     const text = feeSearch.trim().toLowerCase();

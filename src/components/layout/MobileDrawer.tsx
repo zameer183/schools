@@ -75,11 +75,11 @@ export function MobileDrawer({
           </div>
           <div className="mb-2">
             <Image
-              src="/manarah-mark.png"
+              src="/manarah-p4.png"
               alt="Manarah Institute logo"
-              width={72}
-              height={72}
-              className="h-[60px] w-[60px] object-contain"
+              width={1382}
+              height={504}
+              className="h-auto w-[165px] object-contain"
               priority
             />
           </div>

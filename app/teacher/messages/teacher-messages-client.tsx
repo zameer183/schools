@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { ChevronLeft, MessageSquarePlus, Search, Send, SlidersHorizontal, Trash2, X } from 'lucide-react';
+import { ChevronLeft, MessageSquarePlus, Search, Send, Trash2, X } from 'lucide-react';
 
 type MessageDirection = 'received' | 'sent';
 
@@ -499,7 +499,7 @@ export function TeacherMessagesClient({ messages, recipients }: TeacherMessagesC
         />
       </div>
 
-      <div className="max-h-[62vh] space-y-1 overflow-auto pr-1">
+      <div className="space-y-1 overflow-auto pr-1" style={{maxHeight: 'calc(100dvh - 360px)', minHeight: '200px'}}>
         {filtered.map((conv) => (
           <button
             key={conv.personId}
@@ -552,7 +552,7 @@ export function TeacherMessagesClient({ messages, recipients }: TeacherMessagesC
 
   /* -- Right chat panel -- */
   const rightPanel = (
-    <div className="flex h-[72vh] flex-col rounded-2xl bg-white shadow-[0_12px_40px_rgba(43,103,110,0.06)]">
+    <div className="flex flex-col rounded-2xl bg-white shadow-[0_12px_40px_rgba(43,103,110,0.06)]" style={{height: 'calc(100dvh - 280px)', minHeight: '400px'}}>
       {activeConv ? (
         <>
           {/* Header */}
@@ -610,7 +610,7 @@ export function TeacherMessagesClient({ messages, recipients }: TeacherMessagesC
           <div ref={chatBottomRef} />
 
           {/* Reply bar */}
-          <div className="border-t border-[#e6edf2] bg-white p-3">
+          <div className="border-t border-[#e6edf2] bg-white px-3 pt-3 pb-[84px] lg:pb-3">
             <div className="flex items-center gap-2">
               <input
                 value={draft}
@@ -664,18 +664,38 @@ export function TeacherMessagesClient({ messages, recipients }: TeacherMessagesC
             <p className="text-sm text-[#607080]">Message your students and stay on top of your class.</p>
           </div>
           <button
-            onClick={() => setShowMobileFilters((prev) => !prev)}
-            className="inline-flex items-center gap-1 rounded-xl border border-[#d3e0e7] px-3 py-2 text-sm font-semibold text-[#1a2b3d] lg:hidden"
+            onClick={() => setShowCompose(true)}
+            className="inline-flex items-center gap-1.5 rounded-xl bg-gradient-to-br from-[#2b676e] to-[#1a5058] px-3 py-2 text-sm font-semibold text-white shadow-sm lg:hidden"
           >
-            <SlidersHorizontal className="h-4 w-4" />
-            Panels
+            <MessageSquarePlus className="h-4 w-4" />
+            New
           </button>
         </div>
       </div>
 
+      {/* Mobile category tabs */}
+      <div className="flex gap-2 overflow-x-auto pb-1 lg:hidden">
+        {catItems.map((item) => (
+          <button
+            key={item.key}
+            onClick={() => setCategory(item.key)}
+            className={`inline-flex shrink-0 items-center gap-1.5 rounded-xl px-3 py-2 text-xs font-semibold transition ${
+              category === item.key
+                ? 'bg-[#1a5058] text-white'
+                : 'bg-white text-[#5b6b7c] border border-[#e5edf2]'
+            }`}
+          >
+            {item.label}
+            <span className={`rounded-full px-1.5 py-0.5 text-[10px] font-bold ${
+              category === item.key ? 'bg-white/20 text-white' : 'bg-[#dbeafe] text-[#1d4ed8]'
+            }`}>{item.count}</span>
+          </button>
+        ))}
+      </div>
+
       {/* 3-col grid */}
       <div className="grid gap-4 lg:grid-cols-[230px_360px_minmax(0,1fr)]">
-        <div className={`${showMobileFilters ? 'block' : 'hidden'} lg:block`}>{leftPanel}</div>
+        <div className="hidden lg:block">{leftPanel}</div>
         <div className={`${activeConv ? 'hidden lg:block' : 'block'}`}>{middlePanel}</div>
         <div className={`${activeConv ? 'block' : 'hidden lg:block'}`}>{rightPanel}</div>
       </div>

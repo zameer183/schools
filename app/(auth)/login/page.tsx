@@ -4,82 +4,153 @@ import LoginForm from './login-form';
 
 export default function LoginPage() {
   return (
-    <div className="relative flex min-h-screen flex-col items-center justify-center overflow-x-hidden bg-[#f8f9fa] p-2 py-4 text-[#191c1d] sm:h-[100dvh] sm:overflow-hidden sm:p-6">
-      <div className="absolute right-3 top-3 z-10 sm:right-4 sm:top-4">
+    <div className="relative flex h-[100dvh] max-h-[100dvh] overflow-hidden bg-[#0C3D2E] md:h-screen md:max-h-screen">
+
+      {/* Islamic geometric pattern overlay */}
+      <div className="pointer-events-none absolute inset-0 opacity-[0.04]">
+        <svg className="h-full w-full" xmlns="http://www.w3.org/2000/svg">
+          <defs>
+            <pattern id="geo" width="60" height="60" patternUnits="userSpaceOnUse">
+              <path d="M30 0 L60 30 L30 60 L0 30 Z" fill="none" stroke="white" strokeWidth="0.8"/>
+              <path d="M30 10 L50 30 L30 50 L10 30 Z" fill="none" stroke="white" strokeWidth="0.5"/>
+              <circle cx="30" cy="30" r="4" fill="none" stroke="white" strokeWidth="0.5"/>
+              <circle cx="0" cy="0" r="4" fill="none" stroke="white" strokeWidth="0.5"/>
+              <circle cx="60" cy="0" r="4" fill="none" stroke="white" strokeWidth="0.5"/>
+              <circle cx="0" cy="60" r="4" fill="none" stroke="white" strokeWidth="0.5"/>
+              <circle cx="60" cy="60" r="4" fill="none" stroke="white" strokeWidth="0.5"/>
+            </pattern>
+          </defs>
+          <rect width="100%" height="100%" fill="url(#geo)" />
+        </svg>
+      </div>
+
+      {/* Ambient glows */}
+      <div className="pointer-events-none absolute -right-20 -top-20 h-[500px] w-[500px] rounded-full bg-[#C9952A]/10 blur-[120px]" />
+      <div className="pointer-events-none absolute -bottom-20 left-1/4 h-[400px] w-[400px] rounded-full bg-[#1a5c41]/60 blur-[100px]" />
+      <div className="pointer-events-none absolute left-0 top-1/2 h-[300px] w-[300px] -translate-y-1/2 rounded-full bg-[#C9952A]/5 blur-[80px]" />
+
+      {/* Language switcher */}
+      <div className="absolute right-5 top-5 z-20">
         <LanguageSwitcher />
       </div>
-      <div className="pointer-events-none fixed right-[-5%] top-[-10%] h-[40vw] w-[40vw] rounded-full bg-[#004649]/5 blur-[120px]" />
-      <div className="pointer-events-none fixed bottom-[-10%] left-[-5%] h-[30vw] w-[30vw] rounded-full bg-[#865300]/5 blur-[100px]" />
 
-      <div className="grid w-full max-w-5xl grid-cols-1 overflow-hidden rounded-[2rem] bg-white shadow-[0_12px_40px_rgba(0,70,73,0.12)] sm:max-h-[calc(100dvh-0.5rem)] md:grid-cols-2">
-        <div className="relative hidden flex-col justify-between overflow-hidden bg-[#1b5e62] p-12 text-white md:flex">
-          <div className="pointer-events-none absolute inset-0 opacity-10">
-            <svg className="h-full w-full" preserveAspectRatio="none" viewBox="0 0 100 100">
-              <defs>
-                <pattern id="grid" width="10" height="10" patternUnits="userSpaceOnUse">
-                  <path d="M 10 0 L 0 0 0 10" fill="none" stroke="currentColor" strokeWidth="0.5" />
-                </pattern>
-              </defs>
-              <rect width="100" height="100" fill="url(#grid)" />
-            </svg>
-          </div>
+      {/* ── Left panel ── */}
+      <div className="relative hidden flex-col md:flex md:w-[52%] lg:w-[55%]">
+        {/* Gold top border */}
+        <div className="absolute left-0 top-0 z-10 h-[3px] w-full bg-gradient-to-r from-[#C9952A] via-[#e8b84b] to-transparent" />
 
-          <div className="z-10">
-            <div className="mb-16">
-              <div className="inline-flex rounded-2xl bg-white/95 p-3 shadow-[0_10px_30px_rgba(0,0,0,0.2)] ring-1 ring-white/60">
-                <Image
-                  src="/manarah-mark.png"
-                  alt="Manarah Institute logo"
-                  width={280}
-                  height={94}
-                  className="h-auto w-[280px] max-w-full"
-                  priority
-                />
-              </div>
+        {/* Gold left accent bar */}
+        <div className="absolute bottom-0 left-0 top-0 w-[3px] bg-gradient-to-b from-[#C9952A]/80 via-[#C9952A]/20 to-transparent" />
+
+        <div className="relative z-10 flex h-full flex-col justify-between p-10 lg:p-14">
+
+          {/* Logo */}
+          <div>
+            <div className="inline-block">
+              <Image
+                src="/manarah-p4.png"
+                alt="Manarah Institute"
+                width={1382}
+                height={504}
+                className="h-auto w-[320px] object-contain drop-shadow-[0_4px_24px_rgba(201,149,42,0.18)] lg:w-[400px]"
+                priority
+              />
             </div>
-            <h1 className="mb-6 text-5xl font-headline font-extrabold leading-tight tracking-tight">
-              Cultivating the
-              <br />
-              <span className="text-[#fdb24f]"> Leaders of Tomorrow</span>
-            </h1>
-            <p className="max-w-md font-body text-lg leading-relaxed opacity-80">
-              Access your personalized academic atelier. Manage grades, attendance, and student growth with editorial precision and effortless clarity.
-            </p>
+
+            {/* Divider line */}
+            <div className="mt-8 flex items-center gap-3">
+              <div className="h-[2px] w-8 rounded-full bg-[#C9952A]" />
+              <div className="h-[1px] w-16 rounded-full bg-white/15" />
+            </div>
+
+            {/* Headline */}
+            <div className="mt-8">
+              <p className="mb-3 text-xs font-semibold uppercase tracking-[0.2em] text-[#C9952A]/80">
+                Student Management Portal
+              </p>
+              <h1 className="text-4xl font-bold leading-[1.2] text-white xl:text-5xl">
+                Cultivating the
+                <br />
+                <span className="bg-gradient-to-r from-[#C9952A] to-[#e8b84b] bg-clip-text text-transparent">
+                  Leaders of
+                </span>
+                <br />
+                <span className="bg-gradient-to-r from-[#C9952A] to-[#e8b84b] bg-clip-text text-transparent">
+                  Tomorrow
+                </span>
+              </h1>
+              <p className="mt-5 max-w-xs text-[15px] leading-relaxed text-white/50">
+                Manage academics, attendance, and student growth — all in one place.
+              </p>
+            </div>
           </div>
 
-          <div className="z-10 mt-12 rounded-2xl border border-white/10 bg-white/10 p-6 backdrop-blur-md">
-            <p className="mb-4 text-[11px] font-label font-bold uppercase tracking-[0.15em] text-[#ffddb8]">Latest Institution Update</p>
-            <h3 className="mb-2 text-xl font-headline font-bold">Academic Excellence Forum 2024</h3>
-            <p className="text-sm opacity-70">Registration for the annual student-teacher synergy workshop is now open for all departments.</p>
+          {/* Stats */}
+          <div className="grid grid-cols-3 gap-3">
+            {[
+              { label: 'Students Enrolled', value: '2,400+', icon: '🎓' },
+              { label: 'Educators', value: '120+', icon: '📚' },
+              { label: 'Active Classes', value: '80+', icon: '🏫' },
+            ].map((stat) => (
+              <div
+                key={stat.label}
+                className="group relative overflow-hidden rounded-2xl bg-white/[0.06] px-4 py-5 ring-1 ring-white/10 backdrop-blur-sm transition hover:bg-white/[0.09] hover:ring-[#C9952A]/30"
+              >
+                <div className="absolute inset-x-0 top-0 h-[1px] bg-gradient-to-r from-transparent via-[#C9952A]/40 to-transparent" />
+                <p className="text-xl font-bold text-[#C9952A] lg:text-2xl">{stat.value}</p>
+                <p className="mt-1 text-[11px] font-medium leading-tight text-white/40">{stat.label}</p>
+              </div>
+            ))}
           </div>
         </div>
+      </div>
 
-        <div className="flex flex-col justify-center overflow-y-auto bg-white p-4 sm:overflow-visible sm:p-7 md:p-14">
-          <div className="mb-3 block md:hidden">
-            <Image
-              src="/manarah-mark.png"
-              alt="Manarah Institute logo"
-              width={84}
-              height={84}
-              className="mb-1 h-[72px] w-[72px] object-contain"
-              priority
-            />
+      {/* ── Right panel (login card) ── */}
+      <div className="relative flex min-h-0 flex-1 items-center justify-center overflow-y-auto bg-[#f7f8fa] px-5 py-8 shadow-[-20px_0_60px_rgba(0,0,0,0.25)] sm:px-8 md:rounded-l-[2.5rem] md:px-10 lg:px-14">
+
+        {/* Mobile gold accent */}
+        <div className="absolute left-6 right-6 top-0 h-[3px] rounded-b-full bg-gradient-to-r from-[#C9952A] to-transparent md:hidden" />
+
+        <div className="w-full max-w-[400px]">
+
+          {/* Mobile logo */}
+          <div className="mb-7 block md:hidden">
+            <div className="overflow-hidden rounded-2xl border border-[#e8eeeb] bg-[#0C3D2E] px-6 py-5 shadow-sm">
+              <Image
+                src="/manarah-p4.png"
+                alt="Manarah Institute"
+                width={1382}
+                height={504}
+                className="mx-auto h-auto w-full max-w-[260px] object-contain"
+                priority
+              />
+            </div>
           </div>
 
-          <div className="mb-4 sm:mb-7">
-            <h2 className="mb-1 text-[1.9rem] font-headline font-bold leading-tight text-[#191c1d] sm:text-3xl">Welcome Back</h2>
-            <p className="font-body text-[#3f4849]">Please enter your credentials to continue.</p>
+          {/* Header */}
+          <div className="mb-7">
+            <div className="mb-1 flex items-center gap-2">
+              <div className="h-5 w-1 rounded-full bg-[#C9952A]" />
+              <p className="text-xs font-bold uppercase tracking-widest text-[#C9952A]">Secure Access</p>
+            </div>
+            <h2 className="text-[1.65rem] font-bold text-[#0C3D2E]">Welcome Back</h2>
+            <p className="mt-1 text-sm text-[#94a3b8]">Sign in to your Manarah portal</p>
           </div>
 
-          <LoginForm />
+          {/* Form card */}
+          <div className="rounded-2xl border border-[#e8eeeb] bg-white p-6 shadow-[0_4px_24px_rgba(12,61,46,0.07)]">
+            <LoginForm />
+          </div>
 
-          <div className="mt-8 hidden flex-col items-center gap-3 border-t border-[#edeeef] pt-6 sm:flex">
-            <p className="font-body text-sm text-[#3f4849]">Need technical assistance?</p>
-            <div className="flex gap-6">
-              <button type="button" className="flex items-center gap-1 text-xs font-semibold text-[#6f7979] transition hover:text-[#004649]">
+          {/* Footer links */}
+          <div className="mt-6 border-t border-[#e8eeeb] pt-5 text-center">
+            <p className="mb-2 text-[11px] text-[#cbd5e1]">Need assistance?</p>
+            <div className="flex items-center justify-center gap-5">
+              <button type="button" className="text-xs font-semibold text-[#94a3b8] transition hover:text-[#0C3D2E]">
                 Support Center
               </button>
-              <button type="button" className="flex items-center gap-1 text-xs font-semibold text-[#6f7979] transition hover:text-[#004649]">
+              <span className="h-3 w-[1px] bg-[#e2e8f0]" />
+              <button type="button" className="text-xs font-semibold text-[#94a3b8] transition hover:text-[#0C3D2E]">
                 Privacy Policy
               </button>
             </div>

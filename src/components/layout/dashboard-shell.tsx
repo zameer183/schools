@@ -146,11 +146,11 @@ export function DashboardShell({
         <div className="border-b border-[#e2e8e8] px-5 pb-5 pt-6">
           <Link href={instituteProfilePath}>
             <Image
-              src="/manarah-mark.png"
+              src="/manarah-p4.png"
               alt="Manarah Institute logo"
-              width={72}
-              height={72}
-              className="h-[56px] w-[56px] object-contain"
+              width={1382}
+              height={504}
+              className="h-auto w-[170px] object-contain"
               priority
             />
           </Link>
@@ -211,11 +211,11 @@ export function DashboardShell({
           <div className="flex min-w-0 items-center">
             <Link href={instituteProfilePath} className="md:hidden">
               <Image
-                src="/manarah-mark.png"
+                src="/manarah-p4.png"
                 alt="Manarah Institute logo"
-                width={44}
-                height={44}
-                className="h-9 w-9 object-contain max-[360px]:h-8 max-[360px]:w-8"
+                width={1382}
+                height={504}
+                className="h-auto w-[108px] object-contain max-[360px]:w-[92px]"
                 priority
               />
             </Link>

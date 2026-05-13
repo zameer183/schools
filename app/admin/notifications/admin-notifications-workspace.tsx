@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { BellRing, CircleDot, Filter, MailPlus, Search, SendHorizontal, Trash2 } from 'lucide-react';
+import { BellRing, CircleDot, MailPlus, Search, SendHorizontal, Trash2 } from 'lucide-react';
 import { Button } from '@/components/ui';
 
 type FilterKey = 'all' | 'unread' | 'sent';
@@ -63,7 +63,7 @@ export default function AdminNotificationsWorkspace({
   const [activeFilter, setActiveFilter] = useState<FilterKey>('all');
   const [items, setItems] = useState<NotificationItem[]>(notifications);
   const [selectedId, setSelectedId] = useState<string>(notifications[0]?.id ?? '');
-  const [showComposer, setShowComposer] = useState(false);
+  const [showPanel, setShowPanel] = useState(false);
   const [deletingId, setDeletingId] = useState<string | null>(null);
   const [deleteMessage, setDeleteMessage] = useState('');
 
@@ -159,7 +159,7 @@ export default function AdminNotificationsWorkspace({
             <h2 className="font-headline text-2xl font-semibold tracking-tight text-slate-900 sm:text-3xl">Notifications</h2>
             <p className="mt-1 text-sm text-slate-500">Inbox-style broadcasts with faster compose and tracking.</p>
           </div>
-          <Button type="button" onClick={() => setShowComposer((prev) => !prev)}>
+          <Button type="button" onClick={() => setShowPanel((prev) => !prev)}>
             <MailPlus size={16} />
             New Notification
           </Button>
@@ -188,21 +188,15 @@ export default function AdminNotificationsWorkspace({
       <section className="grid gap-4 xl:grid-cols-[minmax(0,1fr)_380px]">
         <div className="min-w-0 rounded-2xl bg-white shadow-[0_12px_40px_rgba(0,70,73,0.06)]">
           <div className="border-b border-slate-200 p-3 sm:p-4">
-            <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-              <label className="flex h-11 w-full items-center gap-2 rounded-xl bg-[#edeeef] border-none px-3 sm:max-w-md">
-                <Search className="h-4 w-4 text-slate-500" />
-                <input
-                  value={query}
-                  onChange={(event) => setQuery(event.target.value)}
-                  placeholder="Search notifications"
-                  className="w-full bg-transparent text-sm text-slate-900 outline-none placeholder:text-slate-400"
-                />
-              </label>
-              <div className="inline-flex items-center gap-2 rounded-xl bg-[#edeeef] border-none px-3 py-2 text-xs font-semibold text-slate-600">
-                <Filter className="h-3.5 w-3.5" />
-                Filters
-              </div>
-            </div>
+            <label className="flex h-11 w-full items-center gap-2 rounded-xl bg-[#edeeef] border-none px-3">
+              <Search className="h-4 w-4 text-slate-500" />
+              <input
+                value={query}
+                onChange={(event) => setQuery(event.target.value)}
+                placeholder="Search notifications"
+                className="w-full bg-transparent text-sm text-slate-900 outline-none placeholder:text-slate-400"
+              />
+            </label>
 
             <div className="mt-3 flex flex-wrap gap-2">
               {([
@@ -242,7 +236,7 @@ export default function AdminNotificationsWorkspace({
                     <button
                       key={item.id}
                       type="button"
-                      onClick={() => setSelectedId(item.id)}
+                      onClick={() => { setSelectedId(item.id); setShowPanel(true); }}
                       className={`w-full rounded-2xl border p-3 text-left transition ${
                         active
                           ? 'border-blue-200 bg-blue-50/70 shadow-sm'
@@ -273,7 +267,16 @@ export default function AdminNotificationsWorkspace({
           </div>
         </div>
 
-        <aside className={`${showComposer ? 'block' : 'hidden xl:block'} space-y-4`}>
+        <aside className={`${showPanel ? 'block' : 'hidden xl:block'} space-y-4`}>
+          {showPanel && (
+            <button
+              type="button"
+              onClick={() => setShowPanel(false)}
+              className="inline-flex items-center gap-1.5 text-sm font-semibold text-[#0C3D2E] xl:hidden"
+            >
+              ← Back to list
+            </button>
+          )}
           <section className="rounded-2xl bg-white p-4 shadow-[0_12px_40px_rgba(0,70,73,0.06)] sm:p-5">
             <h3 className="text-sm font-semibold text-slate-900">Detail</h3>
             {selected ? (
