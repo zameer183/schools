@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
-import { requireAuth } from '@/lib/auth';
+import { ensureApiRole } from '@/lib/rbac';
 import { UserRole } from '@prisma/client';
 
 const DEFAULT_TEMPLATES = [
@@ -50,11 +50,8 @@ const DEFAULT_TEMPLATES = [
 
 // GET — fetch all templates (seed defaults if empty)
 export async function GET() {
-  try {
-    await requireAuth([UserRole.ADMIN]);
-  } catch {
-    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-  }
+  const auth = await ensureApiRole([UserRole.ADMIN]);
+  if (!auth.authorized) return auth.response;
 
   let templates = await prisma.smsTemplate.findMany({ orderBy: { createdAt: 'asc' } });
 
@@ -69,11 +66,8 @@ export async function GET() {
 
 // PUT — update a template body
 export async function PUT(req: NextRequest) {
-  try {
-    await requireAuth([UserRole.ADMIN]);
-  } catch {
-    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-  }
+  const auth = await ensureApiRole([UserRole.ADMIN]);
+  if (!auth.authorized) return auth.response;
 
   const body = await req.json();
   const { id, templateBody, isActive } = body as { id: string; templateBody?: string; isActive?: boolean };

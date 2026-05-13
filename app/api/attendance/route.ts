@@ -25,6 +25,54 @@ export async function GET(request: Request) {
   const toDate = to ? new Date(to) : undefined;
   if (toDate) toDate.setHours(23, 59, 59, 999);
 
+  if (auth.session.role === UserRole.STUDENT) {
+    const student = await prisma.student.findUnique({ where: { userId: auth.session.id }, select: { id: true } });
+    if (!student) return NextResponse.json([]);
+    const records = await prisma.attendance.findMany({
+      where: {
+        studentId: student.id,
+        date: date
+          ? new Date(date)
+          : (fromDate || toDate)
+            ? {
+                ...(fromDate ? { gte: fromDate } : {}),
+                ...(toDate ? { lte: toDate } : {})
+              }
+            : undefined
+      },
+      include: { student: { include: { user: true } }, class: true },
+      orderBy: { date: 'desc' }
+    });
+    return NextResponse.json(records);
+  }
+
+  if (auth.session.role === UserRole.PARENT) {
+    const parent = await prisma.parent.findUnique({
+      where: { userId: auth.session.id },
+      select: { children: { select: { studentId: true } } }
+    });
+    if (!parent) return NextResponse.json([]);
+    const childIds = parent.children.map((c) => c.studentId);
+    const effectiveStudentId = studentId && childIds.includes(studentId) ? studentId : undefined;
+    const studentFilter = effectiveStudentId ? { studentId: effectiveStudentId } : { studentId: { in: childIds } };
+    const records = await prisma.attendance.findMany({
+      where: {
+        ...studentFilter,
+        date: date
+          ? new Date(date)
+          : (fromDate || toDate)
+            ? {
+                ...(fromDate ? { gte: fromDate } : {}),
+                ...(toDate ? { lte: toDate } : {})
+              }
+            : undefined
+      },
+      include: { student: { include: { user: true } }, class: true },
+      orderBy: { date: 'desc' }
+    });
+    return NextResponse.json(records);
+  }
+
   let teacherClassIds: string[] | null = null;
   if (auth.session.role === UserRole.TEACHER) {
     const teacher = await prisma.teacher.findUnique({

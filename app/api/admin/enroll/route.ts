@@ -1,15 +1,12 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { requireAuth } from '@/lib/auth';
 import { prisma } from '@/lib/prisma';
+import { ensureApiRole } from '@/lib/rbac';
 import { UserRole } from '@prisma/client';
 import { hash } from 'bcryptjs';
 
 export async function POST(req: NextRequest) {
-  try {
-    await requireAuth([UserRole.ADMIN]);
-  } catch {
-    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-  }
+  const auth = await ensureApiRole([UserRole.ADMIN]);
+  if (!auth.authorized) return auth.response;
 
   try {
     const body = await req.json();

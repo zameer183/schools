@@ -151,6 +151,13 @@ export async function PATCH(request: Request) {
 
   const { assignmentId, content, studentId } = await request.json();
 
+  if (auth.session.role === UserRole.STUDENT) {
+    const me = await prisma.student.findUnique({ where: { userId: auth.session.id }, select: { id: true } });
+    if (!me || me.id !== studentId) {
+      return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
+    }
+  }
+
   const submission = await prisma.assignmentSubmission.upsert({
     where: { assignmentId_studentId: { assignmentId, studentId } },
     update: { content, status: SubmissionStatus.SUBMITTED, submittedAt: new Date() },

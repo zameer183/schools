@@ -23,11 +23,28 @@ export async function GET(request: Request) {
   if (!auth.authorized) return auth.response;
 
   const { searchParams } = new URL(request.url);
-  const studentId = searchParams.get('studentId') ?? undefined;
   const examId = searchParams.get('examId') ?? undefined;
 
+  const rawStudentId = searchParams.get('studentId') ?? undefined;
+  let studentFilter: Record<string, unknown> = rawStudentId ? { studentId: rawStudentId } : {};
+
+  if (auth.session.role === UserRole.STUDENT) {
+    const student = await prisma.student.findUnique({ where: { userId: auth.session.id }, select: { id: true } });
+    if (!student) return NextResponse.json([]);
+    studentFilter = { studentId: student.id };
+  } else if (auth.session.role === UserRole.PARENT) {
+    const parent = await prisma.parent.findUnique({
+      where: { userId: auth.session.id },
+      select: { children: { select: { studentId: true } } }
+    });
+    if (!parent) return NextResponse.json([]);
+    const childIds = parent.children.map((c) => c.studentId);
+    const effectiveStudentId = rawStudentId && childIds.includes(rawStudentId) ? rawStudentId : undefined;
+    studentFilter = effectiveStudentId ? { studentId: effectiveStudentId } : { studentId: { in: childIds } };
+  }
+
   const results = await prisma.result.findMany({
-    where: { studentId, examId },
+    where: { ...studentFilter, examId },
     include: {
       student: { include: { user: true } },
       exam: { include: { createdBy: { include: { user: { select: { fullName: true } } } } } },

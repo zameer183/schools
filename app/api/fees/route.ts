@@ -16,10 +16,29 @@ export async function GET(request: Request) {
   const toDate = to ? new Date(to) : undefined;
   if (toDate) toDate.setHours(23, 59, 59, 999);
 
+  let studentFilter: Record<string, unknown> = {};
+
+  if (auth.session.role === UserRole.STUDENT) {
+    const student = await prisma.student.findUnique({ where: { userId: auth.session.id }, select: { id: true } });
+    if (!student) return NextResponse.json([]);
+    studentFilter = { studentId: student.id };
+  } else if (auth.session.role === UserRole.PARENT) {
+    const parent = await prisma.parent.findUnique({
+      where: { userId: auth.session.id },
+      select: { children: { select: { studentId: true } } }
+    });
+    if (!parent) return NextResponse.json([]);
+    const childIds = parent.children.map((c) => c.studentId);
+    const effectiveStudentId = studentId && childIds.includes(studentId) ? studentId : undefined;
+    studentFilter = effectiveStudentId ? { studentId: effectiveStudentId } : { studentId: { in: childIds } };
+  } else {
+    if (studentId) studentFilter = { studentId };
+  }
+
   const fees = await prisma.fee.findMany({
     where: {
-      ...(studentId ? { studentId } : {}),
-      ...(classId ? { student: { classId } } : {}),
+      ...studentFilter,
+      ...(classId && auth.session.role === UserRole.ADMIN ? { student: { classId } } : {}),
       ...((fromDate || toDate)
         ? {
             dueDate: {
