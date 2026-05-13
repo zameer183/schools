@@ -6,9 +6,9 @@ const roles = [
     href: '/login/admin',
     label: 'Admin',
     tagline: 'Manage your institution',
-    accent: '#c9952a',
-    glow: 'rgba(201,149,42,0.18)',
-    border: 'rgba(201,149,42,0.3)',
+    accent: '#D6A44C',
+    glow: 'rgba(214,164,76,0.20)',
+    border: 'rgba(214,164,76,0.35)',
     icon: (
       <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
         <path d="M12 2L2 7l10 5 10-5-10-5z"/>
@@ -21,9 +21,9 @@ const roles = [
     href: '/login/teacher',
     label: 'Teacher',
     tagline: 'Inspire minds, shape futures',
-    accent: '#e8783c',
-    glow: 'rgba(232,120,60,0.18)',
-    border: 'rgba(232,120,60,0.3)',
+    accent: '#FB923C',
+    glow: 'rgba(251,146,60,0.20)',
+    border: 'rgba(251,146,60,0.35)',
     icon: (
       <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
         <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/>
@@ -37,9 +37,9 @@ const roles = [
     href: '/login/student',
     label: 'Student',
     tagline: 'Begin your journey to excellence',
-    accent: '#c09070',
-    glow: 'rgba(192,144,112,0.18)',
-    border: 'rgba(192,144,112,0.3)',
+    accent: '#E9B384',
+    glow: 'rgba(233,179,132,0.20)',
+    border: 'rgba(233,179,132,0.35)',
     icon: (
       <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
         <path d="M22 10v6M2 10l10-5 10 5-10 5z"/>
