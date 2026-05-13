@@ -3,15 +3,15 @@ import Link from 'next/link';
 import LoginForm from '../_form';
 
 const THEME = {
-  accent: '#C9952A',
+  accent: '#c9952a',
   accentAlpha: 'rgba(201,149,42,0.15)',
-  btnBg: 'linear-gradient(135deg, #0C3D2E 0%, #1a5c41 100%)',
-  btnShadow: 'rgba(12,61,46,0.35)',
+  btnBg: 'linear-gradient(135deg, #0d4d3b 0%, #1a6b50 100%)',
+  btnShadow: 'rgba(13,77,59,0.40)',
 };
 
 export default function AdminLoginPage() {
   return (
-    <div className="relative flex h-[100dvh] max-h-[100dvh] overflow-hidden bg-[#0C3D2E] md:h-screen">
+    <div className="relative flex h-[100dvh] max-h-[100dvh] overflow-hidden bg-[#0d4d3b] md:h-screen">
 
       {/* Islamic geometric pattern */}
       <div className="pointer-events-none absolute inset-0 opacity-[0.04]">
