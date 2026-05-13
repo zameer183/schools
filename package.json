@@ -24,6 +24,7 @@
     "jose": "^5.10.0",
     "lucide-react": "^0.468.0",
     "next": "^15.5.15",
+    "nodemailer": "^8.0.7",
     "react": "^19.0.0",
     "react-dom": "^19.0.0",
     "recharts": "^2.15.4",
@@ -34,6 +35,7 @@
   "devDependencies": {
     "@types/bcryptjs": "^2.4.6",
     "@types/node": "^22.19.17",
+    "@types/nodemailer": "^8.0.0",
     "@types/react": "^19.2.14",
     "@types/react-dom": "^19.2.3",
     "adm-zip": "^0.5.17",

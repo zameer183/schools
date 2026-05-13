@@ -113,10 +113,11 @@ model User {
   teacherProfile Teacher?
   parentProfile  Parent?
 
-  sentMessages     Message[]         @relation("MessageSender")
-  receivedMessages MessageRecipient[]
-  notifications    Notification[]
-  files            FileAsset[]       @relation("Uploader")
+  sentMessages        Message[]            @relation("MessageSender")
+  receivedMessages    MessageRecipient[]
+  notifications       Notification[]
+  files               FileAsset[]          @relation("Uploader")
+  passwordResetTokens PasswordResetToken[]
 }
 
 model Student {
@@ -386,6 +387,7 @@ model Fee {
 
   @@index([studentId, dueDate])
   @@index([status, dueDate])
+  @@index([dueDate, createdAt])
   @@index([createdAt])
 }
 
@@ -480,6 +482,7 @@ model MessageRecipient {
   @@unique([messageId, userId])
   @@index([userId, isRead])
   @@index([userId])
+  @@index([userId, messageId])
 }
 
 model Notification {
@@ -496,6 +499,7 @@ model Notification {
   student     Student?          @relation("StudentNotifications", fields: [studentId], references: [id])
 
   @@index([userId, isRead, createdAt])
+  @@index([userId, createdAt])
   @@index([studentId, createdAt])
   @@index([createdAt])
 }
@@ -599,6 +603,7 @@ model CampaignItem {
   dispatches  CampaignDispatch[]
 
   @@index([campaignId, status])
+  @@index([campaignId, hasWhatsApp, status])
   @@index([studentId])
 }
 
@@ -620,6 +625,7 @@ model CampaignDispatch {
   @@unique([campaignItemId])
   @@index([campaignId, status])
   @@index([status, nextAttemptAt])
+  @@index([status, sentAt])
 }
 
 model AutomationConfig {
@@ -633,6 +639,8 @@ model AutomationConfig {
   updatedAt            DateTime                  @updatedAt
 
   runs                 AutomationRun[]
+
+  @@index([name, updatedAt])
 }
 
 model AutomationRun {
@@ -666,4 +674,18 @@ model SmsTemplate {
   isActive    Boolean  @default(true)
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
+}
+
+model PasswordResetToken {
+  id        String   @id @default(cuid())
+  userId    String
+  token     String   @unique
+  expiresAt DateTime
+  usedAt    DateTime?
+  createdAt DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([token])
+  @@index([userId])
 }
