@@ -24,20 +24,20 @@ export function Button({
   asChild = false
 }: ButtonProps) {
   const variantClass = {
-    primary: 'bg-[#1F5A5C] text-white hover:bg-[#174548] active:scale-[0.98]',
-    secondary: 'bg-white border border-[#E5E7EB] text-[#1F2937] hover:bg-[#F9FAFB] active:scale-[0.98]',
-    danger: 'bg-[#EF4444] text-white hover:bg-[#DC2626] active:scale-[0.98]'
+    primary: 'bg-gradient-to-r from-[#2E2B78] to-[#4338CA] text-white shadow-[0_12px_24px_rgba(46,43,120,0.24)] hover:shadow-[0_16px_28px_rgba(46,43,120,0.30)] active:scale-[0.98]',
+    secondary: 'bg-white border border-[#E8E2D8] text-[#0F172A] shadow-[0_8px_20px_rgba(15,23,42,0.05)] hover:bg-[#FBFAF8] active:scale-[0.98]',
+    danger: 'bg-[#EF4444] text-white shadow-[0_12px_24px_rgba(239,68,68,0.20)] hover:bg-[#DC2626] active:scale-[0.98]'
   }[variant];
 
   const sizeClass = {
-    sm: 'h-8 px-3 py-1.5 text-xs font-medium',
-    md: 'h-10 px-4 py-2.5 text-sm font-medium',
-    lg: 'h-11 px-5 py-3 text-sm font-semibold'
+    sm: 'h-9 px-3.5 py-1.5 text-xs font-semibold',
+    md: 'h-11 px-4 py-2.5 text-sm font-semibold',
+    lg: 'h-12 px-5 py-3 text-sm font-bold'
   }[size];
 
   const widthClass = fullWidth ? 'w-full' : '';
   const disabledClass = disabled ? 'opacity-50 cursor-not-allowed' : '';
-  const baseClass = 'rounded-lg transition-all inline-flex items-center justify-center gap-2';
+  const baseClass = 'rounded-[18px] transition-all inline-flex items-center justify-center gap-2';
 
   const buttonClass = `${baseClass} ${variantClass} ${sizeClass} ${widthClass} ${disabledClass} ${className}`;
 

@@ -1,9 +1,10 @@
 'use client';
 
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { ChevronLeft, MessageSquarePlus, Search, Send, Trash2, X } from 'lucide-react';
+import { ChevronLeft, EllipsisVertical, MessageSquarePlus, Search, Send, SlidersHorizontal, Trash2, X } from 'lucide-react';
 
 type MessageDirection = 'received' | 'sent';
+type CategoryKey = 'all' | 'received' | 'sent';
 
 export type SerializedMessage = {
   id: string;
@@ -23,8 +24,6 @@ export type RecipientOption = {
   fullName: string;
   className: string;
 };
-
-type CategoryKey = 'all' | 'received' | 'sent';
 
 type ConvMessage = {
   id: string;
@@ -46,32 +45,6 @@ type Conversation = {
   messages: ConvMessage[];
 };
 
-function initials(name: string) {
-  return name
-    .split(' ')
-    .filter(Boolean)
-    .slice(0, 2)
-    .map((p) => p[0]?.toUpperCase() ?? '')
-    .join('');
-}
-
-function formatTime(value: string) {
-  const date = new Date(value);
-  if (Number.isNaN(date.getTime())) return '-';
-  const diff = Date.now() - date.getTime();
-  if (diff < 60_000) return 'Just now';
-  if (diff < 86_400_000) return date.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' });
-  if (diff < 172_800_000) return 'Yesterday';
-  return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
-}
-
-function formatFullDate(value: string) {
-  const date = new Date(value);
-  if (Number.isNaN(date.getTime())) return '-';
-  return date.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' }) +
-    ' - ' + date.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' });
-}
-
 type InboxApiRow = {
   id: string;
   isRead: boolean;
@@ -88,6 +61,24 @@ type InboxApiRow = {
   };
 };
 
+function initials(name: string) {
+  return name
+    .split(' ')
+    .filter(Boolean)
+    .slice(0, 2)
+    .map((part) => part[0]?.toUpperCase() ?? '')
+    .join('');
+}
+
+function formatTime(value: string) {
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return '-';
+  const diff = Date.now() - date.getTime();
+  if (diff < 86_400_000) return date.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' });
+  if (diff < 172_800_000) return 'Yesterday';
+  return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+}
+
 function parseReceivedFromApi(rows: InboxApiRow[]): SerializedMessage[] {
   return rows.map((item) => ({
     id: item.message.id,
@@ -103,14 +94,17 @@ function parseReceivedFromApi(rows: InboxApiRow[]): SerializedMessage[] {
   }));
 }
 
-function mergeReceivedMessages(existing: SerializedMessage[], incoming: SerializedMessage[]) {
-  const sent = existing.filter((m) => m.direction === 'sent');
+function mergeReceivedMessages(existing: SerializedMessage[], incoming: SerializedMessage[], deletedMessageIds: Set<string>) {
+  const sent = existing.filter((item) => item.direction === 'sent');
+  // Replace received set with latest server snapshot so deleted inbox rows do not reappear.
   const receivedMap = new Map<string, SerializedMessage>();
-  for (const item of [...existing.filter((m) => m.direction === 'received'), ...incoming]) {
+  for (const item of incoming) {
+    if (deletedMessageIds.has(item.id)) continue;
     const key = `${item.id}:${item.senderId ?? ''}`;
     receivedMap.set(key, item);
   }
-  return [...Array.from(receivedMap.values()), ...sent].sort(
+  const filteredSent = sent.filter((item) => !deletedMessageIds.has(item.id));
+  return [...Array.from(receivedMap.values()), ...filteredSent].sort(
     (a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
   );
 }
@@ -118,82 +112,119 @@ function mergeReceivedMessages(existing: SerializedMessage[], incoming: Serializ
 function buildConversations(
   messages: SerializedMessage[],
   locallyRead: Set<string>,
-  localSent: Map<string, ConvMessage[]>
-): Conversation[] {
-  const map = new Map<string, Conversation>();
+  localSent: Map<string, ConvMessage[]>,
+  recipientMeta: Map<string, RecipientOption>
+) {
+  const grouped = new Map<string, Conversation>();
 
-  for (const msg of messages) {
-    if (msg.direction === 'received' && msg.senderId) {
-      const pid = msg.senderId;
-      const existing = map.get(pid);
-      const convMsg: ConvMessage = { id: msg.id, body: msg.body, subject: msg.subject, createdAt: msg.createdAt, direction: 'in' };
+  for (const message of messages) {
+    if (message.direction === 'received' && message.senderId) {
+      const personId = message.senderId;
+      const baseMessage: ConvMessage = {
+        id: message.id,
+        body: message.body,
+        subject: message.subject,
+        createdAt: message.createdAt,
+        direction: 'in'
+      };
+      const existing = grouped.get(personId);
+
       if (!existing) {
-        map.set(pid, {
-          personId: pid,
-          personName: msg.senderName,
-          isOnline: false, // computed post-mount to avoid hydration mismatch
-          unreadCount: msg.isRead || locallyRead.has(pid) ? 0 : 1,
-          latestAt: msg.createdAt,
-          latestPreview: msg.body,
+        grouped.set(personId, {
+          personId,
+          personName: message.senderName,
+          isOnline: false,
+          unreadCount: message.isRead || locallyRead.has(personId) ? 0 : 1,
+          latestAt: message.createdAt,
+          latestPreview: message.body,
           category: 'received',
-          messages: [convMsg]
+          messages: [baseMessage]
         });
-      } else {
-        existing.messages.push(convMsg);
-        if (!msg.isRead && !locallyRead.has(pid)) existing.unreadCount += 1;
-        if (new Date(msg.createdAt).getTime() > new Date(existing.latestAt).getTime()) {
-          existing.latestAt = msg.createdAt;
-          existing.latestPreview = msg.body;
-        }
-        if (existing.category === 'sent') existing.category = 'both';
+        continue;
+      }
+
+      existing.messages.push(baseMessage);
+      if (!message.isRead && !locallyRead.has(personId)) {
+        existing.unreadCount += 1;
+      }
+      if (new Date(message.createdAt).getTime() > new Date(existing.latestAt).getTime()) {
+        existing.latestAt = message.createdAt;
+        existing.latestPreview = message.body;
+      }
+      if (existing.category === 'sent') {
+        existing.category = 'both';
       }
     }
 
-    if (msg.direction === 'sent' && msg.recipients) {
-      for (const r of msg.recipients) {
-        const pid = r.id;
-        const convMsg: ConvMessage = { id: msg.id, body: msg.body, subject: msg.subject, createdAt: msg.createdAt, direction: 'out' };
-        const existing = map.get(pid);
+    if (message.direction === 'sent' && message.recipients) {
+      for (const recipient of message.recipients) {
+        const personId = recipient.id;
+        const baseMessage: ConvMessage = {
+          id: message.id,
+          body: message.body,
+          subject: message.subject,
+          createdAt: message.createdAt,
+          direction: 'out'
+        };
+        const existing = grouped.get(personId);
+
         if (!existing) {
-          map.set(pid, {
-            personId: pid,
-            personName: r.name,
+          grouped.set(personId, {
+            personId,
+            personName: recipient.name,
             isOnline: false,
             unreadCount: 0,
-            latestAt: msg.createdAt,
-            latestPreview: msg.body,
+            latestAt: message.createdAt,
+            latestPreview: message.body,
             category: 'sent',
-            messages: [convMsg]
+            messages: [baseMessage]
           });
-        } else {
-          existing.messages.push(convMsg);
-          if (new Date(msg.createdAt).getTime() > new Date(existing.latestAt).getTime()) {
-            existing.latestAt = msg.createdAt;
-            existing.latestPreview = msg.body;
-          }
-          if (existing.category === 'received') existing.category = 'both';
+          continue;
+        }
+
+        existing.messages.push(baseMessage);
+        if (new Date(message.createdAt).getTime() > new Date(existing.latestAt).getTime()) {
+          existing.latestAt = message.createdAt;
+          existing.latestPreview = message.body;
+        }
+        if (existing.category === 'received') {
+          existing.category = 'both';
         }
       }
     }
   }
 
-  // merge local optimistic sent messages
-  for (const [pid, extras] of localSent.entries()) {
-    const existing = map.get(pid);
-    if (existing) {
-      existing.messages.push(...extras);
-      const latest = extras[extras.length - 1];
-      if (latest && new Date(latest.createdAt).getTime() > new Date(existing.latestAt).getTime()) {
-        existing.latestAt = latest.createdAt;
-        existing.latestPreview = latest.body;
-      }
+  for (const [personId, extras] of localSent.entries()) {
+    const existing = grouped.get(personId);
+    const latest = extras[extras.length - 1];
+    if (!latest) continue;
+
+    if (!existing) {
+      const recipient = recipientMeta.get(personId);
+      grouped.set(personId, {
+        personId,
+        personName: recipient?.fullName ?? 'Student',
+        isOnline: false,
+        unreadCount: 0,
+        latestAt: latest.createdAt,
+        latestPreview: latest.body,
+        category: 'sent',
+        messages: [...extras]
+      });
+      continue;
+    }
+
+    existing.messages.push(...extras);
+    if (new Date(latest.createdAt).getTime() > new Date(existing.latestAt).getTime()) {
+      existing.latestAt = latest.createdAt;
+      existing.latestPreview = latest.body;
     }
   }
 
-  return Array.from(map.values())
-    .map((c) => ({
-      ...c,
-      messages: c.messages.sort((a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime())
+  return Array.from(grouped.values())
+    .map((item) => ({
+      ...item,
+      messages: item.messages.sort((a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime())
     }))
     .sort((a, b) => new Date(b.latestAt).getTime() - new Date(a.latestAt).getTime());
 }
@@ -204,6 +235,15 @@ interface TeacherMessagesClientProps {
 }
 
 export function TeacherMessagesClient({ messages, recipients }: TeacherMessagesClientProps) {
+  const hiddenConversationStorageKey =
+    typeof window === 'undefined'
+      ? 'teacher:hidden-conversations'
+      : `teacher:hidden-conversations:${window.location.host}`;
+  const deletedMessageStorageKey =
+    typeof window === 'undefined'
+      ? 'teacher:deleted-message-ids'
+      : `teacher:deleted-message-ids:${window.location.host}`;
+
   const [mounted, setMounted] = useState(false);
   const [liveMessages, setLiveMessages] = useState<SerializedMessage[]>(messages);
   const chatBottomRef = useRef<HTMLDivElement>(null);
@@ -212,82 +252,199 @@ export function TeacherMessagesClient({ messages, recipients }: TeacherMessagesC
   const [activeId, setActiveId] = useState<string | null>(null);
   const [draft, setDraft] = useState('');
   const [isSending, setIsSending] = useState(false);
-  const [showMobileFilters, setShowMobileFilters] = useState(false);
   const [locallyRead, setLocallyRead] = useState<Set<string>>(new Set());
   const [localSent, setLocalSent] = useState<Map<string, ConvMessage[]>>(new Map());
   const [showCompose, setShowCompose] = useState(false);
+  const [showChatMenu, setShowChatMenu] = useState(false);
+  const [showDeleteChatConfirm, setShowDeleteChatConfirm] = useState(false);
+  const [isDeletingChat, setIsDeletingChat] = useState(false);
+  const [chatDeleteToast, setChatDeleteToast] = useState<string | null>(null);
+  const [hiddenConversationIds, setHiddenConversationIds] = useState<Set<string>>(new Set());
+  const [deletedMessageIds, setDeletedMessageIds] = useState<Set<string>>(new Set());
   const [composeSubject, setComposeSubject] = useState('');
   const [composeBody, setComposeBody] = useState('');
   const [selectedRecipients, setSelectedRecipients] = useState<Set<string>>(new Set());
   const [isComposeSending, setIsComposeSending] = useState(false);
+  const [showMobileFilters, setShowMobileFilters] = useState(false);
+  const [authError, setAuthError] = useState<string | null>(null);
 
-  useEffect(() => { setMounted(true); }, []);
-  useEffect(() => { setLiveMessages(messages); }, [messages]);
+  useEffect(() => {
+    setMounted(true);
+  }, []);
+
+  useEffect(() => {
+    setLiveMessages(messages.filter((item) => !deletedMessageIds.has(item.id)));
+  }, [messages, deletedMessageIds]);
 
   useEffect(() => {
     let cancelled = false;
+    let shouldStop = false;
+
     const syncInbox = async () => {
       try {
-        const response = await fetch('/api/messages?limit=50', { cache: 'no-store' });
+        const response = await fetch('/api/messages?limit=50', { cache: 'no-store', credentials: 'include' });
+        if (cancelled || shouldStop) return;
+        if (response.status === 401) {
+          shouldStop = true;
+          setAuthError('Your session expired. Reload and sign in again.');
+          return;
+        }
+        if (response.status === 403) {
+          shouldStop = true;
+          setAuthError('Messages access is currently unavailable for this account.');
+          return;
+        }
         if (!response.ok) return;
         const data = (await response.json()) as InboxApiRow[];
         if (cancelled) return;
+        setAuthError(null);
         const received = parseReceivedFromApi(data);
-        setLiveMessages((prev) => mergeReceivedMessages(prev, received));
+        setLiveMessages((prev) => mergeReceivedMessages(prev, received, deletedMessageIds));
       } catch {
         // ignore transient polling errors
       }
     };
 
     const timer = window.setInterval(() => {
+      if (shouldStop) return;
       void syncInbox();
     }, 5000);
+
     void syncInbox();
+
     return () => {
       cancelled = true;
       window.clearInterval(timer);
     };
-  }, []);
-
-  const allConversations = useMemo(
-    () => buildConversations(liveMessages, locallyRead, localSent),
-    [liveMessages, locallyRead, localSent]
-  );
-
-  const filtered = useMemo(() => {
-    return allConversations.filter((c) => {
-      const catMatch =
-        category === 'all' ||
-        (category === 'received' && (c.category === 'received' || c.category === 'both')) ||
-        (category === 'sent' && (c.category === 'sent' || c.category === 'both'));
-      const q = search.toLowerCase();
-      const searchMatch = !q || c.personName.toLowerCase().includes(q) || c.latestPreview.toLowerCase().includes(q);
-      return catMatch && searchMatch;
-    });
-  }, [allConversations, category, search]);
-
-  const activeConv = filtered.find((c) => c.personId === activeId) ?? null;
+  }, [deletedMessageIds]);
 
   useEffect(() => {
-    if (!activeConv || activeConv.unreadCount === 0) return;
-    setLocallyRead((prev) => new Set(prev).add(activeConv.personId));
-  }, [activeConv]);
+    try {
+      const raw = window.localStorage.getItem(hiddenConversationStorageKey);
+      if (!raw) return;
+      const parsed = JSON.parse(raw) as { ids?: string[]; savedAt?: number } | string[];
+      if (Array.isArray(parsed)) {
+        // Backward compatibility with old format
+        setHiddenConversationIds(new Set(parsed));
+        return;
+      }
+      const ids = Array.isArray(parsed?.ids) ? parsed.ids : [];
+      const savedAt = typeof parsed?.savedAt === 'number' ? parsed.savedAt : Date.now();
+      const age = Date.now() - savedAt;
+      const maxAge = 7 * 24 * 60 * 60 * 1000; // 7 days
+      if (age > maxAge) {
+        window.localStorage.removeItem(hiddenConversationStorageKey);
+        return;
+      }
+      if (ids.length > 0) {
+        setHiddenConversationIds(new Set(ids));
+      }
+    } catch {
+      // ignore storage parse errors
+    }
+  }, [hiddenConversationStorageKey]);
+
+  useEffect(() => {
+    try {
+      const raw = window.localStorage.getItem(deletedMessageStorageKey);
+      if (!raw) return;
+      const parsed = JSON.parse(raw) as { ids?: string[]; savedAt?: number } | string[];
+      if (Array.isArray(parsed)) {
+        setDeletedMessageIds(new Set(parsed));
+        return;
+      }
+      const ids = Array.isArray(parsed?.ids) ? parsed.ids : [];
+      const savedAt = typeof parsed?.savedAt === 'number' ? parsed.savedAt : Date.now();
+      const age = Date.now() - savedAt;
+      const maxAge = 7 * 24 * 60 * 60 * 1000;
+      if (age > maxAge) {
+        window.localStorage.removeItem(deletedMessageStorageKey);
+        return;
+      }
+      if (ids.length > 0) {
+        setDeletedMessageIds(new Set(ids));
+      }
+    } catch {
+      // ignore storage parse errors
+    }
+  }, [deletedMessageStorageKey]);
+
+  const allConversations = useMemo(
+    () => buildConversations(liveMessages, locallyRead, localSent, new Map(recipients.map((item) => [item.userId, item] as const))),
+    [liveMessages, locallyRead, localSent, recipients]
+  );
+
+  const recipientClassNameMap = useMemo(
+    () => new Map(recipients.map((item) => [item.userId, item.className] as const)),
+    [recipients]
+  );
+
+  const recipientIdSet = useMemo(() => new Set(recipients.map((item) => item.userId)), [recipients]);
+
+  const visibleConversations = useMemo(
+    () => allConversations.filter((item) => !hiddenConversationIds.has(item.personId)),
+    [allConversations, hiddenConversationIds]
+  );
+
+  useEffect(() => {
+    // Safety: never allow a state where all chats are hidden permanently.
+    if (allConversations.length === 0 || hiddenConversationIds.size === 0) return;
+    if (visibleConversations.length > 0) return;
+    setHiddenConversationIds(new Set());
+    try {
+      window.localStorage.removeItem(hiddenConversationStorageKey);
+    } catch {
+      // ignore storage errors
+    }
+    setChatDeleteToast('Hidden chats reset. Messages restored.');
+  }, [allConversations.length, hiddenConversationIds.size, visibleConversations.length, hiddenConversationStorageKey]);
+
+  const filteredConversations = useMemo(() => {
+    return visibleConversations.filter((conversation) => {
+      const categoryMatch =
+        category === 'all' ||
+        (category === 'received' && (conversation.category === 'received' || conversation.category === 'both')) ||
+        (category === 'sent' && (conversation.category === 'sent' || conversation.category === 'both'));
+      const query = search.toLowerCase();
+      const searchMatch =
+        !query ||
+        conversation.personName.toLowerCase().includes(query) ||
+        conversation.latestPreview.toLowerCase().includes(query);
+      return categoryMatch && searchMatch;
+    });
+  }, [visibleConversations, category, search]);
+
+  const activeConversation = filteredConversations.find((item) => item.personId === activeId) ?? null;
+
+  useEffect(() => {
+    if (!activeConversation || activeConversation.unreadCount === 0) return;
+    setLocallyRead((prev) => new Set(prev).add(activeConversation.personId));
+  }, [activeConversation]);
 
   useEffect(() => {
     chatBottomRef.current?.scrollIntoView({ behavior: 'smooth' });
-  }, [activeConv?.messages.length]);
+  }, [activeConversation?.messages.length]);
 
-  const counts = useMemo(() => ({
-    all: allConversations.length,
-    received: allConversations.filter((c) => c.category === 'received' || c.category === 'both').length,
-    sent: allConversations.filter((c) => c.category === 'sent' || c.category === 'both').length,
-  }), [allConversations]);
+  useEffect(() => {
+    setShowChatMenu(false);
+  }, [activeId]);
 
-  // After all hooks, render a stable loading state before mounting full UI.
+  useEffect(() => {
+    if (!chatDeleteToast) return;
+    const timer = window.setTimeout(() => setChatDeleteToast(null), 2600);
+    return () => window.clearTimeout(timer);
+  }, [chatDeleteToast]);
+
+  const categoryCounts = useMemo(() => ({
+    all: visibleConversations.length,
+    received: visibleConversations.filter((item) => item.category === 'received' || item.category === 'both').length,
+    sent: visibleConversations.filter((item) => item.category === 'sent' || item.category === 'both').length,
+  }), [visibleConversations]);
+
   if (!mounted) {
     return (
       <div className="flex h-[60vh] items-center justify-center">
-        <div className="h-10 w-10 animate-spin rounded-full border-4 border-[#e0eff0] border-t-[#2b676e]" />
+      <div className="h-10 w-10 animate-spin rounded-full border-4 border-[#F0E8DC] border-t-[#004D47]" />
       </div>
     );
   }
@@ -295,60 +452,72 @@ export function TeacherMessagesClient({ messages, recipients }: TeacherMessagesC
   const toggleRecipient = (id: string) => {
     setSelectedRecipients((prev) => {
       const next = new Set(prev);
-      if (next.has(id)) next.delete(id); else next.add(id);
+      if (next.has(id)) {
+        next.delete(id);
+      } else {
+        next.add(id);
+      }
       return next;
     });
   };
 
   const handleSend = async () => {
-    if (!activeConv || draft.trim().length < 2 || isSending) return;
+    if (!activeConversation || draft.trim().length < 2 || isSending) return;
+
     const text = draft.trim();
     const tempId = `tmp-${Date.now()}`;
     const optimistic: ConvMessage = {
       id: tempId,
       body: text,
-      subject: `Re: ${(activeConv.messages.find((m) => m.subject)?.subject ?? 'Message').replace(/^(re:\s*)+/i, '')}`,
+      subject: `Re: ${(activeConversation.messages.find((item) => item.subject)?.subject ?? 'Message').replace(/^(re:\s*)+/i, '')}`,
       createdAt: new Date().toISOString(),
       direction: 'out',
       pending: true
     };
+
     setLocalSent((prev) => {
       const next = new Map(prev);
-      next.set(activeConv.personId, [...(next.get(activeConv.personId) ?? []), optimistic]);
+      next.set(activeConversation.personId, [...(next.get(activeConversation.personId) ?? []), optimistic]);
       return next;
     });
     setDraft('');
     setIsSending(true);
+
     try {
-      const res = await fetch('/api/messages', {
+      const response = await fetch('/api/messages', {
         method: 'POST',
+        credentials: 'include',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           subject: optimistic.subject,
           body: text,
-          recipientIds: [activeConv.personId]
+          recipientIds: [activeConversation.personId]
         })
       });
-      if (!res.ok) {
+
+      if (!response.ok) {
         setLocalSent((prev) => {
           const next = new Map(prev);
-          const arr = (next.get(activeConv.personId) ?? []).filter((m) => m.id !== tempId);
-          next.set(activeConv.personId, arr);
-          return next;
-        });
-      } else {
-        const created = (await res.json()) as { id?: string; createdAt?: string };
-        setLocalSent((prev) => {
-          const next = new Map(prev);
-          const arr = (next.get(activeConv.personId) ?? []).map((m) =>
-            m.id === tempId
-              ? { ...m, id: created.id ?? m.id, createdAt: created.createdAt ?? m.createdAt, pending: false }
-              : m
+          next.set(
+            activeConversation.personId,
+            (next.get(activeConversation.personId) ?? []).filter((message) => message.id !== tempId)
           );
-          next.set(activeConv.personId, arr);
           return next;
         });
+        return;
       }
+
+      const created = (await response.json()) as { id?: string; createdAt?: string };
+      setLocalSent((prev) => {
+        const next = new Map(prev);
+        const updated = (next.get(activeConversation.personId) ?? []).map((message) =>
+          message.id === tempId
+            ? { ...message, id: created.id ?? message.id, createdAt: created.createdAt ?? message.createdAt, pending: false }
+            : message
+        );
+        next.set(activeConversation.personId, updated);
+        return next;
+      });
     } finally {
       setIsSending(false);
     }
@@ -358,32 +527,133 @@ export function TeacherMessagesClient({ messages, recipients }: TeacherMessagesC
     if (!messageId || messageId.startsWith('tmp-')) return;
     const confirmed = window.confirm('Delete this message?');
     if (!confirmed) return;
+
     try {
-      const res = await fetch(`/api/messages?id=${messageId}`, { method: 'DELETE' });
-      if (!res.ok) return;
+      const response = await fetch(`/api/messages?id=${messageId}`, { method: 'DELETE', credentials: 'include' });
+      if (response.status === 401) {
+        setAuthError('Your session expired. Reload and sign in again.');
+        return;
+      }
+      if (!response.ok) return;
+
       if (direction === 'out') {
-        setLiveMessages((prev) => prev.filter((m) => !(m.direction === 'sent' && m.id === messageId)));
+        setLiveMessages((prev) => prev.filter((item) => !(item.direction === 'sent' && item.id === messageId)));
         setLocalSent((prev) => {
           const next = new Map(prev);
           for (const [key, value] of next.entries()) {
-            next.set(key, value.filter((msg) => msg.id !== messageId));
+            next.set(key, value.filter((message) => message.id !== messageId));
           }
           return next;
         });
       } else {
-        setLiveMessages((prev) => prev.filter((m) => !(m.direction === 'received' && m.id === messageId)));
+        setLiveMessages((prev) => prev.filter((item) => !(item.direction === 'received' && item.id === messageId)));
       }
+      setDeletedMessageIds((prev) => {
+        const next = new Set(prev);
+        next.add(messageId);
+        try {
+          window.localStorage.setItem(
+            deletedMessageStorageKey,
+            JSON.stringify({ ids: Array.from(next), savedAt: Date.now() })
+          );
+        } catch {
+          // ignore storage write errors
+        }
+        return next;
+      });
     } catch {
       // no-op
     }
   };
 
+  const handleDeleteChat = async () => {
+    if (!activeConversation || isDeletingChat) return;
+    if (!recipientIdSet.has(activeConversation.personId)) {
+      setShowDeleteChatConfirm(false);
+      setShowChatMenu(false);
+      return;
+    }
+
+    setIsDeletingChat(true);
+    try {
+      const persistedMessageIds = Array.from(new Set(
+        activeConversation.messages
+          .map((message) => message.id)
+          .filter((messageId) => messageId && !messageId.startsWith('tmp-'))
+      ));
+
+      if (persistedMessageIds.length > 0) {
+        const response = await fetch(
+          `/api/messages?conversationWithUserId=${encodeURIComponent(activeConversation.personId)}`,
+          { method: 'DELETE', credentials: 'include' }
+        );
+
+        if (response.status === 401) {
+          setAuthError('Your session expired. Reload and sign in again.');
+          setShowDeleteChatConfirm(false);
+          setShowChatMenu(false);
+          return;
+        }
+
+        if (!response.ok) return;
+
+        setDeletedMessageIds((prev) => {
+          const next = new Set(prev);
+          for (const id of persistedMessageIds) next.add(id);
+          try {
+            window.localStorage.setItem(
+              deletedMessageStorageKey,
+              JSON.stringify({ ids: Array.from(next), savedAt: Date.now() })
+            );
+          } catch {
+            // ignore storage write errors
+          }
+          return next;
+        });
+      }
+
+      setLiveMessages((prev) =>
+        prev.filter((message) => {
+          if (message.direction === 'received') return message.senderId !== activeConversation.personId;
+          if (message.direction === 'sent') return !(message.recipients ?? []).some((recipient) => recipient.id === activeConversation.personId);
+          return true;
+        })
+      );
+      setLocalSent((prev) => {
+        const next = new Map(prev);
+        next.delete(activeConversation.personId);
+        return next;
+      });
+      setShowDeleteChatConfirm(false);
+      setShowChatMenu(false);
+      setHiddenConversationIds((prev) => {
+        const next = new Set(prev);
+        next.add(activeConversation.personId);
+        try {
+          window.localStorage.setItem(
+            hiddenConversationStorageKey,
+            JSON.stringify({ ids: Array.from(next), savedAt: Date.now() })
+          );
+        } catch {
+          // ignore storage write errors
+        }
+        return next;
+      });
+      setActiveId(null);
+      setChatDeleteToast('Chat deleted successfully.');
+    } finally {
+      setIsDeletingChat(false);
+    }
+  };
+
   const handleComposeSend = async () => {
     if (!composeBody.trim() || selectedRecipients.size === 0 || isComposeSending) return;
+
     setIsComposeSending(true);
     try {
-      const res = await fetch('/api/messages', {
+      const response = await fetch('/api/messages', {
         method: 'POST',
+        credentials: 'include',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           subject: composeSubject.trim() || 'New Message',
@@ -391,211 +661,236 @@ export function TeacherMessagesClient({ messages, recipients }: TeacherMessagesC
           recipientIds: Array.from(selectedRecipients)
         })
       });
-      if (res.ok) {
-        const data = await res.json() as { id: string; createdAt: string };
-        const newMsgs: ConvMessage[] = [{
-          id: data.id,
-          body: composeBody.trim(),
-          subject: composeSubject.trim() || 'New Message',
-          createdAt: data.createdAt ?? new Date().toISOString(),
-          direction: 'out',
-          pending: false
-        }];
-        for (const rid of selectedRecipients) {
-          setLocalSent((prev) => {
-            const next = new Map(prev);
-            next.set(rid, [...(next.get(rid) ?? []), ...newMsgs]);
-            return next;
-          });
+
+      if (!response.ok) return;
+
+      const data = (await response.json()) as { id: string; createdAt: string };
+      const createdAt = data.createdAt ?? new Date().toISOString();
+      const subject = composeSubject.trim() || 'New Message';
+
+      setLocalSent((prev) => {
+        const next = new Map(prev);
+        for (const recipientId of selectedRecipients) {
+          next.set(recipientId, [
+            ...(next.get(recipientId) ?? []),
+            {
+              id: data.id,
+              body: composeBody.trim(),
+              subject,
+              createdAt,
+              direction: 'out',
+              pending: false
+            }
+          ]);
         }
-        setShowCompose(false);
-        setComposeSubject('');
-        setComposeBody('');
-        setSelectedRecipients(new Set());
-        // open first recipient's conversation
-        const firstId = Array.from(selectedRecipients)[0];
-        if (firstId) setActiveId(firstId);
+        return next;
+      });
+
+      setShowCompose(false);
+      setComposeSubject('');
+      setComposeBody('');
+      const recipientIds = Array.from(selectedRecipients);
+      setSelectedRecipients(new Set());
+      if (recipientIds[0]) {
+        setActiveId(recipientIds[0]);
       }
     } finally {
       setIsComposeSending(false);
     }
   };
 
-  const catItems: { key: CategoryKey; label: string; count: number }[] = [
-    { key: 'all', label: 'All Messages', count: counts.all },
-    { key: 'received', label: 'Received', count: counts.received },
-    { key: 'sent', label: 'Sent', count: counts.sent }
+  const categories = [
+    { key: 'all' as const, label: 'All Messages', count: categoryCounts.all },
+    { key: 'received' as const, label: 'Received', count: categoryCounts.received },
+    { key: 'sent' as const, label: 'Sent', count: categoryCounts.sent }
   ];
 
-  /* -- Left panel -- */
   const leftPanel = (
-    <div className="rounded-2xl bg-white shadow-[0_12px_40px_rgba(43,103,110,0.06)] p-4">
+    <div className="rounded-[24px] border border-white/80 bg-white p-4 shadow-[0_14px_34px_rgba(15,23,42,0.07)]">
       <div className="mb-3 flex items-center justify-between">
-        <h3 className="text-sm font-bold font-headline text-[#1a2b3d]">Categories</h3>
+        <h3 className="font-headline text-sm font-bold text-[#0F172A]">Categories</h3>
         <button
           onClick={() => setShowCompose(true)}
-          className="inline-flex items-center gap-1 rounded-xl bg-gradient-to-br from-[#2b676e] to-[#1a5058] shadow-[0_8px_20px_rgba(43,103,110,0.12)] active:scale-[0.98] transition-all px-2.5 py-1.5 text-xs font-semibold text-white"
+          className="inline-flex items-center gap-1 rounded-xl bg-gradient-to-br from-[#2E2B78] to-[#4338CA] px-2.5 py-1.5 text-xs font-semibold text-white shadow-[0_10px_22px_rgba(46,43,120,0.22)] transition-all active:scale-[0.98]"
         >
           <MessageSquarePlus className="h-3.5 w-3.5" />
           New
         </button>
       </div>
       <div className="space-y-1.5">
-        {catItems.map((item) => (
+        {categories.map((item) => (
           <button
             key={item.key}
             onClick={() => setCategory(item.key)}
             className={`flex w-full items-center justify-between rounded-xl border-l-4 px-3 py-2 text-left text-sm transition ${
               category === item.key
-                ? 'border-l-[#1a5058] bg-[#e9f5f4] text-[#1a5058]'
-                : 'border-l-transparent bg-[#f7fafb] text-[#5b6b7c] hover:bg-[#edf4f7]'
+                ? 'border-l-[#004D47] bg-[#EEF8F7] text-[#004D47]'
+                : 'border-l-transparent bg-[#FBFAF8] text-[#64748B] hover:bg-[#F4EFE8]'
             }`}
           >
             <span className="font-medium">{item.label}</span>
-            <span className="rounded-full bg-[#dbeafe] px-2 py-0.5 text-xs font-bold text-[#1d4ed8]">{item.count}</span>
+            <span className="rounded-full bg-[#F7E8CF] px-2 py-0.5 text-xs font-bold text-[#9A6A24]">{item.count}</span>
           </button>
         ))}
       </div>
 
-      {/* Student quick-access avatars */}
-      {recipients.length > 0 && (
+      {recipients.length > 0 ? (
         <div className="mt-4 border-t border-[#e9f0f4] pt-4">
-          <p className="mb-3 text-[10px] font-bold uppercase tracking-widest text-[#8293a3]">Your Students</p>
+          <p className="mb-3 text-[10px] font-bold uppercase tracking-widest text-[#64748B]">Your Students</p>
           <div className="flex flex-wrap gap-2">
-            {recipients.slice(0, 8).map((r) => (
+            {recipients.slice(0, 8).map((recipient) => (
               <button
-                key={r.userId}
+                key={recipient.userId}
                 onClick={() => {
-                  setSelectedRecipients(new Set([r.userId]));
+                  setSelectedRecipients(new Set([recipient.userId]));
                   setShowCompose(true);
                 }}
-                title={r.fullName}
-                className="flex flex-col items-center gap-1 group"
+                title={recipient.fullName}
+                className="group flex flex-col items-center gap-1"
               >
-                <div className="h-9 w-9 rounded-full bg-[#1a5058]/10 flex items-center justify-center text-xs font-bold text-[#1a5058] ring-2 ring-white group-hover:ring-[#1a5058]/20 transition-all">
-                  {initials(r.fullName)}
+                <div className="flex h-9 w-9 items-center justify-center rounded-full bg-[#004D47]/10 text-xs font-bold text-[#004D47] ring-2 ring-white transition-all group-hover:ring-[#D9A253]/40">
+                  {initials(recipient.fullName)}
                 </div>
-                <span className="text-[9px] text-[#8293a3] max-w-[36px] truncate text-center leading-none">
-                  {r.fullName.split(' ')[0]}
+                <span className="max-w-[36px] truncate text-center text-[9px] leading-none text-[#64748B]">
+                  {recipient.fullName.split(' ')[0]}
                 </span>
               </button>
             ))}
           </div>
         </div>
-      )}
+      ) : null}
     </div>
   );
 
-  /* -- Middle panel -- */
   const middlePanel = (
-    <div className="rounded-2xl bg-white shadow-[0_12px_40px_rgba(43,103,110,0.06)] p-4">
+    <div className="rounded-[24px] border border-white/80 bg-white p-4 shadow-[0_14px_34px_rgba(15,23,42,0.07)]">
       <div className="relative mb-3">
-        <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-[#7c8b99]" />
+        <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-[#64748B]" />
         <input
           value={search}
-          onChange={(e) => setSearch(e.target.value)}
-          placeholder="Search conversations..."
-          className="h-11 w-full rounded-full bg-[#edeeef] border-none pl-10 pr-4 text-sm text-[#1a2b3d] outline-none focus:ring-2 focus:ring-[#1a5058]/20"
+          onChange={(event) => setSearch(event.target.value)}
+          placeholder="Search chats..."
+          className="h-11 w-full rounded-full border border-[#EFE8DE] bg-[#FBFAF8] pl-10 pr-4 text-sm text-[#0F172A] outline-none focus:border-[#004D47] focus:ring-4 focus:ring-[#004D47]/10"
         />
       </div>
 
-      <div className="space-y-1 overflow-auto pr-1" style={{maxHeight: 'calc(100dvh - 360px)', minHeight: '200px'}}>
-        {filtered.map((conv) => (
+      {authError ? (
+        <div className="mb-3 rounded-2xl border border-[#fed7aa] bg-[#fff7ed] px-3 py-2 text-xs font-medium text-[#9a3412]">
+          {authError}
+        </div>
+      ) : null}
+
+      <div className="max-h-[62vh] space-y-1 overflow-auto pr-1">
+        {filteredConversations.map((conversation) => (
           <button
-            key={conv.personId}
-            onClick={() => { setActiveId(conv.personId); setShowMobileFilters(false); }}
+            key={conversation.personId}
+            onClick={() => {
+              setActiveId(conversation.personId);
+              setShowMobileFilters(false);
+            }}
             className={`w-full rounded-xl border p-3 text-left transition ${
-              activeId === conv.personId
-                ? 'border-[#1a5058] bg-[#e9f5f4]'
-                : 'border-[#e5edf2] bg-white hover:bg-[#f7fafb]'
+              activeId === conversation.personId
+                ? 'border-[#004D47] bg-[#EEF8F7]'
+                : 'border-[#EFE8DE] bg-white hover:bg-[#FBFAF8]'
             }`}
           >
             <div className="flex items-start gap-3">
-              <div className="relative shrink-0">
-                <div className="grid h-11 w-11 place-items-center rounded-full bg-[#1a5058]/10 text-sm font-bold text-[#1a5058]">
-                  {initials(conv.personName)}
-                </div>
-                {conv.isOnline && (
-                  <span className="absolute bottom-0 right-0 h-3 w-3 rounded-full bg-[#22c55e] ring-2 ring-white" />
-                )}
+              <div className="grid h-11 w-11 place-items-center rounded-full bg-[#004D47]/10 text-sm font-bold text-[#004D47]">
+                {initials(conversation.personName)}
               </div>
               <div className="min-w-0 flex-1">
                 <div className="flex items-start justify-between gap-2">
-                  <p className={`truncate text-sm font-bold text-[#1a2b3d] ${conv.unreadCount > 0 ? 'font-extrabold' : ''}`}>
-                    {conv.personName}
+                  <p className="truncate text-sm font-bold text-[#0F172A]">{conversation.personName}</p>
+                  <p className="shrink-0 text-[11px] text-[#64748B]" suppressHydrationWarning>
+                    {mounted ? formatTime(conversation.latestAt) : ''}
                   </p>
-                  <p className="shrink-0 text-[11px] text-[#8293a3]" suppressHydrationWarning>{mounted ? formatTime(conv.latestAt) : ''}</p>
                 </div>
-                <p className={`truncate text-xs ${conv.unreadCount > 0 ? 'text-[#1a2b3d] font-semibold' : 'text-[#5b6b7c]'}`}>
-                  {conv.latestPreview}
-                </p>
+                <p className="truncate text-xs text-[#64748B]">{conversation.latestPreview}</p>
               </div>
             </div>
-            {conv.unreadCount > 0 && (
+            {conversation.unreadCount > 0 ? (
               <div className="mt-2 flex justify-end">
-                <span className="inline-flex min-h-5 min-w-5 items-center justify-center rounded-full bg-[#2563eb] px-1 text-[10px] font-bold text-white">
-                  {conv.unreadCount}
+                <span className="inline-flex min-h-5 min-w-5 items-center justify-center rounded-full bg-[#D9A253] px-1 text-[10px] font-bold text-[#0F172A]">
+                  {conversation.unreadCount}
                 </span>
               </div>
-            )}
+            ) : null}
           </button>
         ))}
 
-        {filtered.length === 0 && (
+        {filteredConversations.length === 0 ? (
           <div className="rounded-xl border border-dashed border-[#cdd9e1] bg-[#f7fafb] p-5 text-center text-sm text-[#5b6b7c]">
-            {search ? 'No results found.' : 'No conversations yet.'}
+            No conversations in this filter.
           </div>
-        )}
+        ) : null}
       </div>
     </div>
   );
 
-  /* -- Right chat panel -- */
   const rightPanel = (
-    <div className="flex flex-col rounded-2xl bg-white shadow-[0_12px_40px_rgba(43,103,110,0.06)]" style={{height: 'calc(100dvh - 280px)', minHeight: '400px'}}>
-      {activeConv ? (
+    <div className="flex h-[72vh] flex-col overflow-hidden rounded-[24px] border border-white/80 bg-white shadow-[0_14px_34px_rgba(15,23,42,0.07)]">
+      {activeConversation ? (
         <>
-          {/* Header */}
-          <div className="flex items-center justify-between border-b border-[#e6edf2] px-4 py-3">
+          <div className="relative flex items-center justify-between border-b border-[#EFE8DE] bg-white/90 px-4 py-3 backdrop-blur">
             <div className="flex items-center gap-3">
               <button
                 onClick={() => setActiveId(null)}
-                className="inline-flex h-8 w-8 items-center justify-center rounded-xl border border-[#d7e2ea] text-[#607080] lg:hidden"
+                className="inline-flex h-8 w-8 items-center justify-center rounded-xl border border-[#EFE8DE] text-[#64748B] lg:hidden"
               >
                 <ChevronLeft className="h-4 w-4" />
               </button>
-              <div className="grid h-10 w-10 place-items-center rounded-full bg-[#1a5058]/10 text-sm font-bold text-[#1a5058]">
-                {initials(activeConv.personName)}
+              <div className="grid h-10 w-10 place-items-center rounded-full bg-[#004D47]/10 text-sm font-bold text-[#004D47]">
+                {initials(activeConversation.personName)}
               </div>
               <div>
-                <p className="text-sm font-bold text-[#1a2b3d]">{activeConv.personName}</p>
-                <p className="text-xs text-[#607080]">Student</p>
+                <p className="text-sm font-bold text-[#0F172A]">{activeConversation.personName}</p>
+                <p className="text-xs text-[#64748B]">{recipientClassNameMap.get(activeConversation.personId) ?? 'Student'}</p>
               </div>
             </div>
-            <p className="hidden sm:block text-[10px] text-[#8293a3]" suppressHydrationWarning>
-              {mounted ? formatFullDate(activeConv.latestAt) : ''}
-            </p>
+
+            <button
+              onClick={() => setShowChatMenu((prev) => !prev)}
+              className="inline-flex h-9 w-9 items-center justify-center rounded-xl border border-[#EFE8DE] text-[#64748B]"
+            >
+              <EllipsisVertical className="h-4 w-4" />
+            </button>
+
+            {showChatMenu ? (
+              <div className="absolute right-4 top-12 z-20 w-44 rounded-xl border border-[#e2e8f0] bg-white p-1.5 shadow-xl">
+                <button
+                  onClick={() => setShowDeleteChatConfirm(true)}
+                  className="flex w-full items-center rounded-lg px-3 py-2 text-left text-sm font-medium text-[#dc2626] hover:bg-[#fef2f2] disabled:cursor-not-allowed disabled:opacity-50"
+                  disabled={!recipientIdSet.has(activeConversation.personId)}
+                >
+                  Delete Chat
+                </button>
+              </div>
+            ) : null}
           </div>
 
-          {/* Bubbles */}
-          <div className="flex-1 space-y-2 overflow-auto bg-[#eef2f5] px-4 py-4">
-            {activeConv.messages.map((msg) => (
-              <div key={msg.id} className={`group flex ${msg.direction === 'out' ? 'justify-end' : 'justify-start'}`}>
-                <div className={`max-w-[80%] rounded-2xl px-3 py-2 text-sm shadow-sm ${
-                  msg.direction === 'out'
-                    ? 'rounded-br-sm bg-[#1a5058] text-white'
-                    : 'rounded-bl-sm bg-white text-[#1a2b3d]'
-                }`}>
-                  <p className="whitespace-pre-wrap leading-relaxed">{msg.body}</p>
+          <div className="flex-1 space-y-2 overflow-auto bg-[#F8F6F3] px-4 py-4">
+            {activeConversation.messages.map((message) => (
+              <div key={message.id} className={`group flex ${message.direction === 'out' ? 'justify-end' : 'justify-start'}`}>
+                <div
+                  className={`max-w-[85%] rounded-2xl px-3 py-2 text-sm shadow-sm ${
+                    message.direction === 'out'
+                      ? 'rounded-br-sm bg-[#004D47] text-white shadow-[0_8px_18px_rgba(0,77,71,0.18)]'
+                      : 'rounded-bl-sm bg-white text-[#0F172A] shadow-[0_8px_18px_rgba(15,23,42,0.06)]'
+                  }`}
+                >
+                  <p className="whitespace-pre-wrap">{message.body}</p>
                   <div className="mt-1 flex items-center justify-between gap-2">
-                    <div className={`text-[10px] ${msg.direction === 'out' ? 'text-[#d8f2f2]' : 'text-[#8aa0b3]'}`} suppressHydrationWarning>
-                      {mounted ? formatTime(msg.createdAt) : ''}{msg.pending ? ' · Sending...' : ''}
+                    <div className={`text-[10px] ${message.direction === 'out' ? 'text-white/75' : 'text-[#64748B]'}`} suppressHydrationWarning>
+                      {mounted ? formatTime(message.createdAt) : ''}
+                      {message.pending ? ' · Sending...' : ''}
                     </div>
-                    {!msg.pending && !msg.id.startsWith('tmp-') ? (
+                    {!message.pending && !message.id.startsWith('tmp-') ? (
                       <button
                         type="button"
-                        onClick={() => void handleDeleteMessage(msg.id, msg.direction)}
-                        className={`opacity-0 group-hover:opacity-100 transition-opacity ${msg.direction === 'out' ? 'text-white/70 hover:text-white' : 'text-[#8aa0b3] hover:text-red-400'}`}
+                        onClick={() => void handleDeleteMessage(message.id, message.direction)}
+                        className={`opacity-0 transition-opacity group-hover:opacity-100 ${
+                          message.direction === 'out' ? 'text-white/70 hover:text-white' : 'text-[#8aa0b3] hover:text-red-400'
+                        }`}
                         title="Delete"
                       >
                         <Trash2 className="h-3 w-3" />
@@ -609,22 +904,24 @@ export function TeacherMessagesClient({ messages, recipients }: TeacherMessagesC
 
           <div ref={chatBottomRef} />
 
-          {/* Reply bar */}
-          <div className="border-t border-[#e6edf2] bg-white px-3 pt-3 pb-[84px] lg:pb-3">
+          <div className="sticky bottom-0 border-t border-[#EFE8DE] bg-white/95 p-3 backdrop-blur">
             <div className="flex items-center gap-2">
               <input
                 value={draft}
-                onChange={(e) => setDraft(e.target.value)}
-                onKeyDown={(e) => {
-                  if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); void handleSend(); }
+                onChange={(event) => setDraft(event.target.value)}
+                onKeyDown={(event) => {
+                  if (event.key === 'Enter' && !event.shiftKey) {
+                    event.preventDefault();
+                    void handleSend();
+                  }
                 }}
-                placeholder={`Reply to ${activeConv.personName.split(' ')[0]}...`}
-                className="h-11 flex-1 rounded-full bg-[#edeeef] border-none px-4 text-sm text-[#1a2b3d] outline-none focus:ring-2 focus:ring-[#1a5058]/20"
+                placeholder={`Message ${activeConversation.personName.split(' ')[0]}...`}
+                className="h-11 flex-1 rounded-full border border-[#EFE8DE] bg-[#FBFAF8] px-4 text-sm text-[#0F172A] outline-none focus:border-[#004D47] focus:ring-4 focus:ring-[#004D47]/10"
               />
               <button
                 onClick={() => void handleSend()}
-                disabled={isSending || draft.trim().length < 1}
-                className="inline-flex h-11 w-11 items-center justify-center rounded-full bg-[#1a5058] text-white hover:bg-[#1a5058] disabled:cursor-not-allowed disabled:opacity-50 transition-colors"
+                disabled={isSending || draft.trim().length < 2}
+                className="inline-flex h-11 w-11 items-center justify-center rounded-full bg-[#2E2B78] text-white shadow-[0_10px_20px_rgba(46,43,120,0.24)] hover:bg-[#25215F] disabled:cursor-not-allowed disabled:opacity-50"
               >
                 <Send className="h-4 w-4" />
               </button>
@@ -632,22 +929,15 @@ export function TeacherMessagesClient({ messages, recipients }: TeacherMessagesC
           </div>
         </>
       ) : (
-        <div className="grid flex-1 place-items-center bg-[#f5f7fa] p-8">
-          <div className="flex flex-col items-center gap-4 text-center">
-            <div className="flex h-20 w-20 items-center justify-center rounded-full bg-[#e0f0f1]">
-              <MessageSquarePlus className="h-9 w-9 text-[#2b676e]" />
+        <div className="grid flex-1 place-items-center bg-[#F8F6F3] p-8">
+          <div className="flex flex-col items-center gap-3 text-center">
+            <div className="flex h-20 w-20 items-center justify-center rounded-full bg-[#EEF8F7]">
+              <MessageSquarePlus className="h-9 w-9 text-[#004D47]" />
             </div>
             <div>
-              <h3 className="text-base font-bold text-[#1a2b3d]">Select a conversation</h3>
-              <p className="mt-1 text-sm text-[#607080]">Or start a new message to your students.</p>
+              <h3 className="text-base font-bold text-[#0F172A]">Select a conversation</h3>
+              <p className="mt-1 text-sm text-[#64748B]">Tap any chat to open messages.</p>
             </div>
-            <button
-              onClick={() => setShowCompose(true)}
-              className="inline-flex items-center gap-1.5 rounded-xl bg-gradient-to-br from-[#2b676e] to-[#1a5058] px-4 py-2 text-sm font-semibold text-white shadow-[0_8px_20px_rgba(43,103,110,0.12)] active:scale-[0.98] transition-all"
-            >
-              <MessageSquarePlus className="h-4 w-4" />
-              New Message
-            </button>
           </div>
         </div>
       )}
@@ -655,94 +945,72 @@ export function TeacherMessagesClient({ messages, recipients }: TeacherMessagesC
   );
 
   return (
-    <div className="space-y-4">
-      {/* Page header card */}
-      <div className="rounded-2xl bg-white shadow-[0_12px_40px_rgba(43,103,110,0.06)] p-5">
+    <div className="space-y-4 bg-[#F8F6F3]">
+      <div className="rounded-[24px] border border-white/80 bg-white p-5 shadow-[0_14px_34px_rgba(15,23,42,0.07)]">
         <div className="flex items-center justify-between gap-3">
           <div>
-            <h2 className="text-2xl font-bold font-headline text-[#1a2b3d]">Communications Hub</h2>
-            <p className="text-sm text-[#607080]">Message your students and stay on top of your class.</p>
+            <h2 className="font-headline text-2xl font-bold text-[#0F172A]">Communications Hub</h2>
+            <p className="text-sm text-[#64748B]">Modern chat experience for class communication.</p>
           </div>
           <button
-            onClick={() => setShowCompose(true)}
-            className="inline-flex items-center gap-1.5 rounded-xl bg-gradient-to-br from-[#2b676e] to-[#1a5058] px-3 py-2 text-sm font-semibold text-white shadow-sm lg:hidden"
+            onClick={() => setShowMobileFilters((prev) => !prev)}
+            className="inline-flex items-center gap-1 rounded-xl border border-[#EFE8DE] px-3 py-2 text-sm font-semibold text-[#0F172A] lg:hidden"
           >
-            <MessageSquarePlus className="h-4 w-4" />
-            New
+            <SlidersHorizontal className="h-4 w-4" />
+            Panels
           </button>
         </div>
       </div>
 
-      {/* Mobile category tabs */}
-      <div className="flex gap-2 overflow-x-auto pb-1 lg:hidden">
-        {catItems.map((item) => (
-          <button
-            key={item.key}
-            onClick={() => setCategory(item.key)}
-            className={`inline-flex shrink-0 items-center gap-1.5 rounded-xl px-3 py-2 text-xs font-semibold transition ${
-              category === item.key
-                ? 'bg-[#1a5058] text-white'
-                : 'bg-white text-[#5b6b7c] border border-[#e5edf2]'
-            }`}
-          >
-            {item.label}
-            <span className={`rounded-full px-1.5 py-0.5 text-[10px] font-bold ${
-              category === item.key ? 'bg-white/20 text-white' : 'bg-[#dbeafe] text-[#1d4ed8]'
-            }`}>{item.count}</span>
-          </button>
-        ))}
-      </div>
-
-      {/* 3-col grid */}
       <div className="grid gap-4 lg:grid-cols-[230px_360px_minmax(0,1fr)]">
-        <div className="hidden lg:block">{leftPanel}</div>
-        <div className={`${activeConv ? 'hidden lg:block' : 'block'}`}>{middlePanel}</div>
-        <div className={`${activeConv ? 'block' : 'hidden lg:block'}`}>{rightPanel}</div>
+        <div className={`${showMobileFilters ? 'block' : 'hidden'} lg:block`}>{leftPanel}</div>
+        <div className={`${activeConversation ? 'hidden lg:block' : 'block'}`}>{middlePanel}</div>
+        <div className={`${activeConversation ? 'block' : 'hidden lg:block'}`}>{rightPanel}</div>
       </div>
 
-      {/* Compose modal */}
-      {showCompose && (
-        <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/40 px-4 pb-4 sm:pb-0">
-          <div className="w-full max-w-md rounded-2xl bg-white p-5 shadow-2xl">
+      {showCompose ? (
+        <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/40 px-4 pb-4 sm:items-center sm:pb-0">
+          <div className="w-full max-w-md rounded-[24px] bg-white p-5 shadow-2xl">
             <div className="mb-4 flex items-center justify-between">
-              <h3 className="text-sm font-bold text-[#1a2b3d]">New Message</h3>
+              <h3 className="text-sm font-bold text-[#0F172A]">New Message</h3>
               <button
                 onClick={() => setShowCompose(false)}
-                className="h-7 w-7 rounded-full bg-[#edeeef] flex items-center justify-center text-[#607080] hover:bg-[#dde0e2]"
+                className="flex h-7 w-7 items-center justify-center rounded-full bg-[#FBFAF8] text-[#64748B] hover:bg-[#F4EFE8]"
               >
                 <X className="h-3.5 w-3.5" />
               </button>
             </div>
 
             <div className="space-y-3">
-              {/* Recipients */}
-              <div>
-                <label className="block text-[10px] font-bold uppercase tracking-widest text-[#7c8b99] mb-1.5">
+              <div className="min-w-0">
+                <label className="mb-1.5 block text-[10px] font-bold uppercase tracking-widest text-[#64748B]">
                   To - {selectedRecipients.size > 0 ? `${selectedRecipients.size} selected` : 'Select students'}
                 </label>
                 {recipients.length === 0 ? (
-                  <p className="text-sm text-[#607080]">No students in your classes.</p>
+                  <p className="text-sm leading-snug text-[#64748B]">No students in your classes.</p>
                 ) : (
-                  <div className="max-h-40 overflow-y-auto rounded-xl bg-[#f7fafb] border border-[#e5edf2] divide-y divide-[#edf0f2]">
-                    {recipients.map((r) => {
-                      const checked = selectedRecipients.has(r.userId);
+                  <div className="max-h-40 overflow-y-auto divide-y divide-[#EFE8DE] rounded-xl border border-[#EFE8DE] bg-[#FBFAF8]">
+                    {recipients.map((recipient) => {
+                      const checked = selectedRecipients.has(recipient.userId);
                       return (
                         <label
-                          key={r.userId}
-                          className={`flex cursor-pointer items-center gap-3 px-3 py-2 transition-colors ${checked ? 'bg-[#e9f5f4]' : 'hover:bg-[#edf4f7]'}`}
+                          key={recipient.userId}
+                          className={`flex cursor-pointer items-center gap-3 px-3 py-2 transition-colors ${
+                            checked ? 'bg-[#EEF8F7]' : 'hover:bg-[#F4EFE8]'
+                          }`}
                         >
                           <input
                             type="checkbox"
                             checked={checked}
-                            onChange={() => toggleRecipient(r.userId)}
-                            className="accent-[#1a5058] h-3.5 w-3.5"
+                            onChange={() => toggleRecipient(recipient.userId)}
+                            className="h-3.5 w-3.5 accent-[#004D47]"
                           />
-                          <div className="h-7 w-7 rounded-full bg-[#1a5058]/10 flex items-center justify-center text-xs font-bold text-[#1a5058]">
-                            {initials(r.fullName)}
+                          <div className="flex h-7 w-7 items-center justify-center rounded-full bg-[#004D47]/10 text-xs font-bold text-[#004D47]">
+                            {initials(recipient.fullName)}
                           </div>
                           <div className="min-w-0 flex-1">
-                            <p className="text-sm font-medium text-[#1a2b3d] truncate">{r.fullName}</p>
-                            <p className="text-[10px] text-[#8293a3] truncate">{r.className}</p>
+                            <p className="truncate text-sm font-medium text-[#0F172A]">{recipient.fullName}</p>
+                            <p className="truncate text-[10px] text-[#64748B]">{recipient.className}</p>
                           </div>
                         </label>
                       );
@@ -752,30 +1020,30 @@ export function TeacherMessagesClient({ messages, recipients }: TeacherMessagesC
               </div>
 
               <div>
-                <label className="block text-[10px] font-bold uppercase tracking-widest text-[#7c8b99] mb-1">Subject</label>
+                <label className="mb-1 block text-[10px] font-bold uppercase tracking-widest text-[#64748B]">Subject</label>
                 <input
                   value={composeSubject}
-                  onChange={(e) => setComposeSubject(e.target.value)}
+                  onChange={(event) => setComposeSubject(event.target.value)}
                   placeholder="e.g. Assignment Reminder"
-                  className="h-10 w-full rounded-xl bg-[#edeeef] border-none px-3 text-sm text-[#1a2b3d] outline-none focus:ring-2 focus:ring-[#1a5058]/20"
+                  className="h-11 w-full rounded-[18px] border border-[#EFE8DE] bg-[#FBFAF8] px-3 text-sm text-[#0F172A] outline-none focus:border-[#004D47] focus:ring-4 focus:ring-[#004D47]/10"
                 />
               </div>
 
               <div>
-                <label className="block text-[10px] font-bold uppercase tracking-widest text-[#7c8b99] mb-1">Message</label>
+                <label className="mb-1 block text-[10px] font-bold uppercase tracking-widest text-[#64748B]">Message</label>
                 <textarea
                   value={composeBody}
-                  onChange={(e) => setComposeBody(e.target.value)}
+                  onChange={(event) => setComposeBody(event.target.value)}
                   rows={4}
                   placeholder="Write your message..."
-                  className="w-full rounded-xl bg-[#edeeef] border-none px-3 py-2.5 text-sm text-[#1a2b3d] outline-none focus:ring-2 focus:ring-[#1a5058]/20 resize-none"
+                  className="w-full resize-none rounded-[18px] border border-[#EFE8DE] bg-[#FBFAF8] px-3 py-2.5 text-sm text-[#0F172A] outline-none focus:border-[#004D47] focus:ring-4 focus:ring-[#004D47]/10"
                 />
               </div>
 
               <button
                 onClick={() => void handleComposeSend()}
                 disabled={selectedRecipients.size === 0 || !composeBody.trim() || isComposeSending}
-                className="flex w-full items-center justify-center gap-2 rounded-xl bg-gradient-to-br from-[#2b676e] to-[#1a5058] py-2.5 text-sm font-bold text-white shadow-[0_8px_20px_rgba(43,103,110,0.12)] hover:shadow-[0_8px_28px_rgba(43,103,110,0.22)] disabled:opacity-50 disabled:cursor-not-allowed transition-all"
+                className="flex w-full items-center justify-center gap-2 rounded-[18px] bg-gradient-to-r from-[#2E2B78] to-[#4338CA] py-3 text-sm font-bold text-white shadow-[0_12px_24px_rgba(46,43,120,0.24)] disabled:cursor-not-allowed disabled:opacity-50"
               >
                 <Send className="h-4 w-4" />
                 {isComposeSending
@@ -787,7 +1055,40 @@ export function TeacherMessagesClient({ messages, recipients }: TeacherMessagesC
             </div>
           </div>
         </div>
-      )}
+      ) : null}
+
+      {showDeleteChatConfirm && activeConversation ? (
+        <div className="fixed inset-0 z-[60] flex items-end justify-center bg-black/40 px-4 pb-4 sm:items-center sm:pb-0">
+          <div className="w-full max-w-md rounded-2xl bg-white p-5 shadow-2xl">
+            <h3 className="text-base font-bold text-[#1a2b3d]">Delete Chat</h3>
+            <p className="mt-2 text-sm leading-relaxed text-[#607080]">
+              Are you sure you want to delete this chat? This action cannot be undone.
+            </p>
+            <div className="mt-4 flex items-center justify-end gap-2">
+              <button
+                onClick={() => setShowDeleteChatConfirm(false)}
+                className="rounded-xl border border-[#d7e2ea] px-4 py-2 text-sm font-semibold text-[#3d5568] hover:bg-[#f8fafc]"
+                disabled={isDeletingChat}
+              >
+                Cancel
+              </button>
+              <button
+                onClick={() => void handleDeleteChat()}
+                className="inline-flex min-w-[112px] items-center justify-center rounded-xl bg-[#dc2626] px-4 py-2 text-sm font-semibold text-white hover:bg-[#b91c1c] disabled:cursor-not-allowed disabled:opacity-60"
+                disabled={isDeletingChat}
+              >
+                {isDeletingChat ? 'Deleting...' : 'Delete Chat'}
+              </button>
+            </div>
+          </div>
+        </div>
+      ) : null}
+
+      {chatDeleteToast ? (
+        <div className="fixed bottom-24 left-1/2 z-[70] -translate-x-1/2 rounded-full bg-[#0f172a] px-4 py-2 text-sm font-medium text-white shadow-lg">
+          {chatDeleteToast}
+        </div>
+      ) : null}
     </div>
   );
 }

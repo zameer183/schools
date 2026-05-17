@@ -31,11 +31,23 @@ export function MobileBottomNav({
   pathname: string;
 }) {
   const [moreSheetOpen, setMoreSheetOpen] = useState(false);
+  const compactLabel: Record<string, string> = {
+    Dashboard: 'Home',
+    Notifications: 'Alerts',
+    Financials: 'Fees'
+  };
 
   const { primaryItems, moreItems } = useMemo(() => {
     const primaryHrefs = mobilePrimaryByRole[role] ?? [];
-    const primary = navItems.filter((item) => primaryHrefs.includes(item.href));
-    const more = navItems.filter((item) => !primaryHrefs.includes(item.href));
+    const orderedPrimary = primaryHrefs
+      .map((href) => navItems.find((item) => item.href === href))
+      .filter((item): item is NavItem => Boolean(item));
+    const primary = orderedPrimary.slice(0, 4);
+    const overflowPrimary = orderedPrimary.slice(4);
+    const more = [
+      ...overflowPrimary,
+      ...navItems.filter((item) => !primaryHrefs.includes(item.href))
+    ];
     return { primaryItems: primary, moreItems: more };
   }, [navItems, role]);
 
@@ -53,7 +65,11 @@ export function MobileBottomNav({
 
   return (
     <>
-      <nav className="fixed bottom-0 left-0 right-0 z-40 grid h-[68px] grid-cols-5 border-t border-[#e2e8e8] bg-white pb-[env(safe-area-inset-bottom)] md:hidden">
+      <nav className={`fixed z-40 grid grid-cols-5 backdrop-blur-xl md:hidden ${
+        role === 'TEACHER'
+          ? 'bottom-0 left-0 right-0 h-[86px] border-t border-[#E2E8F0] bg-white/90 px-6 pb-6 pt-2 shadow-[0_-10px_26px_rgba(15,23,42,0.05)]'
+          : 'bottom-3 left-3 right-3 h-[74px] rounded-[24px] border border-[#E6ECF2] bg-white/95 p-1.5 shadow-[0_12px_28px_rgba(15,23,42,0.14)]'
+      }`}>
         {primaryItems.map((item) => {
           const Icon = item.icon;
           const active = isActive(item.href);
@@ -61,12 +77,26 @@ export function MobileBottomNav({
             <Link
               key={item.href}
               href={item.href}
-              className={`flex flex-col items-center justify-center gap-0.5 px-1 text-[11px] font-semibold leading-tight transition-colors ${
-                active ? 'text-[#1F5A5C]' : 'text-[#6f7979] hover:text-[#1F5A5C]'
+              prefetch={false}
+              className={`relative flex flex-col items-center justify-center gap-0.5 rounded-2xl px-1 text-[10px] font-medium leading-tight transition ${
+                role === 'TEACHER'
+                  ? active
+                    ? 'text-[#0D9488]'
+                    : 'text-[#64748B] hover:text-[#0F172A]'
+                  : active
+                    ? 'bg-[#E6F4F1] text-[#1F5A5C]'
+                    : 'text-[#64748B] hover:text-[#1F5A5C]'
               }`}
             >
-              <Icon className={`h-5 w-5 ${active ? 'text-[#1F5A5C]' : 'text-[#6f7979]'}`} />
-              <span className="line-clamp-1">{item.label}</span>
+              <Icon className={`h-5 w-5 ${
+                role === 'TEACHER'
+                  ? active ? 'text-[#0D9488]' : 'text-[#94A3B8]'
+                  : active ? 'text-[#1F5A5C]' : 'text-[#64748B]'
+              }`} />
+              <span className="truncate max-w-full">{compactLabel[item.label] ?? item.label}</span>
+              {active ? (
+                <span className={`absolute -bottom-1 h-1 rounded-full ${role === 'TEACHER' ? 'w-1 bg-[#0D9488] shadow-[0_0_10px_rgba(13,148,136,0.3)]' : 'w-8 bg-[#1F5A5C]'}`} />
+              ) : null}
             </Link>
           );
         })}
@@ -74,7 +104,9 @@ export function MobileBottomNav({
         {/* More button */}
         <button
           onClick={() => setMoreSheetOpen(true)}
-          className="flex flex-col items-center justify-center gap-0.5 px-1 text-[11px] font-semibold leading-tight text-[#6f7979] transition-colors hover:text-[#1F5A5C]"
+          className={`flex flex-col items-center justify-center gap-0.5 rounded-2xl px-1 text-[10px] font-medium leading-tight transition-colors ${
+            role === 'TEACHER' ? 'text-[#64748B] hover:text-[#0F172A]' : 'text-[#64748B] hover:text-[#1F5A5C]'
+          }`}
         >
           <MoreHorizontal className="h-5 w-5" />
           <span>More</span>
@@ -91,6 +123,7 @@ export function MobileBottomNav({
               <Link
                 key={item.href}
                 href={item.href}
+                prefetch={false}
                 onClick={() => setMoreSheetOpen(false)}
                 className={`flex items-center gap-4 rounded-lg px-4 py-3 text-sm font-medium transition-all ${
                   active

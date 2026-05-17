@@ -15,7 +15,7 @@ export function Card({ children, padding = 'default', className = '' }: CardProp
   }[padding];
 
   return (
-    <div className={`rounded-xl bg-white border border-[#E5E7EB] shadow-sm hover:shadow-md transition-shadow ${paddingClass} ${className}`}>
+    <div className={`rounded-[24px] border border-white/80 bg-white shadow-[0_14px_34px_rgba(15,23,42,0.07)] transition-shadow hover:shadow-[0_18px_42px_rgba(15,23,42,0.10)] ${paddingClass} ${className}`}>
       {children}
     </div>
   );
@@ -27,9 +27,9 @@ interface CardTextProps {
 }
 
 export function CardTitle({ children, className = '' }: CardTextProps) {
-  return <h3 className={`text-lg font-semibold text-[#111827] ${className}`.trim()}>{children}</h3>;
+  return <h3 className={`text-lg font-bold text-[#0F172A] ${className}`.trim()}>{children}</h3>;
 }
 
 export function CardDescription({ children, className = '' }: CardTextProps) {
-  return <p className={`text-sm text-[#6B7280] ${className}`.trim()}>{children}</p>;
+  return <p className={`text-sm leading-relaxed text-[#64748B] ${className}`.trim()}>{children}</p>;
 }

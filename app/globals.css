@@ -4,19 +4,20 @@
 
 :root {
   /* Brand Colors — from Manarah Institute logo */
-  --brand-primary: #1F5A5C;
-  --brand-primary-hover: #174548;
-  --brand-primary-light: #2D7578;
-  --brand-accent: #D69E3F;
+  --brand-primary: #004D47;
+  --brand-primary-hover: #003D38;
+  --brand-primary-light: #0F766E;
+  --brand-indigo: #2E2B78;
+  --brand-accent: #D9A253;
   --brand-accent-hover: #B8862E;
-  --brand-accent-light: #F5E6CC;
+  --brand-accent-light: #F7E8CF;
 
   /* Neutrals */
-  --bg-primary: #F5F1E8;
+  --bg-primary: #F8FAFC;
   --bg-card: #FFFFFF;
-  --bg-section: #FAFAF7;
-  --text-primary: #1F2937;
-  --text-secondary: #6B7280;
+  --bg-section: #F8FAFC;
+  --text-primary: #0F172A;
+  --text-secondary: #64748B;
   --text-tertiary: #9CA3AF;
 
   /* KPI Card Variants */
@@ -31,19 +32,19 @@
   --danger: #EF4444;
 
   /* Legacy vars (keep for backwards compatibility during transition) */
-  --background: #F5F1E8;
+  --background: #F8FAFC;
   --surface: #FFFFFF;
   --surface-container-lowest: #FFFFFF;
-  --surface-container-low: #FAFAF7;
-  --surface-container: #F5F1E8;
+  --surface-container-low: #F8FAFC;
+  --surface-container: #F8FAFC;
   --surface-container-high: #EEE9E0;
   --surface-variant: #E0EBEC;
-  --on-surface: #1F2937;
-  --on-surface-variant: #6B7280;
+  --on-surface: #0F172A;
+  --on-surface-variant: #64748B;
   --outline: #9CA3AF;
   --outline-variant: #D1D5DB;
-  --primary: #1F5A5C;
-  --primary-container: #2D7578;
+  --primary: #004D47;
+  --primary-container: #0F766E;
   --primary-fixed: #E0EBEC;
   --primary-fixed-dim: #C8DBDD;
   --secondary: #D69E3F;

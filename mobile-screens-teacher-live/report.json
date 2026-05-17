@@ -1,0 +1,103 @@
+{
+  "base": "https://schools-8d0gny1n4-zameer-ahmeds-projects-3dc0416d.vercel.app",
+  "viewport": "390x844",
+  "capturedAt": "2026-05-17T22:13:37.730Z",
+  "results": [
+    {
+      "name": "teacher_dashboard",
+      "route": "/teacher",
+      "finalUrl": "https://schools-8d0gny1n4-zameer-ahmeds-projects-3dc0416d.vercel.app/teacher",
+      "status": "ok",
+      "file": "E:\\stitch_student_hms_admin_dashboard\\schools\\mobile-screens-teacher-live\\teacher_dashboard.png",
+      "titleText": "Manarah Institute\n\nDashboard\nStudents\nAcademics\nProgress\nAttendance\nNotifications\nMessages\nU\n\nUmar\n\nTEACHER\n\nLogout\nMana"
+    },
+    {
+      "name": "teacher_classes",
+      "route": "/teacher/classes",
+      "finalUrl": "https://schools-8d0gny1n4-zameer-ahmeds-projects-3dc0416d.vercel.app/teacher/classes",
+      "status": "ok",
+      "file": "E:\\stitch_student_hms_admin_dashboard\\schools\\mobile-screens-teacher-live\\teacher_classes.png",
+      "titleText": "Manarah Institute\n\nDashboard\nStudents\nAcademics\nProgress\nAttendance\nNotifications\nMessages\nU\n\nUmar\n\nTEACHER\n\nLogout\nMana"
+    },
+    {
+      "name": "teacher_students",
+      "route": "/teacher/students",
+      "finalUrl": "https://schools-8d0gny1n4-zameer-ahmeds-projects-3dc0416d.vercel.app/teacher/students",
+      "status": "ok",
+      "file": "E:\\stitch_student_hms_admin_dashboard\\schools\\mobile-screens-teacher-live\\teacher_students.png",
+      "titleText": "Manarah Institute\n\nDashboard\nStudents\nAcademics\nProgress\nAttendance\nNotifications\nMessages\nU\n\nUmar\n\nTEACHER\n\nLogout\nMana"
+    },
+    {
+      "name": "teacher_attendance",
+      "route": "/teacher/attendance",
+      "finalUrl": "https://schools-8d0gny1n4-zameer-ahmeds-projects-3dc0416d.vercel.app/teacher/attendance",
+      "status": "ok",
+      "file": "E:\\stitch_student_hms_admin_dashboard\\schools\\mobile-screens-teacher-live\\teacher_attendance.png",
+      "titleText": "Manarah Institute\n\nDashboard\nStudents\nAcademics\nProgress\nAttendance\nNotifications\nMessages\nU\n\nUmar\n\nTEACHER\n\nLogout\nMana"
+    },
+    {
+      "name": "teacher_assignments",
+      "route": "/teacher/assignments",
+      "finalUrl": "https://schools-8d0gny1n4-zameer-ahmeds-projects-3dc0416d.vercel.app/teacher/assignments",
+      "status": "ok",
+      "file": "E:\\stitch_student_hms_admin_dashboard\\schools\\mobile-screens-teacher-live\\teacher_assignments.png",
+      "titleText": "404\nThis page could not be found."
+    },
+    {
+      "name": "teacher_academics",
+      "route": "/teacher/academics",
+      "finalUrl": "https://schools-8d0gny1n4-zameer-ahmeds-projects-3dc0416d.vercel.app/teacher/academics",
+      "status": "ok",
+      "file": "E:\\stitch_student_hms_admin_dashboard\\schools\\mobile-screens-teacher-live\\teacher_academics.png",
+      "titleText": "Manarah Institute\n\nDashboard\nStudents\nAcademics\nProgress\nAttendance\nNotifications\nMessages\nU\n\nUmar\n\nTEACHER\n\nLogout\nMana"
+    },
+    {
+      "name": "teacher_progress",
+      "route": "/teacher/progress",
+      "finalUrl": "https://schools-8d0gny1n4-zameer-ahmeds-projects-3dc0416d.vercel.app/teacher/progress",
+      "status": "ok",
+      "file": "E:\\stitch_student_hms_admin_dashboard\\schools\\mobile-screens-teacher-live\\teacher_progress.png",
+      "titleText": "Manarah Institute\n\nDashboard\nStudents\nAcademics\nProgress\nAttendance\nNotifications\nMessages\nU\n\nUmar\n\nTEACHER\n\nLogout\nMana"
+    },
+    {
+      "name": "teacher_messages",
+      "route": "/teacher/messages",
+      "finalUrl": "https://schools-8d0gny1n4-zameer-ahmeds-projects-3dc0416d.vercel.app/teacher/messages",
+      "status": "ok",
+      "file": "E:\\stitch_student_hms_admin_dashboard\\schools\\mobile-screens-teacher-live\\teacher_messages.png",
+      "titleText": "Manarah Institute\n\nDashboard\nStudents\nAcademics\nProgress\nAttendance\nNotifications\nMessages\nU\n\nUmar\n\nTEACHER\n\nLogout\nMana"
+    },
+    {
+      "name": "teacher_notifications",
+      "route": "/teacher/notifications",
+      "finalUrl": "https://schools-8d0gny1n4-zameer-ahmeds-projects-3dc0416d.vercel.app/teacher/notifications",
+      "status": "ok",
+      "file": "E:\\stitch_student_hms_admin_dashboard\\schools\\mobile-screens-teacher-live\\teacher_notifications.png",
+      "titleText": "Manarah Institute\n\nDashboard\nStudents\nAcademics\nProgress\nAttendance\nNotifications\nMessages\nU\n\nUmar\n\nTEACHER\n\nLogout\nMana"
+    },
+    {
+      "name": "teacher_schedule",
+      "route": "/teacher/schedule",
+      "finalUrl": "https://schools-8d0gny1n4-zameer-ahmeds-projects-3dc0416d.vercel.app/teacher/schedule",
+      "status": "ok",
+      "file": "E:\\stitch_student_hms_admin_dashboard\\schools\\mobile-screens-teacher-live\\teacher_schedule.png",
+      "titleText": "404\nThis page could not be found."
+    },
+    {
+      "name": "teacher_settings",
+      "route": "/teacher/settings",
+      "finalUrl": "https://schools-8d0gny1n4-zameer-ahmeds-projects-3dc0416d.vercel.app/teacher/settings",
+      "status": "ok",
+      "file": "E:\\stitch_student_hms_admin_dashboard\\schools\\mobile-screens-teacher-live\\teacher_settings.png",
+      "titleText": "Manarah Institute\n\nDashboard\nStudents\nAcademics\nProgress\nAttendance\nNotifications\nMessages\nU\n\nUmar\n\nTEACHER\n\nLogout\nMana"
+    },
+    {
+      "name": "teacher_institute",
+      "route": "/teacher/institute",
+      "finalUrl": "https://schools-8d0gny1n4-zameer-ahmeds-projects-3dc0416d.vercel.app/teacher/institute",
+      "status": "ok",
+      "file": "E:\\stitch_student_hms_admin_dashboard\\schools\\mobile-screens-teacher-live\\teacher_institute.png",
+      "titleText": "Manarah Institute\n\nDashboard\nStudents\nAcademics\nProgress\nAttendance\nNotifications\nMessages\nU\n\nUmar\n\nTEACHER\n\nLogout\nMana"
+    }
+  ]
+}
