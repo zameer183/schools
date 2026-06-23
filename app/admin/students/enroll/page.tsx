@@ -3,12 +3,21 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import {
-  ArrowLeft, ArrowRight, Check, ChevronDown, ChevronLeft, ChevronRight,
+  ArrowLeft, Check, ChevronDown, ChevronLeft, ChevronRight,
   User, Users, Calendar, CreditCard,
   Phone, MapPin, Hash, School, Search,
   BadgeCheck, DollarSign
 } from 'lucide-react';
 import { Button } from '@/components/ui';
+
+const SESSION_EXPIRED_MESSAGE = 'Session expire ho gayi hai. Please admin login dubara karein.';
+
+function redirectToAdminLogin() {
+  if (typeof window === 'undefined') return;
+  window.setTimeout(() => {
+    window.location.href = '/login/admin';
+  }, 700);
+}
 
 // ─── Types ───────────────────────────────────────────────────────────────────
 
@@ -35,6 +44,7 @@ type Form3 = {
   schoolName: string;
   rollNumber: string;
   classId: string;
+  additionalClassIds: string[];
   joinDate: string;
 };
 
@@ -54,13 +64,23 @@ type Errors = Record<string, string>;
 // ─── Constants ───────────────────────────────────────────────────────────────
 
 const COUNTRY_CODES = [
-  { code: '+92', label: 'PK 🇵🇰' },
-  { code: '+91', label: 'IN 🇮🇳' },
-  { code: '+971', label: 'AE 🇦🇪' },
-  { code: '+1',  label: 'US 🇺🇸' },
-  { code: '+44', label: 'GB 🇬🇧' },
-  { code: '+966', label: 'SA 🇸🇦' },
-  { code: '+20',  label: 'EG 🇪🇬' },
+  { code: '+92', label: 'PK' },
+  { code: '+880', label: 'BD' },
+  { code: '+91', label: 'IN' },
+  { code: '+971', label: 'AE' },
+  { code: '+1',  label: 'US/CA' },
+  { code: '+44', label: 'GB' },
+  { code: '+966', label: 'SA' },
+  { code: '+20', label: 'EG' },
+  { code: '+974', label: 'QA' },
+  { code: '+965', label: 'KW' },
+  { code: '+968', label: 'OM' },
+  { code: '+973', label: 'BH' },
+  { code: '+60', label: 'MY' },
+  { code: '+62', label: 'ID' },
+  { code: '+94', label: 'LK' },
+  { code: '+977', label: 'NP' },
+  { code: '+93', label: 'AF' },
 ];
 
 const FEE_CATEGORIES = ['Monthly', 'Quarterly', 'Semi-Annual', 'Annual', 'One-time', 'Admission', 'Exam'];
@@ -288,7 +308,7 @@ export default function EnrollStudentPage() {
     whatsappCode: '+92', whatsappNumber: '', mobileNumber: '', email: '', address: ''
   });
   const [form3, setForm3] = useState<Form3>({
-    schoolName: '', rollNumber: '', classId: '', joinDate: new Date().toISOString().slice(0, 10)
+    schoolName: '', rollNumber: '', classId: '', additionalClassIds: [], joinDate: new Date().toISOString().slice(0, 10)
   });
   const [form4, setForm4] = useState<Form4>({
     feeCategory: '', feeType: '', feeTitle: 'Monthly Tuition Fee',
@@ -298,8 +318,15 @@ export default function EnrollStudentPage() {
   });
 
   useEffect(() => {
-    fetch('/api/classes', { cache: 'no-store' })
-      .then(r => r.ok ? r.json() : [])
+    fetch('/api/classes', { cache: 'no-store', credentials: 'same-origin' })
+      .then(r => {
+        if (r.status === 401) {
+          setApiError(SESSION_EXPIRED_MESSAGE);
+          redirectToAdminLogin();
+          return [];
+        }
+        return r.ok ? r.json() : [];
+      })
       .then(d => setClasses(Array.isArray(d) ? d : []))
       .finally(() => setClassesLoading(false));
   }, []);
@@ -316,7 +343,6 @@ export default function EnrollStudentPage() {
 
     if (step === 1) {
       if (!form1.studentName.trim()) errs.studentName = 'Student name is required';
-      if (!form1.fatherName.trim())  errs.fatherName  = 'Father name is required';
       if (!form1.gender)             errs.gender      = 'Please select gender';
     }
 
@@ -334,12 +360,8 @@ export default function EnrollStudentPage() {
     }
 
     if (step === 4) {
-      if (!form4.feeCategory) errs.feeCategory = 'Fee category is required';
-      if (!form4.feeType)     errs.feeType     = 'Fee type is required';
-
-      if (!form4.feeAmount || Number(form4.feeAmount) <= 0)
-        errs.feeAmount = 'Enter a valid fee amount';
-      if (!form4.feeDueDate) errs.feeDueDate = 'Due date is required';
+      if (form4.feeAmount.trim() && (!Number.isFinite(Number(form4.feeAmount)) || Number(form4.feeAmount) < 0))
+        errs.feeAmount = 'Fee amount can be 0 or greater';
     }
 
     setErrors(errs);
@@ -357,6 +379,7 @@ export default function EnrollStudentPage() {
     try {
       const res = await fetch('/api/admin/enroll', {
         method: 'POST',
+        credentials: 'same-origin',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           fullName:    form1.studentName,
@@ -367,10 +390,11 @@ export default function EnrollStudentPage() {
           whatsApp:    form2.whatsappCode + form2.whatsappNumber,
           phone:       form2.mobileNumber,
           email:       form2.email || null,
-          address:     form2.address || null,
+          currentAddress: form2.address || null,
           schoolName:  form3.schoolName,
           rollNumber:  form3.rollNumber || null,
           classId:     form3.classId,
+          additionalClassIds: form3.additionalClassIds.filter(Boolean),
           joinDate:    form3.joinDate,
           feeCategory: form4.feeCategory,
           feeType:     form4.feeType,
@@ -382,7 +406,11 @@ export default function EnrollStudentPage() {
           collectOnMonthStart:  form4.collectOnMonthStart,
         })
       });
-      const data = await res.json();
+      const data = await res.json().catch(() => ({}));
+      if (res.status === 401) {
+        setApiError(SESSION_EXPIRED_MESSAGE);
+        return;
+      }
       if (!res.ok) throw new Error(data.error || 'Enrollment failed');
       setResult({ admissionNo: data.admissionNo, email: data.email, studentName: data.studentName });
     } catch (err) {
@@ -405,11 +433,6 @@ export default function EnrollStudentPage() {
     value: form3[key] as string,
     onChange: (e: React.ChangeEvent<HTMLInputElement>) => setForm3(p => ({ ...p, [key]: e.target.value })),
   });
-  const inp4 = (key: keyof Form4) => ({
-    value: form4[key] as string,
-    onChange: (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => setForm4(p => ({ ...p, [key]: e.target.value })),
-  });
-
   // ── Success Screen ─────────────────────────────────────────────────────────
   if (result) {
     return (
@@ -437,7 +460,7 @@ export default function EnrollStudentPage() {
 
           <div className="mt-6 flex gap-3">
             <button
-              onClick={() => { setResult(null); setStep(1); setForm1({ studentName:'', fatherName:'', dateOfBirth:'', aadharNo:'', gender:'' }); setForm2({ whatsappCode:'+92', whatsappNumber:'', mobileNumber:'', email:'', address:'' }); setForm3({ schoolName:'', rollNumber:'', classId:'', joinDate: new Date().toISOString().slice(0,10) }); setForm4({ feeCategory:'', feeType:'', feeTitle:'Monthly Tuition Fee', feeAmount:'', feeDiscount:'0', feeDueDate: new Date().toISOString().slice(0,10), partialFeeSupported:false, collectOnMonthStart:false }); }}
+              onClick={() => { setResult(null); setStep(1); setForm1({ studentName:'', fatherName:'', dateOfBirth:'', aadharNo:'', gender:'' }); setForm2({ whatsappCode:'+92', whatsappNumber:'', mobileNumber:'', email:'', address:'' }); setForm3({ schoolName:'', rollNumber:'', classId:'', additionalClassIds: [], joinDate: new Date().toISOString().slice(0,10) }); setForm4({ feeCategory:'', feeType:'', feeTitle:'Monthly Tuition Fee', feeAmount:'', feeDiscount:'0', feeDueDate: new Date().toISOString().slice(0,10), partialFeeSupported:false, collectOnMonthStart:false }); }}
               className="flex-1 rounded-xl border border-[#e2e8f0] py-2.5 text-sm font-semibold text-[#374151] transition hover:bg-[#f8fafc]"
             >
               Enroll Another
@@ -494,7 +517,7 @@ export default function EnrollStudentPage() {
                   <input {...inp1('studentName')} placeholder="Full name" className={inputCls(errors.studentName)} />
                 </Field>
 
-                <Field label="Father Name *" error={errors.fatherName} icon={Users}>
+                <Field label="Father Name" error={errors.fatherName} icon={Users}>
                   <input {...inp1('fatherName')} placeholder="Father's full name" className={inputCls(errors.fatherName)} />
                 </Field>
 
@@ -633,10 +656,43 @@ export default function EnrollStudentPage() {
                 <ClassDropdown
                   classes={classes}
                   value={form3.classId}
-                  onChange={id => setForm3(p => ({ ...p, classId: id }))}
+                  onChange={id => setForm3(p => ({ ...p, classId: id, additionalClassIds: p.additionalClassIds.filter(extraId => extraId !== id) }))}
                   error={errors.classId}
                   loading={classesLoading}
                 />
+              </div>
+
+              <div className="space-y-3">
+                {form3.additionalClassIds.map((classId, index) => (
+                  <div key={index}>
+                    <div className="mb-1.5 flex items-center justify-between">
+                      <label className={labelCls}>Additional Class {index + 1}</label>
+                      <button
+                        type="button"
+                        onClick={() => setForm3(p => ({ ...p, additionalClassIds: p.additionalClassIds.filter((_, i) => i !== index) }))}
+                        className="text-xs font-semibold text-[#ef4444] hover:text-[#b91c1c]"
+                      >
+                        Remove
+                      </button>
+                    </div>
+                    <ClassDropdown
+                      classes={classes.filter(c => c.id !== form3.classId && !form3.additionalClassIds.some((id, i) => id === c.id && i !== index))}
+                      value={classId}
+                      onChange={id => setForm3(p => ({
+                        ...p,
+                        additionalClassIds: p.additionalClassIds.map((value, i) => i === index ? id : value)
+                      }))}
+                      loading={classesLoading}
+                    />
+                  </div>
+                ))}
+                <button
+                  type="button"
+                  onClick={() => setForm3(p => ({ ...p, additionalClassIds: [...p.additionalClassIds, ''] }))}
+                  className="inline-flex h-10 items-center justify-center rounded-xl bg-[#ecfdf5] px-4 text-sm font-semibold text-[#0f766e] transition hover:bg-[#d1fae5]"
+                >
+                  + Add another class
+                </button>
               </div>
             </div>
           )}
@@ -646,13 +702,13 @@ export default function EnrollStudentPage() {
             <div className="space-y-5">
               <div>
                 <p className="font-headline text-lg font-bold text-[#0f172a]">Fee Configuration</p>
-                <p className="mt-0.5 text-sm text-[#64748b]">Set up the initial fee record for this student.</p>
+                <p className="mt-0.5 text-sm text-[#64748b]">Fee is optional. Use 0 for free students.</p>
               </div>
 
               <div className="grid gap-4 sm:grid-cols-2">
                 {/* Fee Category */}
                 <div>
-                  <label className={labelCls}>Fee Category *</label>
+                  <label className={labelCls}>Fee Category</label>
                   <select
                     value={form4.feeCategory}
                     onChange={e => setForm4(p => ({ ...p, feeCategory: e.target.value }))}
@@ -670,7 +726,7 @@ export default function EnrollStudentPage() {
 
                 {/* Fee Type */}
                 <div>
-                  <label className={labelCls}>Fee Type *</label>
+                  <label className={labelCls}>Fee Type</label>
                   <select
                     value={form4.feeType}
                     onChange={e => setForm4(p => ({ ...p, feeType: e.target.value }))}
@@ -703,7 +759,7 @@ export default function EnrollStudentPage() {
                     <DollarSign className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-[#0F4F4A]" />
                     <input
                       type="number"
-                      min={1}
+                      min={0}
                       step="0.01"
                       value={form4.feeAmount}
                       onChange={e => setForm4(p => ({ ...p, feeAmount: e.target.value }))}

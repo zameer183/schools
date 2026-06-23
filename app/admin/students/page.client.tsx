@@ -11,7 +11,7 @@ import {
   Phone, School, Search, SlidersHorizontal, Trash2,
   TrendingUp, User, UserCheck, UserPlus, Users, X
 } from 'lucide-react';
-import { KpiCard, Button, PersonCard } from '@/components/ui';
+import { KpiCard } from '@/components/ui';
 
 export type ClassItem = { id: string; name: string; section: string };
 export type StudentItem = {
@@ -31,6 +31,7 @@ export type StudentItem = {
   schoolName?: string | null;
   rollNumber?: string | null;
   classId?: string | null;
+  extraClassIds?: string[];
   attendancePercentage?: number;
   feeStatus?: 'PAID' | 'UNPAID' | 'PARTIAL' | 'OVERDUE';
   lastActivityAt?: string | Date | null;
@@ -38,10 +39,17 @@ export type StudentItem = {
   user: { id: string; fullName: string; email: string; phone?: string | null; isActive?: boolean };
   class?: { id: string; name: string; section: string } | null;
   fees?: Array<{
+    id?: string;
     title: string;
     amount: string;
     discount: string;
     dueDate: string | Date;
+    feeCategory?: string | null;
+    feeType?: string | null;
+    fromDate?: string | Date | null;
+    toDate?: string | Date | null;
+    partialFeeSupported?: boolean;
+    collectOnMonthStart?: boolean;
     status?: 'PAID' | 'UNPAID' | 'PARTIAL' | 'OVERDUE';
     updatedAt?: string | Date;
     totalPaid?: string;
@@ -51,10 +59,17 @@ export type StudentItem = {
 };
 
 type RawStudentFee = {
+  id?: string;
   title: string;
   amount: string;
   discount: string;
   dueDate: string | Date;
+  feeCategory?: string | null;
+  feeType?: string | null;
+  fromDate?: string | Date | null;
+  toDate?: string | Date | null;
+  partialFeeSupported?: boolean;
+  collectOnMonthStart?: boolean;
   status?: 'PAID' | 'UNPAID' | 'PARTIAL' | 'OVERDUE' | 'PENDING';
   updatedAt?: string | Date;
   totalPaid?: string;
@@ -76,7 +91,7 @@ type EditFormState = {
   whatsappCode: string; whatsappNumber: string; phone: string;
   email: string; currentAddress: string;
   // Institute
-  schoolName: string; rollNumber: string; classId: string; joinDate: string;
+  schoolName: string; rollNumber: string; classId: string; extraClassIds: string[]; joinDate: string;
   // Security
   password: string;
   // Fee config
@@ -89,11 +104,13 @@ type EditFormState = {
 type StatusFilter = 'all' | 'active' | 'inactive' | 'pending';
 
 const BASE_PAGE_SIZE = 25;
+const APP_LOGIN_URL = `${process.env.NEXT_PUBLIC_APP_URL ?? 'https://schools-plum.vercel.app'}/login`;
+const SESSION_EXPIRED_MESSAGE = 'Session expire ho gayi hai. Please admin login dubara karein.';
 
 const emptyEditForm: EditFormState = {
   id: '', fullName: '', fatherName: '', dateOfBirth: '', aadharNo: '', gender: '',
   whatsappCode: '+92', whatsappNumber: '', phone: '', email: '', currentAddress: '',
-  schoolName: '', rollNumber: '', classId: '', joinDate: '',
+  schoolName: '', rollNumber: '', classId: '', extraClassIds: [], joinDate: '',
   password: '',
   feeCategory: '', feeType: '', feeTitle: 'Monthly Tuition Fee',
   fromDate: '', toDate: '', feeAmount: '', feeDiscount: '0',
@@ -101,10 +118,12 @@ const emptyEditForm: EditFormState = {
 };
 
 const COUNTRY_CODES = [
-  { code: '+92', label: 'PK 🇵🇰' }, { code: '+91', label: 'IN 🇮🇳' },
-  { code: '+971', label: 'AE 🇦🇪' }, { code: '+1',  label: 'US 🇺🇸' },
-  { code: '+44', label: 'GB 🇬🇧' }, { code: '+966', label: 'SA 🇸🇦' },
-  { code: '+20', label: 'EG 🇪🇬' },
+  { code: '+92', label: 'PK' }, { code: '+880', label: 'BD' }, { code: '+91', label: 'IN' },
+  { code: '+971', label: 'AE' }, { code: '+1', label: 'US/CA' }, { code: '+44', label: 'GB' },
+  { code: '+966', label: 'SA' }, { code: '+20', label: 'EG' }, { code: '+974', label: 'QA' },
+  { code: '+965', label: 'KW' }, { code: '+968', label: 'OM' }, { code: '+973', label: 'BH' },
+  { code: '+60', label: 'MY' }, { code: '+62', label: 'ID' }, { code: '+94', label: 'LK' },
+  { code: '+977', label: 'NP' }, { code: '+93', label: 'AF' },
 ];
 const FEE_CATEGORIES = ['Monthly','Quarterly','Semi-Annual','Annual','One-time','Admission','Exam'];
 const FEE_TYPES = ['Tuition Fee','Transport Fee','Exam Fee','Activity Fee','Library Fee','Hostel Fee','Other'];
@@ -117,16 +136,22 @@ const STATUS_FILTERS: Array<{ value: StatusFilter; label: string }> = [
 
 function parseWhatsApp(raw: string | null | undefined): { code: string; number: string } {
   if (!raw) return { code: '+92', number: '' };
-  const codes = ['+971', '+966', '+92', '+91', '+44', '+20', '+1'];
+  const codes = COUNTRY_CODES.map((item) => item.code).sort((a, b) => b.length - a.length);
   for (const code of codes) {
     if (raw.startsWith(code)) return { code, number: raw.slice(code.length) };
   }
   return { code: '+92', number: raw };
 }
 
-function normalizeWhatsAppPk(raw?: string | null) {
+function normalizeWhatsAppNumber(raw?: string | null) {
   if (!raw) return null;
-  let digits = raw.replace(/\D/g, '');
+  const trimmed = raw.trim();
+  if (trimmed.startsWith('+')) {
+    const digits = trimmed.replace(/\D/g, '');
+    return digits.length >= 8 && digits.length <= 15 ? `+${digits}` : null;
+  }
+
+  let digits = trimmed.replace(/\D/g, '');
   while (digits.startsWith('00')) digits = digits.slice(2);
 
   if (digits.startsWith('92')) {
@@ -144,7 +169,7 @@ function normalizeWhatsAppPk(raw?: string | null) {
     return `+92${digits}`;
   }
 
-  return null;
+  return digits.length >= 8 && digits.length <= 15 ? `+${digits}` : null;
 }
 
 function feeBadgeClass(status: string) {
@@ -160,8 +185,20 @@ function formatPkr(value: number) {
 function toCanonicalFeeStatus(status?: string | null): 'PAID' | 'UNPAID' | 'PARTIAL' | 'OVERDUE' {
   if (status === 'PAID') return 'PAID';
   if (status === 'PARTIAL') return 'PARTIAL';
-  if (status === 'OVERDUE') return 'OVERDUE';
   return 'UNPAID';
+}
+
+function deriveFeeStatus(params: {
+  status?: string | null;
+  dueDate?: string | Date | null;
+  totalAmount: number;
+  totalPaid: number;
+}): 'PAID' | 'UNPAID' | 'PARTIAL' | 'OVERDUE' {
+  const remaining = Math.max(params.totalAmount - params.totalPaid, 0);
+  if (remaining <= 0 && params.totalAmount > 0) return 'PAID';
+  if (params.totalPaid > 0) return 'PARTIAL';
+
+  return toCanonicalFeeStatus(params.status);
 }
 
 function initials(name: string) {
@@ -205,9 +242,15 @@ function normalizeStudentsData(value: unknown): StudentItem[] {
           const totalPaid = Number(fee.totalPaid ?? 0);
           const remaining = Math.max(totalAmount - totalPaid, 0);
           const dueDateObj = safeDate(fee.dueDate);
+          const status = deriveFeeStatus({
+            status: fee.status,
+            dueDate: fee.dueDate,
+            totalAmount,
+            totalPaid
+          });
           return {
             ...fee,
-            status: toCanonicalFeeStatus(fee.status),
+            status,
             totalPaid: totalPaid.toString(),
             remaining: remaining.toString(),
             month: fee.month ?? (dueDateObj ? dueDateObj.toLocaleDateString('en-US', { month: 'long', year: 'numeric' }) : ''),
@@ -218,11 +261,11 @@ function normalizeStudentsData(value: unknown): StudentItem[] {
     const attendancePercentage = typeof s.attendancePercentage === 'number'
       ? s.attendancePercentage
       : att.length ? Math.round((present / att.length) * 100) : 0;
-    const canonicalFeeStatus = toCanonicalFeeStatus(s.feeStatus ?? normalizedFees[0]?.status);
+    const canonicalFeeStatus = normalizedFees[0]?.status ?? toCanonicalFeeStatus(s.feeStatus);
     return {
       ...s,
-      whatsApp: normalizeWhatsAppPk(s.whatsApp) ?? normalizeWhatsAppPk(s.guardianPhone) ?? null,
-      guardianPhone: normalizeWhatsAppPk(s.guardianPhone) ?? null,
+      whatsApp: normalizeWhatsAppNumber(s.whatsApp) ?? normalizeWhatsAppNumber(s.guardianPhone) ?? null,
+      guardianPhone: normalizeWhatsAppNumber(s.guardianPhone) ?? null,
       user: { ...s.user, isActive: s.user?.isActive ?? true },
       fees: normalizedFees,
       attendancePercentage,
@@ -230,6 +273,17 @@ function normalizeStudentsData(value: unknown): StudentItem[] {
       lastActivityAt: s.lastActivityAt ?? att[0]?.date ?? normalizedFees[0]?.updatedAt ?? null
     };
   });
+}
+
+function isUnauthorizedResponse(res: Response) {
+  return res.status === 401;
+}
+
+function redirectToAdminLogin() {
+  if (typeof window === 'undefined') return;
+  window.setTimeout(() => {
+    window.location.href = '/login/admin';
+  }, 700);
 }
 
 
@@ -635,32 +689,59 @@ function ShareCredentialsModal({
       return;
     }
 
+    const popup = window.open('about:blank', '_blank', 'noopener,noreferrer');
+
     setLoading(true);
     setError('');
     try {
       const res = await fetch('/api/students', {
         method: 'PATCH',
+        credentials: 'same-origin',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ id: student.id, shareCredentials: true, password }),
       });
       const data = await res.json().catch(() => ({}));
-      if (!res.ok) { setError(data?.error ?? 'Failed to fetch credentials'); return; }
+      if (isUnauthorizedResponse(res)) {
+        if (popup && !popup.closed) popup.close();
+        setError(SESSION_EXPIRED_MESSAGE);
+        redirectToAdminLogin();
+        return;
+      }
+      if (!res.ok) {
+        if (popup && !popup.closed) popup.close();
+        setError(data?.error ?? 'Failed to fetch credentials');
+        return;
+      }
 
       const creds = data?.credentials;
-      if (!creds) { setError('Credentials not returned from server'); return; }
+      if (!creds) {
+        if (popup && !popup.closed) popup.close();
+        setError('Credentials not returned from server');
+        return;
+      }
 
       // Strip non-digits (handles +92... → 92...)
       const phone = shareTarget.replace(/\D/g, '');
       const msg =
-        `Assalamualaikum ${student.user.fullName},\n` +
-        `Your login credentials are:\n` +
-        `Email: ${creds.email}\n` +
-        `Password: ${creds.password}\n` +
-        `Please login and keep your credentials secure.`;
+        `Your online profile successfully generated on\n` +
+        `Manarah Institute\n\n` +
+        `Here is your app link\n\n` +
+        `ANDROID:\n${APP_LOGIN_URL}\n\n` +
+        `Here is your Institute gmail\n\n` +
+        `${creds.email}\n\n` +
+        `Here is your password\n\n` +
+        `${creds.password}`;
 
-      window.open(`https://wa.me/${phone}?text=${encodeURIComponent(msg)}`, '_blank', 'noopener,noreferrer');
+      const waUrl = `https://wa.me/${phone}?text=${encodeURIComponent(msg)}`;
+      if (popup && !popup.closed) {
+        popup.location.href = waUrl;
+        popup.focus();
+      } else {
+        window.location.href = waUrl;
+      }
       onCancel();
     } catch {
+      if (popup && !popup.closed) popup.close();
       setError('Network error. Please try again.');
     } finally {
       setLoading(false);
@@ -772,7 +853,25 @@ function ShareCredentialsModal({
           {/* Message preview */}
           <div className="rounded-xl bg-[#f8fafc] px-4 py-3">
             <p className="mb-2 text-[10px] font-bold uppercase tracking-wider text-[#9ca3af]">Message Preview</p>
-            <p className="whitespace-pre-line text-xs leading-relaxed text-[#374151]">
+            <pre className="whitespace-pre-wrap text-xs leading-relaxed text-[#374151]">
+{`Your online profile successfully generated on
+Manarah Institute
+
+Here is your app link
+
+ANDROID:
+${APP_LOGIN_URL}
+
+Here is your Institute gmail
+
+${student.user.email}
+
+Here is your password
+
+${showPwd ? password : '********'}`}
+            </pre>
+            <p className="hidden">
+              <span className="mb-1 block">App Link: {APP_LOGIN_URL}</span>
               {`Assalamualaikum ${student.user.fullName},\nYour login credentials are:\nEmail: ${student.user.email}\nPassword: ${showPwd ? password : '••••••••'}\nPlease login and keep your credentials secure.`}
             </p>
           </div>
@@ -846,7 +945,6 @@ export default function AdminStudentsPageClient({
   const [page, setPage] = useState(1);
 
   const [selected, setSelected] = useState<Set<string>>(new Set());
-  const [expandedIds, setExpandedIds] = useState<Set<string>>(new Set());
   const [showPromoteModal, setShowPromoteModal] = useState(false);
   const [promoteClassId, setPromoteClassId] = useState('');
   const [bulkLoading, setBulkLoading] = useState(false);
@@ -887,7 +985,7 @@ export default function AdminStudentsPageClient({
   /* ── Filter ── */
   const filteredStudents = useMemo(() => {
     return students.filter((s) => {
-      if (classFilter && s.classId !== classFilter) return false;
+      if (classFilter && s.classId !== classFilter && !(s.extraClassIds ?? []).includes(classFilter)) return false;
       if (statusFilter === 'active'   && !s.user.isActive)          return false;
       if (statusFilter === 'inactive' &&  s.user.isActive)          return false;
       if (statusFilter === 'pending'  && s.feeStatus === 'PAID')    return false;
@@ -907,25 +1005,42 @@ export default function AdminStudentsPageClient({
 
   /* ── Selection ── */
   const toggleSelect = (id: string) =>
-    setSelected((prev) => { const n = new Set(prev); n.has(id) ? n.delete(id) : n.add(id); return n; });
+    setSelected((prev) => {
+      const n = new Set(prev);
+      if (n.has(id)) {
+        n.delete(id);
+      } else {
+        n.add(id);
+      }
+      return n;
+    });
 
   const toggleAll = () =>
     setSelected((prev) => {
       const n = new Set(prev);
-      allPageSelected ? pagedStudents.forEach((s) => n.delete(s.id)) : pagedStudents.forEach((s) => n.add(s.id));
+      if (allPageSelected) {
+        pagedStudents.forEach((s) => n.delete(s.id));
+      } else {
+        pagedStudents.forEach((s) => n.add(s.id));
+      }
       return n;
     });
 
   const clearSelection = () => setSelected(new Set());
 
-  const toggleExpand = (id: string) =>
-    setExpandedIds((prev) => { const n = new Set(prev); n.has(id) ? n.delete(id) : n.add(id); return n; });
-
   /* ── Data loaders ── */
   const load = async () => {
     setLoading(true);
     try {
-      const [sr, cr] = await Promise.all([fetch('/api/students'), fetch('/api/classes')]);
+      const [sr, cr] = await Promise.all([
+        fetch('/api/students', { credentials: 'same-origin' }),
+        fetch('/api/classes', { credentials: 'same-origin' })
+      ]);
+      if (isUnauthorizedResponse(sr) || isUnauthorizedResponse(cr)) {
+        setMessage(SESSION_EXPIRED_MESSAGE);
+        redirectToAdminLogin();
+        return;
+      }
       const sd = sr.ok ? await sr.json() : [];
       const cd = cr.ok ? await cr.json() : [];
       setStudents(normalizeStudentsData(sd));
@@ -937,32 +1052,55 @@ export default function AdminStudentsPageClient({
   const hasActiveFilters = Boolean(search.trim() || classFilter || statusFilter !== 'all');
 
   /* ── Edit ── */
-  const openEdit = (student: StudentItem) => {
-    const wa = parseWhatsApp(student.whatsApp);
-    setForm({
-      id: student.id,
-      fullName: student.user.fullName,
-      fatherName: student.fatherName ?? '',
-      dateOfBirth: student.dateOfBirth ? String(student.dateOfBirth).slice(0, 10) : '',
-      aadharNo: student.aadharNo ?? '',
-      gender: (student.gender as 'MALE' | 'FEMALE' | '') || '',
-      whatsappCode: wa.code,
-      whatsappNumber: wa.number,
-      phone: student.user.phone ?? '',
-      email: student.user.email,
-      currentAddress: student.currentAddress ?? '',
-      schoolName: student.schoolName ?? '',
-      rollNumber: student.rollNumber ?? '',
-      classId: student.classId ?? '',
-      joinDate: student.joinDate ? String(student.joinDate).slice(0, 10) : '',
-      password: '',
-      feeCategory: '', feeType: '', feeTitle: 'Monthly Tuition Fee',
-      fromDate: '', toDate: '', feeAmount: '', feeDiscount: '0',
-      feeDueDate: new Date().toISOString().slice(0, 10),
-      partialFeeSupported: false, collectOnMonthStart: false,
-    });
-    setEditOpen(true);
+  const openEdit = async (student: StudentItem) => {
     setMessage('');
+    try {
+      const res = await fetch(`/api/students?id=${encodeURIComponent(student.id)}`, {
+        credentials: 'same-origin'
+      });
+      if (isUnauthorizedResponse(res)) {
+        setMessage(SESSION_EXPIRED_MESSAGE);
+        redirectToAdminLogin();
+        return;
+      }
+      const freshStudent = (res.ok ? await res.json().catch(() => null) : null) as StudentItem | null;
+      const source = freshStudent ?? student;
+      const wa = parseWhatsApp(source.whatsApp);
+      const latestFee = source.fees?.[0];
+      const grossFeeAmount = latestFee ? Math.max(Number(latestFee.amount), 0) : '';
+      setForm({
+        id: source.id,
+        fullName: source.user.fullName,
+        fatherName: source.fatherName ?? '',
+        dateOfBirth: source.dateOfBirth ? String(source.dateOfBirth).slice(0, 10) : '',
+        aadharNo: source.aadharNo ?? '',
+        gender: (source.gender as 'MALE' | 'FEMALE' | '') || '',
+        whatsappCode: wa.code,
+        whatsappNumber: wa.number,
+        phone: source.user.phone ?? '',
+        email: source.user.email,
+        currentAddress: source.currentAddress ?? '',
+        schoolName: source.schoolName ?? '',
+        rollNumber: source.rollNumber ?? '',
+        classId: source.classId ?? '',
+        extraClassIds: Array.isArray(source.extraClassIds) ? source.extraClassIds.filter((id) => id !== source.classId) : [],
+        joinDate: source.joinDate ? String(source.joinDate).slice(0, 10) : '',
+        password: '',
+        feeCategory: latestFee?.feeCategory ?? '',
+        feeType: latestFee?.feeType ?? '',
+        feeTitle: latestFee?.title ?? 'Monthly Tuition Fee',
+        fromDate: latestFee?.fromDate ? String(latestFee.fromDate).slice(0, 10) : '',
+        toDate: latestFee?.toDate ? String(latestFee.toDate).slice(0, 10) : '',
+        feeAmount: latestFee ? String(grossFeeAmount) : '',
+        feeDiscount: latestFee?.discount ?? '0',
+        feeDueDate: latestFee?.dueDate ? String(latestFee.dueDate).slice(0, 10) : new Date().toISOString().slice(0, 10),
+        partialFeeSupported: Boolean(latestFee?.partialFeeSupported),
+        collectOnMonthStart: Boolean(latestFee?.collectOnMonthStart),
+      });
+      setEditOpen(true);
+    } catch {
+      setMessage('Network error while loading student data.');
+    }
   };
 
   const saveStudent = async (e: React.FormEvent) => {
@@ -970,17 +1108,71 @@ export default function AdminStudentsPageClient({
     setSaving(true);
     setMessage('');
     try {
+      const original = students.find((s) => s.id === form.id) ?? null;
+      const latestFee = original?.fees?.[0] ?? null;
       const { whatsappCode, whatsappNumber, ...rest } = form;
-      const payload = {
-        ...rest,
-        whatsApp: whatsappCode && whatsappNumber ? whatsappCode + whatsappNumber : undefined,
-      };
+      const payload: Record<string, string | number | boolean | string[] | null> = { id: form.id };
+      for (const [key, value] of Object.entries(rest)) {
+        if (typeof value === 'string') {
+          if (value.trim() !== '') payload[key] = value;
+        } else if (typeof value === "boolean") {
+          payload[key] = value;
+        }
+      }
+
+      const whatsappRaw = (whatsappCode + whatsappNumber).trim();
+      if (whatsappNumber.trim()) {
+        const normalizedWhatsApp = normalizeWhatsAppNumber(whatsappRaw);
+        if (!normalizedWhatsApp) {
+          setMessage('WhatsApp number must include a valid country code, or use local Pakistan format like 03xxxxxxxxx.');
+          return;
+        }
+        const originalWhatsApp = normalizeWhatsAppNumber(original?.whatsApp ?? original?.guardianPhone ?? null);
+        if (normalizedWhatsApp !== originalWhatsApp) {
+          payload.whatsApp = normalizedWhatsApp;
+        }
+      }
+
+      payload.extraClassIds = Array.from(new Set(form.extraClassIds.filter(Boolean))).filter((classId) => classId !== form.classId);
+
+      const feeChanged = Boolean(latestFee) && (
+        form.feeCategory !== (latestFee?.feeCategory ?? '') ||
+        form.feeType !== (latestFee?.feeType ?? '') ||
+        form.feeTitle !== (latestFee?.title ?? 'Monthly Tuition Fee') ||
+        form.fromDate !== (latestFee?.fromDate ? String(latestFee.fromDate).slice(0, 10) : '') ||
+        form.toDate !== (latestFee?.toDate ? String(latestFee.toDate).slice(0, 10) : '') ||
+        form.feeAmount !== String(Math.max(Number(latestFee?.amount ?? 0), 0)) ||
+        form.feeDiscount !== String(latestFee?.discount ?? '0') ||
+        form.feeDueDate !== (latestFee?.dueDate ? String(latestFee.dueDate).slice(0, 10) : '') ||
+        form.partialFeeSupported !== Boolean(latestFee?.partialFeeSupported) ||
+        form.collectOnMonthStart !== Boolean(latestFee?.collectOnMonthStart)
+      );
+
+      if (feeChanged) {
+        payload.feeCategory = form.feeCategory || null;
+        payload.feeType = form.feeType || null;
+        payload.feeTitle = form.feeTitle;
+        payload.fromDate = form.fromDate || null;
+        payload.toDate = form.toDate || null;
+        payload.feeAmount = form.feeAmount;
+        payload.feeDiscount = form.feeDiscount;
+        payload.feeDueDate = form.feeDueDate;
+        payload.partialFeeSupported = form.partialFeeSupported;
+        payload.collectOnMonthStart = form.collectOnMonthStart;
+      }
+
       const res = await fetch('/api/students', {
         method: 'PATCH',
+        credentials: 'same-origin',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload),
       });
       const data = await res.json().catch(() => ({}));
+      if (isUnauthorizedResponse(res)) {
+        setMessage(SESSION_EXPIRED_MESSAGE);
+        redirectToAdminLogin();
+        return;
+      }
       if (!res.ok) { setMessage(data?.error ?? 'Unable to update student'); return; }
       setMessage('Student updated.');
       setEditOpen(false);
@@ -989,12 +1181,16 @@ export default function AdminStudentsPageClient({
     } catch { setMessage('Network error.'); }
     finally { setSaving(false); }
   };
-
   /* ── Remove ── */
   const removeStudent = async (student: StudentItem) => {
     setMessage('');
-    const res = await fetch(`/api/students?id=${student.id}`, { method: 'DELETE' });
+    const res = await fetch(`/api/students?id=${student.id}`, { method: 'DELETE', credentials: 'same-origin' });
     const data = await res.json().catch(() => ({}));
+    if (isUnauthorizedResponse(res)) {
+      setMessage(SESSION_EXPIRED_MESSAGE);
+      redirectToAdminLogin();
+      return;
+    }
     if (!res.ok) { setMessage(data?.error ?? 'Unable to delete'); return; }
     setMessage('Student removed.');
     clearSelection();
@@ -1006,7 +1202,14 @@ export default function AdminStudentsPageClient({
     if (!window.confirm(`Delete ${selected.size} student(s)? This cannot be undone.`)) return;
     setBulkLoading(true);
     try {
-      await Promise.all(Array.from(selected).map((id) => fetch(`/api/students?id=${id}`, { method: 'DELETE' })));
+      const responses = await Promise.all(
+        Array.from(selected).map((id) => fetch(`/api/students?id=${id}`, { method: 'DELETE', credentials: 'same-origin' }))
+      );
+      if (responses.some(isUnauthorizedResponse)) {
+        setMessage(SESSION_EXPIRED_MESSAGE);
+        redirectToAdminLogin();
+        return;
+      }
       clearSelection();
       await load();
       setMessage(`${selected.size} student(s) deleted.`);
@@ -1018,15 +1221,21 @@ export default function AdminStudentsPageClient({
     if (!promoteClassId) return;
     setBulkLoading(true);
     try {
-      await Promise.all(
+      const responses = await Promise.all(
         Array.from(selected).map((id) =>
           fetch('/api/students', {
             method: 'PATCH',
+            credentials: 'same-origin',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ id, classId: promoteClassId }),
           })
         )
       );
+      if (responses.some(isUnauthorizedResponse)) {
+        setMessage(SESSION_EXPIRED_MESSAGE);
+        redirectToAdminLogin();
+        return;
+      }
       setShowPromoteModal(false);
       setPromoteClassId('');
       clearSelection();
@@ -1261,16 +1470,7 @@ export default function AdminStudentsPageClient({
                       <div className="hidden md:block">
                         <StudentActionMenu
                           student={student}
-                          onEdit={() => {
-                            setForm({
-                              ...emptyEditForm,
-                              id: student.id,
-                              fullName: student.user.fullName,
-                              email: student.user.email,
-                              phone: student.user.phone || '',
-                            });
-                            setEditOpen(true);
-                          }}
+                          onEdit={() => openEdit(student)}
                           onShare={() => shareCredentials(student)}
                           canShare={Boolean(student.whatsApp?.trim() || student.guardianPhone?.trim())}
                           onRemoveClick={() => setRemoveConfirmStudent(student)}
@@ -1869,8 +2069,39 @@ export default function AdminStudentsPageClient({
                     <EditClassDropdown
                       classes={classes}
                       value={form.classId}
-                      onChange={id => setForm(p => ({ ...p, classId: id }))}
+                      onChange={id => setForm(p => ({ ...p, classId: id, extraClassIds: p.extraClassIds.filter(extraId => extraId !== id) }))}
                     />
+                  </div>
+                  <div className="sm:col-span-2 space-y-3">
+                    {form.extraClassIds.map((classId, index) => (
+                      <div key={index}>
+                        <div className="mb-1.5 flex items-center justify-between">
+                          <label className={eLabelCls}>Additional Class {index + 1}</label>
+                          <button
+                            type="button"
+                            onClick={() => setForm(p => ({ ...p, extraClassIds: p.extraClassIds.filter((_, i) => i !== index) }))}
+                            className="text-xs font-semibold text-[#ef4444] hover:text-[#b91c1c]"
+                          >
+                            Remove
+                          </button>
+                        </div>
+                        <EditClassDropdown
+                          classes={classes.filter(c => c.id !== form.classId && !form.extraClassIds.some((id, i) => id === c.id && i !== index))}
+                          value={classId}
+                          onChange={id => setForm(p => ({
+                            ...p,
+                            extraClassIds: p.extraClassIds.map((value, i) => i === index ? id : value)
+                          }))}
+                        />
+                      </div>
+                    ))}
+                    <button
+                      type="button"
+                      onClick={() => setForm(p => ({ ...p, extraClassIds: [...p.extraClassIds, ''] }))}
+                      className="inline-flex h-10 items-center justify-center rounded-xl bg-[#ecfdf5] px-4 text-sm font-semibold text-[#0f766e] transition hover:bg-[#d1fae5]"
+                    >
+                      + Add another class
+                    </button>
                   </div>
                 </div>
               </div>
