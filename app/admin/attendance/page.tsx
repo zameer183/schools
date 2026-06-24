@@ -24,7 +24,6 @@ type AttendancePayload = {
       id: string;
       admissionNo: string;
       classId: string | null;
-      class: { name: string; section: string } | null;
       user: { fullName: string };
     };
     status: AttendanceStatus;
@@ -35,7 +34,6 @@ type AttendancePayload = {
     id: string;
     admissionNo: string;
     classId: string | null;
-    class: { name: string; section: string } | null;
     user: { fullName: string };
   }>;
   teachers: Array<{ id: string; userId: string; user: { fullName: string } }>;
@@ -118,93 +116,101 @@ const getCachedAttendanceData = unstable_cache(
     const monthStart = new Date(monthStartIso);
     const staffAttendanceEnabled = staffEnabledFlag === '1';
 
-    const [
-      classes,
-      dailyRows,
-      dailyStatusCounts,
-      monthStatusByDay,
-      classStudents,
-      teachers,
-      staffDailyRows
-    ] = await Promise.all([
-      prisma.class.findMany({ orderBy: [{ name: 'asc' }, { section: 'asc' }] }),
-      prisma.attendance.findMany({
-        where: { date: dayDate, classId: selectedClassId || undefined },
-        include: {
-          class: { select: { id: true, name: true, section: true } },
-          student: {
-            select: {
-              id: true,
-              admissionNo: true,
-              classId: true,
-              class: { select: { name: true, section: true } },
-              user: { select: { fullName: true } }
-            }
-          }
-        },
-        orderBy: [{ student: { admissionNo: 'asc' } }],
-        take: 2000
-      }),
-      prisma.attendance.groupBy({
-        by: ['status'],
-        where: { date: dayDate, classId: selectedClassId || undefined },
-        _count: { _all: true }
-      }),
-      prisma.attendance.groupBy({
-        by: ['date', 'status'],
-        where: {
-          classId: selectedClassId || undefined,
-          date: { gte: monthStart, lte: dayDate }
-        },
-        _count: { _all: true }
-      }),
-      prisma.student.findMany({
-        where: selectedClassId ? { classId: selectedClassId } : { classId: { not: null } },
-        select: {
-          id: true,
-          admissionNo: true,
-          classId: true,
-          class: { select: { id: true, name: true, section: true } },
-          user: { select: { fullName: true } }
-        },
-        orderBy: [{ user: { fullName: 'asc' } }],
-        take: 5000
-      }),
-      prisma.teacher.findMany({
-        select: {
-          id: true,
-          userId: true,
-          user: { select: { fullName: true } }
-        },
-        orderBy: [{ user: { fullName: 'asc' } }],
-        take: 500
-      }),
-      staffAttendanceEnabled
-        ? prisma.$queryRaw<StaffDailyRow[]>`
-          SELECT
-            sa."teacherId",
-            u."id" as "userId",
-            u."fullName",
-            sa."status",
-            sa."note"
-          FROM "StaffAttendance" sa
-          INNER JOIN "Teacher" t ON t."id" = sa."teacherId"
-          INNER JOIN "User" u ON u."id" = t."userId"
-          WHERE sa."date" = ${selectedDate}::date
-          ORDER BY u."fullName" ASC;
-        `
-        : Promise.resolve([] as StaffDailyRow[])
-    ]);
-
-    return {
-      classes,
-      dailyRows,
-      dailyStatusCounts,
-      monthStatusByDay,
-      classStudents,
-      teachers,
-      staffDailyRows
+    const attendanceWhere = { date: dayDate, ...(selectedClassId ? { classId: selectedClassId } : {}) };
+    const monthWhere = {
+      ...(selectedClassId ? { classId: selectedClassId } : {}),
+      date: { gte: monthStart, lte: dayDate }
     };
+
+    return prisma.$transaction(async (tx) => {
+      const [
+        classes,
+        dailyRows,
+        dailyStatusCounts,
+        monthStatusByDay,
+        classStudents,
+        teachers,
+        staffDailyRows
+      ] = await Promise.all([
+        tx.class.findMany({
+          select: { id: true, name: true, section: true },
+          orderBy: [{ name: 'asc' }, { section: 'asc' }]
+        }),
+        tx.attendance.findMany({
+          where: attendanceWhere,
+          select: {
+            status: true,
+            student: {
+              select: {
+                id: true,
+                admissionNo: true,
+                classId: true,
+                user: { select: { fullName: true } }
+              }
+            }
+          },
+          orderBy: [{ student: { admissionNo: 'asc' } }],
+          take: 2000
+        }),
+        tx.attendance.groupBy({
+          by: ['status'],
+          where: attendanceWhere,
+          orderBy: { status: 'asc' },
+          _count: { _all: true }
+        }),
+        tx.attendance.groupBy({
+          by: ['date', 'status'],
+          where: monthWhere,
+          orderBy: [{ date: 'asc' }, { status: 'asc' }],
+          _count: { _all: true }
+        }),
+        tx.student.findMany({
+          where: selectedClassId ? { classId: selectedClassId } : { classId: { not: null } },
+          select: {
+            id: true,
+            admissionNo: true,
+            classId: true,
+            user: { select: { fullName: true } }
+          },
+          orderBy: [{ user: { fullName: 'asc' } }],
+          take: 5000
+        }),
+        tx.teacher.findMany({
+          select: {
+            id: true,
+            userId: true,
+            user: { select: { fullName: true } }
+          },
+          orderBy: [{ user: { fullName: 'asc' } }],
+          take: 500
+        }),
+        staffAttendanceEnabled
+          ? tx.$queryRaw<StaffDailyRow[]>`
+            SELECT
+              sa."teacherId",
+              u."id" as "userId",
+              u."fullName",
+              sa."status",
+              sa."note"
+            FROM "StaffAttendance" sa
+            INNER JOIN "Teacher" t ON t."id" = sa."teacherId"
+            INNER JOIN "User" u ON u."id" = t."userId"
+            WHERE sa."date" = ${selectedDate}::date
+            ORDER BY u."fullName" ASC;
+          `
+          : Promise.resolve([] as StaffDailyRow[])
+      ]);
+
+      return {
+        classes,
+        dailyRows,
+        dailyStatusCounts,
+        monthStatusByDay,
+        classStudents,
+        teachers,
+        staffDailyRows
+      };
+    });
   },
   ['admin-attendance-dashboard-data'],
   { revalidate: 20 }
@@ -269,16 +275,11 @@ async function loadAttendanceViaRest(
     : [];
 
   const usersById = new Map(users.map((user) => [user.id, user]));
-  const classesById = new Map(classes.map((classItem) => [classItem.id, classItem]));
 
   const classStudents = classStudentsRaw.map((student) => ({
     id: student.id,
     admissionNo: student.admissionNo,
     classId: student.classId,
-    class: student.classId ? (() => {
-      const classItem = classesById.get(student.classId);
-      return classItem ? { name: classItem.name, section: classItem.section } : null;
-    })() : null,
     user: { fullName: usersById.get(student.userId)?.fullName ?? 'Unknown Student' }
   }));
 
@@ -365,9 +366,16 @@ export default async function AdminAttendancePage({ searchParams }: { searchPara
   let classStudents: AttendancePayload['classStudents'] = [];
   let teachers: AttendancePayload['teachers'] = [];
   let staffDailyRows: StaffDailyRow[] = [];
+  let attendanceDataLoadFailed = false;
 
   try {
-    const staffAttendanceEnabled = await ensureStaffAttendanceTable();
+    let staffAttendanceEnabled = false;
+    try {
+      staffAttendanceEnabled = await ensureStaffAttendanceTable();
+    } catch (error) {
+      console.warn('[admin/attendance] staff attendance bootstrap failed', error);
+      if (!isDatabaseConnectionError(error)) throw error;
+    }
     const data = await getCachedAttendanceData(
       selectedDate,
       selectedClassId,
@@ -395,14 +403,28 @@ export default async function AdminAttendancePage({ searchParams }: { searchPara
       staffDailyRows = data.staffDailyRows;
     } catch (restError) {
       console.error('[admin/attendance] rest fallback failed', restError);
+      attendanceDataLoadFailed = true;
       if (!isDatabaseConnectionError(error) && !isLocalRestFallbackEnabled()) {
         throw error;
       }
     }
   }
 
+  if (attendanceDataLoadFailed) {
+    return (
+      <div className="rounded-2xl bg-white p-6 shadow-[0_4px_12px_rgba(0,0,0,0.08)]">
+        <h1 className="font-headline text-2xl font-bold text-[#1a1c1c]">Attendance</h1>
+        <h2 className="mt-3 text-lg font-bold text-[#111827]">Database Unreachable</h2>
+        <p className="mt-2 text-sm text-[#6b7280]">
+          Attendance data is temporarily unavailable. Please refresh once the database connection recovers.
+        </p>
+      </div>
+    );
+  }
+
   const studentDailyMap = new Map(dailyRows.map((row) => [row.student.id, row.status]));
   const staffDailyMap = new Map(staffDailyRows.map((row) => [row.teacherId, row.status]));
+  const classById = new Map(classes.map((item) => [item.id, item]));
 
   const serializedMonthStatusByDay = monthStatusByDay.map((row) => ({
     date: toDateKey(row.date as Date | string, selectedDate),
@@ -424,13 +446,13 @@ export default async function AdminAttendancePage({ searchParams }: { searchPara
       initialTab={initialTab}
       selectedDate={selectedDate}
       selectedClassId={selectedClassId}
-      classes={classes.map((item) => ({ id: item.id, name: item.name, section: item.section }))}
+      classes={classes}
       students={classStudents.map((student) => ({
         id: student.id,
         fullName: student.user.fullName,
         admissionNo: student.admissionNo,
         classId: student.classId ?? '',
-        classLabel: student.class ? `${student.class.name} - ${student.class.section}` : 'No class',
+        classLabel: student.classId ? (classById.get(student.classId) ? `${classById.get(student.classId)?.name} - ${classById.get(student.classId)?.section}` : 'No class') : 'No class',
         status: studentDailyMap.get(student.id) ?? null
       }))}
       teachers={teachers.map((teacher) => ({
