@@ -1,5 +1,5 @@
 ﻿import Link from 'next/link';
-import { AssignmentStatus, UserRole } from '@prisma/client';
+import { AssignmentStatus, AttendanceStatus, UserRole } from '@prisma/client';
 import { unstable_cache } from 'next/cache';
 import { requireAuth } from '@/lib/auth';
 import { prisma } from '@/lib/prisma';
@@ -40,6 +40,34 @@ function isPlaceholderResult(result: {
 
   return title === 'new' && subject === 'general' && result.exam.totalMarks === 100 && marks === 100 && remarks === '80';
 }
+
+type StudentDashboardData = {
+  student: {
+    id: string;
+    classId: string | null;
+    user: { fullName: string };
+    class: { id: string; name: string; section: string } | null;
+  };
+  attendanceRows: Array<{ status: AttendanceStatus; _count: { _all: number } }>;
+  resultRows: Array<{
+    id: string;
+    marksObtained: number;
+    grade: string;
+    remarks: string | null;
+    subject: { name: string };
+    exam: { title: string; totalMarks: number };
+  }>;
+  feeSummary: { totalFees: number; totalPaid: number };
+  totalAssignments: number;
+  submittedAssignments: number;
+  progressRows: Array<{
+    id: string;
+    date: Date;
+    notes: string | null;
+    class: { name: string; section: string } | null;
+    teacher: { user: { fullName: string } } | null;
+  }>;
+};
 
 const progressLineKeyMap = {
   'Sabaq Report: Miqdar': 'sabaqMiqdar',
@@ -153,7 +181,9 @@ const getCachedStudentDashboardData = unstable_cache(
   async (userId: string) => {
     const student = await prisma.student.findUnique({
       where: { userId },
-      include: {
+      select: {
+        id: true,
+        classId: true,
         user: { select: { fullName: true } },
         class: { select: { id: true, name: true, section: true } }
       }
@@ -163,7 +193,7 @@ const getCachedStudentDashboardData = unstable_cache(
       return null;
     }
 
-    const [attendanceRows, resultRows, feeRows, subjects, totalAssignments, submittedAssignments, progressRows] = await Promise.all([
+    const [attendanceRows, resultRows, feeSummary, paidSummary, totalAssignments, submittedAssignments, progressRows] = await Promise.all([
       prisma.attendance.groupBy({
         by: ['status'],
         where: { studentId: student.id },
@@ -171,39 +201,53 @@ const getCachedStudentDashboardData = unstable_cache(
       }),
       prisma.result.findMany({
         where: { studentId: student.id },
-        include: {
+        select: {
+          id: true,
+          marksObtained: true,
+          grade: true,
+          remarks: true,
           subject: { select: { name: true } },
           exam: { select: { title: true, totalMarks: true } }
         },
         orderBy: { updatedAt: 'desc' },
         take: 5
       }),
-      prisma.fee.findMany({
+      prisma.fee.aggregate({
         where: { studentId: student.id },
-        include: { payments: { select: { amountPaid: true } } }
+        _sum: { amount: true, discount: true }
       }),
-      student.classId
-        ? prisma.subject.findMany({
-            where: { classId: student.classId },
-            include: { teacher: { include: { user: { select: { fullName: true } } } } },
-            orderBy: { name: 'asc' },
-            take: 6
-          })
-        : Promise.resolve([]),
+      prisma.payment.aggregate({
+        where: { fee: { studentId: student.id } },
+        _sum: { amountPaid: true }
+      }),
       student.classId ? prisma.assignment.count({ where: { classId: student.classId, status: AssignmentStatus.PUBLISHED } }) : Promise.resolve(0),
       prisma.assignmentSubmission.count({ where: { studentId: student.id } }),
       prisma.studentProgress.findMany({
         where: { studentId: student.id },
-        include: {
+        select: {
+          id: true,
+          date: true,
+          notes: true,
           class: { select: { name: true, section: true } },
-          teacher: { include: { user: { select: { fullName: true } } } }
+          teacher: { select: { user: { select: { fullName: true } } } }
         },
         orderBy: { date: 'desc' },
         take: 5
       })
     ]);
 
-    return { student, attendanceRows, resultRows, feeRows, subjects, totalAssignments, submittedAssignments, progressRows };
+    return {
+      student,
+      attendanceRows,
+      resultRows,
+      feeSummary: {
+        totalFees: Number(feeSummary._sum.amount ?? 0) - Number(feeSummary._sum.discount ?? 0),
+        totalPaid: Number(paidSummary._sum.amountPaid ?? 0)
+      },
+      totalAssignments,
+      submittedAssignments,
+      progressRows
+    } satisfies StudentDashboardData;
   },
   ['student-dashboard-page-data'],
   { revalidate: 30 }
@@ -227,13 +271,13 @@ export default async function StudentDashboardPage() {
     );
   }
 
-  const { student, attendanceRows, resultRows, feeRows, totalAssignments, submittedAssignments, progressRows } = dashboardData;
+  const { student, attendanceRows, resultRows, feeSummary, totalAssignments, submittedAssignments, progressRows } = dashboardData;
 
   const totalAttendance = attendanceRows.reduce((sum, row) => sum + row._count._all, 0);
   const presentAttendance = attendanceRows.filter((row) => row.status === 'PRESENT').reduce((sum, row) => sum + row._count._all, 0);
   const attendancePercent = totalAttendance > 0 ? Math.round((presentAttendance / totalAttendance) * 100) : 0;
-  const totalFees = feeRows.reduce((sum, fee) => sum + Number(fee.amount) - Number(fee.discount), 0);
-  const totalPaid = feeRows.reduce((sum, fee) => sum + fee.payments.reduce((ps, p) => ps + Number(p.amountPaid), 0), 0);
+  const totalFees = feeSummary.totalFees;
+  const totalPaid = feeSummary.totalPaid;
   const outstanding = Math.max(totalFees - totalPaid, 0);
   const visibleResultRows = resultRows.filter((row) => !isPlaceholderResult(row));
   const averageMarks = visibleResultRows.length > 0 ? Math.round(visibleResultRows.reduce((sum, row) => sum + Number(row.marksObtained), 0) / visibleResultRows.length) : 0;
