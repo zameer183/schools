@@ -1,4 +1,5 @@
 import { UserRole } from '@prisma/client';
+import { unstable_cache } from 'next/cache';
 import { revalidatePath } from 'next/cache';
 import { requireAuth } from '@/lib/auth';
 import { prisma } from '@/lib/prisma';
@@ -11,7 +12,7 @@ import {
 } from '@/lib/teacher-access';
 import { formatCurrency } from '@/lib/utils';
 import { PageHeader, Card, StatusBadge } from '@/components/ui';
-import { User, BookOpen, CheckCircle2 } from 'lucide-react';
+import { User, BookOpen, CheckCircle2, WifiOff } from 'lucide-react';
 
 export const dynamic = 'force-dynamic';
 
@@ -21,6 +22,45 @@ type StaffAttendanceRow = {
   note: string | null;
   markedAt: Date;
 };
+
+type TeacherSettingsData = {
+  teacher: {
+    id: string;
+    specialization: string | null;
+    qualification: string | null;
+    user: { fullName: string; email: string; phone: string | null };
+    subjects: Array<{ name: string; code: string; classId: string; class: { name: string; section: string } }>;
+    classAssignments: Array<{ class: { name: string; section: string } }>;
+  };
+  access: Awaited<ReturnType<typeof getTeacherAccessMapByTeacherId>>;
+  compensation: Awaited<ReturnType<typeof getTeacherCompensationByTeacherId>>;
+  recentAttendance: StaffAttendanceRow[];
+  monthAttendance: StaffAttendanceRow[];
+};
+
+function isDatabaseConnectionError(error: unknown) {
+  return (
+    error instanceof Error &&
+    (error.name === 'PrismaClientInitializationError' ||
+      error.message.includes("Can't reach database server") ||
+      error.message.includes('Timed out fetching a new connection') ||
+      error.message.includes('Connection terminated unexpectedly'))
+  );
+}
+
+function DbOfflineBanner() {
+  return (
+    <Card className="p-8">
+      <div className="flex flex-col items-center py-6 text-center">
+        <div className="flex h-14 w-14 items-center justify-center rounded-full bg-[#fef2f2]">
+          <WifiOff className="h-7 w-7 text-[#ef4444]" />
+        </div>
+        <h2 className="mt-4 text-2xl font-bold text-[#1F2937]">Database Unreachable</h2>
+        <p className="mt-2 text-sm text-[#6B7280]">Unable to load teacher settings right now. Please refresh once the connection recovers.</p>
+      </div>
+    </Card>
+  );
+}
 
 async function ensureStaffAttendanceTable() {
   try {
@@ -39,6 +79,59 @@ async function ensureStaffAttendanceTable() {
     console.error('[teacher/settings] ensureStaffAttendanceTable failed', error);
   }
 }
+
+const getCachedTeacherSettingsData = unstable_cache(
+  async (teacherId: string) => {
+    const monthStart = new Date();
+    monthStart.setDate(1);
+    monthStart.setHours(0, 0, 0, 0);
+    const nextMonthStart = new Date(monthStart);
+    nextMonthStart.setMonth(nextMonthStart.getMonth() + 1);
+
+    const [teacher, access, compensation, recentAttendance, monthAttendance] = await Promise.all([
+      prisma.teacher.findUnique({
+        where: { id: teacherId },
+        select: {
+          id: true,
+          specialization: true,
+          qualification: true,
+          user: { select: { fullName: true, email: true, phone: true } },
+          subjects: {
+            select: { name: true, code: true, classId: true, class: { select: { name: true, section: true } } },
+            orderBy: { name: 'asc' },
+            take: 12
+          },
+          classAssignments: {
+            select: { class: { select: { name: true, section: true } } },
+            orderBy: { createdAt: 'asc' }
+          }
+        }
+      }),
+      getTeacherAccessMapByTeacherId(teacherId),
+      getTeacherCompensationByTeacherId(teacherId),
+      prisma.$queryRaw<StaffAttendanceRow[]>`
+        SELECT "date", "status", "note", "markedAt"
+        FROM "StaffAttendance"
+        WHERE "teacherId" = ${teacherId}
+        ORDER BY "date" DESC
+        LIMIT 10;
+      `,
+      prisma.$queryRaw<StaffAttendanceRow[]>`
+        SELECT "date", "status", "note", "markedAt"
+        FROM "StaffAttendance"
+        WHERE "teacherId" = ${teacherId}
+          AND "date" >= ${monthStart}
+          AND "date" < ${nextMonthStart}
+        ORDER BY "date" ASC;
+      `
+    ]);
+
+    if (!teacher) return null;
+    return { teacher, access, compensation, recentAttendance, monthAttendance } satisfies TeacherSettingsData;
+  },
+  ['teacher-settings-page-data'],
+  { revalidate: 30 }
+);
 
 async function markSelfAttendance(formData: FormData) {
   'use server';
@@ -104,18 +197,19 @@ function getStatusColor(status: string) {
 
 export default async function TeacherSettingsPage() {
   const session = await requireAuth([UserRole.TEACHER, UserRole.ADMIN]);
+  let data: Awaited<ReturnType<typeof getCachedTeacherSettingsData>> | null = null;
+  try {
+    data = await getCachedTeacherSettingsData(session.id);
+  } catch (error) {
+    console.error('[teacher/settings] load failed', error);
+    if (!isDatabaseConnectionError(error)) throw error;
+  }
 
-  const teacher = await prisma.teacher.findUnique({
-    where: { userId: session.id },
-    include: {
-      user: { select: { fullName: true, email: true, phone: true } },
-      subjects: {
-        select: { name: true, code: true, classId: true, class: { select: { name: true, section: true } } },
-        orderBy: { name: 'asc' }
-      },
-      classAssignments: { include: { class: { select: { name: true, section: true } } }, orderBy: { createdAt: 'asc' } }
-    }
-  });
+  if (!data) {
+    return <DbOfflineBanner />;
+  }
+
+  const { teacher, access, compensation, recentAttendance, monthAttendance } = data;
 
   if (!teacher) {
     return (
@@ -128,41 +222,6 @@ export default async function TeacherSettingsPage() {
 
   await ensureTeacherControlTables();
   await ensureStaffAttendanceTable();
-
-  const [access, compensation] = await Promise.all([
-    getTeacherAccessMapByTeacherId(teacher.id),
-    getTeacherCompensationByTeacherId(teacher.id)
-  ]);
-
-  let recentAttendance: StaffAttendanceRow[] = [];
-  let monthAttendance: StaffAttendanceRow[] = [];
-
-  try {
-    recentAttendance = await prisma.$queryRaw<StaffAttendanceRow[]>`
-      SELECT "date", "status", "note", "markedAt"
-      FROM "StaffAttendance"
-      WHERE "teacherId" = ${teacher.id}
-      ORDER BY "date" DESC
-      LIMIT 10;
-    `;
-
-    const monthStart = new Date();
-    monthStart.setDate(1);
-    monthStart.setHours(0, 0, 0, 0);
-    const nextMonthStart = new Date(monthStart);
-    nextMonthStart.setMonth(nextMonthStart.getMonth() + 1);
-
-    monthAttendance = await prisma.$queryRaw<StaffAttendanceRow[]>`
-      SELECT "date", "status", "note", "markedAt"
-      FROM "StaffAttendance"
-      WHERE "teacherId" = ${teacher.id}
-        AND "date" >= ${monthStart}
-        AND "date" < ${nextMonthStart}
-      ORDER BY "date" ASC;
-    `;
-  } catch (error) {
-    console.error('[teacher/settings] attendance queries failed', error);
-  }
 
   const todayDateOnly = new Date().toISOString().slice(0, 10);
   const todayRow = recentAttendance.find((row) => new Date(row.date).toISOString().slice(0, 10) === todayDateOnly);
