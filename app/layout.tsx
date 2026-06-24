@@ -1,6 +1,6 @@
 import './globals.css';
 import type { Metadata, Viewport } from 'next';
-import { Inter, Manrope } from 'next/font/google';
+import { EB_Garamond, Inter, Manrope } from 'next/font/google';
 import { LanguageProvider } from '@/components/language/language-provider';
 import MobileBackHandler from '@/components/layout/mobile-back-handler';
 
@@ -18,13 +18,20 @@ const manrope = Manrope({
   preload: false
 });
 
+const garamond = EB_Garamond({
+  subsets: ['latin'],
+  variable: '--font-garamond',
+  display: 'swap',
+  preload: false
+});
+
 export const metadata: Metadata = {
   title: 'Manarah Institute | HMS',
   description: 'Role-based Student Management System',
   icons: {
-    icon: '/manarah-mark.png',
-    shortcut: '/manarah-mark.png',
-    apple: '/manarah-mark.png'
+    icon: '/manarah-logo.png',
+    shortcut: '/manarah-logo.png',
+    apple: '/manarah-logo.png'
   }
 };
 
@@ -38,7 +45,7 @@ export const preferredRegion = 'sin1';
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="en" suppressHydrationWarning className={`${inter.variable} ${manrope.variable}`}>
+    <html lang="en" suppressHydrationWarning className={`${inter.variable} ${manrope.variable} ${garamond.variable}`}>
       <head>
         <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1" />
       </head>

@@ -1,6 +1,10 @@
+import { EB_Garamond, Amiri } from 'next/font/google';
 import Image from 'next/image';
 import Link from 'next/link';
 import LoginForm, { LoginTheme } from './_form';
+
+const garamond = EB_Garamond({ subsets: ['latin'], weight: ['400', '500', '600', '700'], display: 'swap' });
+const amiri = Amiri({ subsets: ['arabic'], weight: ['400', '700'], display: 'swap' });
 
 type PatternType = 'islamic' | 'grid' | 'dots';
 
@@ -15,6 +19,7 @@ export interface LoginPageConfig {
   description: string;
   stats: [Stat, Stat, Stat];
   pattern: PatternType;
+  logoFilter?: string;
 }
 
 function BgPattern({ type }: { type: PatternType }) {
@@ -60,7 +65,7 @@ export default function LoginPageLayout({ config }: { config: LoginPageConfig })
   const { theme, bg, accent, portalLabel, headingLines, description, stats, pattern } = config;
 
   return (
-    <div className="relative flex h-[100dvh] max-h-[100dvh] overflow-hidden md:h-screen" style={{ background: bg }}>
+    <div className="relative flex h-[100dvh] overflow-hidden md:h-screen" style={{ background: bg }}>
 
       {/* Background pattern */}
       <div className="pointer-events-none absolute inset-0 opacity-[0.05]">
@@ -80,55 +85,56 @@ export default function LoginPageLayout({ config }: { config: LoginPageConfig })
         <div className="absolute left-0 top-0 z-10 h-[2px] w-full" style={{ background: `linear-gradient(90deg, ${accent}, ${accent}40, transparent)` }} />
         <div className="absolute bottom-0 left-0 top-0 w-[2px]" style={{ background: `linear-gradient(180deg, ${accent}cc, ${accent}30, transparent)` }} />
 
-        <div className="relative z-10 flex h-full flex-col justify-between p-10 lg:p-14">
+        <div className="relative z-10 flex h-full flex-col justify-between px-8 pb-8 pt-8 lg:px-12 lg:pb-10 lg:pt-10">
 
           {/* Logo */}
           <div>
             <div className="inline-block">
-              <Image
-                src="/manarah-p4.png"
-                alt="Manarah Institute"
-                width={1382}
-                height={504}
-                className="h-auto w-[280px] object-contain lg:w-[350px]"
-                style={{ filter: `drop-shadow(0 4px 24px ${accent}35)` }}
-                priority
-              />
+              <div className="inline-flex rounded-2xl bg-white/95 px-4 py-3 shadow-[0_8px_30px_rgba(0,0,0,0.25)] ring-1 ring-white/70">
+                <Image
+                  src="/manarah-logo.png"
+                  alt="Manarah Institute"
+                  width={1382}
+                  height={504}
+                  className="h-auto w-[180px] object-contain lg:w-[230px]"
+                  priority
+                />
+              </div>
             </div>
 
-            <div className="mt-8 flex items-center gap-3">
+            <div className="mt-5 flex items-center gap-3">
               <div className="h-[2px] w-10 rounded-full" style={{ background: accent }} />
               <div className="h-px w-16 rounded-full bg-white/15" />
             </div>
 
-            <div className="mt-7">
-              <p className="mb-4 text-[11px] font-bold uppercase tracking-[0.22em]" style={{ color: `${accent}cc` }}>
+            <div className="mt-4">
+              <p className="mb-3 text-[11px] font-bold uppercase tracking-[0.22em]" style={{ color: `${accent}cc` }}>
                 {portalLabel}
               </p>
-              <h1 className="font-bold leading-[1.12] text-white" style={{ fontSize: 'clamp(2.4rem, 4vw, 3.5rem)' }}>
+              <h1 className={`${garamond.className} font-bold leading-[1.12] text-white`} style={{ fontSize: 'clamp(1.8rem, 3.2vw, 2.8rem)' }}>
                 {headingLines[0]}
                 <br />
                 <span style={{ color: accent }}>{headingLines[1]}</span>
                 <br />
                 <span style={{ color: accent }}>{headingLines[2]}</span>
               </h1>
-              <p className="mt-5 max-w-[280px] text-[15px] leading-relaxed text-white/50">
+              <p className="mt-3 max-w-[280px] text-[13px] leading-relaxed text-white/50">
                 {description}
               </p>
             </div>
           </div>
 
           {/* Stats */}
-          <div className="grid grid-cols-3 gap-3">
+          <div className="grid grid-cols-3 gap-2">
             {stats.map((stat) => (
               <div
                 key={stat.label}
-                className="group relative overflow-hidden rounded-[16px] p-4 backdrop-blur-sm transition-all duration-200 hover:-translate-y-1"
+                className="group relative overflow-hidden rounded-[14px] p-3 backdrop-blur-sm"
                 style={{ background: 'rgba(255,255,255,0.07)', border: '1px solid rgba(255,255,255,0.11)' }}
               >
                 <div className="absolute inset-x-0 top-0 h-px" style={{ background: `linear-gradient(90deg, transparent, ${accent}55, transparent)` }} />
-                <p className="text-[22px] font-bold lg:text-2xl" style={{ color: accent }}>{stat.value}</p>
-                <p className="mt-0.5 text-[11px] font-medium leading-tight text-white/38">{stat.label}</p>
+                <p className="text-[18px] font-bold lg:text-xl" style={{ color: accent }}>{stat.value}</p>
+                <p className="mt-0.5 text-[10px] font-medium leading-tight text-white/38">{stat.label}</p>
               </div>
             ))}
           </div>
@@ -138,65 +144,81 @@ export default function LoginPageLayout({ config }: { config: LoginPageConfig })
       {/* ═══════════════════════════════
           RIGHT PANEL — always visible
       ═══════════════════════════════ */}
-      <div className="relative flex min-h-0 flex-1 items-center justify-center overflow-y-auto bg-[#f7f8fa] px-5 py-6 shadow-[-24px_0_70px_rgba(0,0,0,0.22)] sm:px-8 md:rounded-l-[2rem] md:px-10 lg:px-14">
+      <div className="relative flex min-h-0 flex-1 flex-col overflow-y-auto bg-[#FDF8F2] shadow-[-24px_0_70px_rgba(0,0,0,0.22)] md:rounded-l-[2rem]">
 
         {/* Mobile top accent bar */}
         <div className="absolute inset-x-5 top-0 h-[3px] rounded-b-full md:hidden" style={{ background: `linear-gradient(90deg, ${accent}, transparent)` }} />
 
-        <div className="w-full max-w-[400px] animate-fade-in-up">
+        {/* Mosque background — bottom */}
+        <div className="pointer-events-none absolute bottom-0 left-0 right-0 h-[180px] md:hidden">
+          <Image src="/arbicCas4kbg.jpg" alt="" fill className="object-cover object-bottom opacity-30" />
+        </div>
 
-          {/* Back button */}
-          <Link
-            href="/login"
-            className="mb-5 inline-flex items-center gap-1.5 rounded-full bg-white px-3.5 py-1.5 text-[12px] font-semibold text-[#64748b] shadow-sm ring-1 ring-[#e2e8f0] transition-all hover:shadow-md hover:text-[#0f172a]"
-          >
-            <svg className="h-3.5 w-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-              <path d="M19 12H5M12 19l-7-7 7-7"/>
-            </svg>
-            All Portals
-          </Link>
+        {/* Main content */}
+        <div className="flex flex-1 flex-col items-center justify-center px-5 py-8 sm:px-8 md:px-10 lg:px-14">
+          <div className="w-full max-w-[400px] animate-fade-in-up">
 
-          {/* Mobile logo */}
-          <div className="mb-5 block md:hidden">
-            <div
-              className="overflow-hidden rounded-[18px] px-5 py-[14px]"
-              style={{ background: bg, border: `1px solid ${accent}28`, boxShadow: `0 4px 24px ${accent}18` }}
+            {/* Desktop back button */}
+            <Link
+              href="/login"
+              className="mb-5 hidden items-center gap-1.5 rounded-full bg-white px-3.5 py-1.5 text-[12px] font-semibold text-[#64748b] shadow-sm ring-1 ring-[#e2e8f0] transition-all hover:shadow-md hover:text-[#0f172a] md:inline-flex"
             >
+              <svg className="h-3.5 w-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M19 12H5M12 19l-7-7 7-7"/>
+              </svg>
+              All Portals
+            </Link>
+
+            {/* Mobile logo + quote */}
+            <div className="mb-4 block pt-2 text-center md:hidden">
               <Image
-                src="/manarah-p4.png"
+                src="/manarah-logo.png"
                 alt="Manarah Institute"
                 width={1382}
                 height={504}
-                className="mx-auto h-auto w-full max-w-[200px] object-contain"
+                className="mx-auto h-auto w-full max-w-[140px] object-contain"
                 priority
               />
+              <div className="mt-4">
+                <p className={`${amiri.className} text-[17px] leading-snug`} style={{ color: '#023C39' }} dir="rtl">خَیْرُکُمْ مَنْ تَعَلَّمَ الْقُرْآنَ وَعَلَّمَهُ</p>
+                <p className="mt-0.5 text-[9px] uppercase tracking-widest" style={{ color: '#023C3999' }}>The best among you are those who learn the Quran and teach it</p>
+              </div>
+            </div>
+
+            {/* Portal badge + heading */}
+            <div className="mb-4 text-center md:text-left">
+              <div className="mb-2 inline-flex items-center gap-2 rounded-full px-3 py-1" style={{ background: `${accent}16` }}>
+                <div className="h-1.5 w-1.5 rounded-full" style={{ background: accent }} />
+                <span className="text-[11px] font-bold uppercase tracking-[0.16em]" style={{ color: accent }}>
+                  {portalLabel}
+                </span>
+              </div>
+              <h2 className={`${garamond.className} text-[1.7rem] font-semibold leading-tight text-[#0d1117] md:text-[2.1rem]`}>
+                Welcome Back
+              </h2>
+              <p className="mt-0.5 text-[13px] text-[#64748b]">
+                Sign in to continue to your portal
+              </p>
+            </div>
+
+            {/* Form card */}
+            <div className="animate-fade-in-up-delay rounded-[20px] border border-[#e8edf2] bg-white p-5 shadow-[0_8px_40px_rgba(15,23,42,0.09)]">
+              <LoginForm theme={theme} />
             </div>
           </div>
+        </div>
 
-          {/* Portal badge + heading */}
-          <div className="mb-6">
-            <div className="mb-3 inline-flex items-center gap-2 rounded-full px-3 py-1.5" style={{ background: `${accent}16` }}>
-              <div className="h-1.5 w-1.5 rounded-full" style={{ background: accent }} />
-              <span className="text-[11px] font-bold uppercase tracking-[0.16em]" style={{ color: accent }}>
-                {portalLabel}
-              </span>
-            </div>
-            <h2 className="text-[1.75rem] font-bold leading-tight text-[#0d1117] md:text-[2rem]">
-              Welcome Back
-            </h2>
-            <p className="mt-1 text-[14px] text-[#64748b]">
-              Sign in to continue to your portal
-            </p>
-          </div>
-
-          {/* Form card */}
-          <div className="animate-fade-in-up-delay rounded-[20px] border border-[#e8edf2] bg-white p-6 shadow-[0_8px_40px_rgba(15,23,42,0.09)]">
-            <LoginForm theme={theme} />
-          </div>
-
-          {/* Footer */}
-          <p className="mt-6 text-center text-[11px] uppercase tracking-widest text-[#c8d3e0]">
-            Manarah Institute &copy; 2026
+        {/* Bottom bar */}
+        <div className="flex shrink-0 items-center justify-between border-t border-[#e8edf2] px-5 py-3 md:hidden">
+          <button type="button" className="flex items-center gap-1.5 text-[11px] font-medium text-[#64748b]">
+            <svg className="h-3.5 w-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M3 18v-6a9 9 0 0 1 18 0v6"/>
+              <path d="M21 19a2 2 0 0 1-2 2h-1a2 2 0 0 1-2-2v-3a2 2 0 0 1 2-2h3zM3 19a2 2 0 0 0 2 2h1a2 2 0 0 0 2-2v-3a2 2 0 0 0-2-2H3z"/>
+            </svg>
+            Need help?
+          </button>
+          <p className="text-center text-[10px] text-[#c8d3e0]">
+            &copy; 2026 Manarah Institute<br />All rights reserved
           </p>
         </div>
       </div>

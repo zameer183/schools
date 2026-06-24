@@ -1,5 +1,5 @@
 import { UserRole } from '@prisma/client';
-import { revalidatePath, unstable_cache } from 'next/cache';
+import { revalidatePath } from 'next/cache';
 import { requireAuth } from '@/lib/auth';
 import { prisma } from '@/lib/prisma';
 import { PageHeader, Card, StatusBadge } from '@/components/ui';
@@ -7,22 +7,18 @@ import { Bell } from 'lucide-react';
 
 export const dynamic = 'force-dynamic';
 
-const getCachedStudentNotificationsData = unstable_cache(
-  async (userId: string) => {
-    const [unread, items] = await Promise.all([
-      prisma.notification.count({ where: { userId, isRead: false } }),
-      prisma.notification.findMany({
-        where: { userId },
-        orderBy: { createdAt: 'desc' },
-        take: 50
-      })
-    ]);
+async function getStudentNotificationsData(userId: string) {
+  const [unread, items] = await Promise.all([
+    prisma.notification.count({ where: { userId, isRead: false } }),
+    prisma.notification.findMany({
+      where: { userId },
+      orderBy: { createdAt: 'desc' },
+      take: 20
+    })
+  ]);
 
-    return { unread, items };
-  },
-  ['student-notifications-page-data'],
-  { revalidate: 30 }
-);
+  return { unread, items };
+}
 
 async function markAllRead() {
   'use server';
@@ -36,7 +32,7 @@ async function markAllRead() {
 
 export default async function StudentNotificationsPage() {
   const session = await requireAuth([UserRole.STUDENT, UserRole.ADMIN]);
-  const { unread, items } = await getCachedStudentNotificationsData(session.id);
+  const { unread, items } = await getStudentNotificationsData(session.id);
   const toDate = (value: Date | string) => (value instanceof Date ? value : new Date(value));
 
   return (

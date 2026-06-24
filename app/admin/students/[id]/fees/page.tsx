@@ -73,14 +73,7 @@ export default async function StudentFeesPage({ params }: { params: Promise<{ id
 
   const totalRemaining = totalAssigned - totalPaid;
 
-  const totalOverdue = serializedFees.reduce((sum, f) => {
-    if (f.status === 'OVERDUE') {
-      const netAmount = f.amount - f.discount;
-      const paid = f.payments.reduce((s, p) => s + p.amountPaid, 0);
-      return sum + Math.max(netAmount - paid, 0);
-    }
-    return sum;
-  }, 0);
+  const totalOverdue = totalRemaining;
 
   return (
     <StudentFeesClient

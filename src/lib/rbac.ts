@@ -1,7 +1,7 @@
 ﻿import { UserRole } from '@prisma/client';
 import { NextResponse } from 'next/server';
-import { getSession } from '@/lib/auth';
-import type { SessionPayload } from '@/types/auth';
+import { getVerifiedSession } from '@/lib/auth';
+import type { SessionUser } from '@/types/auth';
 
 type ApiAuthFailure = {
   authorized: false;
@@ -10,11 +10,11 @@ type ApiAuthFailure = {
 
 type ApiAuthSuccess = {
   authorized: true;
-  session: SessionPayload;
+  session: SessionUser;
 };
 
 export async function ensureApiRole(roles: UserRole[]): Promise<ApiAuthFailure | ApiAuthSuccess> {
-  const session = await getSession();
+  const session = await getVerifiedSession();
   if (!session) {
     return {
       authorized: false,

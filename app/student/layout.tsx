@@ -5,10 +5,10 @@ import { DashboardShell } from '@/components/layout/dashboard-shell';
 export const dynamic = 'force-dynamic';
 
 export default async function StudentLayout({ children }: { children: React.ReactNode }) {
-  const session = await requireAuth([UserRole.STUDENT]);
+  const session = await requireAuth([UserRole.STUDENT, UserRole.ADMIN]);
 
   return (
-    <DashboardShell role={(session.role as UserRole) ?? UserRole.STUDENT} fullName={session.fullName || 'Student'}>
+    <DashboardShell role={UserRole.STUDENT} fullName={session.fullName || 'Student'}>
       {children}
     </DashboardShell>
   );

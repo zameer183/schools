@@ -114,11 +114,7 @@ const INPUT = 'h-10 w-full rounded-xl bg-[#f3f4f5] border-none px-3 text-sm text
 
 export default function StudentFeesClient({
   student,
-  fees: initialFees,
-  totalAssigned: _ta,
-  totalPaid: _tp,
-  totalRemaining: _tr,
-  totalOverdue: _to
+  fees: initialFees
 }: Props) {
   const router = useRouter();
   const [fees, setFees] = useState<FeeRecord[]>(initialFees);
@@ -127,11 +123,7 @@ export default function StudentFeesClient({
   const totalAssigned = fees.reduce((s, f) => s + (f.amount - f.discount), 0);
   const totalPaid = fees.reduce((s, f) => s + f.payments.reduce((a, p) => a + p.amountPaid, 0), 0);
   const totalRemaining = totalAssigned - totalPaid;
-  const totalOverdue = fees.filter(f => f.status === 'OVERDUE').reduce((s, f) => {
-    const net = f.amount - f.discount;
-    const paid = f.payments.reduce((a, p) => a + p.amountPaid, 0);
-    return s + Math.max(net - paid, 0);
-  }, 0);
+  const totalOverdue = totalRemaining;
 
   const classInfo = student.class ? `${student.class.name} ${student.class.section || ''}` : 'N/A';
   const waPhone = (student.whatsApp || student.guardianPhone || '').replace(/[^0-9+]/g, '');
@@ -319,7 +311,7 @@ export default function StudentFeesClient({
 
   const handleShareSummary = () => {
     if (!waPhone) return;
-    const msg = `Fee Summary — ${student.user.fullName}\n\nAssigned: ${fmtCurrency(totalAssigned)}\nPaid: ${fmtCurrency(totalPaid)}\nRemaining: ${fmtCurrency(totalRemaining)}\nOverdue: ${fmtCurrency(totalOverdue)}`;
+    const msg = `Fee Summary — ${student.user.fullName}\n\nAssigned: ${fmtCurrency(totalAssigned)}\nPaid: ${fmtCurrency(totalPaid)}\nRemaining: ${fmtCurrency(totalRemaining)}\nDue: ${fmtCurrency(totalOverdue)}`;
     window.open(`https://wa.me/${waPhone}?text=${encodeURIComponent(msg)}`, '_blank');
   };
 
@@ -372,8 +364,8 @@ export default function StudentFeesClient({
             <p className="mt-1.5 text-2xl font-bold text-[#b45309]">{fmtCurrency(totalRemaining)}</p>
           </div>
           <div className="rounded-xl bg-[#fef2f2] p-4">
-            <p className="text-[10px] font-semibold uppercase tracking-wider text-[#9ca3af]">Overdue</p>
-            <p className="mt-1.5 text-2xl font-bold text-[#b91c1c]">{fmtCurrency(totalOverdue)}</p>
+            <p className="text-[10px] font-semibold uppercase tracking-wider text-[#9ca3af]">Due</p>
+            <p className="mt-1.5 text-2xl font-bold text-[#b45309]">{fmtCurrency(totalOverdue)}</p>
           </div>
         </div>
 
@@ -459,7 +451,17 @@ export default function StudentFeesClient({
                       </button>
                       {f.payments.length > 0 && (
                         <button
-                          onClick={() => setExpanded(prev => { const s = new Set(prev); s.has(f.id) ? s.delete(f.id) : s.add(f.id); return s; })}
+                          onClick={() =>
+                            setExpanded((prev) => {
+                              const s = new Set(prev);
+                              if (s.has(f.id)) {
+                                s.delete(f.id);
+                              } else {
+                                s.add(f.id);
+                              }
+                              return s;
+                            })
+                          }
                           className="h-9 px-3 flex items-center gap-1 rounded-xl bg-[#f0f2f5] text-[#374151] text-xs font-semibold hover:bg-[#e2e8e8] transition"
                         >
                           {isExpanded ? <ChevronUp className="h-3.5 w-3.5" /> : <ChevronDown className="h-3.5 w-3.5" />}

@@ -368,18 +368,29 @@ export async function GET(request: Request) {
       () => prisma.payment.aggregate({ where: { paidAt: { gte: start, lte: end } }, _sum: { amountPaid: true } }),
       { _sum: { amountPaid: null } }
     );
-    const dueAggregate = await safeQuery(
-      'fee.overdue.aggregate',
+    const dueFeeRows = await safeQuery(
+      'fee.outstanding.findMany',
       () =>
-        prisma.fee.aggregate({
+        prisma.fee.findMany({
           where: {
             status: { not: PaymentStatus.PAID },
             dueDate: { lte: end }
           },
-          _sum: { amount: true }
+          select: {
+            amount: true,
+            discount: true,
+            payments: { select: { amountPaid: true } }
+          }
         }),
-      { _sum: { amount: null } }
+      []
     );
+    const dueFeeTotal = dueFeeRows.reduce((sum, fee) => {
+      const gross = Number(fee.amount || 0);
+      const discount = Number(fee.discount || 0);
+      const paid = fee.payments.reduce((inner, payment) => inner + Number(payment.amountPaid || 0), 0);
+      const outstanding = Math.max(gross - discount - paid, 0);
+      return sum + outstanding;
+    }, 0);
     const messagesSent = await safeQuery('message.count.period', () => prisma.message.count({ where: { createdAt: { gte: start, lte: end } } }), 0);
     const notificationsSent = await safeQuery('notification.count.period', () => prisma.notification.count({ where: { createdAt: { gte: start, lte: end } } }), 0);
     const progressEntries = await safeQuery('studentProgress.count.period', () => prisma.studentProgress.count({ where: { date: { gte: start, lte: end } } }), 0);
@@ -400,7 +411,7 @@ export async function GET(request: Request) {
       { metric: 'Attendance Rate (%)', value: attendanceRate },
       { metric: 'Fees Generated', value: feesGenerated },
       { metric: 'Collected Fee', value: toNumber(paymentsAggregate._sum.amountPaid) },
-      { metric: 'Due Fee', value: toNumber(dueAggregate._sum.amount) },
+      { metric: 'Due Fee', value: dueFeeTotal },
       { metric: 'Messages Sent', value: messagesSent },
       { metric: 'Notifications Sent', value: notificationsSent },
       { metric: 'Progress Entries', value: progressEntries }

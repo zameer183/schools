@@ -19,6 +19,7 @@ export const panelNavItems: Record<UserRole, PanelNavItem[]> = {
     { href: '/admin', label: 'Dashboard', icon: Home },
     { href: '/admin/students', label: 'Students', icon: Users },
     { href: '/admin/teachers', label: 'Teachers', icon: UserCog },
+    { href: '/admin/academics', label: 'Academics', icon: BookOpen },
     { href: '/admin/classes', label: 'Classes', icon: BookOpen },
     { href: '/admin/attendance', label: 'Attendance', icon: CalendarCheck2 },
     { href: '/admin/finance', label: 'Finance', icon: DollarSign },
@@ -31,15 +32,12 @@ export const panelNavItems: Record<UserRole, PanelNavItem[]> = {
     { href: '/teacher/students', label: 'Students', icon: Users },
     { href: '/teacher/progress', label: 'Progress', icon: BarChart3 },
     { href: '/teacher/attendance', label: 'Attendance', icon: CalendarCheck2 },
-    { href: '/teacher/assignments', label: 'Assignments', icon: BookOpen },
     { href: '/teacher/messages', label: 'Messages', icon: MessageSquare },
     { href: '/teacher/settings', label: 'Settings', icon: Settings }
   ],
   STUDENT: [
     { href: '/student', label: 'Dashboard', icon: Home },
     { href: '/student/attendance', label: 'Attendance', icon: CalendarCheck2 },
-    { href: '/student/schedule', label: 'Schedule', icon: BookOpen },
-    { href: '/student/assignments', label: 'Assignments', icon: BookOpen },
     { href: '/student/results', label: 'Results', icon: BarChart3 },
     { href: '/student/fees', label: 'Fees', icon: DollarSign },
     { href: '/student/settings', label: 'Settings', icon: Settings }
@@ -63,6 +61,7 @@ export const panelSettingsHref: Partial<Record<UserRole, string>> = {
 
 const panelRouteMeta: Record<UserRole, Array<{ path: string; meta: PanelRouteMeta }>> = {
   ADMIN: [
+    { path: '/admin/academics', meta: { eyebrow: 'Admin Central', title: 'Academics', subtitle: 'Exams, subjects, and class academic controls' } },
     { path: '/admin/settings', meta: { eyebrow: 'Admin Central', title: 'Configuration Hub', subtitle: 'Institution profile and security controls' } },
     { path: '/admin/notifications', meta: { eyebrow: 'Admin Central', title: 'Communications Hub', subtitle: 'Broadcast notices and delivery status' } },
     { path: '/admin/reports', meta: { eyebrow: 'Admin Central', title: 'Academic Reports', subtitle: 'Exports, summaries, and management insights' } },
@@ -76,7 +75,6 @@ const panelRouteMeta: Record<UserRole, Array<{ path: string; meta: PanelRouteMet
   TEACHER: [
     { path: '/teacher/settings', meta: { eyebrow: 'Teacher Hub', title: 'Settings', subtitle: 'Profile preferences and account controls' } },
     { path: '/teacher/messages', meta: { eyebrow: 'Teacher Hub', title: 'Messages', subtitle: 'Class communication and inbox review' } },
-    { path: '/teacher/assignments', meta: { eyebrow: 'Teacher Hub', title: 'Assignments', subtitle: 'Publish and manage class work' } },
     { path: '/teacher/attendance', meta: { eyebrow: 'Teacher Hub', title: 'Mark Attendance', subtitle: 'Daily classroom attendance workflow' } },
     { path: '/teacher/progress', meta: { eyebrow: 'Teacher Hub', title: 'Student Progress', subtitle: 'Assessment notes and Quran lesson progress' } },
     { path: '/teacher/students', meta: { eyebrow: 'Teacher Hub', title: 'My Class Students', subtitle: 'Learner roster and quick enrollment' } },
@@ -86,8 +84,6 @@ const panelRouteMeta: Record<UserRole, Array<{ path: string; meta: PanelRouteMet
     { path: '/student/settings', meta: { eyebrow: 'Student Hub', title: 'Settings', subtitle: 'Profile preferences and account controls' } },
     { path: '/student/fees', meta: { eyebrow: 'Student Hub', title: 'Fee Status', subtitle: 'Payments, dues, and billing history' } },
     { path: '/student/results', meta: { eyebrow: 'Student Hub', title: 'Academic Results', subtitle: 'Exams, grades, and performance summary' } },
-    { path: '/student/assignments', meta: { eyebrow: 'Student Hub', title: 'Assignments', subtitle: 'Published work and submission status' } },
-    { path: '/student/schedule', meta: { eyebrow: 'Student Hub', title: 'Class Schedule', subtitle: 'Weekly subjects and teacher assignments' } },
     { path: '/student/attendance', meta: { eyebrow: 'Student Hub', title: 'Attendance', subtitle: 'Presence summary and recent register' } },
     { path: '/student', meta: { eyebrow: 'Student Hub', title: 'Academic Overview', subtitle: 'Personal progress and recent activity' } }
   ],

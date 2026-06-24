@@ -36,6 +36,11 @@ function formatPkr(value: number) {
   return new Intl.NumberFormat('en-PK', { style: 'currency', currency: 'PKR', maximumFractionDigits: 0 }).format(value);
 }
 
+function formatIsoDate(date: string | null) {
+  if (!date) return 'N/A';
+  return date.slice(0, 10);
+}
+
 function feeFilterMatch(status: SerializedFeeRow['feeStatus'], filter: FeeFilter) {
   if (filter === 'all') return true;
   if (filter === 'paid') return status === 'PAID';
@@ -78,20 +83,20 @@ function buildPaidTemplate(row: SerializedFeeRow, templateBody?: string) {
 
 function buildReminderTemplate(row: SerializedFeeRow, templateBody?: string) {
   if (templateBody) {
-    return applyTemplate(templateBody, {
-      studentName: row.studentName,
-      guardianName: 'Parent/Guardian',
-      amount: formatPkr(row.remaining),
-      dueDate: row.dueDate ? new Date(row.dueDate).toLocaleDateString('en-CA') : 'N/A',
-      instituteName: row.schoolName,
-      month: row.month,
-    });
+      return applyTemplate(templateBody, {
+        studentName: row.studentName,
+        guardianName: 'Parent/Guardian',
+        amount: formatPkr(row.remaining),
+        dueDate: formatIsoDate(row.dueDate),
+        instituteName: row.schoolName,
+        month: row.month,
+      });
   }
   return [
     'Assalamualaikum,',
     `This is a reminder that the fee for ${row.studentName} is still pending.`,
     `Amount Due: ${formatPkr(row.remaining)}`,
-    `Due Date: ${row.dueDate ? new Date(row.dueDate).toLocaleDateString('en-CA') : 'N/A'}`,
+    `Due Date: ${formatIsoDate(row.dueDate)}`,
     `Month: ${row.month}`,
     `School: ${row.schoolName}`,
     'Kindly make the payment at your earliest convenience.',
@@ -131,8 +136,9 @@ export default function FeeMessagingClient({ rows, classes }: Props) {
     rows: SerializedFeeRow[];
     skippedCount: number;
   } | null>(null);
-  const [message, setMessage] = useState('');
+  const [modalSelectedIds, setModalSelectedIds] = useState<Set<string>>(new Set());
   const [isDesktop, setIsDesktop] = useState(false);
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
 
   useEffect(() => {
     setIsDesktop(window.innerWidth >= 768);
@@ -149,6 +155,14 @@ export default function FeeMessagingClient({ rows, classes }: Props) {
       });
   }, [rows, feeSearch, feeClassFilter, feeStatusFilter]);
 
+  useEffect(() => {
+    const visible = new Set(feeMessagingRows.map((row) => row.studentId));
+    setSelectedIds((prev) => {
+      const next = new Set(Array.from(prev).filter((id) => visible.has(id)));
+      return next;
+    });
+  }, [feeMessagingRows]);
+
   const paidRows = useMemo(
     () => feeMessagingRows.filter((row) => row.feeStatus === 'PAID'),
     [feeMessagingRows]
@@ -164,7 +178,6 @@ export default function FeeMessagingClient({ rows, classes }: Props) {
   const openWhatsApp = (row: SerializedFeeRow) => {
     const recipient = toWaRecipient(row.whatsApp);
     if (!recipient) {
-      setMessage(`WhatsApp number missing for ${row.studentName}.`);
       return;
     }
     const text = row.feeStatus === 'PAID' ? buildPaidTemplate(row, paidTemplateBody) : buildReminderTemplate(row, reminderTemplateBody);
@@ -172,16 +185,57 @@ export default function FeeMessagingClient({ rows, classes }: Props) {
     window.open(url, '_blank', 'noopener,noreferrer');
   };
 
-  const openBulkModal = (mode: 'paid' | 'unpaid') => {
-    const sourceRows = mode === 'paid' ? paidRows : unpaidRows;
+  const toggleSelected = (studentId: string) => {
+    setSelectedIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(studentId)) next.delete(studentId);
+      else next.add(studentId);
+      return next;
+    });
+  };
+
+  const openBulkModal = (mode: 'paid' | 'unpaid', selectedOnly = false) => {
+    const source = mode === 'paid' ? paidRows : unpaidRows;
+    const sourceRows = selectedOnly
+      ? source.filter((row) => selectedIds.has(row.studentId))
+      : source;
     const rowsWithNumber = sourceRows.filter((row) => Boolean(toWaRecipient(row.whatsApp)));
     const skippedCount = sourceRows.length - rowsWithNumber.length;
     setBulkWhatsAppModal({
-      title: mode === 'paid' ? 'Send Confirmation to All Paid' : 'Send Reminder to All Unpaid',
+      title: mode === 'paid'
+        ? (selectedOnly ? 'Send Confirmation to Selected Paid' : 'Send Confirmation to All Paid')
+        : (selectedOnly ? 'Send Reminder to Selected Unpaid' : 'Send Reminder to All Unpaid'),
       mode,
       rows: rowsWithNumber,
       skippedCount,
     });
+    setModalSelectedIds(new Set(rowsWithNumber.map((row) => row.studentId)));
+  };
+
+  const toggleModalSelected = (studentId: string) => {
+    setModalSelectedIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(studentId)) next.delete(studentId);
+      else next.add(studentId);
+      return next;
+    });
+  };
+
+  const selectAllModalRows = () => {
+    if (!bulkWhatsAppModal) return;
+    setModalSelectedIds(new Set(bulkWhatsAppModal.rows.map((row) => row.studentId)));
+  };
+
+  const clearAllModalRows = () => {
+    setModalSelectedIds(new Set());
+  };
+
+  const openSelectedFromModal = () => {
+    if (!bulkWhatsAppModal || modalSelectedIds.size === 0) return;
+    for (const row of bulkWhatsAppModal.rows) {
+      if (!modalSelectedIds.has(row.studentId)) continue;
+      openWhatsApp(row);
+    }
   };
 
   return (
@@ -287,6 +341,22 @@ export default function FeeMessagingClient({ rows, classes }: Props) {
             >
               Send Confirmation to All Paid
             </button>
+            <button
+              type="button"
+              onClick={() => openBulkModal('unpaid', true)}
+              disabled={selectedIds.size === 0}
+              className="inline-flex h-11 items-center justify-center rounded-xl bg-[#fff7ed] px-3 text-xs font-semibold text-[#9a5a00] ring-1 ring-[#fed7aa] transition hover:bg-[#ffedd5] disabled:cursor-not-allowed disabled:opacity-50 lg:h-10"
+            >
+              Send Reminder to Selected
+            </button>
+            <button
+              type="button"
+              onClick={() => openBulkModal('paid', true)}
+              disabled={selectedIds.size === 0}
+              className="inline-flex h-11 items-center justify-center rounded-xl bg-[#ecfdf3] px-3 text-xs font-semibold text-[#15803d] ring-1 ring-[#bbf7d0] transition hover:bg-[#dcfce7] disabled:cursor-not-allowed disabled:opacity-50 lg:h-10"
+            >
+              Send Confirmation to Selected
+            </button>
           </div>
         </div>
 
@@ -295,6 +365,15 @@ export default function FeeMessagingClient({ rows, classes }: Props) {
             <div key={row.studentId} className="rounded-xl border border-[#edf0f2] bg-[#fafafa] p-3">
               <div className="flex items-start justify-between gap-2">
                 <div className="min-w-0">
+                  <label className="mb-1 inline-flex items-center gap-2 text-xs text-[#6b7280]">
+                    <input
+                      type="checkbox"
+                      checked={selectedIds.has(row.studentId)}
+                      onChange={() => toggleSelected(row.studentId)}
+                      className="h-3.5 w-3.5 accent-[#004649]"
+                    />
+                    Select
+                  </label>
                   <p className="truncate text-sm font-semibold text-[#111827]">{row.studentName}</p>
                   <p className="text-xs text-[#6b7280]">{row.classLabel}</p>
                 </div>
@@ -305,7 +384,7 @@ export default function FeeMessagingClient({ rows, classes }: Props) {
               <div className="mt-2 grid grid-cols-2 gap-2 text-xs text-[#4b5563]">
                 <p>Amount: <span className="font-semibold text-[#111827]">{formatPkr(row.amount)}</span></p>
                 <p>Remaining: <span className="font-semibold text-[#111827]">{formatPkr(row.remaining)}</span></p>
-                <p>Due: <span className="font-semibold text-[#111827]">{row.dueDate ? new Date(row.dueDate).toLocaleDateString('en-CA') : 'N/A'}</span></p>
+                <p>Due: <span className="font-semibold text-[#111827]">{formatIsoDate(row.dueDate)}</span></p>
                 <p>Month: <span className="font-semibold text-[#111827]">{row.month || 'N/A'}</span></p>
               </div>
               <button
@@ -340,7 +419,17 @@ export default function FeeMessagingClient({ rows, classes }: Props) {
             <tbody className="divide-y divide-[#f1f5f9]">
               {feeMessagingRows.map((row) => (
                 <tr key={row.studentId} className="hover:bg-[#fafafa]">
-                  <td className="px-3 py-3 font-medium text-[#111827]">{row.studentName}</td>
+                  <td className="px-3 py-3 font-medium text-[#111827]">
+                    <label className="inline-flex items-center gap-2">
+                      <input
+                        type="checkbox"
+                        checked={selectedIds.has(row.studentId)}
+                        onChange={() => toggleSelected(row.studentId)}
+                        className="h-3.5 w-3.5 accent-[#004649]"
+                      />
+                      <span>{row.studentName}</span>
+                    </label>
+                  </td>
                   <td className="px-3 py-3 text-[#64748b]">{row.classLabel}</td>
                   <td className="px-3 py-3">
                     <span className={`rounded-full px-2.5 py-1 text-[10px] font-bold ${feeBadgeClass(row.feeStatus)}`}>
@@ -351,7 +440,7 @@ export default function FeeMessagingClient({ rows, classes }: Props) {
                     {formatPkr(row.amount)} / <span className="font-semibold">{formatPkr(row.remaining)}</span>
                   </td>
                   <td className="px-3 py-3 text-[#64748b]">
-                    {row.dueDate ? new Date(row.dueDate).toLocaleDateString('en-CA') : 'N/A'}
+                    {formatIsoDate(row.dueDate)}
                   </td>
                   <td className="px-3 py-3 text-[#64748b]">{row.whatsApp ?? 'No number'}</td>
                   <td className="px-3 py-3 text-right">
@@ -398,11 +487,47 @@ export default function FeeMessagingClient({ rows, classes }: Props) {
               </button>
             </div>
 
+            <div className="flex flex-wrap items-center justify-between gap-2 border-b border-[#eef2f7] px-5 py-3">
+              <div className="flex items-center gap-2">
+                <button
+                  type="button"
+                  onClick={selectAllModalRows}
+                  className="rounded-lg bg-[#f3f4f6] px-2.5 py-1.5 text-xs font-semibold text-[#374151] hover:bg-[#e5e7eb]"
+                >
+                  Select All
+                </button>
+                <button
+                  type="button"
+                  onClick={clearAllModalRows}
+                  className="rounded-lg bg-[#f3f4f6] px-2.5 py-1.5 text-xs font-semibold text-[#374151] hover:bg-[#e5e7eb]"
+                >
+                  Unselect All
+                </button>
+              </div>
+              <button
+                type="button"
+                onClick={openSelectedFromModal}
+                disabled={modalSelectedIds.size === 0}
+                className="rounded-lg bg-[#16a34a] px-3 py-1.5 text-xs font-semibold text-white hover:bg-[#15803d] disabled:cursor-not-allowed disabled:opacity-50"
+              >
+                Open Selected ({modalSelectedIds.size})
+              </button>
+            </div>
+
             <div className="max-h-[66vh] space-y-2 overflow-y-auto p-4 sm:max-h-[60vh]">
               {bulkWhatsAppModal.rows.map((row) => (
                 <div key={row.studentId} className="rounded-xl border border-[#e5e7eb] bg-white p-3">
                   <div className="flex flex-wrap items-center justify-between gap-2">
                     <div className="min-w-0">
+                      <label className="mb-1 inline-flex items-center gap-2 text-xs text-[#64748b]">
+                        <input
+                          type="checkbox"
+                          checked={modalSelectedIds.has(row.studentId)}
+                          onChange={() => toggleModalSelected(row.studentId)}
+                          className="h-3.5 w-3.5 accent-[#004649]"
+                        />
+                        Select
+                      </label>
                       <p className="truncate text-sm font-semibold text-[#111827]">{row.studentName}</p>
                       <p className="text-xs text-[#64748b]">{row.classLabel}</p>
                     </div>
@@ -413,7 +538,7 @@ export default function FeeMessagingClient({ rows, classes }: Props) {
                   <div className="mt-2 grid grid-cols-1 gap-1 text-xs text-[#4b5563] sm:grid-cols-2">
                     <p>Amount: <span className="font-semibold text-[#111827]">{formatPkr(row.amount)}</span></p>
                     <p>Remaining: <span className="font-semibold text-[#111827]">{formatPkr(row.remaining)}</span></p>
-                    <p>Due: <span className="font-semibold text-[#111827]">{row.dueDate ? new Date(row.dueDate).toLocaleDateString('en-CA') : 'N/A'}</span></p>
+                    <p>Due: <span className="font-semibold text-[#111827]">{formatIsoDate(row.dueDate)}</span></p>
                     <p>WhatsApp: <span className="font-semibold text-[#111827]">{row.whatsApp ?? 'N/A'}</span></p>
                   </div>
                   <button

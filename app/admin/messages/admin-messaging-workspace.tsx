@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { FormEvent, useEffect, useMemo, useRef, useState } from 'react';
 import {
   CircleDot,
   Trash2,
@@ -18,9 +18,10 @@ import {
 
 type Role = 'ADMIN' | 'TEACHER' | 'STUDENT' | 'PARENT';
 type TabKey = 'messages' | 'compose';
-type ComposeMode = 'individual_student' | 'class' | 'announcement';
+type ComposeMode = 'individual_student' | 'individual_teacher' | 'class' | 'announcement';
 
 type StudentOption = {
+  classId: string | null;
   user: { id: string; fullName: string };
   class: { name: string; section: string } | null;
 };
@@ -107,7 +108,12 @@ function messageStatus(readFlags: boolean[]): 'Sent' | 'Delivered' | 'Read' {
   return 'Sent';
 }
 
-function buildConversations(receivedMessages: ReceivedMessage[], sentMessages: SentMessage[], localOutgoing: Record<string, ChatMessage[]>) {
+function buildConversations(
+  receivedMessages: ReceivedMessage[],
+  sentMessages: SentMessage[],
+  localOutgoing: Record<string, ChatMessage[]>,
+  recipientMeta: Map<string, { fullName: string; role: Role }>
+) {
   const grouped = new Map<string, Conversation>();
 
   for (const row of receivedMessages) {
@@ -178,15 +184,30 @@ function buildConversations(receivedMessages: ReceivedMessage[], sentMessages: S
 
   for (const [participantId, list] of Object.entries(localOutgoing)) {
     const current = grouped.get(participantId);
-    if (!current) continue;
-    current.messages.push(...list);
-
     const latestLocal = list.reduce((acc, msg) => {
       if (!acc) return msg;
       return new Date(msg.createdAt).getTime() > new Date(acc.createdAt).getTime() ? msg : acc;
     }, null as ChatMessage | null);
 
-    if (latestLocal && new Date(latestLocal.createdAt).getTime() > new Date(current.latestAt).getTime()) {
+    if (!latestLocal) continue;
+
+    if (!current) {
+      const meta = recipientMeta.get(participantId);
+      grouped.set(participantId, {
+        participantId,
+        participantName: meta?.fullName ?? 'User',
+        participantRole: meta?.role ?? 'STUDENT',
+        unreadCount: 0,
+        latestAt: latestLocal.createdAt,
+        latestPreview: latestLocal.body,
+        messages: [...list]
+      });
+      continue;
+    }
+
+    current.messages.push(...list);
+
+    if (new Date(latestLocal.createdAt).getTime() > new Date(current.latestAt).getTime()) {
       current.latestAt = latestLocal.createdAt;
       current.latestPreview = latestLocal.body;
     }
@@ -205,15 +226,13 @@ export default function AdminMessagingWorkspace({
   classes,
   receivedMessages,
   sentMessages,
-  presetRecipientId,
-  composeAction
+  presetRecipientId
 }: {
   students: StudentOption[];
   classes: ClassOption[];
   receivedMessages: ReceivedMessage[];
   sentMessages: SentMessage[];
   presetRecipientId: string;
-  composeAction: (formData: FormData) => Promise<void>;
 }) {
   const [activeTab, setActiveTab] = useState<TabKey>('messages');
   const [receivedState, setReceivedState] = useState(receivedMessages);
@@ -229,10 +248,24 @@ export default function AdminMessagingWorkspace({
   const [studentQuery, setStudentQuery] = useState('');
   const [studentRecipientId, setStudentRecipientId] = useState(presetRecipientId || '');
   const [classId, setClassId] = useState('');
+  const [composeSubject, setComposeSubject] = useState('');
+  const [composeBody, setComposeBody] = useState('');
+  const [composeError, setComposeError] = useState('');
+
+  const recipientMetaMap = useMemo(
+    () =>
+      new Map(
+        students.map((student) => [
+          student.user.id,
+          { fullName: student.user.fullName, role: 'STUDENT' as const }
+        ] as const)
+      ),
+    [students]
+  );
 
   const conversations = useMemo(
-    () => buildConversations(receivedState, sentState, localOutgoing),
-    [receivedState, sentState, localOutgoing]
+    () => buildConversations(receivedState, sentState, localOutgoing, recipientMetaMap),
+    [receivedState, sentState, localOutgoing, recipientMetaMap]
   );
 
   const filteredConversations = useMemo(() => {
@@ -252,8 +285,6 @@ export default function AdminMessagingWorkspace({
       return text.includes(studentQuery.toLowerCase());
     });
   }, [students, studentQuery]);
-
-  const isTyping = draft.trim().length > 0;
 
   // Auto-scroll to latest message when active conversation messages change
   useEffect(() => {
@@ -301,12 +332,120 @@ export default function AdminMessagingWorkspace({
         return;
       }
 
+      const created = (await response.json().catch(() => null)) as { id?: string; createdAt?: string } | null;
+      const createdId = created?.id ?? `sent-${Date.now()}`;
+      const createdAt = created?.createdAt ?? new Date().toISOString();
+
       setLocalOutgoing((prev) => ({
         ...prev,
-        [activeConversation.participantId]: (prev[activeConversation.participantId] ?? []).map((msg) =>
-          msg.id === tempId ? { ...msg, pending: false, status: 'Delivered' } : msg
-        )
+        [activeConversation.participantId]: (prev[activeConversation.participantId] ?? []).filter((msg) => msg.id !== tempId)
       }));
+      setSentState((prev) => [
+        {
+          id: createdId,
+          subject: optimistic.subject,
+          body,
+          createdAt,
+          recipients: [
+            {
+              isRead: false,
+              user: {
+                id: activeConversation.participantId,
+                fullName: activeConversation.participantName,
+                role: activeConversation.participantRole
+              }
+            }
+          ]
+        },
+        ...prev.filter((item) => item.id !== createdId)
+      ]);
+    } finally {
+      setSending(false);
+    }
+  }
+
+  async function handleComposeSubmit(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    setComposeError('');
+
+    const subject = composeSubject.trim();
+    const body = composeBody.trim();
+    if (!subject || !body) {
+      setComposeError('Subject and message are required.');
+      return;
+    }
+
+    let recipientIds: string[] = [];
+    if (composeMode === 'individual_student') {
+      if (!studentRecipientId) {
+        setComposeError('Please select a student.');
+        return;
+      }
+      recipientIds = [studentRecipientId];
+    } else if (composeMode === 'class') {
+      if (!classId) {
+        setComposeError('Please select a class.');
+        return;
+      }
+      recipientIds = students.filter((item) => item.classId === classId).map((item) => item.user.id);
+    } else if (composeMode === 'announcement') {
+      recipientIds = students.map((item) => item.user.id);
+    } else {
+      setComposeError('Recipient mode is not supported here yet.');
+      return;
+    }
+
+    recipientIds = Array.from(new Set(recipientIds.filter(Boolean)));
+    if (!recipientIds.length) {
+      setComposeError('No recipients found for selected option.');
+      return;
+    }
+
+    setSending(true);
+    try {
+      const response = await fetch('/api/messages', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ subject, body, recipientIds })
+      });
+      if (!response.ok) {
+        const payload = (await response.json().catch(() => null)) as { error?: unknown } | null;
+        setComposeError(typeof payload?.error === 'string' ? payload.error : 'Failed to send message.');
+        return;
+      }
+
+      const created = (await response.json().catch(() => null)) as { id?: string; createdAt?: string } | null;
+      const createdId = created?.id ?? `sent-${Date.now()}`;
+      const createdAt = created?.createdAt ?? new Date().toISOString();
+      const recipientMap = new Map(students.map((item) => [item.user.id, item] as const));
+
+      setSentState((prev) => [
+        {
+          id: createdId,
+          subject,
+          body,
+          createdAt,
+          recipients: recipientIds.map((id) => ({
+            isRead: false,
+            user: {
+              id,
+              fullName: recipientMap.get(id)?.user.fullName ?? 'Student',
+              role: 'STUDENT' as const
+            }
+          }))
+        },
+        ...prev.filter((item) => item.id !== createdId)
+      ]);
+
+      setComposeSubject('');
+      setComposeBody('');
+      setStudentQuery('');
+      setStudentRecipientId('');
+      setClassId('');
+      setActiveTab('messages');
+      if (composeMode === 'individual_student' && recipientIds[0]) {
+        setActiveConversationId(recipientIds[0]);
+      }
     } finally {
       setSending(false);
     }
@@ -531,14 +670,15 @@ export default function AdminMessagingWorkspace({
               <p className="mt-1 text-sm text-[#64748b]">Send clear updates to one student, class, or all students.</p>
             </div>
 
-            <form action={composeAction} className="space-y-5 p-4 sm:p-5">
+            <form onSubmit={(event) => void handleComposeSubmit(event)} className="space-y-5 p-4 sm:p-5">
               <div className="rounded-2xl border border-[#deebe7] bg-[#fbfefe] p-4">
                 <label className="mb-2 block text-xs font-semibold uppercase tracking-wide text-[#475569]">Subject</label>
                 <div className="flex items-center gap-2 rounded-xl border border-[#d1e2dc] bg-white px-3 shadow-sm">
                   <Tag className="h-4 w-4 text-[#6b7280]" />
                   <input
-                    name="subject"
                     required
+                    value={composeSubject}
+                    onChange={(event) => setComposeSubject(event.target.value)}
                     placeholder="Fee reminder for April"
                     className="h-12 w-full bg-transparent text-sm text-[#111827] outline-none placeholder:text-[#9ca3af]"
                   />
@@ -585,7 +725,6 @@ export default function AdminMessagingWorkspace({
                     All Students
                   </button>
                 </div>
-                <input type="hidden" name="targetMode" value={composeMode} />
               </div>
 
               {composeMode === 'individual_student' ? (
@@ -625,9 +764,6 @@ export default function AdminMessagingWorkspace({
                       })}
                     </div>
                   </div>
-                  <input type="hidden" name="studentRecipientId" value={studentRecipientId} />
-                  <input type="hidden" name="teacherRecipientId" value="" />
-                  <input type="hidden" name="classId" value="" />
                 </div>
               ) : null}
 
@@ -653,17 +789,11 @@ export default function AdminMessagingWorkspace({
                       );
                     })}
                   </div>
-                  <input type="hidden" name="classId" value={classId} />
-                  <input type="hidden" name="studentRecipientId" value="" />
-                  <input type="hidden" name="teacherRecipientId" value="" />
                 </div>
               ) : null}
 
               {composeMode === 'announcement' ? (
                 <>
-                  <input type="hidden" name="studentRecipientId" value="" />
-                  <input type="hidden" name="teacherRecipientId" value="" />
-                  <input type="hidden" name="classId" value="" />
                   <div className="rounded-xl border border-dashed border-[#7dcdb6] bg-[#e7f6f2] p-3 text-sm text-[#004649]">
                     This announcement will be sent to all active students.
                   </div>
@@ -673,13 +803,19 @@ export default function AdminMessagingWorkspace({
               <div className="rounded-2xl border border-[#deebe7] bg-[#fbfefe] p-4">
                 <label className="mb-1.5 block text-xs font-semibold uppercase tracking-wide text-[#475569]">Message</label>
                 <textarea
-                  name="body"
                   required
+                  value={composeBody}
+                  onChange={(event) => setComposeBody(event.target.value)}
                   rows={8}
                   placeholder="Write a clear, polite and actionable message..."
                   className="w-full rounded-xl border border-[#d7e3df] bg-white p-3 text-sm text-[#111827] outline-none focus:border-[#004649]"
                 />
               </div>
+              {composeError ? (
+                <div className="rounded-xl border border-[#fecaca] bg-[#fef2f2] px-3 py-2 text-sm text-[#b91c1c]">
+                  {composeError}
+                </div>
+              ) : null}
 
               <div className="flex flex-wrap items-center justify-between gap-2 rounded-2xl border border-[#deebe7] bg-[#fbfefe] p-3">
                 <div className="flex items-center gap-2">
@@ -693,9 +829,9 @@ export default function AdminMessagingWorkspace({
                   </button>
                 </div>
 
-                <button className="inline-flex items-center gap-2 rounded-xl bg-[#004649] px-5 py-2.5 text-sm font-semibold text-white shadow-sm hover:bg-[#005a5e]">
+                <button disabled={sending} className="inline-flex items-center gap-2 rounded-xl bg-[#004649] px-5 py-2.5 text-sm font-semibold text-white shadow-sm hover:bg-[#005a5e] disabled:cursor-not-allowed disabled:opacity-60">
                   <SendHorizontal className="h-4 w-4" />
-                  Send Message
+                  {sending ? 'Sending...' : 'Send Message'}
                 </button>
               </div>
             </form>

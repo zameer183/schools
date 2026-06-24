@@ -1,4 +1,4 @@
-﻿# Stitch HMS - Full-Stack Student Management System
+# Stitch HMS - Full-Stack Student Management System
 
 Production-ready HMS built with Next.js App Router, TypeScript, Tailwind CSS, Prisma, and PostgreSQL.
 
@@ -34,6 +34,7 @@ Production-ready HMS built with Next.js App Router, TypeScript, Tailwind CSS, Pr
    cp .env.example .env
    ```
    Update `DATABASE_URL` and `JWT_SECRET`.
+   For Vercel parity during local testing, use `.env.local` as the working file and keep `.env.vercel.production` as the production snapshot reference.
 3. Generate Prisma client:
    ```bash
    npm run prisma:generate
@@ -52,7 +53,7 @@ Production-ready HMS built with Next.js App Router, TypeScript, Tailwind CSS, Pr
    ```
 
 ## Demo Credentials
-- Admin: `admin@stitchhms.com` / `Pass@123`
+- Admin: `manarahinstitute01@gmail.com` / `Pass@123`
 - Teacher: `teacher@stitchhms.com` / `Pass@123`
 - Student: `student@stitchhms.com` / `Pass@123`
 - Parent: `parent@stitchhms.com` / `Pass@123`
@@ -69,3 +70,4 @@ Production-ready HMS built with Next.js App Router, TypeScript, Tailwind CSS, Pr
 - Strict role guards via middleware + API-level RBAC checks
 - Prisma relational modeling with audit fields and unique constraints
 - Easy extension path for S3/Blob storage adapter and PDF generation microservice
+

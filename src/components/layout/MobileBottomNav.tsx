@@ -81,7 +81,7 @@ export function MobileBottomNav({
               className={`relative flex flex-col items-center justify-center gap-0.5 rounded-2xl px-1 text-[10px] font-medium leading-tight transition ${
                 role === 'TEACHER'
                   ? active
-                    ? 'text-[#0D9488]'
+                    ? 'text-[#084750]'
                     : 'text-[#64748B] hover:text-[#0F172A]'
                   : active
                     ? 'bg-[#E6F4F1] text-[#1F5A5C]'
@@ -90,12 +90,12 @@ export function MobileBottomNav({
             >
               <Icon className={`h-5 w-5 ${
                 role === 'TEACHER'
-                  ? active ? 'text-[#0D9488]' : 'text-[#94A3B8]'
+                  ? active ? 'text-[#084750]' : 'text-[#94A3B8]'
                   : active ? 'text-[#1F5A5C]' : 'text-[#64748B]'
               }`} />
               <span className="truncate max-w-full">{compactLabel[item.label] ?? item.label}</span>
               {active ? (
-                <span className={`absolute -bottom-1 h-1 rounded-full ${role === 'TEACHER' ? 'w-1 bg-[#0D9488] shadow-[0_0_10px_rgba(13,148,136,0.3)]' : 'w-8 bg-[#1F5A5C]'}`} />
+                <span className={`absolute -bottom-1 h-1 rounded-full ${role === 'TEACHER' ? 'w-1 bg-[#084750] shadow-[0_0_10px_rgba(8,71,80,0.3)]' : 'w-8 bg-[#1F5A5C]'}`} />
               ) : null}
             </Link>
           );

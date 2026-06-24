@@ -40,20 +40,29 @@ export default async function ParentNotificationsPage() {
     );
   }
 
-  const notifications = await prisma.notification.findMany({
-    where: {
-      OR: [{ userId: session.id }, { studentId: { in: context.childIds } }]
-    },
-    include: {
-      student: { include: { user: { select: { fullName: true } } } },
-      user: { select: { fullName: true } }
-    },
-    orderBy: { createdAt: 'desc' },
-    take: 50
-  });
+  const notificationWhere = {
+    OR: [{ userId: session.id }, { studentId: { in: context.childIds } }]
+  };
 
-  const unreadCount = notifications.filter((item) => !item.isRead).length;
-  const readCount = notifications.length - unreadCount;
+  const [notifications, unreadCount] = await Promise.all([
+    prisma.notification.findMany({
+      where: notificationWhere,
+      include: {
+        student: { include: { user: { select: { fullName: true } } } },
+        user: { select: { fullName: true } }
+      },
+      orderBy: { createdAt: 'desc' },
+      take: 20
+    }),
+    prisma.notification.count({
+      where: {
+        ...notificationWhere,
+        isRead: false
+      }
+    })
+  ]);
+
+  const readCount = notifications.filter((item) => item.isRead).length;
   const toDate = (value: Date | string) => (value instanceof Date ? value : new Date(value));
 
   return (

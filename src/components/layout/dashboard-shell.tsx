@@ -7,12 +7,14 @@ import { usePathname, useRouter } from 'next/navigation';
 import { useEffect, useMemo, useTransition, useState } from 'react';
 import {
   BarChart3, Bell, BookOpen, CalendarCheck2, DollarSign,
-  Home, LogOut, MessageSquare, Search, Settings, Users, ClipboardList, Zap, ShieldCheck
+  Home, LogOut, Menu, MessageSquare, Settings, Users, ClipboardList, Zap, ShieldCheck
 } from 'lucide-react';
 import { LanguageSwitcher } from '@/components/language/language-switcher';
 import { useLanguage } from '@/components/language/language-provider';
 import { MobileDrawer } from './MobileDrawer';
 import { MobileBottomNav } from './MobileBottomNav';
+
+const UNREAD_POLL_INTERVAL_MS = 120_000;
 
 type NavItem = {
   href: string;
@@ -167,6 +169,7 @@ export function DashboardShell({
   useEffect(() => {
     let cancelled = false;
     let shouldStop = false;
+    let intervalId: number | null = null;
 
     const syncUnreadCounts = async () => {
       if (document.hidden || shouldStop) return;
@@ -198,17 +201,60 @@ export function DashboardShell({
       }
     };
 
-    void syncUnreadCounts();
-    const timer = window.setInterval(() => {
-      if (shouldStop) return;
+    const startPolling = () => {
+      if (intervalId !== null || shouldStop || document.hidden) return;
+      intervalId = window.setInterval(() => {
+        if (shouldStop || document.hidden) return;
+        void syncUnreadCounts();
+      }, UNREAD_POLL_INTERVAL_MS);
+    };
+
+    const stopPolling = () => {
+      if (intervalId === null) return;
+      window.clearInterval(intervalId);
+      intervalId = null;
+    };
+
+    const handleVisibilityChange = () => {
+      if (document.hidden) {
+        stopPolling();
+        return;
+      }
       void syncUnreadCounts();
-    }, 30000);
+      startPolling();
+    };
+
+    void syncUnreadCounts();
+    startPolling();
+    document.addEventListener('visibilitychange', handleVisibilityChange);
 
     return () => {
       cancelled = true;
-      window.clearInterval(timer);
+      stopPolling();
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
     };
   }, []);
+
+  useEffect(() => {
+    const messagesHref =
+      role === 'ADMIN' ? '/admin/messages' :
+      role === 'TEACHER' ? '/teacher/messages' :
+      role === 'STUDENT' ? '/student/messages' :
+      '';
+    const notificationsHref =
+      role === 'ADMIN' ? '/admin/notifications' :
+      role === 'TEACHER' ? '/teacher/notifications' :
+      role === 'STUDENT' ? '/student/notifications' :
+      role === 'PARENT' ? '/parent/notifications' :
+      '';
+
+    const isMessagesPage = messagesHref && (pathname === messagesHref || pathname.startsWith(`${messagesHref}/`));
+    const isNotificationsPage = notificationsHref && (pathname === notificationsHref || pathname.startsWith(`${notificationsHref}/`));
+
+    if (!document.hidden && (isMessagesPage || isNotificationsPage)) {
+      router.refresh();
+    }
+  }, [pathname, role, router]);
 
   useEffect(() => {
     const messagesHref =
@@ -244,7 +290,7 @@ export function DashboardShell({
       <aside className="fixed left-0 top-0 z-40 hidden h-screen w-[220px] flex-col border-r border-[#e2e8e8]/60 bg-[#f3f4f5] md:flex print:hidden">
         {/* Branding */}
         <div className="border-b border-[#e2e8e8] px-5 pb-5 pt-6">
-          <Link href={instituteProfilePath}>
+          <Link href={instituteProfilePath} prefetch={false}>
             <Image
               src="/manarah-logo.png"
               alt="Manarah Institute logo"
@@ -319,18 +365,15 @@ export function DashboardShell({
         {!hideHeader ? (
         <header className="fixed left-0 right-0 top-0 z-20 flex h-16 items-center justify-between border-b border-[#E2E8F0] bg-white/85 px-5 shadow-[0_4px_14px_rgba(15,23,42,0.05)] backdrop-blur-xl md:left-[220px] md:px-6 print:hidden">
           <div className="flex min-w-0 items-center">
-            <Link href={instituteProfilePath} className="flex items-center gap-2 md:hidden">
-              <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-gradient-to-br from-[#0D9488] to-[#4F46E5] shadow-sm">
-                <Image
-                  src="/manarah-mark.png"
-                  alt="Manarah Institute logo"
-                  width={512}
-                  height={512}
-                  className="h-5 w-5 object-contain"
-                  priority
-                />
-              </span>
-              <span className="text-lg font-extrabold tracking-tight text-[#0F172A]">Manarah</span>
+            <Link href={instituteProfilePath} prefetch={false} className="flex items-center md:hidden">
+              <Image
+                src="/manarah-logo.png"
+                alt="Manarah Institute logo"
+                width={666}
+                height={245}
+                className="h-9 w-auto max-w-[142px] object-contain"
+                priority
+              />
             </Link>
             <div className="hidden md:block">
               <p className="text-[10px] font-semibold uppercase tracking-[0.15em] text-[#6f7979]">{roleLabel}</p>
@@ -340,16 +383,17 @@ export function DashboardShell({
           <div className="flex min-w-0 items-center gap-2 sm:gap-3">
             <button
               className="inline-flex h-10 w-10 items-center justify-center rounded-full bg-[#F1F5F9] text-[#475569] transition hover:bg-[#E2E8F0] md:hidden"
-              aria-label="Open menu"
+              aria-label="Open sidebar menu"
               onClick={() => setSidebarOpen(true)}
             >
-              <Search className="h-5 w-5" />
+              <Menu className="h-5 w-5" />
             </button>
             <span className="hidden max-w-[10rem] truncate text-sm font-medium text-[#3d4a4a] md:inline">
               {fullName}
             </span>
             <Link
               href={notificationPath}
+              prefetch={false}
               className="relative inline-flex h-10 w-10 items-center justify-center rounded-full bg-[#F1F5F9] text-[#475569] hover:bg-[#E2E8F0]"
               aria-label="Notifications"
               title="Notifications"

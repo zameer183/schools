@@ -1,3 +1,4 @@
+import { createHash } from 'crypto';
 import { hash } from 'bcryptjs';
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
@@ -13,8 +14,10 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: 'Password must be at least 6 characters.' }, { status: 400 });
   }
 
-  const record = await prisma.passwordResetToken.findUnique({
-    where: { token },
+  const tokenHash = createHash('sha256').update(token).digest('hex');
+
+  const record = await prisma.passwordResetToken.findFirst({
+    where: { token: { in: [tokenHash, token] } },
     select: { id: true, userId: true, expiresAt: true, usedAt: true },
   });
 

@@ -1,6 +1,7 @@
 'use client';
 
 import { useCallback, useEffect, useMemo, useState } from 'react';
+import { AlertCircle, CalendarCheck2, CheckCircle2, Clock3, NotebookPen, Send, UserRound, Users2, X, XCircle } from 'lucide-react';
 
 type AttendanceStatus = 'PRESENT' | 'ABSENT' | 'LATE' | 'EXCUSED';
 
@@ -8,6 +9,8 @@ type ClassItem = { id: string; name: string; section: string };
 type StudentItem = {
   id: string;
   admissionNo: string;
+  whatsApp?: string | null;
+  guardianPhone?: string | null;
   user: { fullName: string; email: string };
   class: null | { id?: string; name: string; section: string };
 };
@@ -38,7 +41,34 @@ type StaffAttendanceRow = {
   note: string | null;
 };
 
-const statusOptions: AttendanceStatus[] = ['PRESENT', 'ABSENT', 'LATE', 'EXCUSED'];
+const statusLabel: Record<AttendanceStatus, string> = {
+  PRESENT: 'Present',
+  ABSENT: 'Absent',
+  LATE: 'Late',
+  EXCUSED: 'Excused'
+};
+
+const statusStyle: Record<AttendanceStatus, string> = {
+  PRESENT: 'bg-[#dcfce7] text-[#166534] border-[#bbf7d0]',
+  ABSENT: 'bg-[#fee2e2] text-[#991b1b] border-[#fecaca]',
+  LATE: 'bg-[#fef3c7] text-[#92400e] border-[#fde68a]',
+  EXCUSED: 'bg-[#e0ecff] text-[#1e3a8a] border-[#bfd3ff]'
+};
+
+const quickStatusPills: Array<{ label: string; value: AttendanceStatus }> = [
+  { label: 'Present', value: 'PRESENT' },
+  { label: 'Absent', value: 'ABSENT' },
+  { label: 'Leave', value: 'EXCUSED' }
+];
+
+const dayNames = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
+
+const calendarStatusStyle: Record<AttendanceStatus, { cell: string; dot: string }> = {
+  PRESENT: { cell: 'bg-[#16a34a] text-white', dot: 'bg-[#16a34a]' },
+  ABSENT: { cell: 'bg-[#dc2626] text-white', dot: 'bg-[#dc2626]' },
+  LATE: { cell: 'bg-[#d97706] text-white', dot: 'bg-[#d97706]' },
+  EXCUSED: { cell: 'bg-[#2E2B78] text-white', dot: 'bg-[#2E2B78]' }
+};
 
 function fmtDate(date: Date) {
   return date.toISOString().slice(0, 10);
@@ -48,6 +78,29 @@ function rangeStart(date: string, daysBack: number) {
   const base = new Date(date);
   base.setDate(base.getDate() - daysBack);
   return fmtDate(base);
+}
+
+function monthStart(date: string) {
+  return `${new Date(date).toISOString().slice(0, 7)}-01`;
+}
+
+function monthEnd(date: string) {
+  const base = new Date(date);
+  return fmtDate(new Date(base.getFullYear(), base.getMonth() + 1, 0));
+}
+
+function daysInMonth(year: number, month: number) {
+  return new Date(year, month, 0).getDate();
+}
+
+function firstDayOffset(year: number, month: number) {
+  const day = new Date(year, month - 1, 1).getDay();
+  return day === 0 ? 6 : day - 1;
+}
+
+function shiftMonthKey(date: string, delta: number) {
+  const base = new Date(date);
+  return fmtDate(new Date(base.getFullYear(), base.getMonth() + delta, 1));
 }
 
 export default function TeacherAttendancePage() {
@@ -69,6 +122,8 @@ export default function TeacherAttendancePage() {
   const [saving, setSaving] = useState(false);
   const [loading, setLoading] = useState(true);
   const [broadcasting, setBroadcasting] = useState(false);
+  const [sendFeedback, setSendFeedback] = useState('');
+  const [messageChannelPicker, setMessageChannelPicker] = useState<AttendanceStatus | null>(null);
 
   const loadBaseData = useCallback(async () => {
     setLoading(true);
@@ -109,12 +164,12 @@ export default function TeacherAttendancePage() {
       const [dailyRes, weeklyRes, monthlyRes] = await Promise.all([
         fetch(`/api/attendance?classId=${selectedClassId}&date=${date}`),
         fetch(`/api/attendance?classId=${selectedClassId}&from=${rangeStart(date, 6)}&to=${date}`),
-        fetch(`/api/attendance?classId=${selectedClassId}&from=${new Date(date).toISOString().slice(0, 7)}-01&to=${date}`)
+        fetch(`/api/attendance?classId=${selectedClassId}&from=${monthStart(date)}&to=${monthEnd(date)}`)
       ]);
       const [myDailyStaffRes, myWeeklyStaffRes, myMonthlyStaffRes] = await Promise.all([
         fetch(`/api/staff-attendance?date=${date}`),
         fetch(`/api/staff-attendance?from=${rangeStart(date, 6)}&to=${date}`),
-        fetch(`/api/staff-attendance?from=${new Date(date).toISOString().slice(0, 7)}-01&to=${date}`)
+        fetch(`/api/staff-attendance?from=${monthStart(date)}&to=${monthEnd(date)}`)
       ]);
 
       const dailyJson = await dailyRes.json();
@@ -242,19 +297,27 @@ export default function TeacherAttendancePage() {
     setBroadcasting(true);
     setMessage('');
     try {
+      const studentIds = classStudents
+        .filter((student) => (records[student.id]?.status ?? 'PRESENT') === status)
+        .map((student) => student.id);
+
       const res = await fetch('/api/attendance/status-message', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ classId: selectedClassId, date, status })
+        body: JSON.stringify({ classId: selectedClassId, date, status, studentIds })
       });
       const data = await res.json().catch(() => ({}));
       if (!res.ok) {
         setMessage(data?.error ?? 'Unable to send status message.');
+        setSendFeedback('');
         return;
       }
       setMessage(`${data?.sent ?? 0} ${status} attendance message(s) sent in-app.`);
+      setSendFeedback(`🔔 ${data?.sent ?? 0} ${statusLabel[status]} message(s) sent successfully.`);
+      setTimeout(() => setSendFeedback(''), 3500);
     } catch {
       setMessage('Network error while sending attendance messages.');
+      setSendFeedback('');
     } finally {
       setBroadcasting(false);
     }
@@ -287,68 +350,159 @@ export default function TeacherAttendancePage() {
     }
   };
 
+  const normalizePhone = (raw?: string | null) => {
+    if (!raw) return null;
+    let digits = raw.replace(/\D/g, '');
+    while (digits.startsWith('00')) digits = digits.slice(2);
+    if (digits.startsWith('92')) {
+      digits = digits.slice(2);
+      if (digits.startsWith('0')) digits = digits.slice(1);
+    } else if (digits.startsWith('0')) {
+      digits = digits.slice(1);
+    }
+    if (digits.length === 11 && digits.startsWith('03')) digits = digits.slice(1);
+    if (digits.length === 10 && digits.startsWith('3')) return `92${digits}`;
+    return null;
+  };
+
+  const openWhatsAppMessages = (status: AttendanceStatus) => {
+    if (!selectedClassId) {
+      setMessage('Select class first.');
+      return;
+    }
+
+    const targets = classStudents
+      .filter((student) => (records[student.id]?.status ?? 'PRESENT') === status)
+      .map((student) => {
+        const phone = normalizePhone(student.whatsApp || student.guardianPhone);
+        return {
+          id: student.id,
+          name: student.user.fullName,
+          phone
+        };
+      })
+      .filter((item) => Boolean(item.phone));
+
+    if (targets.length === 0) {
+      setMessage(`No ${statusLabel[status]} students with WhatsApp number found.`);
+      return;
+    }
+
+    const classLabel = classes.find((c) => c.id === selectedClassId);
+    const text = `Assalam o Alaikum. Attendance update: ${statusLabel[status]} for ${classLabel?.name ?? 'Class'} ${classLabel?.section ?? ''} on ${date}.`;
+    targets.slice(0, 20).forEach((target) => {
+      const url = `https://wa.me/${target.phone}?text=${encodeURIComponent(text)}`;
+      window.open(url, '_blank', 'noopener,noreferrer');
+    });
+
+    setSendFeedback(`🔔 WhatsApp opened for ${targets.length} ${statusLabel[status]} student(s).`);
+    setTimeout(() => setSendFeedback(''), 3500);
+  };
+
   const countByStatus = (rows: { status: AttendanceStatus }[], status: AttendanceStatus) => rows.filter((row) => row.status === status).length;
+  const todayStaffStatus = myDailyStaffRows[0]?.status;
+  const inputBase = 'h-12 w-full rounded-2xl border border-[#D8E2E7] bg-white px-4 text-sm font-semibold text-[#0F172A] outline-none transition duration-200 focus:border-[#007A70] focus:ring-4 focus:ring-[#8BE8D8]/25';
+  const [calendarYear, calendarMonth] = date.split('-').map(Number);
+  const staffRecordMap = new Map(myMonthlyStaffRows.map((row) => [row.date, row]));
+  const calendarDays: (number | null)[] = [
+    ...Array(firstDayOffset(calendarYear, calendarMonth)).fill(null),
+    ...Array.from({ length: daysInMonth(calendarYear, calendarMonth) }, (_, index) => index + 1)
+  ];
+  while (calendarDays.length % 7 !== 0) calendarDays.push(null);
+  const selectedMonthLabel = new Date(calendarYear, calendarMonth - 1, 1).toLocaleDateString('en-US', {
+    month: 'long',
+    year: 'numeric'
+  });
+  const todayString = new Date().toISOString().slice(0, 10);
 
   return (
-    <div className="space-y-6">
-      <div className="rounded-2xl bg-white shadow-[0_12px_40px_rgba(43,103,110,0.06)] p-4 sm:p-6">
-        <h2 className="font-headline text-2xl sm:text-3xl font-bold text-[#1a1c1c]">Attendance Marking</h2>
-        <p className="mt-2 text-[#5c6668]">Daily marking with weekly/monthly attendance report and status messages.</p>
+    <div className="-mx-4 -my-6 min-h-screen space-y-4 bg-[#F4F7F8] px-4 py-5 pb-36 sm:-mx-6 sm:px-6 lg:-mx-8 lg:px-8">
+      <section className="rounded-[24px] border border-white bg-white p-4 shadow-[0_16px_36px_rgba(15,23,42,0.08)]">
+        <div className="flex items-start justify-between gap-3">
+          <div>
+            <p className="text-xs font-bold uppercase tracking-[0.16em] text-[#006A61]">Teacher Portal</p>
+            <h2 className="mt-2 text-[28px] font-black leading-tight tracking-[-0.04em] text-[#111827]">Attendance</h2>
+            <p className="mt-1 text-sm leading-6 text-[#4B5563]">Review and update student attendance for your current class.</p>
+          </div>
+          <span className={`inline-flex shrink-0 items-center rounded-full border px-2.5 py-1 text-xs font-bold ${todayStaffStatus ? statusStyle[todayStaffStatus] : 'bg-[#fef3c7] text-[#92400e] border-[#fde68a]'}`}>
+            <AlertCircle className="mr-1 h-3.5 w-3.5" />
+            {todayStaffStatus ? statusLabel[todayStaffStatus] : 'Unmarked'}
+          </span>
+        </div>
 
-        <div className="mt-6 grid gap-4 md:grid-cols-3">
-          <select className="h-11 rounded-xl bg-[#edeeef] border-none px-3 text-sm text-[#1a1c1c] focus:ring-2 focus:ring-[#1a5058]/20 outline-none" value={selectedClassId} onChange={(e) => setSelectedClassId(e.target.value)}>
+        <div className="mt-4 grid grid-cols-1 gap-3">
+          <select className={inputBase} value={selectedClassId} onChange={(e) => setSelectedClassId(e.target.value)}>
             <option value="">Select class</option>
             {classes.map((cls) => (
               <option key={cls.id} value={cls.id}>{cls.name} - {cls.section}</option>
             ))}
           </select>
 
-          <input type="date" className="h-11 rounded-xl bg-[#edeeef] border-none px-3 text-sm text-[#1a1c1c] focus:ring-2 focus:ring-[#1a5058]/20 outline-none" value={date} onChange={(e) => setDate(e.target.value)} />
+          <input type="date" className={inputBase} value={date} onChange={(e) => setDate(e.target.value)} />
 
-          <button type="button" onClick={markAllPresent} className="h-11 rounded-xl border border-[#1a5058] px-4 font-semibold text-[#1a5058] hover:bg-[#f0f7f7]">Mark All Present</button>
+          <button type="button" onClick={markAllPresent} className="h-12 rounded-2xl border border-[#CFE4E1] bg-[#E6F4F1] px-4 text-sm font-black text-[#007A70] transition active:scale-[0.98]">
+            Mark All Present
+          </button>
         </div>
-      </div>
+      </section>
 
-      <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4">
-        {[{ label: 'Daily Present', value: countByStatus(dailyRows, 'PRESENT') }, { label: 'Weekly Present', value: countByStatus(weeklyRows, 'PRESENT') }, { label: 'Monthly Present', value: countByStatus(monthlyRows, 'PRESENT') }, { label: 'Monthly Absent', value: countByStatus(monthlyRows, 'ABSENT') }].map((item) => (
-          <div key={item.label} className="rounded-2xl bg-white shadow-[0_12px_40px_rgba(43,103,110,0.06)] p-4">
-            <p className="text-[10px] font-bold uppercase tracking-widest text-[#6f7979]">{item.label}</p>
-            <p className="mt-2 text-3xl font-bold text-[#1a1c1c]">{item.value}</p>
-          </div>
-        ))}
-      </div>
-
-      <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4">
+      <section className="grid grid-cols-2 gap-3">
         {[
-          { label: 'My Daily Status', value: myDailyStaffRows[0]?.status ?? 'UNMARKED' },
-          { label: 'My Weekly Present', value: countByStatus(myWeeklyStaffRows, 'PRESENT') },
-          { label: 'My Monthly Present', value: countByStatus(myMonthlyStaffRows, 'PRESENT') },
-          { label: 'My Monthly Absent', value: countByStatus(myMonthlyStaffRows, 'ABSENT') }
+          { label: 'Daily Present', value: countByStatus(dailyRows, 'PRESENT'), icon: CheckCircle2, tint: 'bg-[#E6F4F1] text-[#1F5A5C]' },
+          { label: 'Weekly Present', value: countByStatus(weeklyRows, 'PRESENT'), icon: CalendarCheck2, tint: 'bg-[#dcfce7] text-[#166534]' },
+          { label: 'Monthly Present', value: countByStatus(monthlyRows, 'PRESENT'), icon: Users2, tint: 'bg-[#ecfeff] text-[#0e7490]' },
+          { label: 'Monthly Absent', value: countByStatus(monthlyRows, 'ABSENT'), icon: XCircle, tint: 'bg-[#fee2e2] text-[#991b1b]' }
         ].map((item) => (
-          <div key={item.label} className="rounded-2xl bg-white shadow-[0_12px_40px_rgba(43,103,110,0.06)] p-4">
-            <p className="text-[10px] font-bold uppercase tracking-widest text-[#6f7979]">{item.label}</p>
-            <p className="mt-2 text-2xl font-bold text-[#1a1c1c]">{item.value}</p>
+          <div key={item.label} className="rounded-[20px] border border-white bg-white p-4 shadow-[0_14px_30px_rgba(15,23,42,0.07)]">
+            <div className={`mb-2 inline-flex h-9 w-9 items-center justify-center rounded-xl ${item.tint}`}>
+              <item.icon className="h-4 w-4" />
+            </div>
+            <p className="text-xs font-bold text-[#64748B]">{item.label}</p>
+            <p className="mt-1 text-[30px] leading-none font-extrabold tracking-tight text-[#0F172A]">{item.value}</p>
           </div>
         ))}
-      </div>
+      </section>
 
-      <div className="rounded-2xl bg-white shadow-[0_12px_40px_rgba(43,103,110,0.06)] p-4 sm:p-6">
-        <h3 className="font-headline font-semibold text-[#1a1c1c]">Mark My Attendance</h3>
-        <p className="mt-1 text-sm text-[#5c6668]">Teacher can mark own attendance for selected date.</p>
-        <div className="mt-4 grid gap-3 md:grid-cols-3">
-          <select
-            className="h-11 rounded-xl bg-[#edeeef] border-none px-3 text-sm text-[#1a1c1c] focus:ring-2 focus:ring-[#1a5058]/20 outline-none"
-            value={myStatus}
-            onChange={(e) => setMyStatus(e.target.value as AttendanceStatus)}
-          >
-            {statusOptions.map((status) => (
-              <option key={status} value={status}>
-                {status}
-              </option>
-            ))}
-          </select>
+      <section className="rounded-[24px] border border-white bg-white p-4 shadow-[0_14px_32px_rgba(15,23,42,0.07)]">
+        <div className="mb-3 flex items-center justify-between">
+          <h3 className="text-base font-semibold text-[#0F172A]">My Staff Attendance</h3>
+          <span className="text-xs text-[#64748B]">{myMonthlyStaffRows.length} records</span>
+        </div>
+        <div className="grid grid-cols-2 gap-3">
+          {[
+            { label: 'Today', value: todayStaffStatus ? statusLabel[todayStaffStatus] : 'Unmarked' },
+            { label: 'Weekly Present', value: countByStatus(myWeeklyStaffRows, 'PRESENT') },
+            { label: 'Monthly Present', value: countByStatus(myMonthlyStaffRows, 'PRESENT') },
+            { label: 'Monthly Absent', value: countByStatus(myMonthlyStaffRows, 'ABSENT') }
+          ].map((item) => (
+            <div key={item.label} className="rounded-2xl border border-[#E2E8F0] bg-[#F8FAFC] p-3">
+              <p className="text-[11px] text-[#64748B]">{item.label}</p>
+              <p className="mt-1 text-base font-semibold text-[#0F172A]">{item.value}</p>
+            </div>
+          ))}
+        </div>
+      </section>
+
+      <section className="rounded-[24px] border border-white bg-white p-4 shadow-[0_14px_32px_rgba(15,23,42,0.07)]">
+        <h3 className="text-base font-semibold text-[#0F172A]">Mark My Attendance</h3>
+        <div className="mt-3 grid grid-cols-1 gap-3">
+          <div className="grid grid-cols-3 gap-2 rounded-2xl bg-[#F8FAFC] p-1.5">
+            {quickStatusPills.map((pill) => {
+              const active = myStatus === pill.value;
+              return (
+                <button
+                  key={pill.value}
+                  type="button"
+                  onClick={() => setMyStatus(pill.value)}
+                  className={`h-10 rounded-xl text-xs font-bold transition ${active ? 'bg-[#084750] text-white shadow-[0_8px_16px_rgba(8,71,80,0.24)]' : 'bg-white text-[#475569]'}`}
+                >
+                  {pill.label}
+                </button>
+              );
+            })}
+          </div>
           <input
-            className="h-11 rounded-xl bg-[#edeeef] border-none px-3 text-sm text-[#1a1c1c] focus:ring-2 focus:ring-[#1a5058]/20 outline-none md:col-span-2"
+            className={inputBase}
             placeholder="Note (optional)"
             value={myNote}
             onChange={(e) => setMyNote(e.target.value)}
@@ -358,106 +512,257 @@ export default function TeacherAttendancePage() {
           type="button"
           onClick={saveMyAttendance}
           disabled={savingMyAttendance}
-          className="mt-4 h-10 rounded-xl bg-gradient-to-br from-[#2b676e] to-[#1a5058] shadow-[0_8px_20px_rgba(43,103,110,0.12)] active:scale-[0.98] transition-all px-6 font-semibold text-white disabled:cursor-not-allowed disabled:opacity-60"
+          className="mt-3 flex h-12 w-full items-center justify-center gap-2 rounded-2xl bg-[#084750] px-4 text-sm font-black text-white shadow-[0_14px_26px_rgba(8,71,80,0.28)] disabled:opacity-60"
         >
+          <NotebookPen className="h-4 w-4" />
           {savingMyAttendance ? 'Saving...' : 'Save My Attendance'}
         </button>
-      </div>
+      </section>
 
-      <div className="rounded-2xl bg-white shadow-[0_12px_40px_rgba(43,103,110,0.06)] p-4 sm:p-6">
-        <div className="mb-5 flex flex-wrap items-center justify-between gap-3">
-          <h3 className="font-headline font-semibold text-[#1a1c1c]">Students ({classStudents.length})</h3>
-          <div className="flex flex-wrap gap-2">
-            <button type="button" onClick={() => void sendStatusMessage('ABSENT')} disabled={broadcasting} className="rounded-xl border border-[#fca5a5] px-3 py-2 text-xs font-semibold text-[#ba1a1a] hover:bg-[#fde8e8] disabled:opacity-60">Message Absent</button>
-            <button type="button" onClick={() => void sendStatusMessage('LATE')} disabled={broadcasting} className="rounded-xl border border-[#f5d0a9] px-3 py-2 text-xs font-semibold text-[#865300] hover:bg-[#fff3e0] disabled:opacity-60">Message Late</button>
-            <button type="button" onClick={() => void sendStatusMessage('PRESENT')} disabled={broadcasting} className="rounded-xl border border-[#b7dfbc] px-3 py-2 text-xs font-semibold text-[#1a5058] hover:bg-[#e8f5e9] disabled:opacity-60">Message Present</button>
-            <button type="button" onClick={saveAttendance} disabled={saving || loading} className="h-10 rounded-xl bg-gradient-to-br from-[#2b676e] to-[#1a5058] shadow-[0_8px_20px_rgba(43,103,110,0.12)] active:scale-[0.98] transition-all px-6 font-semibold text-white disabled:cursor-not-allowed disabled:opacity-60">{saving ? 'Saving...' : 'Save Attendance'}</button>
+      <section className="rounded-[24px] border border-white bg-white p-4 shadow-[0_14px_32px_rgba(15,23,42,0.07)]">
+        <div className="flex items-start justify-between gap-3">
+          <div>
+            <p className="text-[11px] font-black uppercase tracking-[0.2em] text-[#084750]">My Attendance</p>
+            <h3 className="mt-1 text-xl font-black text-[#0F172A]">{selectedMonthLabel}</h3>
+            <p className="mt-1 text-xs text-[#64748B]">Your monthly staff attendance, shown like the student calendar.</p>
+          </div>
+          <div className="flex items-center gap-2">
+            <button
+              type="button"
+              onClick={() => setDate(shiftMonthKey(date, -1))}
+              className="flex h-9 w-9 items-center justify-center rounded-xl bg-[#F1F5F9] text-[#084750] transition active:scale-[0.97]"
+              aria-label="Previous month"
+            >
+              &#8592;
+            </button>
+            <button
+              type="button"
+              onClick={() => setDate(shiftMonthKey(date, 1))}
+              className="flex h-9 w-9 items-center justify-center rounded-xl bg-[#F1F5F9] text-[#084750] transition active:scale-[0.97]"
+              aria-label="Next month"
+            >
+              &#8594;
+            </button>
           </div>
         </div>
 
-        <div className="space-y-2 md:hidden">
+        <div className="mt-4 grid grid-cols-7 gap-1">
+          {dayNames.map((dayName) => (
+            <div key={dayName} className="py-1 text-center text-[10px] font-bold uppercase tracking-wider text-[#94A3B8]">
+              {dayName}
+            </div>
+          ))}
+          {calendarDays.map((day, index) => {
+            if (day === null) return <div key={`blank-${index}`} />;
+            const dateString = `${calendarYear}-${String(calendarMonth).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+            const row = staffRecordMap.get(dateString);
+            const statusClasses = row ? calendarStatusStyle[row.status] : null;
+            const todayRing = dateString === todayString ? 'ring-2 ring-[#084750] ring-offset-1' : '';
+            return (
+              <div
+                key={dateString}
+                title={row ? `${statusLabel[row.status]}${row.note ? ` - ${row.note}` : ''}` : 'Not marked'}
+                className={`relative flex aspect-square items-center justify-center rounded-xl text-sm font-bold ${
+                  statusClasses?.cell ?? 'bg-[#F1F5F9] text-[#94A3B8]'
+                } ${todayRing}`}
+              >
+                {day}
+                {statusClasses ? <span className={`absolute bottom-1 right-1 h-1.5 w-1.5 rounded-full ${statusClasses.dot}`} /> : null}
+              </div>
+            );
+          })}
+        </div>
+
+        <div className="mt-4 grid grid-cols-2 gap-3">
+          {[
+            { label: 'Present', value: countByStatus(myMonthlyStaffRows, 'PRESENT'), color: 'bg-[#16a34a]' },
+            { label: 'Absent', value: countByStatus(myMonthlyStaffRows, 'ABSENT'), color: 'bg-[#dc2626]' },
+            { label: 'Late', value: countByStatus(myMonthlyStaffRows, 'LATE'), color: 'bg-[#d97706]' },
+            { label: 'Leave', value: countByStatus(myMonthlyStaffRows, 'EXCUSED'), color: 'bg-[#2E2B78]' }
+          ].map((item) => (
+            <div key={item.label} className="flex items-center gap-3 rounded-2xl border border-[#E2E8F0] bg-[#F8FAFC] p-3">
+              <div className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-xl ${item.color}`}>
+                <span className="text-sm font-black text-white">{item.value}</span>
+              </div>
+              <div>
+                <p className="text-xs font-bold text-[#0F172A]">{item.label}</p>
+                <p className="text-[10px] text-[#64748B]">this month</p>
+              </div>
+            </div>
+          ))}
+        </div>
+
+        <div className="mt-4 rounded-2xl border border-[#E2E8F0] bg-[#F8FAFC] p-3">
+          <p className="mb-3 text-xs font-bold text-[#64748B]">Legend</p>
+          <div className="flex flex-wrap gap-x-4 gap-y-2">
+            {[
+              { label: 'Present', dot: 'bg-[#16a34a]' },
+              { label: 'Absent', dot: 'bg-[#dc2626]' },
+              { label: 'Late', dot: 'bg-[#d97706]' },
+              { label: 'Leave', dot: 'bg-[#2E2B78]' },
+              { label: 'Not marked', dot: 'bg-[#CBD5E1]' }
+            ].map((item) => (
+              <div key={item.label} className="flex items-center gap-1.5">
+                <span className={`h-2.5 w-2.5 rounded-full ${item.dot}`} />
+                <span className="text-xs text-[#64748B]">{item.label}</span>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      <section className="rounded-[24px] border border-white bg-white p-4 shadow-[0_14px_32px_rgba(15,23,42,0.07)]">
+        <div className="mb-3 flex items-center justify-between gap-2">
+          <h3 className="text-base font-semibold text-[#0F172A]">Students ({classStudents.length})</h3>
+          <button
+            type="button"
+            onClick={saveAttendance}
+            disabled={saving || loading}
+            className="hidden h-10 rounded-2xl bg-[#084750] px-4 text-xs font-black text-white shadow-[0_10px_20px_rgba(8,71,80,0.25)] disabled:opacity-60 md:inline-flex md:items-center"
+          >
+            {saving ? 'Saving...' : 'Save Attendance'}
+          </button>
+        </div>
+        <div className="mb-3 grid grid-cols-3 gap-2">
+          <button type="button" onClick={() => setMessageChannelPicker('PRESENT')} disabled={broadcasting} className="h-10 rounded-xl border border-[#86efac] text-xs font-semibold text-[#15803d]">Message Present</button>
+          <button type="button" onClick={() => setMessageChannelPicker('LATE')} disabled={broadcasting} className="h-10 rounded-xl border border-[#fcd34d] text-xs font-semibold text-[#b45309]">Message Late</button>
+          <button type="button" onClick={() => setMessageChannelPicker('ABSENT')} disabled={broadcasting} className="h-10 rounded-xl border border-[#fca5a5] text-xs font-semibold text-[#b91c1c]">Message Absent</button>
+        </div>
+        {sendFeedback ? (
+          <div className="mb-3 rounded-2xl border border-[#99F6E4] bg-[#ECFEFF] px-3 py-2 text-xs font-semibold text-[#0F766E] shadow-[0_6px_14px_rgba(20,184,166,0.15)]">
+            {sendFeedback}
+          </div>
+        ) : null}
+
+        <div className="space-y-2.5">
           {classStudents.map((student) => (
-            <div key={student.id} className="rounded-xl bg-[#f3f4f5] p-3">
-              <p className="text-sm font-semibold text-[#1a1c1c]">{student.user.fullName}</p>
-              <p className="mt-0.5 text-xs text-[#596364]">Admission: {student.admissionNo}</p>
-              <select className="mt-2 h-10 w-full rounded-xl bg-[#edeeef] border-none px-2 text-sm focus:ring-2 focus:ring-[#1a5058]/20 outline-none" value={records[student.id]?.status ?? 'PRESENT'} onChange={(e) => updateStatus(student.id, e.target.value as AttendanceStatus)}>
-                {statusOptions.map((status) => (
-                  <option key={status} value={status}>{status}</option>
-                ))}
-              </select>
-              <input className="mt-2 h-10 w-full rounded-xl bg-[#edeeef] border-none px-2 text-sm focus:ring-2 focus:ring-[#1a5058]/20 outline-none" placeholder="Optional remark" value={records[student.id]?.remarks ?? ''} onChange={(e) => updateRemarks(student.id, e.target.value)} />
+            <div key={student.id} className="rounded-[20px] border border-[#E2E8F0] bg-white p-4 shadow-[0_8px_20px_rgba(15,23,42,0.06)]">
+              <div className="flex items-center gap-3">
+                <div className="inline-flex h-12 w-12 items-center justify-center rounded-full bg-[#F8FAFC] text-[#00507D] shadow-[0_4px_10px_rgba(15,23,42,0.08)]">
+                  <UserRound className="h-4 w-4" />
+                </div>
+                <div className="min-w-0 flex-1">
+                  <p className="truncate text-sm font-semibold text-[#0F172A]">{student.user.fullName}</p>
+                  <p className="text-xs text-[#64748B]">Admission: {student.admissionNo}</p>
+                </div>
+              </div>
+              <div className="mt-2 grid grid-cols-3 gap-2 rounded-2xl bg-white p-1.5">
+                {quickStatusPills.map((pill) => {
+                  const active = (records[student.id]?.status ?? 'PRESENT') === pill.value;
+                  return (
+                    <button
+                      key={pill.value}
+                      type="button"
+                      onClick={() => updateStatus(student.id, pill.value)}
+                      className={`h-10 rounded-xl text-xs font-bold transition ${active ? (pill.value === 'PRESENT' ? 'bg-[#084750] text-white shadow-[0_8px_16px_rgba(8,71,80,0.24)]' : pill.value === 'ABSENT' ? 'bg-[#C81E1E] text-white shadow-[0_8px_16px_rgba(200,30,30,0.22)]' : 'bg-[#2E2B78] text-white shadow-[0_8px_16px_rgba(46,43,120,0.22)]') : 'bg-[#F8FAFC] text-[#475569]'}`}
+                    >
+                      {pill.label}
+                    </button>
+                  );
+                })}
+              </div>
+              <input className="mt-2 h-9 w-full rounded-xl border border-[#E2E8F0] bg-white px-3 text-xs text-[#0F172A] outline-none focus:border-[#1F5A5C]" placeholder="Optional remark" value={records[student.id]?.remarks ?? ''} onChange={(e) => updateRemarks(student.id, e.target.value)} />
             </div>
           ))}
         </div>
 
-        <div className="overflow-x-auto">
-          <table className="hidden min-w-full text-sm md:table">
-            <thead className="bg-[#f3f4f3] text-[#596364]">
-              <tr>
-                <th className="px-3 py-3 text-left text-[10px] font-bold uppercase tracking-[0.18em]">Student</th>
-                <th className="px-3 py-3 text-left text-[10px] font-bold uppercase tracking-[0.18em]">Admission #</th>
-                <th className="px-3 py-3 text-left text-[10px] font-bold uppercase tracking-[0.18em]">Status</th>
-                <th className="px-3 py-3 text-left text-[10px] font-bold uppercase tracking-[0.18em]">Remarks</th>
-              </tr>
-            </thead>
-            <tbody>
-              {classStudents.map((student) => (
-                <tr key={student.id} className="border-b border-[#eef1f1]">
-                  <td className="px-3 py-3 font-semibold text-[#1a1c1c]">{student.user.fullName}</td>
-                  <td className="px-3 py-3 text-[#596364]">{student.admissionNo}</td>
-                  <td className="px-3 py-3">
-                    <select className="h-10 rounded-xl bg-[#edeeef] border-none px-2 text-sm focus:ring-2 focus:ring-[#1a5058]/20 outline-none" value={records[student.id]?.status ?? 'PRESENT'} onChange={(e) => updateStatus(student.id, e.target.value as AttendanceStatus)}>
-                      {statusOptions.map((status) => (
-                        <option key={status} value={status}>{status}</option>
-                      ))}
-                    </select>
-                  </td>
-                  <td className="px-3 py-3">
-                    <input className="h-10 w-full rounded-xl bg-[#edeeef] border-none px-2 text-sm focus:ring-2 focus:ring-[#1a5058]/20 outline-none" placeholder="Optional remark" value={records[student.id]?.remarks ?? ''} onChange={(e) => updateRemarks(student.id, e.target.value)} />
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
+        {classStudents.length === 0 ? (
+          <div className="mt-2 rounded-2xl border border-dashed border-[#E2E8F0] bg-[#F8FAFC] p-6 text-center">
+            <Users2 className="mx-auto h-6 w-6 text-[#94A3B8]" />
+            <p className="mt-2 text-sm font-medium text-[#0F172A]">No students in selected class</p>
+            <p className="mt-1 text-xs text-[#64748B]">Choose another class to mark attendance.</p>
+          </div>
+        ) : null}
+      </section>
 
-        {classStudents.length === 0 ? <p className="mt-4 text-sm text-[#5c6668]">No students in selected class.</p> : null}
-        {message ? <p className="mt-4 rounded-xl bg-[#f3f4f3] px-4 py-3 text-sm text-[#1a1c1c]">{message}</p> : null}
+      <section className="rounded-[24px] border border-white bg-white p-4 shadow-[0_14px_32px_rgba(15,23,42,0.07)]">
+        <h3 className="text-base font-semibold text-[#0F172A]">My Staff Attendance Record</h3>
+        {myMonthlyStaffRows.length === 0 ? (
+          <div className="mt-3 rounded-2xl border border-dashed border-[#E2E8F0] bg-[#F8FAFC] p-6 text-center">
+            <Clock3 className="mx-auto h-6 w-6 text-[#94A3B8]" />
+            <p className="mt-2 text-sm font-medium text-[#0F172A]">No attendance records yet</p>
+            <p className="mt-1 text-xs text-[#64748B]">Your staff attendance timeline will appear here.</p>
+          </div>
+        ) : (
+          <div className="mt-3 space-y-2.5">
+            {myMonthlyStaffRows.slice(0, 8).map((row) => (
+              <div key={row.id} className="rounded-2xl border border-[#E2E8F0] bg-[#F8FAFC] p-3">
+                <div className="flex items-center justify-between">
+                  <p className="text-sm font-medium text-[#0F172A]">{row.date}</p>
+                  <span className={`rounded-full border px-2 py-0.5 text-xs font-semibold ${statusStyle[row.status]}`}>{statusLabel[row.status]}</span>
+                </div>
+                <p className="mt-1 text-xs text-[#64748B]">{row.note || 'No note added.'}</p>
+              </div>
+            ))}
+          </div>
+        )}
+      </section>
+
+      {message ? (
+        <div className="rounded-2xl border border-[#E2E8F0] bg-white px-4 py-3 text-sm text-[#0F172A] shadow-[0_6px_16px_rgba(15,23,42,0.05)]">
+          {message}
+        </div>
+      ) : null}
+
+      <div className="fixed bottom-[84px] left-3 right-3 z-40 md:hidden">
+        <button
+          type="button"
+          onClick={saveAttendance}
+          disabled={saving || loading}
+          className="flex h-14 w-full items-center justify-center gap-3 rounded-2xl bg-[#084750] px-4 text-lg font-black text-white shadow-[0_16px_28px_rgba(8,71,80,0.32)] transition active:scale-[0.99] disabled:opacity-60"
+        >
+          <Send className="h-4 w-4" />
+          {saving ? 'Saving...' : 'Save Attendance'}
+        </button>
       </div>
 
-      <div className="rounded-2xl bg-white shadow-[0_12px_40px_rgba(43,103,110,0.06)] p-4 sm:p-6">
-        <h3 className="font-headline font-semibold text-[#1a1c1c]">My Staff Attendance Record</h3>
-        <div className="mt-4 space-y-2 md:hidden">
-          {myMonthlyStaffRows.map((row) => (
-            <div key={row.id} className="rounded-xl bg-[#f3f4f5] p-3">
-              <p className="text-sm font-semibold text-[#1a1c1c]">{row.date}</p>
-              <p className="mt-1 text-xs text-[#596364]">Status: {row.status}</p>
-              <p className="mt-1 text-xs text-[#596364]">Note: {row.note || '-'}</p>
+      {messageChannelPicker ? (
+        <div className="fixed inset-0 z-50">
+          <button
+            type="button"
+            aria-label="Close channel picker"
+            onClick={() => setMessageChannelPicker(null)}
+            className="absolute inset-0 bg-black/45 backdrop-blur-[3px]"
+          />
+          <div className="absolute inset-x-0 bottom-0 rounded-t-[24px] border-t border-white/60 bg-white p-4 pb-6 shadow-[0_-20px_44px_rgba(15,23,42,0.25)]">
+            <div className="mx-auto mb-3 h-1.5 w-12 rounded-full bg-[#CBD5E1]" />
+            <div className="mb-3 flex items-center justify-between">
+              <p className="text-sm font-bold text-[#0F172A]">
+                Send {statusLabel[messageChannelPicker]} Message
+              </p>
+              <button
+                type="button"
+                onClick={() => setMessageChannelPicker(null)}
+                className="flex h-8 w-8 items-center justify-center rounded-full border border-[#E2E8F0] text-[#64748B]"
+              >
+                <X className="h-4 w-4" />
+              </button>
             </div>
-          ))}
+            <div className="grid gap-2">
+              <button
+                type="button"
+                onClick={() => {
+                  void sendStatusMessage(messageChannelPicker);
+                  setMessageChannelPicker(null);
+                }}
+                className="flex h-12 items-center justify-center rounded-xl bg-[#084750] text-sm font-semibold text-white shadow-[0_8px_16px_rgba(8,71,80,0.24)]"
+              >
+                In-App Message
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  openWhatsAppMessages(messageChannelPicker);
+                  setMessageChannelPicker(null);
+                }}
+                className="flex h-12 items-center justify-center rounded-xl border border-[#D7E3E8] bg-white text-sm font-semibold text-[#0F172A]"
+              >
+                WhatsApp
+              </button>
+            </div>
+          </div>
         </div>
-        <div className="mt-4 overflow-x-auto">
-          <table className="hidden min-w-full text-sm md:table">
-            <thead className="bg-[#f3f4f3] text-[#596364]">
-              <tr>
-                <th className="px-3 py-3 text-left text-[10px] font-bold uppercase tracking-[0.18em]">Date</th>
-                <th className="px-3 py-3 text-left text-[10px] font-bold uppercase tracking-[0.18em]">Status</th>
-                <th className="px-3 py-3 text-left text-[10px] font-bold uppercase tracking-[0.18em]">Note</th>
-              </tr>
-            </thead>
-            <tbody>
-              {myMonthlyStaffRows.map((row) => (
-                <tr key={row.id} className="border-b border-[#eef1f1]">
-                  <td className="px-3 py-3 text-[#596364]">{row.date}</td>
-                  <td className="px-3 py-3 font-semibold text-[#1a1c1c]">{row.status}</td>
-                  <td className="px-3 py-3 text-[#596364]">{row.note || '-'}</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-        {myMonthlyStaffRows.length === 0 ? <p className="mt-4 text-sm text-[#5c6668]">Staff attendance not marked yet.</p> : null}
-      </div>
+      ) : null}
     </div>
   );
 }

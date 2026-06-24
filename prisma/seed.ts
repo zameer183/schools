@@ -1,4 +1,4 @@
-﻿import { PrismaClient, AssignmentStatus, AttendanceStatus, NotificationType, PaymentStatus, SubmissionStatus, TransactionType, UserRole } from '@prisma/client';
+import { PrismaClient, AssignmentStatus, AttendanceStatus, NotificationType, PaymentStatus, SubmissionStatus, TransactionType, UserRole } from '@prisma/client';
 import { hash } from 'bcryptjs';
 
 const prisma = new PrismaClient();
@@ -28,7 +28,7 @@ async function main() {
 
   const admin = await prisma.user.create({
     data: {
-      email: 'admin@stitchhms.com',
+      email: 'manarahinstitute01@gmail.com',
       fullName: 'System Admin',
       role: UserRole.ADMIN,
       passwordHash: defaultPassword
@@ -238,7 +238,7 @@ async function main() {
   });
 
   console.log('Seed complete.');
-  console.log('Admin login: admin@stitchhms.com / Pass@123');
+  console.log('Admin login: manarahinstitute01@gmail.com / Pass@123');
   console.log('Teacher login: teacher@stitchhms.com / Pass@123');
   console.log('Student login: student@stitchhms.com / Pass@123');
   console.log('Parent login: parent@stitchhms.com / Pass@123');
@@ -252,3 +252,4 @@ main()
   .finally(async () => {
     await prisma.$disconnect();
   });
+

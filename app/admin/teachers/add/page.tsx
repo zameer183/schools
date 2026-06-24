@@ -8,7 +8,7 @@ import {
   Hash, Calendar, Users, Building2, DollarSign, Banknote,
   BookOpen, Upload,
 } from 'lucide-react';
-import { Button, SectionTitle } from '@/components/ui';
+import { Button } from '@/components/ui';
 
 // ── Types ────────────────────────────────────────────────────────────────────
 

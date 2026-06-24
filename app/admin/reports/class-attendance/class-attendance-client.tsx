@@ -2,7 +2,7 @@
 
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { Download, Printer } from 'lucide-react';
+import { Download } from 'lucide-react';
 import { PrintButton } from '@/components/reports/print-button';
 
 type StudentRow = {
@@ -47,15 +47,6 @@ export default function ClassAttendanceClient({
   dayColumns, students, overallPresent, overallAbsent, overallLeave
 }: Props) {
   const router = useRouter();
-
-  function handlePrint() {
-    const style = document.createElement('style');
-    style.id = '__print_landscape__';
-    style.textContent = '@media print { @page { size: A4 landscape; margin: 8mm; } .print\\:hidden { display: none !important; } }';
-    document.head.appendChild(style);
-    window.print();
-    setTimeout(() => { document.getElementById('__print_landscape__')?.remove(); }, 1000);
-  }
 
   function navigate(overrides: Record<string, string>) {
     const params = new URLSearchParams({ classId: selectedClassId, month: monthKey, ...overrides });

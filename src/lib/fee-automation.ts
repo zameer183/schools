@@ -42,7 +42,7 @@ const reminderRules: ReminderRule[] = [
   },
   {
     id: 'OVERDUE',
-    shouldRemind: ({ amountDue, dueDate, todayStart }) => amountDue > 0 && dueDate.getTime() < todayStart.getTime(),
+    shouldRemind: () => false,
   },
 ];
 
@@ -153,14 +153,6 @@ export async function runFeeAutomation() {
   const monthEnd = new Date(now.getFullYear(), now.getMonth() + 1, 0, 23, 59, 59);
   const monthLabel = now.toLocaleString('en-US', { month: 'long', year: 'numeric' });
 
-  const overdueResult = await prisma.fee.updateMany({
-    where: {
-      dueDate: { lt: now },
-      status: { in: [PaymentStatus.PENDING, PaymentStatus.PARTIAL] }
-    },
-    data: { status: PaymentStatus.OVERDUE }
-  });
-
   const students = await prisma.student.findMany({
     include: {
       fees: { orderBy: { createdAt: 'desc' }, take: 1, select: { amount: true } }
@@ -189,5 +181,5 @@ export async function runFeeAutomation() {
     created++;
   }
 
-  return { overdueMarked: overdueResult.count, feesCreated: created, feesSkipped: skipped };
+  return { overdueMarked: 0, feesCreated: created, feesSkipped: skipped };
 }

@@ -1,18 +1,52 @@
-import { NotificationType, UserRole } from '@prisma/client';
+import { NotificationType, type Prisma, UserRole } from '@prisma/client';
 import { revalidatePath, revalidateTag } from 'next/cache';
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { ensureApiRole } from '@/lib/rbac';
 import { notificationCreateSchema } from '@/lib/validators';
 
-export async function GET() {
+function isLocalRestFallbackEnabled() {
+  return process.env.FORCE_SUPABASE_REST_DATA_FALLBACK === '1';
+}
+
+export async function GET(request: Request) {
   const auth = await ensureApiRole([UserRole.ADMIN, UserRole.TEACHER, UserRole.STUDENT, UserRole.PARENT]);
   if (!auth.authorized) return auth.response;
 
+  const { searchParams } = new URL(request.url);
+  const countOnly = searchParams.get('countOnly') === '1';
+
+  if (countOnly) {
+    if (isLocalRestFallbackEnabled()) {
+      return NextResponse.json({ unreadCount: 0 });
+    }
+
+    try {
+      const unreadCount = await prisma.notification.count({
+        where: { userId: auth.session.id, isRead: false }
+      });
+      return NextResponse.json({ unreadCount });
+    } catch (error) {
+      console.error('[api/notifications][countOnly]', error);
+      return NextResponse.json({ unreadCount: 0 });
+    }
+  }
+
+  const requestedLimit = Number(searchParams.get('limit') ?? 20);
+  const take = Number.isFinite(requestedLimit) ? Math.min(Math.max(Math.trunc(requestedLimit), 1), 50) : 20;
+  const before = searchParams.get('before');
+  const beforeDate = before ? new Date(before) : null;
+  const createdAtFilter: Prisma.NotificationWhereInput =
+    beforeDate && !Number.isNaN(beforeDate.getTime()) ? { createdAt: { lt: beforeDate } } : {};
+  const where: Prisma.NotificationWhereInput =
+    auth.session.role === 'ADMIN'
+      ? createdAtFilter
+      : { userId: auth.session.id, ...createdAtFilter };
+
   const notifications = await prisma.notification.findMany({
-    where: auth.session.role === 'ADMIN' ? undefined : { userId: auth.session.id },
+    where,
     orderBy: { createdAt: 'desc' },
-    take: 50
+    take
   });
 
   return NextResponse.json(notifications);
@@ -35,9 +69,35 @@ export async function PATCH(request: Request) {
   const auth = await ensureApiRole([UserRole.ADMIN, UserRole.TEACHER, UserRole.STUDENT, UserRole.PARENT]);
   if (!auth.authorized) return auth.response;
 
-  const { id, isRead } = await request.json();
-  const updated = await prisma.notification.update({ where: { id }, data: { isRead } });
-  return NextResponse.json(updated);
+  const payload = await request.json().catch(() => ({}));
+  const id = typeof payload?.id === 'string' ? payload.id.trim() : '';
+  const isRead = payload?.isRead === true;
+  const markAll = payload?.markAll === true;
+  const userScopedWhere: Prisma.NotificationWhereInput =
+    auth.session.role === UserRole.ADMIN ? {} : { userId: auth.session.id };
+
+  if (markAll) {
+    const result = await prisma.notification.updateMany({
+      where: { ...userScopedWhere, isRead: false },
+      data: { isRead: true }
+    });
+    return NextResponse.json({ success: true, updated: result.count });
+  }
+
+  if (!id) {
+    return NextResponse.json({ error: 'Notification id is required.' }, { status: 400 });
+  }
+
+  const result = await prisma.notification.updateMany({
+    where: { ...userScopedWhere, id },
+    data: { isRead }
+  });
+
+  if (result.count === 0) {
+    return NextResponse.json({ error: 'Notification not found.' }, { status: 404 });
+  }
+
+  return NextResponse.json({ success: true, updated: result.count });
 }
 
 export async function DELETE(request: Request) {

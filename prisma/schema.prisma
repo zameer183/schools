@@ -118,6 +118,9 @@ model User {
   notifications       Notification[]
   files               FileAsset[]          @relation("Uploader")
   passwordResetTokens PasswordResetToken[]
+
+  @@index([role, isActive])
+  @@index([createdAt])
 }
 
 model Student {
@@ -190,6 +193,8 @@ model Parent {
   user       User            @relation(fields: [userId], references: [id], onDelete: Cascade)
   children   ParentStudent[]
   payments   Payment[]
+
+  @@index([createdAt])
 }
 
 model ParentStudent {
@@ -280,6 +285,7 @@ model TeacherClass {
   class   Class   @relation(fields: [classId], references: [id], onDelete: Cascade)
 
   @@id([teacherId, classId])
+  @@index([classId])
 }
 
 model Subject {
@@ -319,7 +325,9 @@ model Attendance {
   @@unique([studentId, date])
   @@index([classId, date])
   @@index([studentId, date])
+  @@index([markedById, date])
   @@index([date, status])
+  @@index([createdAt])
 }
 
 model Exam {
@@ -466,6 +474,7 @@ model Message {
   recipients  MessageRecipient[]
 
   @@index([senderId, createdAt])
+  @@index([senderId, id])
   @@index([createdAt])
 }
 
@@ -481,8 +490,10 @@ model MessageRecipient {
 
   @@unique([messageId, userId])
   @@index([userId, isRead])
+  @@index([userId, isRead, messageId])
   @@index([userId])
   @@index([userId, messageId])
+  @@index([messageId, isRead])
 }
 
 model Notification {
@@ -509,6 +520,7 @@ model TeacherAccess {
   teacherId String
   module    String
   enabled   Boolean  @default(true)
+  level     String?
   updatedAt DateTime @default(now())
 
   teacher Teacher @relation(fields: [teacherId], references: [id], onDelete: Cascade)
@@ -541,6 +553,7 @@ model StaffAttendance {
   @@unique([teacherId, date])
   @@index([date])
   @@index([teacherId, date])
+  @@index([status, date])
 }
 
 model FileAsset {

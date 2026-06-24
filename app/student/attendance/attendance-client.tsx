@@ -23,24 +23,24 @@ const DAY_NAMES = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
 
 const STATUS_STYLES: Record<AttendanceStatus, { cell: string; dot: string; badge: string }> = {
   PRESENT: {
-    cell: 'bg-[#dcfce7] text-[#15803d]',
+    cell: 'bg-[#16a34a] text-white',
     dot: 'bg-[#16a34a]',
-    badge: 'bg-[#dcfce7] text-[#15803d]',
+    badge: 'bg-[#16a34a] text-white',
   },
   ABSENT: {
-    cell: 'bg-[#fee2e2] text-[#b91c1c]',
+    cell: 'bg-[#dc2626] text-white',
     dot: 'bg-[#dc2626]',
-    badge: 'bg-[#fee2e2] text-[#b91c1c]',
+    badge: 'bg-[#dc2626] text-white',
   },
   LATE: {
-    cell: 'bg-[#fff7ed] text-[#b45309]',
+    cell: 'bg-[#d97706] text-white',
     dot: 'bg-[#d97706]',
-    badge: 'bg-[#fff7ed] text-[#b45309]',
+    badge: 'bg-[#d97706] text-white',
   },
   EXCUSED: {
-    cell: 'bg-[#eff6ff] text-[#1d4ed8]',
+    cell: 'bg-[#2563eb] text-white',
     dot: 'bg-[#2563eb]',
-    badge: 'bg-[#eff6ff] text-[#1d4ed8]',
+    badge: 'bg-[#2563eb] text-white',
   },
 };
 
@@ -195,8 +195,8 @@ export default function AttendanceClient({
       {/* Stats row — 2×2 grid */}
       <div className="grid grid-cols-2 gap-3">
         <div className="rounded-2xl bg-white shadow-[0_2px_8px_rgba(0,0,0,0.06)] p-4 flex items-center gap-3">
-          <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-[#dcfce7]">
-            <span className="text-lg font-black text-[#15803d]">{presentCount}</span>
+          <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-[#16a34a]">
+            <span className="text-lg font-black text-white">{presentCount}</span>
           </div>
           <div>
             <p className="text-xs font-semibold text-[#6b7280]">Present</p>
@@ -205,8 +205,8 @@ export default function AttendanceClient({
         </div>
 
         <div className="rounded-2xl bg-white shadow-[0_2px_8px_rgba(0,0,0,0.06)] p-4 flex items-center gap-3">
-          <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-[#fee2e2]">
-            <span className="text-lg font-black text-[#b91c1c]">{absentCount}</span>
+          <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-[#dc2626]">
+            <span className="text-lg font-black text-white">{absentCount}</span>
           </div>
           <div>
             <p className="text-xs font-semibold text-[#6b7280]">Absent</p>
@@ -215,8 +215,8 @@ export default function AttendanceClient({
         </div>
 
         <div className="rounded-2xl bg-white shadow-[0_2px_8px_rgba(0,0,0,0.06)] p-4 flex items-center gap-3">
-          <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-[#fff7ed]">
-            <span className="text-lg font-black text-[#b45309]">{lateCount}</span>
+          <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-[#d97706]">
+            <span className="text-lg font-black text-white">{lateCount}</span>
           </div>
           <div>
             <p className="text-xs font-semibold text-[#6b7280]">Late</p>
@@ -225,8 +225,8 @@ export default function AttendanceClient({
         </div>
 
         <div className="rounded-2xl bg-white shadow-[0_2px_8px_rgba(0,0,0,0.06)] p-4 flex items-center gap-3">
-          <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-[#eff6ff]">
-            <span className="text-lg font-black text-[#1d4ed8]">{excusedCount}</span>
+          <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-[#2563eb]">
+            <span className="text-lg font-black text-white">{excusedCount}</span>
           </div>
           <div>
             <p className="text-xs font-semibold text-[#6b7280]">Leave</p>

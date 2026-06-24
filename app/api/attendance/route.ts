@@ -21,6 +21,8 @@ export async function GET(request: Request) {
   const date = searchParams.get('date');
   const from = searchParams.get('from') ?? undefined;
   const to = searchParams.get('to') ?? undefined;
+  const requestedLimit = Number(searchParams.get('limit') ?? 200);
+  const take = Number.isFinite(requestedLimit) ? Math.min(Math.max(Math.trunc(requestedLimit), 1), 500) : 200;
   const fromDate = from ? new Date(from) : undefined;
   const toDate = to ? new Date(to) : undefined;
   if (toDate) toDate.setHours(23, 59, 59, 999);
@@ -41,7 +43,8 @@ export async function GET(request: Request) {
             : undefined
       },
       include: { student: { include: { user: true } }, class: true },
-      orderBy: { date: 'desc' }
+      orderBy: { date: 'desc' },
+      take
     });
     return NextResponse.json(records);
   }
@@ -68,7 +71,8 @@ export async function GET(request: Request) {
             : undefined
       },
       include: { student: { include: { user: true } }, class: true },
-      orderBy: { date: 'desc' }
+      orderBy: { date: 'desc' },
+      take
     });
     return NextResponse.json(records);
   }
@@ -105,7 +109,8 @@ export async function GET(request: Request) {
           : undefined
     },
     include: { student: { include: { user: true } }, class: true },
-    orderBy: { date: 'desc' }
+    orderBy: { date: 'desc' },
+    take
   });
 
   return NextResponse.json(records);

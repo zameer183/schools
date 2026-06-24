@@ -1,3 +1,5 @@
+import Image from 'next/image';
+
 interface PersonCardProps {
   name: string;
   detail?: string;
@@ -15,7 +17,7 @@ export function PersonCard({ name, detail, avatar }: PersonCardProps) {
   return (
     <div className="flex items-center gap-3 rounded-xl border border-[#E5E7EB] bg-white p-3">
       {avatar ? (
-        <img src={avatar} alt={name} className="h-9 w-9 rounded-full object-cover" />
+        <Image src={avatar} alt={name} width={36} height={36} className="h-9 w-9 rounded-full object-cover" />
       ) : (
         <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-[#e0eff0] text-xs font-bold text-[#2b676e]">
           {initials}

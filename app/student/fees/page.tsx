@@ -12,6 +12,26 @@ function toDateString(value: Date | string) {
   return Number.isNaN(parsed.getTime()) ? '-' : parsed.toISOString().slice(0, 10);
 }
 
+function toMonthString(value: Date | string | null) {
+  if (!value) return null;
+  const parsed = value instanceof Date ? value : new Date(value);
+  return Number.isNaN(parsed.getTime()) ? null : parsed.toLocaleDateString('en-US', { month: 'short', year: 'numeric' });
+}
+
+function feePeriodLabel(fee: { fromDate: Date | null; toDate: Date | null; dueDate: Date }) {
+  const from = toMonthString(fee.fromDate);
+  const to = toMonthString(fee.toDate);
+  if (from && to && from !== to) return `${from} - ${to}`;
+  if (from) return from;
+  return toMonthString(fee.dueDate) ?? '-';
+}
+
+function computedFeeStatus(feePaid: number, remaining: number, _dueDate: Date) {
+  if (remaining <= 0) return 'PAID';
+  if (feePaid > 0) return 'PARTIAL';
+  return 'DUE';
+}
+
 const getCachedStudentFeesData = unstable_cache(
   async (userId: string) => {
     const student = await prisma.student.findUnique({ where: { userId }, select: { id: true } });
@@ -55,7 +75,7 @@ export default async function StudentFeesPage() {
     <div className="space-y-6">
       <PageHeader
         title="Fee Status"
-        subtitle="Track your payments, dues, and outstanding balances."
+        subtitle="Track your payments, dues, and billing history."
         badge={
           outstanding > 0 ? (
             <span className="inline-flex items-center gap-1.5 rounded-full bg-[#FEE2E2] px-3 py-1.5 text-xs font-bold text-[#DC2626]">
@@ -74,7 +94,7 @@ export default async function StudentFeesPage() {
       <section className="grid grid-cols-1 gap-4 sm:grid-cols-3">
         <KpiCard variant="primary" icon={<Wallet />} label="Total Fee" value={`PKR ${totalDue.toLocaleString()}`} />
         <KpiCard variant="success" icon={<CheckCircle2 />} label="Amount Paid" value={`PKR ${totalPaid.toLocaleString()}`} />
-        <KpiCard variant={outstanding > 0 ? 'danger' : 'success'} icon={outstanding > 0 ? <TrendingDown /> : <CheckCircle2 />} label="Outstanding" value={outstanding > 0 ? `PKR ${outstanding.toLocaleString()}` : 'Paid'} />
+        <KpiCard variant={outstanding > 0 ? 'danger' : 'success'} icon={outstanding > 0 ? <TrendingDown /> : <CheckCircle2 />} label="Due" value={outstanding > 0 ? `PKR ${outstanding.toLocaleString()}` : 'Paid'} />
       </section>
 
       {totalDue > 0 && (
@@ -110,14 +130,16 @@ export default async function StudentFeesPage() {
                 const feeDue = Number(fee.amount) - Number(fee.discount);
                 const feePaid = fee.payments.reduce((sum, p) => sum + Number(p.amountPaid), 0);
                 const remaining = Math.max(feeDue - feePaid, 0);
-                const statusVariant = fee.status === 'PAID' ? 'success' : fee.status === 'PARTIAL' ? 'pending' : 'danger';
+                const status = computedFeeStatus(feePaid, remaining, fee.dueDate);
+                const statusVariant = status === 'PAID' ? 'success' : status === 'PARTIAL' ? 'pending' : 'danger';
                 return (
                   <div key={fee.id} className="rounded-lg bg-[#F9FAFB] p-4 border border-[#E5E7EB]">
                     <div className="flex items-start justify-between gap-2 mb-3">
                       <p className="text-sm font-semibold text-[#1F2937]">{fee.title}</p>
-                      <StatusBadge variant={statusVariant}>{fee.status}</StatusBadge>
+                      <StatusBadge variant={statusVariant}>{status}</StatusBadge>
                     </div>
                     <div className="grid grid-cols-2 gap-x-3 gap-y-2 text-xs text-[#6B7280]">
+                      <span>Period: <span className="text-[#1F2937] font-semibold">{feePeriodLabel(fee)}</span></span>
                       <span>Due: <span className="text-[#1F2937] font-semibold">{toDateString(fee.dueDate)}</span></span>
                       <span>Amount: <span className="text-[#1F2937] font-semibold">PKR {feeDue.toLocaleString()}</span></span>
                       <span>Paid: <span className="text-[#10B981] font-semibold">PKR {feePaid.toLocaleString()}</span></span>
@@ -133,6 +155,7 @@ export default async function StudentFeesPage() {
                 <thead>
                   <tr className="border-b border-[#E5E7EB] bg-[#F9FAFB]">
                     <th className="px-3 py-3 text-left text-xs font-semibold text-[#6B7280]">Title</th>
+                    <th className="px-3 py-3 text-left text-xs font-semibold text-[#6B7280]">Period</th>
                     <th className="px-3 py-3 text-left text-xs font-semibold text-[#6B7280]">Due</th>
                     <th className="px-3 py-3 text-right text-xs font-semibold text-[#6B7280]">Amount</th>
                     <th className="px-3 py-3 text-right text-xs font-semibold text-[#6B7280]">Paid</th>
@@ -145,16 +168,18 @@ export default async function StudentFeesPage() {
                     const feeDue = Number(fee.amount) - Number(fee.discount);
                     const feePaid = fee.payments.reduce((sum, p) => sum + Number(p.amountPaid), 0);
                     const remaining = Math.max(feeDue - feePaid, 0);
-                    const statusVariant = fee.status === 'PAID' ? 'success' : fee.status === 'PARTIAL' ? 'pending' : 'danger';
+                    const status = computedFeeStatus(feePaid, remaining, fee.dueDate);
+                    const statusVariant = status === 'PAID' ? 'success' : status === 'PARTIAL' ? 'pending' : 'danger';
                     return (
                       <tr key={fee.id}>
                         <td className="px-3 py-3 font-medium text-[#1F2937]">{fee.title}</td>
+                        <td className="px-3 py-3 text-[#6B7280]">{feePeriodLabel(fee)}</td>
                         <td className="px-3 py-3 text-[#6B7280]">{toDateString(fee.dueDate)}</td>
                         <td className="px-3 py-3 text-right font-semibold text-[#1F2937]">PKR {feeDue.toLocaleString()}</td>
                         <td className="px-3 py-3 text-right font-semibold text-[#10B981]">PKR {feePaid.toLocaleString()}</td>
                         <td className="px-3 py-3 text-right font-semibold text-[#EF4444]">PKR {remaining.toLocaleString()}</td>
                         <td className="px-3 py-3">
-                          <StatusBadge variant={statusVariant}>{fee.status}</StatusBadge>
+                          <StatusBadge variant={statusVariant}>{status}</StatusBadge>
                         </td>
                       </tr>
                     );

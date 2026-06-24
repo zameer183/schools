@@ -5,10 +5,10 @@ import { DashboardShell } from '@/components/layout/dashboard-shell';
 export const dynamic = 'force-dynamic';
 
 export default async function ParentLayout({ children }: { children: React.ReactNode }) {
-  const session = await requireAuth([UserRole.PARENT]);
+  const session = await requireAuth([UserRole.PARENT, UserRole.ADMIN]);
 
   return (
-    <DashboardShell role={(session.role as UserRole) ?? UserRole.PARENT} fullName={session.fullName || 'Parent'}>
+    <DashboardShell role={UserRole.PARENT} fullName={session.fullName || 'Parent'}>
       {children}
     </DashboardShell>
   );

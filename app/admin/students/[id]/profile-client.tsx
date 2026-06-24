@@ -31,6 +31,15 @@ import {
   Loader2
 } from 'lucide-react';
 
+const SESSION_EXPIRED_MESSAGE = 'Session expire ho gayi hai. Please admin login dubara karein.';
+
+function redirectToAdminLogin() {
+  if (typeof window === 'undefined') return;
+  window.setTimeout(() => {
+    window.location.href = '/login/admin';
+  }, 700);
+}
+
 // ─── Types ───────────────────────────────────────────────────────────────────
 
 type StudentData = {
@@ -124,22 +133,27 @@ function parseExamTitle(raw: string): { examType: string; title: string } {
   return { examType: match[1].trim(), title: (match[2] ?? '').trim() || raw.trim() };
 }
 
+function normalizeWhatsAppPk(raw?: string | null) {
+  if (!raw) return null;
+  let digits = raw.replace(/\D/g, '');
+  while (digits.startsWith('00')) digits = digits.slice(2);
+  if (digits.startsWith('92')) {
+    digits = digits.slice(2);
+    if (digits.startsWith('0')) digits = digits.slice(1);
+  } else if (digits.startsWith('0')) {
+    digits = digits.slice(1);
+  }
+  if (digits.length === 11 && digits.startsWith('3')) {
+    return `+92${digits.slice(1)}`;
+  }
+  if (digits.length === 10 && digits.startsWith('3')) {
+    return `+92${digits}`;
+  }
+  return null;
+}
+
 // ─── Sub-components ───────────────────────────────────────────────────────────
 
-
-function FeeBadge({ status }: { status: string }) {
-  const map: Record<string, string> = {
-    PAID: 'bg-[#dcfce7] text-[#15803d]',
-    PENDING: 'bg-[#fef3c7] text-[#b45309]',
-    PARTIAL: 'bg-[#eff6ff] text-[#1d4ed8]',
-    OVERDUE: 'bg-[#fee2e2] text-[#b91c1c]'
-  };
-  return (
-    <span className={`rounded-full px-2.5 py-1 text-[11px] font-bold ${map[status.toUpperCase()] ?? 'bg-gray-100 text-gray-600'}`}>
-      {status}
-    </span>
-  );
-}
 
 type InfoFieldProps = {
   icon: React.ElementType;
@@ -229,7 +243,6 @@ export default function StudentProfileClient({
   classes,
   attendance,
   results,
-  fees,
   collectedFee,
   dueFee
 }: Props) {
@@ -280,8 +293,6 @@ export default function StudentProfileClient({
   // Attendance computed values
   const attTotal = attendance.length;
   const attPresent = attendance.filter((a) => a.status === 'PRESENT').length;
-  const attAbsent = attendance.filter((a) => a.status === 'ABSENT').length;
-  const attLate = attendance.filter((a) => a.status === 'LATE').length;
   const attPct = attTotal ? Math.round((attPresent / attTotal) * 100) : 0;
   const attBarColor = attPct >= 75 ? '#16a34a' : attPct >= 50 ? '#f59e0b' : '#ef4444';
 
@@ -291,27 +302,55 @@ export default function StudentProfileClient({
     setProfileSaving(true);
     setProfileMsg('');
     try {
+      const payload: Record<string, string | null | undefined> = { id: student.id };
+      const addIfChanged = (key: string, current: string, original?: string | null) => {
+        const normalizedCurrent = current.trim();
+        const normalizedOriginal = (original ?? '').trim();
+        if (normalizedCurrent !== normalizedOriginal) {
+          payload[key] = normalizedCurrent === '' ? null : current;
+        }
+      };
+
+      addIfChanged('fullName', pf.fullName, student.user.fullName);
+      addIfChanged('email', pf.email, student.user.email);
+      addIfChanged('phone', pf.phone, student.user.phone);
+      addIfChanged('dateOfBirth', pf.dateOfBirth, student.dateOfBirth ? student.dateOfBirth.slice(0, 10) : '');
+      addIfChanged('gender', pf.gender, student.gender);
+      addIfChanged('fatherName', pf.fatherName, student.fatherName);
+      addIfChanged('aadharNo', pf.aadharNo, student.aadharNo);
+      addIfChanged('rollNumber', pf.rollNumber, student.rollNumber);
+      addIfChanged('schoolName', pf.schoolName, student.schoolName);
+      addIfChanged('joinDate', pf.joinDate, student.joinDate ? student.joinDate.slice(0, 10) : '');
+      addIfChanged('currentAddress', pf.currentAddress, student.currentAddress);
+      addIfChanged('emergencyContact', pf.emergencyContact, student.emergencyContact);
+
+      const currentWhatsApp = pf.whatsApp.trim();
+      const originalWhatsApp = (student.whatsApp ?? '').trim();
+      if (currentWhatsApp !== originalWhatsApp) {
+        if (!currentWhatsApp) {
+          payload.whatsApp = null;
+        } else {
+          const normalizedWhatsApp = normalizeWhatsAppPk(currentWhatsApp);
+          if (!normalizedWhatsApp) {
+            setProfileMsg('WhatsApp number must be like 03xxxxxxxxx, +92xxxxxxxxxx, or 0092xxxxxxxxxx.');
+            return;
+          }
+          payload.whatsApp = normalizedWhatsApp;
+        }
+      }
+
       const res = await fetch('/api/students', {
         method: 'PATCH',
+        credentials: 'same-origin',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          id: student.id,
-          fullName: pf.fullName,
-          email: pf.email,
-          phone: pf.phone,
-          whatsApp: pf.whatsApp,
-          dateOfBirth: pf.dateOfBirth || null,
-          gender: pf.gender,
-          fatherName: pf.fatherName,
-          aadharNo: pf.aadharNo,
-          rollNumber: pf.rollNumber,
-          schoolName: pf.schoolName,
-          joinDate: pf.joinDate || null,
-          currentAddress: pf.currentAddress,
-          emergencyContact: pf.emergencyContact
-        })
+        body: JSON.stringify(payload)
       });
       const data = await res.json();
+      if (res.status === 401) {
+        setProfileMsg(SESSION_EXPIRED_MESSAGE);
+        redirectToAdminLogin();
+        return;
+      }
       if (!res.ok) {
         setProfileMsg(data.error ?? 'Failed to save profile.');
       } else {
@@ -325,17 +364,22 @@ export default function StudentProfileClient({
       setProfileSaving(false);
     }
   }
-
   async function saveClass() {
     setClassSaving(true);
     setClassMsg('');
     try {
       const res = await fetch('/api/students', {
         method: 'PATCH',
+        credentials: 'same-origin',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ id: student.id, classId: selectedClass || null })
       });
       const data = await res.json();
+      if (res.status === 401) {
+        setClassMsg(SESSION_EXPIRED_MESSAGE);
+        redirectToAdminLogin();
+        return;
+      }
       if (!res.ok) {
         setClassMsg(data.error ?? 'Failed to save class.');
       } else {
@@ -356,10 +400,16 @@ export default function StudentProfileClient({
     try {
       const res = await fetch('/api/students', {
         method: 'PATCH',
+        credentials: 'same-origin',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ id: student.id, password: newPassword })
       });
       const data = await res.json();
+      if (res.status === 401) {
+        setPwdMsg(SESSION_EXPIRED_MESSAGE);
+        redirectToAdminLogin();
+        return;
+      }
       if (!res.ok) {
         setPwdMsg(data.error ?? 'Failed to update password.');
       } else {
@@ -380,10 +430,16 @@ export default function StudentProfileClient({
     try {
       const res = await fetch('/api/students', {
         method: 'PATCH',
+        credentials: 'same-origin',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ id: student.id, guardianPhone, guardianEmail })
       });
       const data = await res.json();
+      if (res.status === 401) {
+        setGuardianMsg(SESSION_EXPIRED_MESSAGE);
+        redirectToAdminLogin();
+        return;
+      }
       if (!res.ok) {
         setGuardianMsg(data.error ?? 'Failed to save guardian info.');
       } else {

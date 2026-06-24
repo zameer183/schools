@@ -14,7 +14,7 @@ const TYPE_META = {
 export default async function MobileAdminNotificationsPage() {
   const notifications = await prisma.notification.findMany({
     orderBy: { createdAt: 'desc' },
-    take: 30,
+    take: 20,
     include: {
       user: { select: { fullName: true, role: true, email: true } }
     }

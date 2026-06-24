@@ -101,31 +101,67 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: firstIssue, details: parsed.error.flatten() }, { status: 400 });
   }
 
-  const subject = await prisma.subject.findUnique({
-    where: { id: parsed.data.subjectId },
-    select: { id: true, classId: true, teacherId: true }
-  });
-
-  if (!subject) return NextResponse.json({ error: 'Selected subject is invalid.' }, { status: 400 });
-  if (subject.classId !== parsed.data.classId) {
-    return NextResponse.json({ error: 'Selected subject does not belong to selected class.' }, { status: 400 });
-  }
-
   let teacherId: string | null = null;
+  let scopeTeacherId: string | null = null;
+  let teacherClassIds: string[] = [];
 
   if (auth.session.role === UserRole.TEACHER) {
     const teacherScope = await getTeacherScope(auth.session.id);
     if (!teacherScope) return NextResponse.json({ error: 'Teacher profile missing' }, { status: 400 });
 
+    teacherClassIds = teacherScope.classIds;
+    scopeTeacherId = teacherScope.teacherId;
+
     if (!teacherScope.classIds.includes(parsed.data.classId)) {
       return NextResponse.json({ error: 'You can only create assignments for your assigned classes.' }, { status: 403 });
     }
+  }
 
-    if (subject.teacherId && subject.teacherId !== teacherScope.teacherId) {
+  let subject = parsed.data.subjectId
+    ? await prisma.subject.findUnique({
+        where: { id: parsed.data.subjectId },
+        select: { id: true, classId: true, teacherId: true, name: true, code: true }
+      })
+    : null;
+
+  if (subject && subject.classId !== parsed.data.classId) {
+    return NextResponse.json({ error: 'Selected subject does not belong to selected class.' }, { status: 400 });
+  }
+
+  if (!subject) {
+    // Subject optional flow: use an existing class subject, otherwise create a generic subject.
+    subject = await prisma.subject.findFirst({
+      where: {
+        classId: parsed.data.classId,
+        ...(scopeTeacherId ? { OR: [{ teacherId: scopeTeacherId }, { teacherId: null }] } : {})
+      },
+      select: { id: true, classId: true, teacherId: true, name: true, code: true },
+      orderBy: { createdAt: 'asc' }
+    });
+
+    if (!subject) {
+      const fallbackCode = `GEN-${parsed.data.classId.slice(0, 6).toUpperCase()}-${Date.now().toString().slice(-4)}`;
+      subject = await prisma.subject.create({
+        data: {
+          name: 'General',
+          code: fallbackCode,
+          classId: parsed.data.classId,
+          teacherId: scopeTeacherId ?? undefined,
+          creditHours: 1
+        },
+        select: { id: true, classId: true, teacherId: true, name: true, code: true }
+      });
+    }
+  }
+
+  if (auth.session.role === UserRole.TEACHER) {
+    if (subject.teacherId && subject.teacherId !== scopeTeacherId) {
       return NextResponse.json({ error: 'You are not assigned to this subject.' }, { status: 403 });
     }
-
-    teacherId = teacherScope.teacherId;
+    if (teacherClassIds.length > 0 && !teacherClassIds.includes(subject.classId)) {
+      return NextResponse.json({ error: 'Subject class is outside your assigned classes.' }, { status: 403 });
+    }
+    teacherId = scopeTeacherId;
   } else {
     teacherId = subject.teacherId;
     if (!teacherId) {
@@ -133,9 +169,14 @@ export async function POST(request: Request) {
     }
   }
 
+  if (!teacherId) {
+    return NextResponse.json({ error: 'Teacher is required to create assignment.' }, { status: 400 });
+  }
+
   const assignment = await prisma.assignment.create({
     data: {
       ...parsed.data,
+      subjectId: subject.id,
       dueDate: new Date(parsed.data.dueDate),
       teacherId,
       status: AssignmentStatus.PUBLISHED

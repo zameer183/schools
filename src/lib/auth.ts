@@ -61,18 +61,62 @@ export async function getSession(): Promise<SessionPayload | null> {
   return decodeSessionToken(token);
 }
 
+export async function getVerifiedSession(): Promise<SessionUser | null> {
+  try {
+    const session = await getSession();
+    if (!session) return null;
+
+    const user = await prisma.user.findUnique({
+      where: { id: session.id },
+      select: { id: true, email: true, fullName: true, role: true, isActive: true }
+    });
+
+    if (!user?.isActive) return null;
+
+    return {
+      id: user.id,
+      email: user.email,
+      fullName: user.fullName,
+      role: user.role as SessionUser['role']
+    };
+  } catch (error) {
+    const session = await getSession();
+    if (
+      session &&
+      error instanceof Error &&
+      (error.name === 'PrismaClientInitializationError' ||
+        error.message.includes("Can't reach database server") ||
+        error.message.includes('Timed out fetching a new connection'))
+    ) {
+      console.warn('[auth][getVerifiedSession] using signed-session fallback because database is unavailable');
+      return {
+        id: session.id,
+        email: session.email,
+        fullName: session.fullName,
+        role: session.role
+      };
+    }
+
+    console.error('[auth][getVerifiedSession]', error);
+    return null;
+  }
+}
+
 export async function getCurrentUser() {
-  const session = await getSession();
+  const session = await getVerifiedSession();
   if (!session) return null;
 
-  return prisma.user.findUnique({
-    where: { id: session.id },
-    select: { id: true, email: true, fullName: true, role: true, isActive: true }
-  });
+  return {
+    id: session.id,
+    email: session.email,
+    fullName: session.fullName,
+    role: session.role,
+    isActive: true
+  };
 }
 
 export async function requireAuth(roles?: UserRole[]) {
-  const session = await getSession();
+  const session = await getVerifiedSession();
   if (!session) redirect('/login');
 
   if (roles && roles.length > 0 && !roles.includes(session.role as UserRole)) {

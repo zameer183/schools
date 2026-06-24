@@ -30,7 +30,7 @@ export const assignmentCreateSchema = z.object({
   title: z.string().min(3),
   description: z.string().min(10),
   classId: z.string(),
-  subjectId: z.string(),
+  subjectId: z.preprocess((value) => (value === '' ? undefined : value), z.string().optional()),
   dueDate: z.string(),
   maxMarks: z.number().int().min(1).max(1000)
 });

@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useMemo, useState } from 'react';
+import { useMemo, useState } from 'react';
 import { AlertCircle, RotateCw, Zap, Users, Phone, UserX, CheckCircle2 } from 'lucide-react';
 import { KpiCard } from '@/components/ui';
 import { FinanceToast } from '../finance-toast';
@@ -79,7 +79,7 @@ export default function AdminFinanceRemindersPage() {
   const [sendingAll, setSendingAll] = useState(false);
 
   const campaign = data?.campaign ?? null;
-  const items = data?.items ?? [];
+  const items = useMemo(() => data?.items ?? [], [data?.items]);
 
   const createdAt = useMemo(() => {
     if (!campaign?.createdAt) return '-';
@@ -227,7 +227,7 @@ export default function AdminFinanceRemindersPage() {
           <div>
             <p className="text-[10px] font-bold uppercase tracking-widest text-[#6f7979]">Finance</p>
             <h1 className="mt-0.5 text-2xl font-extrabold text-[#1a1c1c] sm:text-3xl">Reminder Campaign</h1>
-            <p className="mt-1 text-sm text-[#6f7979]">Send WhatsApp reminders to overdue/pending fee students.</p>
+            <p className="mt-1 text-sm text-[#6f7979]">Build one WhatsApp reminder list for unpaid and overdue students, then send and track status from one place.</p>
           </div>
           <div className="flex gap-2">
             {data ? (
@@ -246,11 +246,22 @@ export default function AdminFinanceRemindersPage() {
               className="h-10 flex items-center gap-1.5 rounded-xl bg-gradient-to-br from-[#004649] to-[#1b5e62] px-4 text-xs font-semibold text-white shadow-[0_4px_12px_rgba(0,70,73,0.2)] hover:scale-105 hover:shadow-[0_6px_16px_rgba(0,70,73,0.3)] active:scale-[0.98] disabled:opacity-60 transition-all"
             >
               <Zap className={`h-4 w-4 ${generating ? 'animate-spin' : ''}`} />
-              Generate Campaign
+              Build Campaign
             </button>
           </div>
         </div>
       </div>
+
+      {!data ? (
+        <div className="rounded-2xl bg-white p-4 shadow-[0_4px_12px_rgba(0,0,0,0.08)] sm:p-6">
+          <h3 className="text-sm font-bold text-[#1a1c1c]">How this works</h3>
+          <ul className="mt-2 space-y-1 text-xs text-[#6f7979]">
+            <li>1. Build Campaign collects students with unpaid or overdue fee.</li>
+            <li>2. Students without WhatsApp are automatically skipped.</li>
+            <li>3. Open WhatsApp sends reminder message and marks item as sent.</li>
+          </ul>
+        </div>
+      ) : null}
 
       {/* ── Empty State ── */}
       {!data && !generating && !loading && !error ? (
@@ -259,15 +270,15 @@ export default function AdminFinanceRemindersPage() {
             <div className="mb-4 rounded-full bg-[#f0f2f5] p-4">
               <AlertCircle className="h-8 w-8 text-[#6f7979]" />
             </div>
-            <h2 className="text-lg font-bold text-[#1a1c1c]">No reminder campaign generated yet.</h2>
-            <p className="mt-2 text-sm text-[#6f7979] max-w-xs">Click Generate to build a campaign for all students with pending or overdue fees.</p>
+            <h2 className="text-lg font-bold text-[#1a1c1c]">No campaign built yet.</h2>
+            <p className="mt-2 text-sm text-[#6f7979] max-w-sm">Click Build Campaign to prepare reminder items for students whose fee is unpaid or overdue.</p>
             <button
               onClick={generateCampaign}
               disabled={generating}
               className="mt-6 h-11 flex items-center gap-1.5 rounded-xl bg-gradient-to-br from-[#004649] to-[#1b5e62] px-5 text-sm font-bold text-white shadow-[0_4px_12px_rgba(0,70,73,0.2)] hover:scale-105 hover:shadow-[0_6px_16px_rgba(0,70,73,0.3)] active:scale-[0.98] disabled:opacity-60 transition-all"
             >
               <Zap className="h-4 w-4" />
-              Generate Reminder Campaign
+              Build Reminder Campaign
             </button>
           </div>
         </div>

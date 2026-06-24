@@ -14,17 +14,32 @@ type StudentOption = {
   class: { name: string; section: string } | null;
 };
 
+function toInputDate(date: Date) {
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, '0');
+  const day = String(date.getDate()).padStart(2, '0');
+  return `${year}-${month}-${day}`;
+}
+
 export function FinanceClientBar({
   classes,
   selectedClassId,
   selectedStatus,
   selectedSort,
+  selectedPeriod,
+  selectedMonth,
+  selectedFrom,
+  selectedTo,
   searchValue
 }: {
   classes: ClassOption[];
   selectedClassId: string;
   selectedStatus: string;
   selectedSort: string;
+  selectedPeriod: string;
+  selectedMonth: string;
+  selectedFrom: string;
+  selectedTo: string;
   searchValue: string;
 }) {
   const router = useRouter();
@@ -32,7 +47,16 @@ export function FinanceClientBar({
   const [autoRunPending, startAutoRun] = useTransition();
   const [toast, setToast] = useState<{ message: string; type: 'success' | 'error' } | null>(null);
   const [search, setSearch] = useState(searchValue);
+  const [month, setMonth] = useState(selectedMonth);
+  const [fromDate, setFromDate] = useState(selectedFrom);
+  const [toDate, setToDate] = useState(selectedTo);
   const debounceRef = useRef<NodeJS.Timeout | null>(null);
+
+  useEffect(() => {
+    setMonth(selectedMonth);
+    setFromDate(selectedFrom);
+    setToDate(selectedTo);
+  }, [selectedMonth, selectedFrom, selectedTo]);
 
   useEffect(() => {
     if (debounceRef.current) clearTimeout(debounceRef.current);
@@ -42,12 +66,16 @@ export function FinanceClientBar({
       p.set('status', selectedStatus);
       p.set('sort', selectedSort);
       p.set('classId', selectedClassId);
+      p.set('period', selectedPeriod);
+      if (month) p.set('month', month);
+      if (fromDate) p.set('from', fromDate);
+      if (toDate) p.set('to', toDate);
       router.push(`/admin/finance?${p.toString()}`);
     }, 400);
     return () => {
       if (debounceRef.current) clearTimeout(debounceRef.current);
     };
-  }, [search, selectedStatus, selectedSort, selectedClassId, router]);
+  }, [search, selectedStatus, selectedSort, selectedClassId, selectedPeriod, month, fromDate, toDate, router]);
 
   const updateFilter = (key: string, value: string) => {
     const p = new URLSearchParams();
@@ -55,6 +83,10 @@ export function FinanceClientBar({
     p.set('status', key === 'status' ? value : selectedStatus);
     p.set('sort', key === 'sort' ? value : selectedSort);
     p.set('classId', key === 'classId' ? value : selectedClassId);
+    p.set('period', key === 'period' ? value : selectedPeriod);
+    if (month) p.set('month', month);
+    if (fromDate) p.set('from', fromDate);
+    if (toDate) p.set('to', toDate);
     router.push(`/admin/finance?${p.toString()}`);
   };
 
@@ -62,7 +94,7 @@ export function FinanceClientBar({
     startAutoRun(async () => {
       try {
         const r = await runAutoFeesAction();
-        setToast({ message: `${r.feesCreated} fees created, ${r.overdueMarked} marked overdue.`, type: 'success' });
+        setToast({ message: `${r.feesCreated} monthly fee(s) created, ${r.feesSkipped} skipped.`, type: 'success' });
         router.refresh();
       } catch {
         setToast({ message: 'Auto fees failed. Try again.', type: 'error' });
@@ -74,14 +106,20 @@ export function FinanceClientBar({
     { value: 'all', label: 'All' },
     { value: 'paid', label: 'Paid' },
     { value: 'unpaid', label: 'Unpaid' },
-    { value: 'partial', label: 'Partial' },
-    { value: 'overdue', label: 'Due 🔴' }
+    { value: 'partial', label: 'Partial' }
   ];
 
   const sortOptions = [
     { value: 'dueDate', label: 'Due Date' },
     { value: 'amount', label: 'Amount' },
     { value: 'name', label: 'Name' }
+  ];
+
+  const periodOptions = [
+    { value: 'all', label: 'All Time' },
+    { value: 'mtd_1_8', label: '1 to 8' },
+    { value: 'mtd_1_15', label: '1 to 15' },
+    { value: 'mtd_full', label: '1 to End Month' }
   ];
 
   return (
@@ -130,7 +168,7 @@ export function FinanceClientBar({
           </select>
         </div>
 
-        {/* Class filter + Action buttons */}
+        {/* Class filter + Period + Date range + Action buttons */}
         <div className="flex flex-wrap items-center gap-2">
           <select
             value={selectedClassId}
@@ -143,11 +181,74 @@ export function FinanceClientBar({
             ))}
           </select>
 
+          <select
+            value={selectedPeriod || 'all'}
+            onChange={e => updateFilter('period', e.target.value)}
+            className="h-10 rounded-xl bg-[#f0f2f5] border-none px-3 text-sm text-[#2c3e50] outline-none focus:ring-2 focus:ring-[#004649]/20"
+          >
+            {periodOptions.map(opt => (
+              <option key={opt.value} value={opt.value}>{opt.label}</option>
+            ))}
+          </select>
+
+          <input
+            type="month"
+            value={month}
+            onChange={e => {
+              const next = e.target.value;
+              setMonth(next);
+              if (next) {
+                setFromDate('');
+                setToDate('');
+              }
+            }}
+            className="h-10 rounded-xl bg-[#f0f2f5] border-none px-3 text-sm text-[#2c3e50] outline-none focus:ring-2 focus:ring-[#004649]/20"
+            aria-label="Month filter"
+          />
+
+          <input
+            type="date"
+            value={fromDate}
+            onChange={e => {
+              setFromDate(e.target.value);
+              if (e.target.value) setMonth('');
+            }}
+            className="h-10 rounded-xl bg-[#f0f2f5] border-none px-3 text-sm text-[#2c3e50] outline-none focus:ring-2 focus:ring-[#004649]/20"
+            aria-label="From date"
+          />
+          <input
+            type="date"
+            value={toDate}
+            onChange={e => {
+              setToDate(e.target.value);
+              if (e.target.value) setMonth('');
+            }}
+            className="h-10 rounded-xl bg-[#f0f2f5] border-none px-3 text-sm text-[#2c3e50] outline-none focus:ring-2 focus:ring-[#004649]/20"
+            aria-label="To date"
+          />
+          <button
+            onClick={() => {
+              setMonth('');
+              setFromDate('');
+              setToDate('');
+              const p = new URLSearchParams();
+              p.set('search', search);
+              p.set('status', selectedStatus);
+              p.set('sort', selectedSort);
+              p.set('classId', selectedClassId);
+              p.set('period', selectedPeriod);
+              router.push(`/admin/finance?${p.toString()}`);
+            }}
+            className="h-10 rounded-xl bg-[#f0f2f5] px-3 text-xs font-semibold text-[#2c3e50] hover:bg-[#e8ecf0]"
+          >
+            Clear Dates
+          </button>
+
           {/* Auto Fees — teal gradient */}
           <button
             onClick={handleAutoRun}
             disabled={autoRunPending}
-            title="Create monthly fees + mark overdue"
+            title="Create monthly fees for the current month"
             className="flex h-10 items-center gap-1.5 rounded-xl bg-gradient-to-br from-[#004649] to-[#1b5e62] px-3 text-xs font-semibold text-white shadow-[0_4px_12px_rgba(0,70,73,0.2)] transition-all duration-200 hover:scale-105 hover:shadow-[0_6px_16px_rgba(0,70,73,0.3)] active:scale-[0.98] disabled:opacity-60"
           >
             <RefreshCw className={`h-3.5 w-3.5 ${autoRunPending ? 'animate-spin' : ''}`} />
@@ -199,7 +300,7 @@ function AddFeeModal({
     studentId: '',
     title: '',
     amount: '',
-    dueDate: new Date().toISOString().slice(0, 10)
+    dueDate: toInputDate(new Date(new Date().getFullYear(), new Date().getMonth(), 1))
   });
 
   useEffect(() => {

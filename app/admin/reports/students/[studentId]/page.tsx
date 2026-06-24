@@ -1,6 +1,6 @@
 import { prisma } from '@/lib/prisma';
 import { notFound } from 'next/navigation';
-import { ChevronLeft, BarChart3, Calendar, BookOpen, FileText } from 'lucide-react';
+import { ChevronLeft, Calendar, BookOpen, FileText } from 'lucide-react';
 import Link from 'next/link';
 import { StudentReportDetailActions } from './student-report-actions';
 
@@ -17,14 +17,6 @@ function formatDate(value: Date | string) {
 
 function formatMoney(value: number) {
   return `AED ${value.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
-}
-
-function statusBadgeClass(status: string) {
-  if (status === 'PAID') return 'bg-[#f0fdf4] text-[#15803d]';
-  if (status === 'PENDING') return 'bg-[#fef2f2] text-[#b91c1c]';
-  if (status === 'OVERDUE') return 'bg-[#fef2f2] text-[#dc2626]';
-  if (status === 'PARTIAL') return 'bg-[#fff7ed] text-[#b45309]';
-  return 'bg-[#f3f4f5] text-[#6f7979]';
 }
 
 export default async function StudentDetailPage({ params }: StudentDetailPageProps) {

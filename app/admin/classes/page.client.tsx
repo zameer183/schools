@@ -1,7 +1,6 @@
 'use client';
 
 import Link from 'next/link';
-import { useRouter } from 'next/navigation';
 import { useMemo, useState, useCallback, useEffect, useRef } from 'react';
 import {
   BookOpen, Users, GraduationCap, BarChart3,
@@ -453,7 +452,6 @@ export default function AdminClassesPageClient({
   initialClasses: ClassItem[];
   initialTeachers: TeacherOption[];
 }) {
-  const router = useRouter();
   const [classes, setClasses] = useState<ClassItem[]>(initialClasses);
   const [teachers] = useState<TeacherOption[]>(initialTeachers);
   const [view, setView] = useState<'grid' | 'table'>('grid');

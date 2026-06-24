@@ -2,7 +2,7 @@
 
 import { useState, useMemo } from 'react';
 import Link from 'next/link';
-import { ChevronLeft, Phone, Mail, Search, Plus, MoreVertical, Eye, Edit, Trash, Calendar, Users, BarChart3, DollarSign, TrendingUp, AlertCircle } from 'lucide-react';
+import { ChevronLeft, Phone, Mail, Search, Plus, Eye, Calendar, Users, BarChart3, DollarSign, TrendingUp, AlertCircle } from 'lucide-react';
 import { AttendanceStatus } from '@prisma/client';
 
 const CARD_CLS = 'rounded-2xl bg-white shadow-[0_1px_3px_rgba(0,0,0,0.08),0_1px_2px_rgba(0,0,0,0.04)]';
@@ -82,27 +82,6 @@ function ToastContainer({ toasts }: { toasts: Array<{ id: string; msg: string; t
           {t.msg}
         </div>
       ))}
-    </div>
-  );
-}
-
-function ActionMenu({ onEdit, onDelete }: { onEdit: () => void; onDelete: () => void }) {
-  const [open, setOpen] = useState(false);
-  return (
-    <div className="relative">
-      <button onClick={() => setOpen(!open)} className="p-1 hover:bg-[#f3f4f5] rounded-lg">
-        <MoreVertical size={16} className="text-[#6f7979]" />
-      </button>
-      {open && (
-        <div className="absolute right-0 mt-1 w-32 bg-white rounded-xl shadow-lg border border-[#e0e5e5] overflow-hidden z-10">
-          <button onClick={() => { onEdit(); setOpen(false); }} className="w-full text-left px-4 py-2 hover:bg-[#f3f4f5] text-sm text-[#1a1c1c] flex items-center gap-2">
-            <Edit size={14} /> Edit
-          </button>
-          <button onClick={() => { onDelete(); setOpen(false); }} className="w-full text-left px-4 py-2 hover:bg-red-50 text-sm text-red-600 flex items-center gap-2">
-            <Trash size={14} /> Delete
-          </button>
-        </div>
-      )}
     </div>
   );
 }

@@ -2,7 +2,6 @@
 
 import { useState } from 'react';
 import Link from 'next/link';
-import { useRouter } from 'next/navigation';
 
 export interface LoginTheme {
   accent: string;
@@ -18,8 +17,6 @@ export default function LoginForm({ theme }: { theme: LoginTheme }) {
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
   const [focused, setFocused] = useState<'email' | 'password' | null>(null);
-  const router = useRouter();
-
   const onSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
@@ -27,6 +24,7 @@ export default function LoginForm({ theme }: { theme: LoginTheme }) {
     try {
       const res = await fetch('/api/auth/login', {
         method: 'POST',
+        credentials: 'include',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email, password }),
       });
@@ -36,7 +34,7 @@ export default function LoginForm({ theme }: { theme: LoginTheme }) {
         data.role === 'ADMIN' ? '/admin' :
         data.role === 'TEACHER' ? '/teacher' :
         data.role === 'STUDENT' ? '/student' : '/parent';
-      router.push(target);
+      window.location.assign(target);
     } catch {
       setError('Connection error. Please try again.');
     } finally {
@@ -58,25 +56,18 @@ export default function LoginForm({ theme }: { theme: LoginTheme }) {
           Email Address
         </label>
         <div className="relative">
-          <span
-            className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 transition-colors"
-            style={{ color: focused === 'email' ? theme.accent : '#94a3b8' }}
-          >
+          <span className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 transition-colors" style={{ color: focused === 'email' ? theme.accent : '#94a3b8' }}>
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
               <rect x="2" y="4" width="20" height="16" rx="2"/>
               <path d="m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7"/>
             </svg>
           </span>
           <input
-            type="email"
-            required
-            value={email}
+            type="email" required value={email}
             onChange={(e) => setEmail(e.target.value)}
-            onFocus={() => setFocused('email')}
-            onBlur={() => setFocused(null)}
-            placeholder="your@email.com"
-            style={inputStyle('email')}
-            className="h-12 w-full rounded-[14px] border bg-[#f8fafc] pl-11 pr-4 text-[15px] text-[#0d1117] outline-none transition-all placeholder:text-[#c4cdd8] focus:bg-white"
+            onFocus={() => setFocused('email')} onBlur={() => setFocused(null)}
+            placeholder="your@email.com" style={inputStyle('email')}
+            className="h-11 w-full rounded-[14px] border bg-[#f8fafc] pl-11 pr-4 text-[14px] text-[#0d1117] outline-none transition-all placeholder:text-[#c4cdd8] focus:bg-white"
           />
         </div>
       </div>
@@ -84,44 +75,39 @@ export default function LoginForm({ theme }: { theme: LoginTheme }) {
       {/* Password */}
       <div>
         <div className="mb-2 flex items-center justify-between">
-          <label className="block text-[11px] font-bold uppercase tracking-[0.14em] text-[#94a3b8]">
-            Password
-          </label>
-          <Link
-            href="/forgot-password"
-            style={{ color: theme.accent }}
-            className="text-[13px] font-semibold transition-opacity hover:opacity-70"
-          >
+          <label className="block text-[11px] font-bold uppercase tracking-[0.14em] text-[#94a3b8]">Password</label>
+          <Link href="/forgot-password" style={{ color: theme.accent }} className="text-[13px] font-semibold transition-opacity hover:opacity-70">
             Forgot password?
           </Link>
         </div>
         <div className="relative">
-          <span
-            className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 transition-colors"
-            style={{ color: focused === 'password' ? theme.accent : '#94a3b8' }}
-          >
+          <span className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 transition-colors" style={{ color: focused === 'password' ? theme.accent : '#94a3b8' }}>
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
               <rect x="3" y="11" width="18" height="11" rx="2" ry="2"/>
               <path d="M7 11V7a5 5 0 0 1 10 0v4"/>
             </svg>
           </span>
           <input
-            type={showPassword ? 'text' : 'password'}
-            required
-            value={password}
+            type={showPassword ? 'text' : 'password'} required value={password}
             onChange={(e) => setPassword(e.target.value)}
-            onFocus={() => setFocused('password')}
-            onBlur={() => setFocused(null)}
-            placeholder="••••••••"
-            style={inputStyle('password')}
-            className="h-12 w-full rounded-[14px] border bg-[#f8fafc] pl-11 pr-14 text-[15px] text-[#0d1117] outline-none transition-all placeholder:text-[#c4cdd8] focus:bg-white"
+            onFocus={() => setFocused('password')} onBlur={() => setFocused(null)}
+            placeholder="••••••••" style={inputStyle('password')}
+            className="h-11 w-full rounded-[14px] border bg-[#f8fafc] pl-11 pr-12 text-[14px] text-[#0d1117] outline-none transition-all placeholder:text-[#c4cdd8] focus:bg-white"
           />
-          <button
-            type="button"
-            onClick={() => setShowPassword((p) => !p)}
-            className="absolute right-3.5 top-1/2 -translate-y-1/2 rounded-lg px-1.5 py-1 text-[11px] font-bold uppercase tracking-wide text-[#64748b] transition hover:bg-[#f1f5f9] hover:text-[#0d1117]"
-          >
-            {showPassword ? 'Hide' : 'Show'}
+          <button type="button" onClick={() => setShowPassword((p) => !p)}
+            className="absolute right-3.5 top-1/2 -translate-y-1/2 rounded-lg p-1 text-[#94a3b8] transition hover:text-[#0d1117]">
+            {showPassword ? (
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94"/>
+                <path d="M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19"/>
+                <line x1="1" y1="1" x2="23" y2="23"/>
+              </svg>
+            ) : (
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/>
+                <circle cx="12" cy="12" r="3"/>
+              </svg>
+            )}
           </button>
         </div>
       </div>
@@ -138,10 +124,9 @@ export default function LoginForm({ theme }: { theme: LoginTheme }) {
 
       {/* Submit */}
       <button
-        type="submit"
-        disabled={loading}
+        type="submit" disabled={loading}
         style={{ background: theme.btnBg, boxShadow: `0 4px 18px ${theme.btnShadow}` }}
-        className="group mt-1 flex h-12 w-full items-center justify-center rounded-[14px] text-[15px] font-bold text-white transition-all hover:-translate-y-0.5 hover:opacity-90 active:translate-y-0 active:scale-[0.99] disabled:opacity-60 disabled:hover:translate-y-0"
+        className="group mt-1 flex h-11 w-full items-center justify-center rounded-[14px] text-[14px] font-bold text-white transition-all hover:-translate-y-0.5 hover:opacity-90 active:translate-y-0 active:scale-[0.99] disabled:opacity-60 disabled:hover:translate-y-0"
       >
         {loading ? (
           <span className="flex items-center gap-2">
@@ -160,6 +145,7 @@ export default function LoginForm({ theme }: { theme: LoginTheme }) {
           </span>
         )}
       </button>
+
     </form>
   );
 }

@@ -1,9 +1,9 @@
-﻿const aliasMap: Record<string, string> = {
-  admin: 'admin@stitchhms.com',
+const aliasMap: Record<string, string> = {
+  admin: 'manarahinstitute01@gmail.com',
   teacher: 'teacher@stitchhms.com',
   student: 'student@stitchhms.com',
   parent: 'parent@stitchhms.com',
-  'system admin': 'admin@stitchhms.com'
+  'system admin': 'manarahinstitute01@gmail.com'
 };
 
 export function normalizeLoginIdentifier(value: unknown) {
@@ -16,3 +16,4 @@ export function normalizeLoginIdentifier(value: unknown) {
 export function normalizePassword(value: unknown) {
   return String(value ?? '').trim();
 }
+

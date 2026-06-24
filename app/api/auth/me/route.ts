@@ -1,9 +1,9 @@
 import { NextResponse } from 'next/server';
-import { getSession } from '@/lib/auth';
-import { getTeacherAccessMapByUserId } from '@/lib/teacher-access';
+import { getVerifiedSession } from '@/lib/auth';
+import { getTeacherAccessMapByUserId, getTeacherAccessLevelsByUserId } from '@/lib/teacher-access';
 
 export async function GET() {
-  const session = await getSession();
+  const session = await getVerifiedSession();
   if (!session) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
@@ -11,6 +11,9 @@ export async function GET() {
   const teacherAccess = session.role === 'TEACHER'
     ? await getTeacherAccessMapByUserId(session.id)
     : null;
+  const teacherAccessLevels = session.role === 'TEACHER'
+    ? await getTeacherAccessLevelsByUserId(session.id)
+    : null;
 
-  return NextResponse.json({ user: session, teacherAccess });
+  return NextResponse.json({ user: session, teacherAccess, teacherAccessLevels });
 }

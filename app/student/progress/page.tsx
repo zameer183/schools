@@ -52,6 +52,25 @@ function parseSectionFromNotes(notes: string | null, sectionKey: string): Sectio
   const block = notes.match(new RegExp(`\\[${upper}\\]([\\s\\S]*?)(?=\\[|$)`))?.[1] ?? null;
   if (!block) return dash;
 
+  const ranges = block
+    .split(/Range:\d+/)
+    .slice(1)
+    .map((rangeBlock) => {
+      const surahIdRaw = rangeBlock.match(/SurahId:(\d+)/)?.[1];
+      const surahNameRaw = rangeBlock.match(/SurahName:([^\n\r]+)/)?.[1]?.trim();
+      const fromAyah = rangeBlock.match(/FromAyah:(\d+)/)?.[1];
+      const toAyah = rangeBlock.match(/ToAyah:(\d+)/)?.[1];
+      if (!fromAyah || !toAyah) return null;
+      const surahName =
+        surahNameRaw && surahNameRaw !== '-'
+          ? surahNameRaw
+          : surahIdRaw
+            ? SURAH_NAMES[parseInt(surahIdRaw)] ?? `Surah ${surahIdRaw}`
+            : null;
+      return surahName ? `${surahName} (${fromAyah}-${toAyah})` : null;
+    })
+    .filter((value): value is string => Boolean(value));
+
   const surahIdRaw = block.match(/SurahId:(\d+)/)?.[1];
   const surahNameRaw = block.match(/SurahName:([^\n\r]+)/)?.[1]?.trim();
   const fromAyah = block.match(/FromAyah:(\d+)/)?.[1];
@@ -66,8 +85,9 @@ function parseSectionFromNotes(notes: string | null, sectionKey: string): Sectio
     block.match(/HifzTotal:(\d+)/)?.[1] ??
     '-';
 
-  const range =
-    surahIdRaw && fromAyah && toAyah
+  const range = ranges.length
+    ? ranges.join(', ')
+    : surahIdRaw && fromAyah && toAyah
       ? `${surahNameRaw ?? SURAH_NAMES[parseInt(surahIdRaw)] ?? `Surah ${surahIdRaw}`} (${fromAyah}-${toAyah})`
       : surahNameRaw && fromAyah && toAyah
         ? `${surahNameRaw} (${fromAyah}-${toAyah})`

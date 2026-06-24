@@ -64,6 +64,26 @@ function parseSectionFromNotes(notes: string | null, sectionKey: string): { rang
   const upper = sectionKey.toUpperCase();
   const block = notes.match(new RegExp(`\\[${upper}\\]([\\s\\S]*?)(?=\\[|$)`))?.[1] ?? null;
   if (!block) return empty;
+
+  const ranges = block
+    .split(/Range:\d+/)
+    .slice(1)
+    .map((rangeBlock) => {
+      const surahIdRaw = rangeBlock.match(/SurahId:(\d+)/)?.[1];
+      const surahNameRaw = rangeBlock.match(/SurahName:([^\n\r]+)/)?.[1]?.trim();
+      const fromAyah = rangeBlock.match(/FromAyah:(\d+)/)?.[1];
+      const toAyah = rangeBlock.match(/ToAyah:(\d+)/)?.[1];
+      if (!fromAyah || !toAyah) return null;
+      const surahName =
+        surahNameRaw && surahNameRaw !== '-'
+          ? surahNameRaw
+          : surahIdRaw
+            ? SURAH_NAMES[parseInt(surahIdRaw)] ?? `Surah ${surahIdRaw}`
+            : null;
+      return surahName ? `${surahName} (${fromAyah}-${toAyah})` : null;
+    })
+    .filter((value): value is string => Boolean(value));
+
   const surahIdRaw = block.match(/SurahId:(\d+)/)?.[1];
   const surahNameRaw = block.match(/SurahName:([^\n\r]+)/)?.[1]?.trim();
   const fromAyah = block.match(/FromAyah:(\d+)/)?.[1];
@@ -71,9 +91,11 @@ function parseSectionFromNotes(notes: string | null, sectionKey: string): { rang
   const kaifiyat = block.match(/Kaifiyat:(\w+)/)?.[1] ?? null;
   const tajweed = block.match(/TajweeditTotal:(\d+)/)?.[1] ?? null;
   const hifz = block.match(/HifzTotal:(\d+)/)?.[1] ?? null;
-  const range = surahIdRaw && fromAyah && toAyah
-    ? `${surahNameRaw ?? SURAH_NAMES[parseInt(surahIdRaw)] ?? `Surah ${surahIdRaw}`} (${fromAyah}-${toAyah})`
-    : null;
+  const range = ranges.length
+    ? ranges.join(', ')
+    : surahIdRaw && fromAyah && toAyah
+      ? `${surahNameRaw ?? SURAH_NAMES[parseInt(surahIdRaw)] ?? `Surah ${surahIdRaw}`} (${fromAyah}-${toAyah})`
+      : null;
   return { range, kaifiyat, tajweed, hifz };
 }
 

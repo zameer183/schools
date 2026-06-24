@@ -1,8 +1,7 @@
 'use client';
 
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import { BookOpen, Search, Sparkles, Star, TrendingUp } from 'lucide-react';
-import { PageHeader, Card } from '@/components/ui';
+import { BookOpenCheck, CalendarDays, Search, Sparkles, Star, TrendingUp } from 'lucide-react';
 
 type ClassItem = { id: string; name: string; section: string };
 type StudentItem = {
@@ -16,8 +15,10 @@ type ProgressItem = {
   id: string;
   date: string;
   notes: string | null;
-  student: { user: { fullName: string } };
-  class: { name: string; section: string };
+  studentId: string;
+  classId: string;
+  student: { id: string; admissionNo?: string; user: { fullName: string } };
+  class: { id: string; name: string; section: string };
 };
 
 type SectionKey = 'sabaq' | 'sabqi' | 'manzil';
@@ -275,8 +276,8 @@ function parseStructuredNotes(notes: string | null): ParsedReport | null {
       parsed.overall = line.replace('OverallPerformance:', '').trim();
       continue;
     }
-    if (line.startsWith('TotalMistakes:')) {
-      const count = Number.parseInt(line.replace('TotalMistakes:', '').trim(), 10);
+    if (line.startsWith('TotalMistakes')) {
+      const count = Number.parseInt(line.replace('TotalMistakes', '').trim(), 10);
       parsed.totalMistakes = Number.isNaN(count) ? 0 : count;
       continue;
     }
@@ -332,11 +333,67 @@ function getSectionLabelFromNotes(notes: string | null, sectionKey: string): str
   const upper = sectionKey.toUpperCase();
   const block = notes.match(new RegExp(`\\[${upper}\\]([\\s\\S]*?)(?=\\[|$)`))?.[1] ?? null;
   if (!block) return '-';
+  const ranges = block
+    .split(/Range:\d+/)
+    .slice(1)
+    .map((rangeBlock) => {
+      const surahName = rangeBlock.match(/SurahName:([^\n\r]+)/)?.[1]?.trim();
+      const from = rangeBlock.match(/FromAyah:(\d+)/)?.[1];
+      const to = rangeBlock.match(/ToAyah:(\d+)/)?.[1];
+      if (!surahName || surahName === '-' || !from || !to) return null;
+      return `${surahName} (${from}-${to})`;
+    })
+    .filter((value): value is string => Boolean(value));
+  if (ranges.length > 0) return ranges.join(', ');
   const surahName = block.match(/SurahName:([^\n\r]+)/)?.[1]?.trim();
   const from = block.match(/FromAyah:(\d+)/)?.[1];
   const to = block.match(/ToAyah:(\d+)/)?.[1];
   if (surahName && from && to && surahName !== '-') return `${surahName} (${from}–${to})`;
   return '-';
+}
+
+function parseSectionFormFromNotes(notes: string | null, sectionKey: SectionKey): SectionForm {
+  if (!notes) return emptySection();
+  const upper = sectionKey.toUpperCase();
+  const block = notes.match(new RegExp(`\\[${upper}\\]([\\s\\S]*?)(?=\\[|$)`))?.[1] ?? '';
+  if (!block) return emptySection();
+
+  const ranges: SurahRangeForm[] = [];
+  const rangeBlocks = block.split(/Range:\d+/).slice(1);
+  for (const rangeBlock of rangeBlocks) {
+    const surahId = Number(rangeBlock.match(/SurahId:(\d+)/)?.[1] ?? 0);
+    const surahName = rangeBlock.match(/SurahName:([^\n\r]+)/)?.[1]?.trim() ?? '';
+    const fromAyah = rangeBlock.match(/FromAyah:(\d+)/)?.[1] ?? '';
+    const toAyah = rangeBlock.match(/ToAyah:(\d+)/)?.[1] ?? '';
+    if (!surahId && !fromAyah && !toAyah) continue;
+    const surah = getSurahById(surahId);
+    ranges.push({
+      surahInput: surah ? `${surah.id}. ${surah.name}` : surahName,
+      surahId: surahId || null,
+      fromAyah,
+      toAyah
+    });
+  }
+
+  return {
+    ranges: ranges.length ? ranges : [emptyRange()],
+    kaifiyat: (block.match(/Kaifiyat:([^\n\r]+)/)?.[1]?.trim() ?? '') as KaifiyatValue,
+    tajweeditotal: block.match(/TajweeditTotal:(\d+)/)?.[1] ?? '',
+    hifztotal: block.match(/HifzTotal:(\d+)/)?.[1] ?? ''
+  };
+}
+
+function emptyProgressForm() {
+  return {
+    date: new Date().toISOString().slice(0, 10),
+    classId: '',
+    studentId: '',
+    sections: {
+      sabaq: emptySection(),
+      sabqi: emptySection(),
+      manzil: emptySection()
+    }
+  };
 }
 
 export default function TeacherProgressPage() {
@@ -351,18 +408,11 @@ export default function TeacherProgressPage() {
   const [reportQuery, setReportQuery] = useState('');
   const [reportDate, setReportDate] = useState('');
   const [openReportId, setOpenReportId] = useState<string | null>(null);
+  const [editingReportId, setEditingReportId] = useState<string | null>(null);
+  const [deletingReportId, setDeletingReportId] = useState<string | null>(null);
   const [saveAndMoveNext, setSaveAndMoveNext] = useState(false);
 
-  const [form, setForm] = useState({
-    date: new Date().toISOString().slice(0, 10),
-    classId: '',
-    studentId: '',
-    sections: {
-      sabaq: emptySection(),
-      sabqi: emptySection(),
-      manzil: emptySection()
-    }
-  });
+  const [form, setForm] = useState(emptyProgressForm);
   const [activeTab, setActiveTab] = useState<SectionKey>('sabaq');
 
   const addNotice = useCallback((type: NotificationItem['type'], text: string) => {
@@ -413,27 +463,6 @@ export default function TeacherProgressPage() {
     return badges;
   }, [form.sections]);
 
-  const completionPercent = useMemo(() => {
-    const baseDone = [form.date, form.classId, form.studentId].filter(Boolean).length;
-    const sectionDone = sectionMeta.reduce((sum, { key }) => {
-      const section = form.sections[key];
-      let done = 0;
-      // Count ranges (3 fields per range: surahId, fromAyah, toAyah)
-      section.ranges.forEach(range => {
-        if (range.surahId) done++;
-        if (range.fromAyah) done++;
-        if (range.toAyah) done++;
-      });
-      // Count other section fields
-      if (section.kaifiyat) done++;
-      if (section.tajweeditotal) done++;
-      if (section.hifztotal) done++;
-      return sum + done;
-    }, 0);
-    // Each section: assume 3 ranges (9) + 3 fields = 12 fields per section
-    const totalFields = 3 + 12 * 3;
-    return Math.round(((baseDone + sectionDone) / totalFields) * 100);
-  }, [form]);
 
   const summary = useMemo(() => {
     const ratings = sectionMeta
@@ -502,7 +531,10 @@ export default function TeacherProgressPage() {
   const loadBaseData = useCallback(async () => {
     setLoading(true);
     try {
-      const [classesRes, studentsRes] = await Promise.all([fetch('/api/classes'), fetch('/api/students')]);
+      const [classesRes, studentsRes] = await Promise.all([
+        fetch('/api/classes', { cache: 'no-store' }),
+        fetch('/api/students', { cache: 'no-store' })
+      ]);
       if (!classesRes.ok || !studentsRes.ok) {
         const classesError = await classesRes.json().catch(() => null);
         const studentsError = await studentsRes.json().catch(() => null);
@@ -541,7 +573,8 @@ export default function TeacherProgressPage() {
     try {
       const query = new URLSearchParams({ classId: form.classId });
       if (form.studentId) query.set('studentId', form.studentId);
-      const response = await fetch(`/api/progress?${query.toString()}`);
+      query.set('_t', Date.now().toString());
+      const response = await fetch(`/api/progress?${query.toString()}`, { cache: 'no-store' });
       if (!response.ok) {
         const errorJson = await response.json().catch(() => null);
         const errorMessage = typeof errorJson?.error === 'string' ? errorJson.error : 'Failed to load progress data.';
@@ -592,7 +625,12 @@ export default function TeacherProgressPage() {
     const updatedRanges = [...current.ranges];
 
     if (!resolved) {
-      updatedRanges[rangeIndex] = { ...updatedRanges[rangeIndex], surahInput: value, surahId: null };
+      updatedRanges[rangeIndex] = {
+        ...updatedRanges[rangeIndex],
+        surahInput: value,
+        surahId: null,
+        ...(value.trim() ? {} : { fromAyah: '', toAyah: '' })
+      };
     } else {
       const from = updatedRanges[rangeIndex].fromAyah ? Math.min(Number(updatedRanges[rangeIndex].fromAyah), resolved.ayahs) : '';
       const to = updatedRanges[rangeIndex].toAyah ? Math.min(Number(updatedRanges[rangeIndex].toAyah), resolved.ayahs) : '';
@@ -637,17 +675,6 @@ export default function TeacherProgressPage() {
     addNotice('info', `Auto-filled next Sabaq: ${suggestedNextSabaq.label}`);
   };
 
-  const applyQuickPerformance = (value: Exclude<KaifiyatValue, ''>) => {
-    sectionMeta.forEach(({ key }) => setSectionValue(key, { kaifiyat: value }));
-    addNotice('info', `Quick performance applied: ${value}`);
-  };
-
-  const applyQuickMistakes = (value: '0' | '1-2' | '3+') => {
-    const mistakeCount = value === '0' ? 0 : value === '1-2' ? 1 : 3;
-    sectionMeta.forEach(({ key }) => setSectionValue(key, { tajweeditotal: String(mistakeCount), hifztotal: String(mistakeCount) }));
-    addNotice('info', `Quick mistake profile applied: ${value}`);
-  };
-
   const applyQuickPerformanceToTab = (value: Exclude<KaifiyatValue, ''>) => {
     setSectionValue(activeTab, { kaifiyat: value });
     addNotice('info', `${activeTab.charAt(0).toUpperCase() + activeTab.slice(1)}: ${value}`);
@@ -663,6 +690,17 @@ export default function TeacherProgressPage() {
 
     for (const { key, title } of sectionMeta) {
       const section = form.sections[key];
+      const hasAnyRangeData = (section.ranges || []).some(
+        (range) => range.surahId || range.fromAyah || range.toAyah || range.surahInput.trim()
+      );
+      const hasAnyMetaData = Boolean(section.kaifiyat || section.tajweeditotal || section.hifztotal);
+      const hasAnyData = hasAnyRangeData || hasAnyMetaData;
+      const isOptionalSection = key === 'sabqi' || key === 'manzil';
+
+      // Sabqi/Manzil remain optional unless teacher has entered any data in that section.
+      if (isOptionalSection && !hasAnyData) {
+        continue;
+      }
 
       // Must have at least 1 range
       if (!section.ranges || section.ranges.length === 0) {
@@ -684,10 +722,10 @@ export default function TeacherProgressPage() {
       if (!section.kaifiyat) {
         return `${title}: select Kaifiyat (performance).`;
       }
-      if (!section.tajweeditotal || Number(section.tajweeditotal) < 0 || Number(section.tajweeditotal) > 99) {
+      if (section.tajweeditotal === '' || Number(section.tajweeditotal) < 0 || Number(section.tajweeditotal) > 99) {
         return `${title}: Tajweedi mistakes must be 0-99.`;
       }
-      if (!section.hifztotal || Number(section.hifztotal) < 0 || Number(section.hifztotal) > 99) {
+      if (section.hifztotal === '' || Number(section.hifztotal) < 0 || Number(section.hifztotal) > 99) {
         return `${title}: Hifz mistakes must be 0-99.`;
       }
     }
@@ -717,9 +755,59 @@ export default function TeacherProgressPage() {
 
     lines.push('[SUMMARY]');
     lines.push(`OverallPerformance:${summary.overallPerformance}`);
-    lines.push(`TotalMistakes:${summary.totalMistakes}`);
+    lines.push(`TotalMistakes${summary.totalMistakes}`);
     lines.push(`Suggestion:${summary.suggestion}`);
     return lines.join('\n');
+  };
+
+  const startEditReport = (item: ProgressItem) => {
+    setEditingReportId(item.id);
+    setOpenReportId(null);
+    setForm({
+      date: formatDateYMD(item.date),
+      classId: item.classId || item.class.id,
+      studentId: item.studentId || item.student.id,
+      sections: {
+        sabaq: parseSectionFormFromNotes(item.notes, 'sabaq'),
+        sabqi: parseSectionFormFromNotes(item.notes, 'sabqi'),
+        manzil: parseSectionFormFromNotes(item.notes, 'manzil')
+      }
+    });
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+    addNotice('info', `Editing report for ${item.student.user.fullName}`);
+  };
+
+  const cancelEditReport = () => {
+    setEditingReportId(null);
+    setForm((prev) => ({
+      ...emptyProgressForm(),
+      classId: prev.classId,
+      studentId: prev.studentId
+    }));
+    addNotice('info', 'Edit cancelled.');
+  };
+
+  const deleteReport = async (item: ProgressItem) => {
+    const ok = window.confirm(`Delete saved report for ${item.student.user.fullName} on ${formatDateYMD(item.date)}?`);
+    if (!ok) return;
+
+    setDeletingReportId(item.id);
+    try {
+      const response = await fetch(`/api/progress?id=${encodeURIComponent(item.id)}`, { method: 'DELETE' });
+      const json = (await response.json().catch(() => null)) as { error?: string } | null;
+      if (!response.ok) {
+        addNotice('error', json?.error ?? 'Unable to delete report.');
+        return;
+      }
+      if (editingReportId === item.id) setEditingReportId(null);
+      setProgress((prev) => prev.filter((report) => report.id !== item.id));
+      addNotice('success', 'Report deleted successfully.');
+      await loadProgressData();
+    } catch {
+      addNotice('error', 'Delete request failed. Please try again.');
+    } finally {
+      setDeletingReportId(null);
+    }
   };
 
   const submit = async (e: React.FormEvent) => {
@@ -738,11 +826,13 @@ export default function TeacherProgressPage() {
       const surahRangesData: Record<string, Array<{ surahId: number; fromAyah: number; toAyah: number }>> = {};
 
       sectionMeta.forEach(({ key }) => {
-        surahRangesData[key] = form.sections[key].ranges.map(r => ({
-          surahId: r.surahId!,
-          fromAyah: Number(r.fromAyah),
-          toAyah: Number(r.toAyah)
-        }));
+        surahRangesData[key] = form.sections[key].ranges
+          .filter((r) => r.surahId && r.fromAyah && r.toAyah)
+          .map((r) => ({
+            surahId: Number(r.surahId),
+            fromAyah: Number(r.fromAyah),
+            toAyah: Number(r.toAyah)
+          }));
       });
 
       const response = await fetch('/api/progress', {
@@ -770,7 +860,8 @@ export default function TeacherProgressPage() {
         return;
       }
 
-      addNotice('success', 'Quran progress report saved successfully.');
+      addNotice('success', editingReportId ? 'Quran progress report updated successfully.' : 'Quran progress report saved successfully.');
+      setEditingReportId(null);
 
       if (saveAndMoveNext) {
         setSaveAndMoveNext(false);
@@ -816,24 +907,49 @@ export default function TeacherProgressPage() {
     }
   };
 
+  const selectedClass = classes.find((item) => item.id === form.classId);
+  const selectedStudent = selectedStudents.find((item) => item.id === form.studentId);
+
   return (
-    <div className="space-y-4 sm:space-y-6 pb-28">
-        <div>
-          <PageHeader
-            title="Daily Progress Report"
-            subtitle="Track Quran progress with precision"
-          />
+    <div className="-mx-4 -my-6 min-h-screen space-y-4 bg-[#F7F9FB] px-4 py-5 pb-44 text-[#111827] sm:-mx-6 sm:px-6 sm:pb-28 lg:-mx-8 lg:px-8">
+      <div className="overflow-hidden rounded-[24px] border border-white/70 bg-[linear-gradient(135deg,#FFFFFF_0%,#EEF7F6_52%,#EEF2FF_100%)] p-5 shadow-[0_18px_45px_rgba(15,23,42,0.08)]">
+        <div className="flex items-start justify-between gap-4">
+          <div>
+            <p className="text-[11px] font-bold uppercase tracking-[0.22em] text-[#006A61]">Manarah Institute</p>
+            <h1 className="mt-2 text-[28px] font-black leading-tight tracking-[-0.04em] text-[#0F172A]">Daily Progress Report</h1>
+            <p className="mt-1 text-sm font-medium text-[#64748B]">Track Quran progress with focused daily feedback.</p>
+          </div>
+          <div className="grid h-12 w-12 shrink-0 place-items-center rounded-2xl bg-[#004D47] text-white shadow-[0_14px_28px_rgba(0,77,71,0.24)]">
+            <BookOpenCheck className="h-6 w-6" />
+          </div>
+        </div>
+
+        <div className="mt-5 grid grid-cols-3 gap-2">
+          <div className="rounded-2xl border border-white/70 bg-white/75 p-3 shadow-sm backdrop-blur">
+            <p className="text-[10px] font-bold uppercase tracking-wide text-[#94A3B8]">Class</p>
+            <p className="mt-1 truncate text-sm font-extrabold text-[#004D47]">{selectedClass ? `${selectedClass.name} ${selectedClass.section}` : 'Select'}</p>
+          </div>
+          <div className="rounded-2xl border border-white/70 bg-white/75 p-3 shadow-sm backdrop-blur">
+            <p className="text-[10px] font-bold uppercase tracking-wide text-[#94A3B8]">Student</p>
+            <p className="mt-1 truncate text-sm font-extrabold text-[#2E2B78]">{selectedStudent?.user.fullName ?? 'Pending'}</p>
+          </div>
+          <div className="rounded-2xl border border-white/70 bg-white/75 p-3 shadow-sm backdrop-blur">
+            <p className="text-[10px] font-bold uppercase tracking-wide text-[#94A3B8]">Mistakes</p>
+            <p className="mt-1 text-sm font-extrabold text-[#B45309]">{summary.totalMistakes}</p>
+          </div>
+        </div>
+
         {notifications.length > 0 && (
           <div className="mt-4 grid gap-2 md:grid-cols-2">
             {notifications.map((notice) => (
               <div
                 key={notice.id}
-                className={`rounded-lg px-4 py-3 text-sm font-medium ${
+                className={`rounded-2xl px-4 py-3 text-sm font-bold shadow-sm ${
                   notice.type === 'success'
-                    ? 'bg-[#D1FAE5] text-[#065F46]'
+                    ? 'bg-[#DDF8EA] text-[#065F46]'
                     : notice.type === 'error'
                       ? 'bg-[#FEE2E2] text-[#991B1B]'
-                      : 'bg-[#DBEAFE] text-[#1E40AF]'
+                      : 'bg-[#E0F2FE] text-[#075985]'
                 }`}
               >
                 {notice.text}
@@ -847,25 +963,34 @@ export default function TeacherProgressPage() {
       <section className="grid gap-5 xl:grid-cols-[1.7fr_1fr]">
         <div className="space-y-4">
           <form onSubmit={submit}>
-            <div className="rounded-2xl bg-white p-4 sm:p-6 shadow-sm border border-[#E5E7EB] space-y-4">
+            <div className="space-y-4 rounded-[24px] border border-white bg-white p-4 shadow-[0_16px_40px_rgba(15,23,42,0.07)] sm:p-6">
+              <div className="flex items-center gap-3">
+                <div className="grid h-10 w-10 place-items-center rounded-2xl bg-[#E6F3F1] text-[#004D47]">
+                  <CalendarDays className="h-5 w-5" />
+                </div>
+                <div>
+                  <h2 className="text-base font-black tracking-[-0.02em] text-[#0F172A]">Report Filters</h2>
+                  <p className="text-xs font-medium text-[#64748B]">Choose class, date, and student before saving.</p>
+                </div>
+              </div>
               <div className="grid gap-3 md:grid-cols-3">
                 <div>
-                  <label className="block text-xs font-semibold text-[#6B7280] mb-2">Date</label>
+                  <label className="mb-2 block text-[11px] font-bold uppercase tracking-wide text-[#64748B]">Date</label>
                   <input
                     type="date"
                     value={form.date}
                     onChange={(e) => setForm((prev) => ({ ...prev, date: e.target.value }))}
-                    className="h-11 w-full rounded-xl border border-[#E5E7EB] bg-[#F9FAFB] px-4 text-sm text-[#1F2937] outline-none focus:ring-2 focus:ring-[#004649]/20 transition"
+                    className="h-12 w-full rounded-2xl border border-[#E2E8F0] bg-[#F8FAFC] px-4 text-sm font-semibold text-[#0F172A] outline-none transition focus:border-[#006A61] focus:bg-white focus:ring-4 focus:ring-[#006A61]/10"
                     required
                   />
                 </div>
 
                 <div>
-                  <label className="block text-xs font-semibold text-[#6B7280] mb-2">Class</label>
+                  <label className="mb-2 block text-[11px] font-bold uppercase tracking-wide text-[#64748B]">Class</label>
                   <select
                     value={form.classId}
                     onChange={(e) => setForm((prev) => ({ ...prev, classId: e.target.value, studentId: '' }))}
-                    className="h-11 w-full rounded-xl border border-[#E5E7EB] bg-[#F9FAFB] px-4 text-sm text-[#1F2937] outline-none focus:ring-2 focus:ring-[#004649]/20 transition"
+                    className="h-12 w-full rounded-2xl border border-[#E2E8F0] bg-[#F8FAFC] px-4 text-sm font-semibold text-[#0F172A] outline-none transition focus:border-[#006A61] focus:bg-white focus:ring-4 focus:ring-[#006A61]/10"
                     required
                   >
                     <option value="">Select Class</option>
@@ -878,25 +1003,25 @@ export default function TeacherProgressPage() {
                 </div>
 
                 <div>
-                  <label className="block text-xs font-semibold text-[#6B7280] mb-2">Search</label>
+                  <label className="mb-2 block text-[11px] font-bold uppercase tracking-wide text-[#64748B]">Search</label>
                   <div className="relative">
-                    <Search className="pointer-events-none absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-[#9CA3AF]" />
+                    <Search className="pointer-events-none absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-[#94A3B8]" />
                     <input
                       value={studentSearch}
                       onChange={(e) => setStudentSearch(e.target.value)}
                       placeholder="Student name"
-                      className="h-11 w-full rounded-xl border border-[#E5E7EB] bg-[#F9FAFB] pl-10 pr-4 text-sm text-[#1F2937] placeholder:text-[#9CA3AF] outline-none focus:ring-2 focus:ring-[#004649]/20 transition"
+                      className="h-12 w-full rounded-2xl border border-[#E2E8F0] bg-[#F8FAFC] pl-10 pr-4 text-sm font-semibold text-[#0F172A] placeholder:text-[#94A3B8] outline-none transition focus:border-[#006A61] focus:bg-white focus:ring-4 focus:ring-[#006A61]/10"
                     />
                   </div>
                 </div>
               </div>
 
               <div>
-                <label className="block text-xs font-semibold text-[#6B7280] mb-2">Student</label>
+                <label className="mb-2 block text-[11px] font-bold uppercase tracking-wide text-[#64748B]">Student</label>
                 <select
                   value={form.studentId}
                   onChange={(e) => setForm((prev) => ({ ...prev, studentId: e.target.value }))}
-                  className="h-11 w-full rounded-xl border border-[#E5E7EB] bg-[#F9FAFB] px-4 text-sm text-[#1F2937] outline-none focus:ring-2 focus:ring-[#004649]/20 transition"
+                  className="h-12 w-full rounded-2xl border border-[#E2E8F0] bg-[#F8FAFC] px-4 text-sm font-semibold text-[#0F172A] outline-none transition focus:border-[#006A61] focus:bg-white focus:ring-4 focus:ring-[#006A61]/10"
                   required
                 >
                   <option value="">Select Student</option>
@@ -910,7 +1035,7 @@ export default function TeacherProgressPage() {
             </div>
 
             {/* Tab Navigation */}
-            <div className="mt-4 flex gap-2 overflow-x-auto pb-2">
+            <div className="mt-4 grid grid-cols-3 gap-2">
               {sectionMeta.map((section) => {
                 const badge = sectionBadges[section.key];
                 const isActive = activeTab === section.key;
@@ -919,14 +1044,14 @@ export default function TeacherProgressPage() {
                     key={section.key}
                     type="button"
                     onClick={() => setActiveTab(section.key)}
-                    className={`h-10 whitespace-nowrap rounded-xl px-4 py-2 text-xs sm:text-sm font-semibold transition-all ${
+                    className={`min-w-0 rounded-2xl px-2 py-2.5 text-[11px] font-black shadow-sm transition-all active:scale-[0.98] sm:text-sm ${
                       isActive
-                        ? 'bg-[#004649] text-white shadow-md'
-                        : 'bg-[#F3F4F6] text-[#6B7280] hover:bg-[#E5E7EB]'
+                        ? 'bg-[#084750] text-white shadow-[0_12px_28px_rgba(8,71,80,0.22)]'
+                        : 'border border-white bg-white text-[#64748B] hover:bg-[#F8FAFC]'
                     }`}
                   >
-                    {section.icon} {section.title}
-                    <span className="hidden sm:inline ml-2 text-xs font-normal opacity-80">
+                    <span className="block truncate">{section.icon} {section.title}</span>
+                    <span className="mt-1 inline-flex rounded-full bg-white/20 px-1.5 py-0.5 text-[9px] font-bold opacity-90">
                       {badge.rangeCount} · {badge.mistakeCount}✗
                     </span>
                   </button>
@@ -941,36 +1066,45 @@ export default function TeacherProgressPage() {
                 const formSection = form.sections[section.key];
 
                 return (
-                  <div key={section.key} className="rounded-2xl bg-white p-4 sm:p-6 shadow-sm border border-[#E5E7EB] space-y-4">
-                    <h3 className="mb-4 text-base font-bold text-[#1F2937]">{section.icon} {section.title}</h3>
+                  <div key={section.key} className="space-y-4 rounded-[24px] border border-white bg-white p-4 shadow-[0_16px_40px_rgba(15,23,42,0.07)] sm:p-6">
+                    <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                      <div className="min-w-0">
+                        <p className="text-[11px] font-bold uppercase tracking-[0.2em] text-[#006A61]">Active Section</p>
+                        <h3 className="mt-1 text-xl font-black tracking-[-0.03em] text-[#0F172A]">{section.icon} {section.title}</h3>
+                      </div>
+                      <div className="flex w-full items-center justify-between rounded-2xl bg-[#F8FAFC] px-3 py-2 sm:block sm:w-auto sm:min-w-[118px] sm:text-right">
+                        <p className="text-[10px] font-bold uppercase text-[#94A3B8]">Score</p>
+                        <p className="max-w-[150px] truncate text-sm font-black text-[#00507D] sm:max-w-none">{summary.overallPerformance}</p>
+                      </div>
+                    </div>
 
                     {/* Quick Actions (tab-scoped) */}
-                    <div className="rounded-xl bg-[#F9FAFB] p-3 border border-[#E5E7EB]">
-                      <p className="text-xs font-semibold text-[#6B7280] mb-3">Quick Actions</p>
+                    <div className="rounded-[20px] border border-[#E2E8F0] bg-[#F8FAFC] p-3">
+                      <p className="mb-3 text-[11px] font-bold uppercase tracking-wide text-[#64748B]">Quick Actions</p>
                       <div className="flex flex-wrap gap-3">
                         <div className="flex flex-wrap gap-1">
-                          <span className="self-center text-[10px] font-semibold text-[#9ca3af]">Rating:</span>
-                          <button type="button" onClick={() => applyQuickPerformanceToTab('Excellent ⭐⭐⭐⭐⭐')} className="rounded-lg bg-[#004649] px-2 py-1 text-xs font-semibold text-white hover:bg-[#1b5e62] transition">Ex</button>
-                          <button type="button" onClick={() => applyQuickPerformanceToTab('Good ⭐⭐⭐⭐')} className="rounded-lg bg-[#004649] px-2 py-1 text-xs font-semibold text-white hover:bg-[#1b5e62] transition">Good</button>
-                          <button type="button" onClick={() => applyQuickPerformanceToTab('Average ⭐⭐⭐')} className="rounded-lg bg-[#004649] px-2 py-1 text-xs font-semibold text-white hover:bg-[#1b5e62] transition">Avg</button>
-                          <button type="button" onClick={() => applyQuickPerformanceToTab('Weak ⭐⭐')} className="rounded-lg bg-[#004649] px-2 py-1 text-xs font-semibold text-white hover:bg-[#1b5e62] transition">Weak</button>
+                          <span className="self-center text-[10px] font-bold uppercase text-[#94A3B8]">Rating</span>
+                          <button type="button" onClick={() => applyQuickPerformanceToTab('Excellent ⭐⭐⭐⭐⭐')} className="rounded-xl bg-[#006A61] px-3 py-1.5 text-xs font-bold text-white shadow-sm transition hover:bg-[#004D47]">Ex</button>
+                          <button type="button" onClick={() => applyQuickPerformanceToTab('Good ⭐⭐⭐⭐')} className="rounded-xl bg-[#006A61] px-3 py-1.5 text-xs font-bold text-white shadow-sm transition hover:bg-[#004D47]">Good</button>
+                          <button type="button" onClick={() => applyQuickPerformanceToTab('Average ⭐⭐⭐')} className="rounded-xl bg-[#006A61] px-3 py-1.5 text-xs font-bold text-white shadow-sm transition hover:bg-[#004D47]">Avg</button>
+                          <button type="button" onClick={() => applyQuickPerformanceToTab('Weak ⭐⭐')} className="rounded-xl bg-[#006A61] px-3 py-1.5 text-xs font-bold text-white shadow-sm transition hover:bg-[#004D47]">Weak</button>
                         </div>
                         <div className="flex flex-wrap gap-1">
-                          <span className="self-center text-[10px] font-semibold text-[#9ca3af]">Mistakes:</span>
-                          <button type="button" onClick={() => applyQuickMistakesToTab('0')} className="rounded-lg border border-[#fca5a5] bg-[#fff1f2] px-2 py-1 text-xs font-semibold text-[#be123c] hover:bg-[#fee2e2] transition">0</button>
-                          <button type="button" onClick={() => applyQuickMistakesToTab('1-2')} className="rounded-lg border border-[#fca5a5] bg-[#fff1f2] px-2 py-1 text-xs font-semibold text-[#be123c] hover:bg-[#fee2e2] transition">1–2</button>
-                          <button type="button" onClick={() => applyQuickMistakesToTab('3+')} className="rounded-lg border border-[#fca5a5] bg-[#fff1f2] px-2 py-1 text-xs font-semibold text-[#be123c] hover:bg-[#fee2e2] transition">3+</button>
+                          <span className="self-center text-[10px] font-bold uppercase text-[#94A3B8]">Mistakes</span>
+                          <button type="button" onClick={() => applyQuickMistakesToTab('0')} className="rounded-xl border border-[#FCD34D]/60 bg-[#FFFBEB] px-3 py-1.5 text-xs font-bold text-[#B45309] transition hover:bg-[#FEF3C7]">0</button>
+                          <button type="button" onClick={() => applyQuickMistakesToTab('1-2')} className="rounded-xl border border-[#FCD34D]/60 bg-[#FFFBEB] px-3 py-1.5 text-xs font-bold text-[#B45309] transition hover:bg-[#FEF3C7]">1–2</button>
+                          <button type="button" onClick={() => applyQuickMistakesToTab('3+')} className="rounded-xl border border-[#FCD34D]/60 bg-[#FFFBEB] px-3 py-1.5 text-xs font-bold text-[#B45309] transition hover:bg-[#FEF3C7]">3+</button>
                         </div>
                       </div>
                     </div>
 
                     {/* Auto Suggest (Sabaq only) */}
                     {section.key === 'sabaq' && suggestedNextSabaq ? (
-                      <div className="mb-4 flex flex-wrap items-center gap-2 rounded-lg border border-[#D1FAE5] bg-[#F0FDF4] p-3 text-sm text-[#10B981]">
+                      <div className="mb-4 flex flex-wrap items-center gap-2 rounded-2xl border border-[#BFE7DF] bg-[#ECFDF5] p-3 text-sm text-[#006A61]">
                         <Sparkles className="h-4 w-4" />
                         <span className="font-semibold">Auto Suggest:</span>
                         <span>{suggestedNextSabaq.label}</span>
-                        <button type="button" onClick={applyAutoSuggestion} className="rounded-lg bg-[#10B981] px-3 py-1 text-xs font-semibold text-white hover:bg-[#059669]">
+                        <button type="button" onClick={applyAutoSuggestion} className="rounded-xl bg-[#006A61] px-3 py-1.5 text-xs font-bold text-white shadow-sm transition hover:bg-[#004D47]">
                           Apply
                         </button>
                       </div>
@@ -982,40 +1116,36 @@ export default function TeacherProgressPage() {
                         const ayahCount = selectedSurah?.ayahs ?? 0;
 
                         return (
-                          <div key={rangeIdx} className="space-y-2 rounded-lg border border-[#E5E7EB] bg-[#F9FAFB] p-4">
+                          <div key={rangeIdx} className="space-y-3 rounded-[20px] border border-[#E2E8F0] bg-[#F8FAFC] p-4">
                             <div className="flex items-center justify-between">
-                              <p className="text-xs font-semibold text-[#6B7280]">Range {rangeIdx + 1}</p>
-                              {formSection.ranges.length > 1 && (
-                                <button
-                                  type="button"
-                                  onClick={() => handleRemoveRange(section.key, rangeIdx)}
-                                  className="text-xs text-[#EF4444] hover:text-[#DC2626]"
-                                >
-                                  Remove
-                                </button>
-                              )}
+                              <p className="text-xs font-black text-[#0F172A]">Surah Range {rangeIdx + 1}</p>
+                              <button
+                                type="button"
+                                onClick={() => handleRemoveRange(section.key, rangeIdx)}
+                                className="rounded-full bg-[#FEE2E2] px-3 py-1 text-xs font-bold text-[#B91C1C] transition hover:bg-[#FECACA]"
+                              >
+                                {formSection.ranges.length > 1 ? 'Remove' : 'Clear'}
+                              </button>
                             </div>
 
                             <div className="grid gap-2 md:grid-cols-3">
                               <div>
-                                <p className="mb-2 text-xs font-semibold text-[#6B7280]">Surah</p>
-                                <input
-                                  list={`surah-list-${section.key}-${rangeIdx}`}
-                                  value={range.surahInput}
+                                <p className="mb-2 text-[11px] font-bold uppercase tracking-wide text-[#64748B]">Surah</p>
+                                <select
+                                  value={selectedSurah ? `${selectedSurah.id}. ${selectedSurah.name}` : ''}
                                   onChange={(e) => handleSurahInput(section.key, rangeIdx, e.target.value)}
-                                  placeholder="Type Surah name or number"
-                                  className="h-9 w-full rounded-lg border border-[#E5E7EB] px-3 text-sm text-[#1F2937] outline-none focus:ring-2 focus:ring-[#004649]/20"
+                                  className="h-11 w-full rounded-2xl border border-[#E2E8F0] bg-white px-3 text-sm font-semibold text-[#0F172A] outline-none transition focus:border-[#006A61] focus:ring-4 focus:ring-[#006A61]/10 disabled:bg-[#EEF2F7] disabled:text-[#94A3B8]"
                                   required
-                                />
-                                <datalist id={`surah-list-${section.key}-${rangeIdx}`}>
+                                >
+                                  <option value="">Select Surah</option>
                                   {SURAH_LIST.map((surah) => (
-                                    <option key={surah.id} value={`${surah.id}. ${surah.name}`}>{surah.name}</option>
+                                    <option key={surah.id} value={`${surah.id}. ${surah.name}`}>{surah.id}. {surah.name}</option>
                                   ))}
-                                </datalist>
+                                </select>
                               </div>
 
                               <div>
-                                <p className="mb-2 text-xs font-semibold text-[#6B7280]">From</p>
+                                <p className="mb-2 text-[11px] font-bold uppercase tracking-wide text-[#64748B]">From</p>
                                 <input
                                   type="number"
                                   min={1}
@@ -1023,22 +1153,26 @@ export default function TeacherProgressPage() {
                                   value={range.fromAyah}
                                   onChange={(e) => {
                                     const value = e.target.value;
-                                    const numeric = Number(value || 0);
-                                    const safeValue = selectedSurah
-                                      ? String(Math.max(1, Math.min(numeric || 1, selectedSurah.ayahs)))
-                                      : value;
                                     const updatedRanges = [...formSection.ranges];
-                                    updatedRanges[rangeIdx] = { ...updatedRanges[rangeIdx], fromAyah: safeValue };
+                                    if (value === '') {
+                                      updatedRanges[rangeIdx] = { ...updatedRanges[rangeIdx], fromAyah: '' };
+                                    } else {
+                                      const numeric = Number(value);
+                                      const safeValue = selectedSurah && Number.isFinite(numeric)
+                                        ? String(Math.max(1, Math.min(numeric, selectedSurah.ayahs)))
+                                        : value;
+                                      updatedRanges[rangeIdx] = { ...updatedRanges[rangeIdx], fromAyah: safeValue };
+                                    }
                                     setForm(prev => ({ ...prev, sections: { ...prev.sections, [section.key]: { ...formSection, ranges: updatedRanges } } }));
                                   }}
-                                  className="h-9 w-full rounded-lg border border-[#E5E7EB] px-3 text-sm text-[#1F2937] outline-none focus:ring-2 focus:ring-[#004649]/20"
+                                  className="h-11 w-full rounded-2xl border border-[#E2E8F0] bg-white px-3 text-sm font-semibold text-[#0F172A] outline-none transition focus:border-[#006A61] focus:ring-4 focus:ring-[#006A61]/10 disabled:bg-[#EEF2F7] disabled:text-[#94A3B8]"
                                   disabled={!selectedSurah}
                                   placeholder="From"
                                 />
                               </div>
 
                               <div>
-                                <p className="mb-2 text-xs font-semibold text-[#6B7280]">To</p>
+                                <p className="mb-2 text-[11px] font-bold uppercase tracking-wide text-[#64748B]">To</p>
                                 <input
                                   type="number"
                                   min={range.fromAyah ? Number(range.fromAyah) : 1}
@@ -1046,15 +1180,21 @@ export default function TeacherProgressPage() {
                                   value={range.toAyah}
                                   onChange={(e) => {
                                     const value = e.target.value;
-                                    const numeric = Number(value || 0);
-                                    const minAllowed = Number(range.fromAyah || 1);
-                                    const maxAllowed = selectedSurah ? selectedSurah.ayahs : 1;
-                                    const safeValue = String(Math.max(minAllowed, Math.min(numeric || minAllowed, maxAllowed)));
                                     const updatedRanges = [...formSection.ranges];
-                                    updatedRanges[rangeIdx] = { ...updatedRanges[rangeIdx], toAyah: safeValue };
+                                    if (value === '') {
+                                      updatedRanges[rangeIdx] = { ...updatedRanges[rangeIdx], toAyah: '' };
+                                    } else {
+                                      const numeric = Number(value);
+                                      const minAllowed = Number(range.fromAyah || 1);
+                                      const maxAllowed = selectedSurah ? selectedSurah.ayahs : 1;
+                                      const safeValue = Number.isFinite(numeric)
+                                        ? String(Math.max(minAllowed, Math.min(numeric, maxAllowed)))
+                                        : value;
+                                      updatedRanges[rangeIdx] = { ...updatedRanges[rangeIdx], toAyah: safeValue };
+                                    }
                                     setForm(prev => ({ ...prev, sections: { ...prev.sections, [section.key]: { ...formSection, ranges: updatedRanges } } }));
                                   }}
-                                  className="h-9 w-full rounded-lg border border-[#E5E7EB] px-3 text-sm text-[#1F2937] outline-none focus:ring-2 focus:ring-[#004649]/20"
+                                  className="h-11 w-full rounded-2xl border border-[#E2E8F0] bg-white px-3 text-sm font-semibold text-[#0F172A] outline-none transition focus:border-[#006A61] focus:ring-4 focus:ring-[#006A61]/10 disabled:bg-[#EEF2F7] disabled:text-[#94A3B8]"
                                   disabled={!selectedSurah}
                                   placeholder="To"
                               />
@@ -1068,18 +1208,18 @@ export default function TeacherProgressPage() {
                     <button
                       type="button"
                       onClick={() => handleAddRange(section.key)}
-                      className="mb-4 text-xs font-semibold text-[#004649] hover:text-[#1b5e62]"
+                      className="mb-4 inline-flex h-10 items-center rounded-2xl bg-[#E6F3F1] px-4 text-xs font-black text-[#004D47] transition hover:bg-[#D7EDEA]"
                     >
                       + Add Another Surah Range
                     </button>
 
                     <div className="grid gap-3 md:grid-cols-2">
                       <div>
-                        <p className="mb-2 text-xs font-semibold text-[#6B7280]">Kaifiyat (Performance)</p>
+                        <p className="mb-2 text-[11px] font-bold uppercase tracking-wide text-[#64748B]">Kaifiyat (Performance)</p>
                         <select
                           value={formSection.kaifiyat}
                           onChange={(e) => setSectionValue(section.key, { kaifiyat: e.target.value as KaifiyatValue })}
-                          className="h-10 w-full rounded-lg border border-[#E5E7EB] px-4 text-sm text-[#1F2937] outline-none focus:ring-2 focus:ring-[#10B981]/20"
+                          className="h-12 w-full rounded-2xl border border-[#E2E8F0] bg-[#F8FAFC] px-4 text-sm font-semibold text-[#0F172A] outline-none transition focus:border-[#006A61] focus:bg-white focus:ring-4 focus:ring-[#006A61]/10"
                           required
                         >
                         <option value="">Select Rating</option>
@@ -1091,7 +1231,7 @@ export default function TeacherProgressPage() {
                     </div>
 
                       <div>
-                        <p className="mb-2 text-xs font-semibold text-[#6B7280]">Tajweedi Ghaltiyan (0-99)</p>
+                        <p className="mb-2 text-[11px] font-bold uppercase tracking-wide text-[#64748B]">Tajweedi Ghaltiyan (0-99)</p>
                         <div className="flex flex-col gap-2">
                           <input
                             type="number"
@@ -1100,7 +1240,7 @@ export default function TeacherProgressPage() {
                             value={formSection.tajweeditotal}
                             onChange={(e) => setSectionValue(section.key, { tajweeditotal: e.target.value })}
                             placeholder="0"
-                            className="h-10 w-full rounded-lg border border-[#FEE2E2] px-3 text-sm text-[#1F2937] outline-none focus:ring-2 focus:ring-red-200"
+                            className="h-12 w-full rounded-2xl border border-[#FDE68A] bg-[#FFFBEB] px-3 text-sm font-semibold text-[#0F172A] outline-none transition focus:border-[#D9A253] focus:ring-4 focus:ring-[#D9A253]/15"
                             required
                           />
                           <div className="flex flex-wrap gap-1">
@@ -1109,7 +1249,7 @@ export default function TeacherProgressPage() {
                                 key={val}
                                 type="button"
                                 onClick={() => setSectionValue(section.key, { tajweeditotal: String(val) })}
-                                className={`rounded-lg border px-2 py-1 text-xs font-semibold transition ${formSection.tajweeditotal === String(val) ? 'bg-[#fee2e2] border-[#fca5a5] text-[#991B1B]' : 'border-[#FEE2E2] text-[#991B1B] hover:bg-[#FEE2E2]'}`}
+                                className={`rounded-xl border px-3 py-1.5 text-xs font-bold transition ${formSection.tajweeditotal === String(val) ? 'border-[#D9A253] bg-[#FEF3C7] text-[#92400E]' : 'border-[#FDE68A] bg-white text-[#B45309] hover:bg-[#FFFBEB]'}`}
                               >
                                 {val}
                               </button>
@@ -1119,7 +1259,7 @@ export default function TeacherProgressPage() {
                       </div>
 
                       <div>
-                        <p className="mb-2 text-xs font-semibold text-[#6B7280]">Hifz Ghaltiyan (0-99)</p>
+                        <p className="mb-2 text-[11px] font-bold uppercase tracking-wide text-[#64748B]">Hifz Ghaltiyan (0-99)</p>
                         <div className="flex flex-col gap-2">
                           <input
                             type="number"
@@ -1128,7 +1268,7 @@ export default function TeacherProgressPage() {
                             value={formSection.hifztotal}
                             onChange={(e) => setSectionValue(section.key, { hifztotal: e.target.value })}
                             placeholder="0"
-                            className="h-10 w-full rounded-lg border border-[#FEE2E2] px-3 text-sm text-[#1F2937] outline-none focus:ring-2 focus:ring-red-200"
+                            className="h-12 w-full rounded-2xl border border-[#FDE68A] bg-[#FFFBEB] px-3 text-sm font-semibold text-[#0F172A] outline-none transition focus:border-[#D9A253] focus:ring-4 focus:ring-[#D9A253]/15"
                             required
                           />
                           <div className="flex flex-wrap gap-1">
@@ -1137,7 +1277,7 @@ export default function TeacherProgressPage() {
                                 key={val}
                                 type="button"
                                 onClick={() => setSectionValue(section.key, { hifztotal: String(val) })}
-                                className={`rounded-lg border px-2 py-1 text-xs font-semibold transition ${formSection.hifztotal === String(val) ? 'bg-[#fee2e2] border-[#fca5a5] text-[#991B1B]' : 'border-[#FEE2E2] text-[#991B1B] hover:bg-[#FEE2E2]'}`}
+                                className={`rounded-xl border px-3 py-1.5 text-xs font-bold transition ${formSection.hifztotal === String(val) ? 'border-[#D9A253] bg-[#FEF3C7] text-[#92400E]' : 'border-[#FDE68A] bg-white text-[#B45309] hover:bg-[#FFFBEB]'}`}
                               >
                                 {val}
                               </button>
@@ -1154,25 +1294,25 @@ export default function TeacherProgressPage() {
           </form>
         </div>
 
-        <aside className="space-y-4 hidden md:block">
-          <div className="rounded-2xl bg-gradient-to-br from-[#F0FDF4] to-white p-4 sm:p-6 shadow-sm border border-[#E5E7EB] space-y-4">
+        <aside className="hidden space-y-4 md:block">
+          <div className="space-y-4 rounded-[24px] border border-white bg-[linear-gradient(135deg,#FFFFFF_0%,#EEF7F6_100%)] p-4 shadow-[0_16px_40px_rgba(15,23,42,0.07)] sm:p-6">
             <div className="flex items-center gap-3">
-              <div className="rounded-lg bg-[#D1FAE5] p-2">
-                <Sparkles className="h-5 w-5 text-[#004649]" />
+              <div className="rounded-2xl bg-[#E6F3F1] p-2">
+                <Sparkles className="h-5 w-5 text-[#004D47]" />
               </div>
               <h3 className="font-bold text-[#1F2937]">Performance</h3>
             </div>
             <div className="space-y-3">
-              <div className="rounded-xl bg-white p-3 border border-[#E5E7EB]">
-                <p className="text-xs text-[#6B7280] mb-1">Overall</p>
-                <p className="font-bold text-[#004649]">{summary.overallPerformance}</p>
+              <div className="rounded-2xl border border-white bg-white/80 p-3 shadow-sm">
+                <p className="mb-1 text-[11px] font-bold uppercase tracking-wide text-[#94A3B8]">Overall</p>
+                <p className="font-black text-[#004D47]">{summary.overallPerformance}</p>
               </div>
-              <div className="rounded-xl bg-white p-3 border border-[#E5E7EB]">
-                <p className="text-xs text-[#6B7280] mb-1">Mistakes</p>
-                <p className="font-bold text-[#991B1B]">{summary.totalMistakes}</p>
+              <div className="rounded-2xl border border-white bg-white/80 p-3 shadow-sm">
+                <p className="mb-1 text-[11px] font-bold uppercase tracking-wide text-[#94A3B8]">Mistakes</p>
+                <p className="font-black text-[#B45309]">{summary.totalMistakes}</p>
               </div>
-              <div className="rounded-xl bg-white p-3 border border-[#E5E7EB]">
-                <p className="text-xs text-[#6B7280] mb-2">Suggestion</p>
+              <div className="rounded-2xl border border-white bg-white/80 p-3 shadow-sm">
+                <p className="mb-2 text-[11px] font-bold uppercase tracking-wide text-[#94A3B8]">Suggestion</p>
                 <p className="text-sm text-[#1F2937]">{summary.suggestion}</p>
               </div>
               <div className="flex items-center justify-center gap-1 pt-2">
@@ -1184,7 +1324,7 @@ export default function TeacherProgressPage() {
           </div>
 
 
-          <Card>
+          <div className="rounded-[24px] border border-white bg-white p-4 shadow-[0_16px_40px_rgba(15,23,42,0.07)] sm:p-6">
             <div className="flex items-center gap-2 mb-3">
               <TrendingUp className="h-4 w-4 text-[#004649]" />
               <h3 className="font-bold text-[#1F2937]">Teacher Guidance</h3>
@@ -1194,29 +1334,29 @@ export default function TeacherProgressPage() {
               <li>- If mistakes increase, reduce range and revise.</li>
               <li>- Use auto-suggest to continue lesson sequence.</li>
             </ul>
-          </Card>
+          </div>
         </aside>
       </section>
 
       {/* Mobile Auto Summary (collapsible) */}
-      <div className="md:hidden mb-4">
-        <details className="rounded-2xl border border-[#E5E7EB] bg-gradient-to-br from-[#F0FDF4] to-white p-4 shadow-sm">
-          <summary className="flex cursor-pointer items-center gap-3 font-semibold text-[#1F2937]">
-            <Sparkles className="h-5 w-5 text-[#004649]" />
+      <div className="mb-4 md:hidden">
+        <details className="rounded-[24px] border border-white bg-white p-4 shadow-[0_16px_40px_rgba(15,23,42,0.07)]">
+          <summary className="flex cursor-pointer items-center gap-3 font-black text-[#0F172A]">
+            <Sparkles className="h-5 w-5 text-[#004D47]" />
             <span>Performance Summary</span>
             <span className="ml-auto text-xs text-[#6B7280]">▼</span>
           </summary>
           <div className="mt-4 space-y-3 text-sm">
             <div className="flex items-center justify-between rounded-xl bg-white p-3 border border-[#E5E7EB]">
               <span className="text-[#6B7280]">Overall Performance</span>
-              <span className="font-bold text-[#004649]">{summary.overallPerformance}</span>
+              <span className="font-black text-[#004D47]">{summary.overallPerformance}</span>
             </div>
             <div className="flex items-center justify-between rounded-xl bg-white p-3 border border-[#E5E7EB]">
               <span className="text-[#6B7280]">Total Mistakes</span>
-              <span className="font-bold text-[#991B1B]">{summary.totalMistakes}</span>
+              <span className="font-black text-[#B45309]">{summary.totalMistakes}</span>
             </div>
-            <div className="rounded-xl bg-white p-3 border border-[#E5E7EB]">
-              <p className="text-xs text-[#6B7280] mb-1">Suggestion</p>
+            <div className="rounded-2xl border border-white bg-white/80 p-3 shadow-sm">
+              <p className="mb-1 text-[11px] font-bold uppercase tracking-wide text-[#94A3B8]">Suggestion</p>
               <p className="text-sm text-[#1F2937] font-medium">{summary.suggestion}</p>
             </div>
             <div className="flex items-center justify-center gap-1 pt-2">
@@ -1228,9 +1368,24 @@ export default function TeacherProgressPage() {
         </details>
       </div>
 
-      {/* Sticky Footer */}
-      <div className="fixed bottom-0 left-0 right-0 border-t border-[#E5E7EB] bg-white/95 backdrop-blur-md p-3 sm:p-4 shadow-[0_-12px_24px_rgba(0,0,0,0.1)] z-40">
-        <div className="mx-auto max-w-4xl px-4 flex flex-col gap-2 sm:flex-row sm:justify-end sm:gap-3">
+      {/* Mobile-safe actions */}
+      <div className="rounded-[24px] border border-white/70 bg-white/95 p-3 shadow-[0_16px_40px_rgba(15,23,42,0.08)] backdrop-blur-xl">
+        {editingReportId ? (
+          <div className="mb-3 rounded-2xl border border-[#FCD34D] bg-[#FFFBEB] px-4 py-3 text-sm font-bold text-[#92400E]">
+            Editing saved report. Update it or cancel editing.
+          </div>
+        ) : null}
+        <div className="mx-auto flex max-w-4xl flex-col gap-2 sm:flex-row sm:justify-end sm:gap-3">
+          {editingReportId ? (
+            <button
+              type="button"
+              onClick={cancelEditReport}
+              disabled={saving}
+              className="h-12 w-full rounded-2xl border border-[#D8E2E7] bg-white px-6 text-sm font-black text-[#64748B] transition-all active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-50 sm:w-auto"
+            >
+              Cancel Edit
+            </button>
+          ) : null}
           <button
             type="button"
             onClick={async () => {
@@ -1238,9 +1393,9 @@ export default function TeacherProgressPage() {
               await submit({ preventDefault: () => {} } as React.FormEvent);
             }}
             disabled={saving || loading || featureDisabled}
-            className="h-11 w-full sm:w-auto rounded-xl bg-gradient-to-br from-[#004649] to-[#1b5e62] shadow-md active:shadow-sm active:scale-[0.98] transition-all px-6 font-semibold text-sm text-white disabled:cursor-not-allowed disabled:opacity-50"
+            className="h-12 w-full rounded-2xl bg-[#084750] px-6 text-sm font-black text-white shadow-[0_16px_32px_rgba(8,71,80,0.26)] transition-all active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-50 sm:w-auto"
           >
-            {saving ? 'Saving...' : 'Save Report'}
+            {saving ? 'Saving...' : editingReportId ? 'Update Report' : 'Save Report'}
           </button>
           <button
             type="button"
@@ -1248,29 +1403,29 @@ export default function TeacherProgressPage() {
               setSaveAndMoveNext(true);
               await submit({ preventDefault: () => {} } as React.FormEvent);
             }}
-            disabled={saving || loading || featureDisabled || !selectedStudents.some((s) => s.id > form.studentId)}
-            className="h-11 w-full sm:w-auto rounded-xl border-2 border-[#004649] bg-white text-[#004649] font-semibold transition-all active:scale-[0.98] px-6 text-sm disabled:cursor-not-allowed disabled:opacity-30"
+            disabled={saving || loading || featureDisabled || Boolean(editingReportId) || !selectedStudents.some((s) => s.id > form.studentId)}
+            className="h-12 w-full rounded-2xl border border-[#D8E2E7] bg-white px-6 text-sm font-black text-[#004D47] transition-all active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-30 sm:w-auto"
           >
             {saving ? 'Saving...' : 'Save & Next →'}
           </button>
         </div>
       </div>
 
-      <Card>
+      <div className="rounded-[24px] border border-white bg-white p-4 shadow-[0_16px_40px_rgba(15,23,42,0.07)] sm:p-6">
         <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between mb-4">
-          <h3 className="text-xl font-bold text-[#1F2937]">Saved Reports</h3>
+          <h3 className="text-xl font-black tracking-[-0.03em] text-[#0F172A]">Saved Reports</h3>
           <div className="grid gap-2 md:grid-cols-2">
             <input
               type="date"
               value={reportDate}
               onChange={(e) => setReportDate(e.target.value)}
-              className="h-10 rounded-lg border border-[#E5E7EB] px-4 text-sm text-[#1F2937] outline-none focus:ring-2 focus:ring-[#004649]/20"
+              className="h-11 rounded-2xl border border-[#E2E8F0] bg-[#F8FAFC] px-4 text-sm font-semibold text-[#0F172A] outline-none transition focus:border-[#006A61] focus:bg-white focus:ring-4 focus:ring-[#006A61]/10"
             />
             <input
               value={reportQuery}
               onChange={(e) => setReportQuery(e.target.value)}
               placeholder="Search student"
-              className="h-10 rounded-lg border border-[#E5E7EB] px-4 text-sm text-[#1F2937] placeholder:text-[#6B7280] outline-none focus:ring-2 focus:ring-[#004649]/20"
+              className="h-11 rounded-2xl border border-[#E2E8F0] bg-[#F8FAFC] px-4 text-sm font-semibold text-[#0F172A] placeholder:text-[#94A3B8] outline-none transition focus:border-[#006A61] focus:bg-white focus:ring-4 focus:ring-[#006A61]/10"
             />
           </div>
         </div>
@@ -1286,7 +1441,7 @@ export default function TeacherProgressPage() {
               const surahLabel = getSectionLabelFromNotes(item.notes, 'sabaq');
 
               return (
-                <div key={item.id} className="rounded-xl border border-[#E5E7EB] bg-[#F9FAFB] p-4">
+                <div key={item.id} className="rounded-[20px] border border-[#E2E8F0] bg-[#F8FAFC] p-4 transition hover:-translate-y-0.5 hover:bg-white hover:shadow-[0_12px_28px_rgba(15,23,42,0.08)]">
                   <p className="text-xs font-semibold uppercase tracking-widest text-[#6B7280]">{formatDateYMD(item.date)}</p>
                   <p className="mt-1 text-base font-bold text-[#1F2937]">{item.student.user.fullName}</p>
                   <p className="text-xs text-[#9CA3AF]">{item.class.name} - {item.class.section}</p>
@@ -1298,17 +1453,34 @@ export default function TeacherProgressPage() {
                     ))}
                   </div>
 
-                  <div className="mt-2 inline-flex rounded-lg bg-[#FEE2E2] px-3 py-1 text-xs font-semibold text-[#991B1B]">
+                  <div className="mt-3 inline-flex rounded-full bg-[#FFFBEB] px-3 py-1 text-xs font-black text-[#B45309]">
                     Mistakes: {mistakes}
                   </div>
 
-                  <button
-                    type="button"
-                    onClick={() => setOpenReportId((prev) => (prev === item.id ? null : item.id))}
-                    className="mt-3 rounded-lg bg-gradient-to-br from-[#004649] to-[#1b5e62] shadow-[0_8px_20px_rgba(43,103,110,0.12)] active:scale-[0.98] transition-all px-3 py-1.5 text-xs font-semibold text-white"
-                  >
-                    View Details
-                  </button>
+                  <div className="mt-3 flex flex-wrap gap-2">
+                    <button
+                      type="button"
+                      onClick={() => setOpenReportId((prev) => (prev === item.id ? null : item.id))}
+                      className="inline-flex items-center rounded-2xl bg-[#084750] px-4 py-2 text-xs font-black text-white shadow-[0_10px_20px_rgba(8,71,80,0.18)] transition-all active:scale-[0.98]"
+                    >
+                      View Details
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => startEditReport(item)}
+                      className="inline-flex items-center rounded-2xl border border-[#B8DAD5] bg-white px-4 py-2 text-xs font-black text-[#084750] transition-all active:scale-[0.98]"
+                    >
+                      Edit
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => void deleteReport(item)}
+                      disabled={deletingReportId === item.id}
+                      className="inline-flex items-center rounded-2xl border border-[#FCA5A5] bg-white px-4 py-2 text-xs font-black text-[#B91C1C] transition-all active:scale-[0.98] disabled:opacity-60"
+                    >
+                      {deletingReportId === item.id ? 'Deleting...' : 'Delete'}
+                    </button>
+                  </div>
 
                   {openReportId === item.id ? (
                     <div className="mt-3 rounded-lg border border-[#E5E7EB] bg-white p-3 space-y-2 text-xs">
@@ -1326,7 +1498,7 @@ export default function TeacherProgressPage() {
                           })}
                           <div className="pt-1 border-t border-[#E5E7EB] flex justify-between">
                             <span className="text-[#6B7280]">Overall: <span className="font-semibold text-[#004649]">{parsed.overall}</span></span>
-                            <span className="text-[#6B7280]">Mistakes: <span className="font-semibold text-[#be123c]">{parsed.totalMistakes}</span></span>
+                            <span className="text-[#6B7280]">Mistakes <span className="font-semibold text-[#be123c]">{parsed.totalMistakes}</span></span>
                           </div>
                         </>
                       ) : (
@@ -1339,7 +1511,7 @@ export default function TeacherProgressPage() {
             })}
           </div>
         )}
-      </Card>
+      </div>
     </div>
   );
 }

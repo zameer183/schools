@@ -1,5 +1,5 @@
 import { UserRole } from '@prisma/client';
-import { revalidatePath, unstable_cache } from 'next/cache';
+import { unstable_cache } from 'next/cache';
 import { requireAuth } from '@/lib/auth';
 import { prisma } from '@/lib/prisma';
 import AdminMessagingWorkspace from './admin-messaging-workspace';
@@ -55,80 +55,6 @@ const getCachedAdminMessagesData = unstable_cache(
   { revalidate: 20 }
 );
 
-async function sendAdminMessage(formData: FormData) {
-  'use server';
-
-  try {
-    const session = await requireAuth([UserRole.ADMIN]);
-    const subject = String(formData.get('subject') ?? '').trim();
-    const body = String(formData.get('body') ?? '').trim();
-    const targetModeRaw = String(formData.get('targetMode') ?? 'individual_student');
-    const targetMode = targetModeRaw as 'individual_student' | 'individual_teacher' | 'class' | 'announcement';
-    const classId = String(formData.get('classId') ?? '').trim();
-    const studentRecipientId = String(formData.get('studentRecipientId') ?? '').trim();
-    const teacherRecipientId = String(formData.get('teacherRecipientId') ?? '').trim();
-
-    if (!subject || !body) return;
-
-    let recipients: string[] = [];
-
-    if (targetMode === 'individual_student') {
-      if (!studentRecipientId) return;
-      recipients = [studentRecipientId];
-    } else if (targetMode === 'individual_teacher') {
-      if (!teacherRecipientId) return;
-      recipients = [teacherRecipientId];
-    } else if (targetMode === 'class') {
-      if (!classId) return;
-      const classStudents = await prisma.student.findMany({ where: { classId }, select: { userId: true } });
-      recipients = classStudents.map((item) => item.userId);
-    } else if (targetMode === 'announcement') {
-      const students = await prisma.user.findMany({
-        where: { role: UserRole.STUDENT, isActive: true },
-        select: { id: true }
-      });
-      recipients = students.map((item) => item.id);
-    } else {
-      return;
-    }
-
-    const uniqueRecipients = Array.from(new Set(recipients)).filter((id): id is string => Boolean(id));
-    if (!uniqueRecipients.length) return;
-
-    await prisma.$transaction(async (tx) => {
-      const createdMessage = await tx.message.create({
-        data: {
-          senderId: session.id,
-          subject,
-          body
-        },
-        select: { id: true }
-      });
-
-      await tx.messageRecipient.createMany({
-        data: uniqueRecipients.map((userId) => ({ messageId: createdMessage.id, userId })),
-        skipDuplicates: true
-      });
-
-      if (targetMode === 'announcement') {
-        await tx.notification.createMany({
-          data: uniqueRecipients.map((userId) => ({
-            userId,
-            title: subject,
-            body,
-            type: 'SYSTEM',
-            isRead: false
-          }))
-        });
-      }
-    });
-  } catch (error) {
-    console.error('[admin/messages] sendAdminMessage failed', error);
-  } finally {
-    revalidatePath('/admin/messages');
-  }
-}
-
 export default async function AdminMessagesPage({ searchParams }: AdminMessagesPageProps) {
   const session = await requireAuth([UserRole.ADMIN]);
   const params = (await searchParams) ?? {};
@@ -174,7 +100,6 @@ export default async function AdminMessagesPage({ searchParams }: AdminMessagesP
       receivedMessages={serializedReceived}
       sentMessages={serializedSent}
       presetRecipientId={presetRecipientId}
-      composeAction={sendAdminMessage}
     />
   );
 }

@@ -267,7 +267,9 @@ const ReportsPage: React.FC = () => {
   // Toast effect
   useEffect(() => {
     if (toast.show) {
-      const timer = setTimeout(() => setToast({ ...toast, show: false }), 3500);
+      const timer = setTimeout(() => {
+        setToast((prev) => ({ ...prev, show: false }));
+      }, 3500);
       return () => clearTimeout(timer);
     }
   }, [toast.show]);
@@ -325,6 +327,10 @@ const ReportsPage: React.FC = () => {
     }
   }, [sortField, sortOrder]);
 
+  const showToast = useCallback((message: string, type: 'success' | 'error' = 'success') => {
+    setToast({ show: true, message, type });
+  }, []);
+
   const handleGenerateReport = useCallback(async () => {
     if (!userPermissions.canGenerate) {
       showToast('No permission to generate reports', 'error');
@@ -334,7 +340,7 @@ const ReportsPage: React.FC = () => {
     await new Promise((resolve) => setTimeout(resolve, 1800));
     setIsLoading(false);
     showToast('Report generated successfully', 'success');
-  }, [userPermissions.canGenerate]);
+  }, [userPermissions.canGenerate, showToast]);
 
   const handleExport = useCallback(
     (format: string) => {
@@ -344,12 +350,8 @@ const ReportsPage: React.FC = () => {
       }
       showToast(`Exported as ${format.toUpperCase()}`, 'success');
     },
-    [userPermissions.canExport]
+    [userPermissions.canExport, showToast]
   );
-
-  const showToast = useCallback((message: string, type: 'success' | 'error' = 'success') => {
-    setToast({ show: true, message, type });
-  }, []);
 
   const handleReset = useCallback(() => {
     setFilters({

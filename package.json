@@ -7,7 +7,7 @@
     "build": "next build",
     "postinstall": "prisma generate",
     "start": "next start -p 5000 -H 0.0.0.0",
-    "lint": "ESLINT_USE_FLAT_CONFIG=false eslint app src --ext .ts,.tsx",
+    "lint": "eslint app src --ext .ts,.tsx",
     "prisma:generate": "prisma generate",
     "prisma:migrate": "prisma migrate dev",
     "prisma:seed": "tsx prisma/seed.ts"
@@ -53,3 +53,4 @@
     "seed": "tsx prisma/seed.ts"
   }
 }
+

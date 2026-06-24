@@ -3,6 +3,28 @@ import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { ensureApiRole } from '@/lib/rbac';
 
+function monthStart(date: Date) {
+  return new Date(date.getFullYear(), date.getMonth(), 1);
+}
+
+function monthEnd(date: Date) {
+  return new Date(date.getFullYear(), date.getMonth() + 1, 0, 23, 59, 59, 999);
+}
+
+function addMonths(date: Date, months: number) {
+  return new Date(date.getFullYear(), date.getMonth() + months, 1);
+}
+
+function monthlyFeeTitle(date: Date) {
+  return `Monthly Tuition Fee - ${date.toLocaleString('en-US', { month: 'long', year: 'numeric' })}`;
+}
+
+function deriveStatus(net: number, paid: number): PaymentStatus {
+  if (paid >= net && net > 0) return PaymentStatus.PAID;
+  if (paid > 0) return PaymentStatus.PARTIAL;
+  return PaymentStatus.PENDING;
+}
+
 export async function GET(request: Request) {
   const auth = await ensureApiRole([UserRole.ADMIN, UserRole.PARENT, UserRole.STUDENT]);
   if (!auth.authorized) return auth.response;
@@ -60,11 +82,12 @@ export async function POST(request: Request) {
   if (!auth.authorized) return auth.response;
 
   const { studentId, title, dueDate, amount, discount } = await request.json();
+  const normalizedDueDate = monthStart(new Date(dueDate));
   const fee = await prisma.fee.create({
     data: {
       studentId,
       title,
-      dueDate: new Date(dueDate),
+      dueDate: normalizedDueDate,
       amount,
       discount: discount ?? 0,
       status: PaymentStatus.PENDING
@@ -103,7 +126,7 @@ export async function PUT(request: Request) {
         ...(title !== undefined ? { title } : {}),
         ...(amount !== undefined ? { amount: Number(amount) } : {}),
         ...(discount !== undefined ? { discount: Number(discount) } : {}),
-        ...(dueDate !== undefined ? { dueDate: new Date(dueDate) } : {})
+        ...(dueDate !== undefined ? { dueDate: monthStart(new Date(dueDate)) } : {})
       }
     });
     return NextResponse.json(updated);
@@ -115,23 +138,101 @@ export async function PUT(request: Request) {
     return NextResponse.json({ error: 'Invalid transaction method' }, { status: 400 });
   }
 
-  const payment = await prisma.payment.create({
-    data: { feeId, amountPaid, method, transactionRef, parentId }
-  });
-
-  // Auto-update fee status based on payments
-  const fee = await prisma.fee.findUnique({
-    where: { id: feeId },
-    select: { amount: true, discount: true, payments: { select: { amountPaid: true } } }
-  });
-  if (fee) {
-    const net = Number(fee.amount) - Number(fee.discount);
-    const paid = fee.payments.reduce((s, p) => s + Number(p.amountPaid), 0);
-    const newStatus: PaymentStatus = paid >= net ? PaymentStatus.PAID : paid > 0 ? PaymentStatus.PARTIAL : PaymentStatus.PENDING;
-    await prisma.fee.update({ where: { id: feeId }, data: { status: newStatus } });
+  const amountToAllocate = Number(amountPaid);
+  if (!Number.isFinite(amountToAllocate) || amountToAllocate <= 0) {
+    return NextResponse.json({ error: 'Amount must be greater than zero' }, { status: 400 });
   }
 
-  return NextResponse.json(payment, { status: 201 });
+  const payments = await prisma.$transaction(async (tx) => {
+    const sourceFee = await tx.fee.findUnique({
+      where: { id: feeId },
+      select: {
+        id: true,
+        studentId: true,
+        title: true,
+        dueDate: true,
+        amount: true,
+        discount: true,
+        payments: { select: { amountPaid: true } }
+      }
+    });
+    if (!sourceFee) throw new Error('Fee not found');
+
+    const createdPayments = [];
+    const monthlyAmount = Number(sourceFee.amount);
+    const monthlyDiscount = Number(sourceFee.discount);
+    let remainingPayment = amountToAllocate;
+
+    for (let monthOffset = 0; remainingPayment > 0.0001 && monthOffset < 36; monthOffset += 1) {
+      const targetMonth = addMonths(sourceFee.dueDate, monthOffset);
+      let targetFee = monthOffset === 0
+        ? sourceFee
+        : await tx.fee.findFirst({
+            where: {
+              studentId: sourceFee.studentId,
+              dueDate: { gte: monthStart(targetMonth), lte: monthEnd(targetMonth) }
+            },
+            select: {
+              id: true,
+              studentId: true,
+              title: true,
+              dueDate: true,
+              amount: true,
+              discount: true,
+              payments: { select: { amountPaid: true } }
+            }
+          });
+
+      if (!targetFee) {
+        targetFee = await tx.fee.create({
+          data: {
+            studentId: sourceFee.studentId,
+            title: monthlyFeeTitle(targetMonth),
+            dueDate: monthStart(targetMonth),
+            amount: monthlyAmount,
+            discount: monthlyDiscount,
+            status: PaymentStatus.PENDING
+          },
+          select: {
+            id: true,
+            studentId: true,
+            title: true,
+            dueDate: true,
+            amount: true,
+            discount: true,
+            payments: { select: { amountPaid: true } }
+          }
+        });
+      }
+
+      const net = Math.max(Number(targetFee.amount) - Number(targetFee.discount), 0);
+      const alreadyPaid = targetFee.payments.reduce((sum, payment) => sum + Number(payment.amountPaid), 0);
+      const feeRemaining = Math.max(net - alreadyPaid, 0);
+      if (feeRemaining <= 0) continue;
+
+      const appliedAmount = Math.min(remainingPayment, feeRemaining);
+      const payment = await tx.payment.create({
+        data: {
+          feeId: targetFee.id,
+          amountPaid: appliedAmount,
+          method,
+          transactionRef: transactionRef || (monthOffset > 0 ? 'ADVANCE_PAYMENT' : null),
+          parentId
+        }
+      });
+      createdPayments.push(payment);
+      remainingPayment -= appliedAmount;
+
+      await tx.fee.update({
+        where: { id: targetFee.id },
+        data: { status: deriveStatus(net, alreadyPaid + appliedAmount) }
+      });
+    }
+
+    return createdPayments;
+  });
+
+  return NextResponse.json(payments[0] ?? { allocated: 0 }, { status: 201 });
 }
 
 export async function DELETE(request: Request) {

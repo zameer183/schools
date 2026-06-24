@@ -1,10 +1,8 @@
 'use client';
 
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { AlertCircle, CheckCircle, MessageCircle, Download } from 'lucide-react';
-import { PrintButton } from '@/components/reports/print-button';
-import Link from 'next/link';
+import { AlertCircle, CheckCircle, Download, MessageSquare, RotateCcw } from 'lucide-react';
 import { formatCurrency } from '@/lib/utils';
 import { FinanceToast } from './finance-toast';
 
@@ -14,6 +12,10 @@ export type SerializedFeeItem = {
   status: string;
   dueDate: string;
   studentName: string;
+  studentId: string;
+  classLabel?: string;
+  dueMonthCount?: number;
+  advanceMonthCount?: number;
   amount: number;
   discount: number;
   paidAmount: number;
@@ -23,29 +25,44 @@ export type SerializedFeeItem = {
 };
 
 function statusBadge(status: string) {
-  if (status === 'PAID')    return 'bg-[#27ae60] text-white';
-  if (status === 'OVERDUE') return 'bg-[#e74c3c] text-white';
-  if (status === 'PARTIAL') return 'bg-[#e67e22] text-white';
-  return 'bg-[#f39c12] text-white';
-}
-
-function statusAccent(status: string) {
-  if (status === 'PAID')    return 'border-l-[#27ae60]';
-  if (status === 'OVERDUE') return 'border-l-[#e74c3c]';
-  if (status === 'PARTIAL') return 'border-l-[#e67e22]';
-  return 'border-l-[#f39c12]';
+  if (status === 'PAID') return 'bg-[#dcfce7] text-[#15803d]';
+  if (status === 'PARTIAL') return 'bg-[#ffedd5] text-[#c2410c]';
+  return 'bg-[#fef3c7] text-[#b45309]';
 }
 
 function statusLabel(status: string) {
-  if (status === 'PENDING') return 'DUE';
-  return status;
+  return status === 'PENDING' ? 'DUE' : status;
+}
+
+function toWaRecipient(phone: string | null | undefined) {
+  if (!phone) return null;
+  const digits = phone.replace(/\D/g, '');
+  return digits.length >= 10 ? digits : null;
 }
 
 function getWhatsAppUrl(fee: SerializedFeeItem): string | null {
-  const phone = (fee.whatsApp ?? fee.guardianPhone ?? '').replace(/[^0-9+]/g, '');
-  if (!phone) return null;
-  const msg = `Reminder: ${fee.title} of ${formatCurrency(fee.remaining)} is due by ${fee.dueDate.slice(0, 10)}. Please pay promptly.`;
-  return `https://wa.me/${phone}?text=${encodeURIComponent(msg)}`;
+  const recipient = toWaRecipient(fee.whatsApp ?? fee.guardianPhone);
+  if (!recipient) return null;
+
+  const isPaid = fee.remaining <= 0 || fee.status === 'PAID';
+  const text = isPaid
+    ? [
+        'Assalamualaikum,',
+        `Payment received for ${fee.studentName}.`,
+        `Fee: ${fee.title}`,
+        `Amount: ${formatCurrency(Math.max(fee.amount - fee.discount, 0))}`,
+        'Thank you.'
+      ].join('\n')
+    : [
+        'Assalamualaikum,',
+        `Fee reminder for ${fee.studentName}.`,
+        `Fee: ${fee.title}`,
+        `Remaining: ${formatCurrency(fee.remaining)}`,
+        `Due Date: ${fee.dueDate.slice(0, 10)}`,
+        'Kindly make the payment at your earliest convenience.'
+      ].join('\n');
+
+  return `https://wa.me/${recipient}?text=${encodeURIComponent(text)}`;
 }
 
 export function FeeBulkList({
@@ -64,22 +81,39 @@ export function FeeBulkList({
   const [toast, setToast] = useState<{ message: string; type: 'success' | 'error' } | null>(null);
   const selectAllRef = useRef<HTMLInputElement>(null);
 
-  const allSelected  = fees.length > 0 && selected.size === fees.length;
+  const selectedRows = useMemo(
+    () => fees.filter((fee) => selected.has(fee.id)),
+    [fees, selected]
+  );
+  const allSelected = fees.length > 0 && selected.size === fees.length;
   const someSelected = selected.size > 0 && selected.size < fees.length;
 
   useEffect(() => {
     if (selectAllRef.current) selectAllRef.current.indeterminate = someSelected;
   }, [someSelected]);
 
-  const toggle = (id: string) =>
-    setSelected(prev => {
+  useEffect(() => {
+    const visibleIds = new Set(fees.map((fee) => fee.id));
+    setSelected((prev) => new Set(Array.from(prev).filter((id) => visibleIds.has(id))));
+  }, [fees]);
+
+  const title =
+    selectedFeeStatus === 'paid' ? 'Paid Fee Records' :
+    selectedFeeStatus === 'unpaid' ? 'Due Fee Records' :
+    'Fee Records';
+
+  const toggle = (id: string) => {
+    setSelected((prev) => {
       const next = new Set(prev);
-      next.has(id) ? next.delete(id) : next.add(id);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
       return next;
     });
+  };
 
-  const toggleAll = () =>
-    setSelected(allSelected ? new Set() : new Set(fees.map(f => f.id)));
+  const toggleAll = () => {
+    setSelected(allSelected ? new Set() : new Set(fees.map((fee) => fee.id)));
+  };
 
   const bulkUpdate = async (status: 'PAID' | 'PENDING') => {
     if (selected.size === 0) return;
@@ -91,8 +125,7 @@ export function FeeBulkList({
     });
     const data = await res.json().catch(() => ({}));
     if (res.ok) {
-      const label = status === 'PAID' ? 'paid' : 'unpaid (DUE)';
-      setToast({ message: `${data.updated} fee(s) marked as ${label}.`, type: 'success' });
+      setToast({ message: `${data.updated} fee(s) updated.`, type: 'success' });
       setSelected(new Set());
       router.refresh();
     } else {
@@ -101,72 +134,94 @@ export function FeeBulkList({
     setLoading(false);
   };
 
-  const markOnePaid = async (feeId: string) => {
-    setLoadingIds(prev => new Set(prev).add(feeId));
+  const updateOne = async (feeId: string, status: 'PAID' | 'PENDING') => {
+    setLoadingIds((prev) => new Set(prev).add(feeId));
     const res = await fetch('/api/fees/bulk', {
       method: 'PATCH',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ ids: [feeId], status: 'PAID' })
+      body: JSON.stringify({ ids: [feeId], status })
     });
+    const data = await res.json().catch(() => ({}));
     if (res.ok) {
-      setToast({ message: 'Fee marked as paid.', type: 'success' });
+      setToast({ message: status === 'PAID' ? 'Fee marked paid.' : 'Fee marked unpaid.', type: 'success' });
       router.refresh();
     } else {
-      const data = await res.json().catch(() => ({}));
       setToast({ message: data.error ?? 'Failed. Try again.', type: 'error' });
     }
-    setLoadingIds(prev => { const n = new Set(prev); n.delete(feeId); return n; });
+    setLoadingIds((prev) => {
+      const next = new Set(prev);
+      next.delete(feeId);
+      return next;
+    });
+  };
+
+  const openWhatsAppForRows = (rows: SerializedFeeItem[]) => {
+    const links = rows.map(getWhatsAppUrl).filter(Boolean) as string[];
+    if (links.length === 0) {
+      setToast({ message: 'No WhatsApp number available for selected rows.', type: 'error' });
+      return;
+    }
+    links.forEach((url) => window.open(url, '_blank', 'noopener,noreferrer'));
   };
 
   const exportCSV = () => {
-    if (selected.size === 0) return;
-    const rows = fees.filter(f => selected.has(f.id));
-    const header = 'Student,Fee Type,Due Date,Status,Amount,Paid,Remaining';
-    const csvRows = rows.map(f =>
-      `"${f.studentName}","${f.title}",${f.dueDate.slice(0, 10)},${f.status},${f.amount},${f.paidAmount},${f.remaining}`
+    const rows = selectedRows.length ? selectedRows : fees;
+    const header = 'Student,Class,Fee,Due Date,Status,Amount,Paid,Remaining,WhatsApp';
+    const csvRows = rows.map((fee) =>
+      [
+        fee.studentName,
+        fee.classLabel ?? '',
+        fee.title,
+        fee.dueDate.slice(0, 10),
+        statusLabel(fee.status),
+        fee.amount,
+        fee.paidAmount,
+        fee.remaining,
+        fee.whatsApp ?? fee.guardianPhone ?? ''
+      ].map((value) => `"${String(value).replace(/"/g, '""')}"`).join(',')
     );
-    const csv = [header, ...csvRows].join('\n');
-    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+    const blob = new Blob([[header, ...csvRows].join('\n')], { type: 'text/csv;charset=utf-8;' });
     const url = URL.createObjectURL(blob);
     const link = document.createElement('a');
-    link.setAttribute('href', url);
-    link.setAttribute('download', `fees-export-${new Date().toISOString().slice(0, 10)}.csv`);
+    link.href = url;
+    link.download = `fees-${new Date().toISOString().slice(0, 10)}.csv`;
     link.click();
+    URL.revokeObjectURL(url);
   };
-
-  const title =
-    selectedFeeStatus === 'paid'   ? 'Paid Fee Records'   :
-    selectedFeeStatus === 'unpaid' ? 'Unpaid Fee Records' :
-    'Fee Records';
 
   return (
     <>
-      <div className="rounded-2xl bg-white p-4 shadow-[0_4px_12px_rgba(0,0,0,0.08)] sm:p-6">
-        {/* Header */}
-        <div className="mb-4 flex flex-wrap items-center justify-between gap-2">
-          <h3 className="font-headline text-lg font-bold text-[#1a1c1c]">{title}</h3>
+      <section className="rounded-2xl bg-white p-4 shadow-[0_4px_12px_rgba(0,0,0,0.08)] sm:p-6">
+        <div className="mb-4 flex flex-wrap items-start justify-between gap-3">
+          <div>
+            <h3 className="font-headline text-lg font-bold text-[#1a1c1c]">{title}</h3>
+            <p className="mt-1 text-xs text-[#6f7979]">Fee status, collection actions, and WhatsApp messaging in one place.</p>
+          </div>
+          <span className="rounded-full bg-[#f3f4f5] px-3 py-1 text-xs font-semibold text-[#374151]">
+            {fees.length} records
+          </span>
         </div>
+
+        {overdueCount > 0 ? (
+          <div className="mb-4 flex flex-wrap items-center justify-between gap-3 rounded-xl border border-[#fca5a5] bg-[#fef2f2] px-4 py-3">
+            <div className="flex items-center gap-2">
+              <AlertCircle className="h-5 w-5 text-[#b45309]" />
+              <p className="text-sm font-semibold text-[#b45309]">{overdueCount} due fee(s)</p>
+            </div>
+            <button
+              type="button"
+              onClick={() => openWhatsAppForRows(fees.filter((fee) => fee.status !== 'PAID'))}
+              className="h-10 rounded-xl bg-[#b45309] px-3 text-xs font-bold text-white transition hover:bg-[#92400e]"
+            >
+              Send Due Reminders
+            </button>
+          </div>
+        ) : null}
 
         {fees.length > 0 ? (
           <>
-            {/* Overdue Alert */}
-            {overdueCount > 0 ? (
-              <div className="mb-4 rounded-xl bg-[#fef2f2] border border-[#fca5a5] px-4 py-3 flex items-center justify-between gap-3">
-                <div className="flex items-center gap-2">
-                  <AlertCircle className="h-5 w-5 text-[#b91c1c]" />
-                  <p className="text-sm font-semibold text-[#b91c1c]">{overdueCount} overdue fee(s)</p>
-                </div>
-                <Link href="/admin/finance/reminders">
-                  <button className="rounded-xl bg-[#b91c1c] px-3 py-1.5 text-xs font-bold text-white hover:bg-[#a01717] active:scale-[0.98] transition-all">
-                    Send Reminder to All
-                  </button>
-                </Link>
-              </div>
-            ) : null}
-
-            {/* Select-all bar */}
-            <div className="mb-3 flex flex-col items-start justify-between gap-2 rounded-xl bg-[#f5f7fa] px-4 py-2.5 sm:flex-row sm:items-center">
-              <label className="flex cursor-pointer items-center gap-2.5 text-xs font-semibold text-[#3d4a4a] select-none">
+            <div className="mb-3 flex flex-col gap-3 rounded-xl bg-[#f8fafc] px-4 py-3 lg:flex-row lg:items-center lg:justify-between">
+              <label className="flex cursor-pointer items-center gap-2.5 text-xs font-semibold text-[#3d4a4a]">
                 <input
                   ref={selectAllRef}
                   type="checkbox"
@@ -177,150 +232,200 @@ export function FeeBulkList({
                 {selected.size > 0 ? `Selected (${selected.size})` : `Select all (${fees.length})`}
               </label>
 
-              {selected.size > 0 ? (
-                <div className="flex flex-wrap items-center gap-2">
-                  <button
-                    onClick={() => bulkUpdate('PAID')}
-                    disabled={loading}
-                    className="h-11 flex items-center gap-1 rounded-xl bg-[#27ae60] px-3 text-xs font-bold text-white hover:bg-[#229954] active:scale-[0.98] disabled:opacity-60 transition-all"
-                  >
-                    <CheckCircle className="h-4 w-4" />
-                    Mark Paid
-                  </button>
-                  <button
-                    onClick={() => bulkUpdate('PENDING')}
-                    disabled={loading}
-                    className="h-11 flex items-center gap-1 rounded-xl bg-[#f39c12] px-3 text-xs font-bold text-white hover:bg-[#e67e22] active:scale-[0.98] disabled:opacity-60 transition-all"
-                  >
-                    Mark Unpaid
-                  </button>
-                  <Link href="/admin/finance/reminders">
-                    <button className="h-11 flex items-center gap-1 rounded-xl bg-[#25d366] px-3 text-xs font-bold text-white hover:bg-[#1fa456] active:scale-[0.98] transition-all">
-                      <MessageCircle className="h-4 w-4" />
-                      Send Reminder
-                    </button>
-                  </Link>
-                  <PrintButton label="Print / PDF" />
-                  <button
-                    onClick={exportCSV}
-                    className="h-11 flex items-center gap-1 rounded-xl bg-[#6f7979] px-3 text-xs font-bold text-white hover:bg-[#5a6264] active:scale-[0.98] transition-all"
-                  >
-                    <Download className="h-4 w-4" />
-                    Export
-                  </button>
-                </div>
-              ) : null}
+              <div className="flex flex-wrap items-center gap-2">
+                <button
+                  type="button"
+                  onClick={() => bulkUpdate('PAID')}
+                  disabled={loading || selected.size === 0}
+                  className="inline-flex h-10 items-center gap-1.5 rounded-xl bg-[#16a34a] px-3 text-xs font-bold text-white transition hover:bg-[#15803d] disabled:cursor-not-allowed disabled:opacity-50"
+                >
+                  <CheckCircle className="h-4 w-4" />
+                  Mark Paid
+                </button>
+                <button
+                  type="button"
+                  onClick={() => bulkUpdate('PENDING')}
+                  disabled={loading || selected.size === 0}
+                  className="inline-flex h-10 items-center gap-1.5 rounded-xl bg-[#f59e0b] px-3 text-xs font-bold text-white transition hover:bg-[#d97706] disabled:cursor-not-allowed disabled:opacity-50"
+                >
+                  <RotateCcw className="h-4 w-4" />
+                  Make Unpaid
+                </button>
+                <button
+                  type="button"
+                  onClick={() => openWhatsAppForRows(selectedRows)}
+                  disabled={selected.size === 0}
+                  className="inline-flex h-10 items-center gap-1.5 rounded-xl bg-[#25d366] px-3 text-xs font-bold text-white transition hover:bg-[#1fa456] disabled:cursor-not-allowed disabled:opacity-50"
+                >
+                  <MessageSquare className="h-4 w-4" />
+                  WhatsApp
+                </button>
+                <button
+                  type="button"
+                  onClick={exportCSV}
+                  className="inline-flex h-10 items-center gap-1.5 rounded-xl bg-[#eef2f7] px-3 text-xs font-bold text-[#374151] transition hover:bg-[#e5e7eb]"
+                >
+                  <Download className="h-4 w-4" />
+                  Export
+                </button>
+              </div>
             </div>
 
-            {/* Fee rows */}
-            <div className="space-y-2">
-              {fees.map(fee => {
-                const isLoading = loadingIds.has(fee.id);
+            <div className="hidden overflow-x-auto lg:block">
+              <table className="w-full min-w-[880px] text-sm">
+                <thead>
+                  <tr className="bg-[#f8fafc] text-left text-[11px] uppercase tracking-[0.12em] text-[#9ca3af]">
+                    <th className="rounded-l-xl px-3 py-2">Student</th>
+                    <th className="px-3 py-2">Fee</th>
+                    <th className="px-3 py-2">Status</th>
+                    <th className="px-3 py-2">Amount / Paid</th>
+                    <th className="px-3 py-2">Remaining</th>
+                    <th className="px-3 py-2">Due Date</th>
+                    <th className="px-3 py-2">WhatsApp</th>
+                    <th className="rounded-r-xl px-3 py-2 text-right">Action</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-[#f1f5f9]">
+                  {fees.map((fee) => {
+                    const waUrl = getWhatsAppUrl(fee);
+                    const isPaid = fee.remaining <= 0 || fee.status === 'PAID';
+                    const isLoading = loadingIds.has(fee.id);
+                    return (
+                      <tr key={fee.id} className={selected.has(fee.id) ? 'bg-[#f0f9f9]' : 'hover:bg-[#fafafa]'}>
+                        <td className="px-3 py-3">
+                          <label className="inline-flex items-start gap-2">
+                            <input
+                              type="checkbox"
+                              checked={selected.has(fee.id)}
+                              onChange={() => toggle(fee.id)}
+                              className="mt-1 h-3.5 w-3.5 accent-[#004649]"
+                            />
+                            <span>
+                              <span className="block font-semibold text-[#111827]">{fee.studentName}</span>
+                              <span className="block text-xs text-[#64748b]">{fee.classLabel ?? 'Unassigned'}</span>
+                              {fee.dueMonthCount && fee.dueMonthCount > 1 ? (
+                                <span className="mt-0.5 block text-xs font-semibold text-[#b45309]">{fee.dueMonthCount} months due</span>
+                              ) : null}
+                              {fee.advanceMonthCount && fee.advanceMonthCount > 0 ? (
+                                <span className="mt-0.5 block text-xs font-semibold text-[#15803d]">{fee.advanceMonthCount} month(s) advance paid</span>
+                              ) : null}
+                            </span>
+                          </label>
+                        </td>
+                        <td className="px-3 py-3 text-[#374151]">{fee.title}</td>
+                        <td className="px-3 py-3">
+                          <span className={`rounded-full px-2.5 py-1 text-[10px] font-bold ${statusBadge(fee.status)}`}>
+                            {statusLabel(fee.status)}
+                          </span>
+                        </td>
+                        <td className="px-3 py-3 text-[#374151]">
+                          {formatCurrency(Math.max(fee.amount - fee.discount, 0))}
+                          <span className="block text-xs text-[#64748b]">Paid {formatCurrency(fee.paidAmount)}</span>
+                        </td>
+                        <td className={`px-3 py-3 font-bold ${fee.remaining > 0 ? 'text-[#dc2626]' : 'text-[#16a34a]'}`}>
+                          {formatCurrency(fee.remaining)}
+                        </td>
+                        <td className="px-3 py-3 text-[#64748b]">{fee.dueDate.slice(0, 10)}</td>
+                        <td className="px-3 py-3 text-[#64748b]">{fee.whatsApp ?? fee.guardianPhone ?? 'No number'}</td>
+                        <td className="px-3 py-3 text-right">
+                          <div className="inline-flex items-center gap-2">
+                            {isPaid ? (
+                              <button
+                                type="button"
+                                onClick={() => updateOne(fee.id, 'PENDING')}
+                                disabled={isLoading}
+                                className="h-9 rounded-lg bg-[#fff7ed] px-3 text-xs font-semibold text-[#b45309] ring-1 ring-[#fed7aa] transition hover:bg-[#ffedd5] disabled:opacity-50"
+                              >
+                                Make Unpaid
+                              </button>
+                            ) : (
+                              <button
+                                type="button"
+                                onClick={() => updateOne(fee.id, 'PAID')}
+                                disabled={isLoading}
+                                className="h-9 rounded-lg bg-[#16a34a] px-3 text-xs font-semibold text-white transition hover:bg-[#15803d] disabled:opacity-50"
+                              >
+                                Mark Paid
+                              </button>
+                            )}
+                            <button
+                              type="button"
+                              onClick={() => waUrl && window.open(waUrl, '_blank', 'noopener,noreferrer')}
+                              disabled={!waUrl}
+                              className="inline-flex h-9 items-center gap-1.5 rounded-lg bg-[#25d366] px-3 text-xs font-semibold text-white transition hover:bg-[#1fa456] disabled:cursor-not-allowed disabled:opacity-50"
+                            >
+                              <MessageSquare className="h-3.5 w-3.5" />
+                              {isPaid ? 'Confirm' : 'Reminder'}
+                            </button>
+                          </div>
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
+
+            <div className="space-y-3 lg:hidden">
+              {fees.map((fee) => {
                 const waUrl = getWhatsAppUrl(fee);
+                const isPaid = fee.remaining <= 0 || fee.status === 'PAID';
+                const isLoading = loadingIds.has(fee.id);
                 return (
-                  <div
-                    key={fee.id}
-                    className={`rounded-xl border-l-4 p-4 transition-all duration-150 ${statusAccent(fee.status)} ${
-                      selected.has(fee.id)
-                        ? 'bg-[#f0f9f9] shadow-[0_2px_8px_rgba(0,70,73,0.1)]'
-                        : 'bg-white shadow-[0_2px_6px_rgba(0,0,0,0.06)] hover:shadow-[0_4px_12px_rgba(0,0,0,0.1)]'
-                    }`}
-                  >
-                    {/* Desktop Layout */}
-                    <div className="hidden sm:block">
-                      <div className="flex items-start gap-3">
+                  <div key={fee.id} className={`rounded-xl border border-[#edf0f2] p-3 ${selected.has(fee.id) ? 'bg-[#f0f9f9]' : 'bg-white'}`}>
+                    <div className="flex items-start justify-between gap-2">
+                      <label className="flex min-w-0 items-start gap-2">
                         <input
                           type="checkbox"
                           checked={selected.has(fee.id)}
                           onChange={() => toggle(fee.id)}
-                          className="mt-1 h-4 w-4 cursor-pointer accent-[#004649]"
+                          className="mt-1 h-4 w-4 accent-[#004649]"
                         />
-                        <div className="min-w-0 flex-1">
-                          {/* Line 1: Student + Fee + Badge */}
-                          <div className="flex items-start justify-between gap-3 mb-2">
-                            <div className="min-w-0">
-                              <p className="font-semibold text-[#1a1c1c]">{fee.studentName}</p>
-                              <p className="text-xs text-[#6f7979]">{fee.title}</p>
-                            </div>
-                            <span className={`shrink-0 rounded-full px-2.5 py-1 text-[10px] font-bold uppercase ${statusBadge(fee.status)}`}>
-                              {statusLabel(fee.status)}
-                            </span>
-                          </div>
-                          {/* Line 2: Due Date */}
-                          <p className="text-xs text-[#6f7979] mb-2">Due: {fee.dueDate.slice(0, 10)}</p>
-                          {/* Line 3: Paid + Remaining */}
-                          <div className="flex items-center justify-between mb-3">
-                            <span className="text-xs text-[#6f7979]">Paid: {formatCurrency(fee.paidAmount)} / {formatCurrency(fee.amount)}</span>
-                            <span className={`text-sm font-bold ${fee.remaining > 0 ? 'text-[#e74c3c]' : 'text-[#27ae60]'}`}>
-                              Remaining: {formatCurrency(fee.remaining)}
-                            </span>
-                          </div>
-                          {/* Actions */}
-                          <div className="flex flex-wrap items-center gap-2">
-                            <button
-                              onClick={() => markOnePaid(fee.id)}
-                              disabled={isLoading || fee.status === 'PAID'}
-                              className="h-10 flex items-center gap-1 rounded-lg bg-[#27ae60] px-2.5 text-xs font-bold text-white hover:bg-[#229954] active:scale-[0.98] disabled:opacity-50 transition-all"
-                            >
-                              {isLoading ? '...' : '✓'} Paid
-                            </button>
-                            <button
-                              onClick={() => waUrl && window.open(waUrl, '_blank')}
-                              disabled={!waUrl}
-                              title={waUrl ? 'Send WhatsApp reminder' : 'No phone number'}
-                              className="h-10 flex items-center gap-1 rounded-lg bg-[#25d366] px-2.5 text-xs font-bold text-white hover:bg-[#1fa456] active:scale-[0.98] disabled:opacity-50 transition-all"
-                            >
-                              📱 WhatsApp
-                            </button>
-                          </div>
-                        </div>
-                      </div>
+                        <span className="min-w-0">
+                          <span className="block truncate text-sm font-semibold text-[#111827]">{fee.studentName}</span>
+                          <span className="block text-xs text-[#64748b]">{fee.classLabel ?? fee.title}</span>
+                          {fee.dueMonthCount && fee.dueMonthCount > 1 ? (
+                            <span className="mt-0.5 block text-xs font-semibold text-[#b45309]">{fee.dueMonthCount} months due</span>
+                          ) : null}
+                          {fee.advanceMonthCount && fee.advanceMonthCount > 0 ? (
+                            <span className="mt-0.5 block text-xs font-semibold text-[#15803d]">{fee.advanceMonthCount} month(s) advance paid</span>
+                          ) : null}
+                        </span>
+                      </label>
+                      <span className={`shrink-0 rounded-full px-2 py-0.5 text-[10px] font-bold ${statusBadge(fee.status)}`}>
+                        {statusLabel(fee.status)}
+                      </span>
                     </div>
 
-                    {/* Mobile Layout */}
-                    <div className="sm:hidden">
-                      <div className="flex items-start gap-3">
-                        <input
-                          type="checkbox"
-                          checked={selected.has(fee.id)}
-                          onChange={() => toggle(fee.id)}
-                          className="mt-0.5 h-4 w-4 cursor-pointer accent-[#004649]"
-                        />
-                        <div className="min-w-0 flex-1">
-                          {/* Row 1: Name | Fee Type */}
-                          <div className="flex items-baseline justify-between gap-2 mb-1">
-                            <p className="font-semibold text-[#1a1c1c] truncate flex-1">{fee.studentName}</p>
-                            <p className="shrink-0 text-xs text-[#6f7979]">{fee.title}</p>
-                          </div>
-                          {/* Row 2: Due + Badge + Remaining */}
-                          <div className="flex items-center gap-2 mb-2">
-                            <span className="text-xs text-[#6f7979]">Due {fee.dueDate.slice(0, 10)}</span>
-                            <span className={`shrink-0 rounded-full px-2 py-0.5 text-[10px] font-bold uppercase ${statusBadge(fee.status)}`}>
-                              {statusLabel(fee.status)}
-                            </span>
-                            <span className={`ml-auto shrink-0 text-sm font-bold ${fee.remaining > 0 ? 'text-[#e74c3c]' : 'text-[#27ae60]'}`}>
-                              {formatCurrency(fee.remaining)}
-                            </span>
-                          </div>
-                          {/* Actions */}
-                          <div className="flex gap-1.5">
-                            <button
-                              onClick={() => markOnePaid(fee.id)}
-                              disabled={isLoading || fee.status === 'PAID'}
-                              className="flex-1 h-11 rounded-lg bg-[#27ae60] px-2 text-xs font-bold text-white hover:bg-[#229954] active:scale-[0.98] disabled:opacity-50 transition-all"
-                            >
-                              {isLoading ? '...' : '✓'} Paid
-                            </button>
-                            <button
-                              onClick={() => waUrl && window.open(waUrl, '_blank')}
-                              disabled={!waUrl}
-                              className="flex-1 h-11 rounded-lg bg-[#25d366] px-2 text-xs font-bold text-white hover:bg-[#1fa456] active:scale-[0.98] disabled:opacity-50 transition-all"
-                            >
-                              📱 WA
-                            </button>
-                          </div>
-                        </div>
-                      </div>
+                    <div className="mt-3 grid grid-cols-2 gap-2 text-xs text-[#4b5563]">
+                      <p>Fee: <span className="font-semibold text-[#111827]">{formatCurrency(Math.max(fee.amount - fee.discount, 0))}</span></p>
+                      <p>Paid: <span className="font-semibold text-[#111827]">{formatCurrency(fee.paidAmount)}</span></p>
+                      <p>Due: <span className="font-semibold text-[#111827]">{fee.dueDate.slice(0, 10)}</span></p>
+                      <p>Remaining: <span className={fee.remaining > 0 ? 'font-semibold text-[#dc2626]' : 'font-semibold text-[#16a34a]'}>{formatCurrency(fee.remaining)}</span></p>
+                    </div>
+
+                    <div className="mt-3 grid grid-cols-2 gap-2">
+                      <button
+                        type="button"
+                        onClick={() => updateOne(fee.id, isPaid ? 'PENDING' : 'PAID')}
+                        disabled={isLoading}
+                        className={`h-11 rounded-xl px-3 text-xs font-bold transition disabled:opacity-50 ${
+                          isPaid
+                            ? 'bg-[#fff7ed] text-[#b45309] ring-1 ring-[#fed7aa] hover:bg-[#ffedd5]'
+                            : 'bg-[#16a34a] text-white hover:bg-[#15803d]'
+                        }`}
+                      >
+                        {isPaid ? 'Make Unpaid' : 'Mark Paid'}
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => waUrl && window.open(waUrl, '_blank', 'noopener,noreferrer')}
+                        disabled={!waUrl}
+                        className="inline-flex h-11 items-center justify-center gap-2 rounded-xl bg-[#25d366] px-3 text-xs font-bold text-white transition hover:bg-[#1fa456] disabled:opacity-50"
+                      >
+                        <MessageSquare className="h-4 w-4" />
+                        WhatsApp
+                      </button>
                     </div>
                   </div>
                 );
@@ -328,27 +433,16 @@ export function FeeBulkList({
             </div>
           </>
         ) : (
-          <div className="flex flex-col items-center justify-center py-10 text-center">
-            <div className="mb-3 rounded-full bg-[#f0f2f5] p-4">
-              <DollarSignIcon />
-            </div>
+          <div className="rounded-xl bg-[#f8fafc] px-4 py-10 text-center">
             <p className="font-semibold text-[#3d4a4a]">No fee records</p>
             <p className="mt-1 text-xs text-[#6f7979]">No records match the selected filters.</p>
           </div>
         )}
-      </div>
+      </section>
 
       {toast ? (
         <FinanceToast message={toast.message} type={toast.type} onDismiss={() => setToast(null)} />
       ) : null}
     </>
-  );
-}
-
-function DollarSignIcon() {
-  return (
-    <svg className="h-6 w-6 text-[#6f7979]" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
-      <path strokeLinecap="round" strokeLinejoin="round" d="M12 6v12m-3-2.818.879.659c1.171.879 3.07.879 4.242 0 1.172-.879 1.172-2.303 0-3.182C13.536 12.219 12.768 12 12 12c-.725 0-1.45-.22-2.003-.659-1.106-.879-1.106-2.303 0-3.182s2.9-.879 4.006 0l.415.33M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z" />
-    </svg>
   );
 }

@@ -33,7 +33,7 @@ export default function Error({
     <div className="flex min-h-screen items-center justify-center bg-[#f8f9fa] p-6">
       <div className="w-full max-w-md rounded-2xl bg-white shadow-[0_4px_12px_rgba(0,0,0,0.08)] p-6 text-center">
         <Image
-          src="/manarah-p4.png"
+          src="/manarah-logo.png"
           alt="Manarah Institute logo"
           width={1382}
           height={504}

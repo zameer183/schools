@@ -3,14 +3,42 @@ import { AssignmentStatus, UserRole } from '@prisma/client';
 import { unstable_cache } from 'next/cache';
 import { requireAuth } from '@/lib/auth';
 import { prisma } from '@/lib/prisma';
-import { PageHeader, KpiCard, Card, SectionTitle, StatusBadge } from '@/components/ui';
-import { BookOpen, Award, AlertCircle, Wallet, Users2, UserCog2, TrendingUp, ClipboardList } from 'lucide-react';
+import { PageHeader, KpiCard, Card } from '@/components/ui';
+import { BookOpen, Award, Wallet, TrendingUp, ClipboardList, WifiOff } from 'lucide-react';
 
 export const dynamic = 'force-dynamic';
+
+function DbOfflineBanner() {
+  return (
+    <Card className="p-8">
+      <div className="flex flex-col items-center py-6 text-center">
+        <div className="flex h-14 w-14 items-center justify-center rounded-full bg-[#fef2f2]">
+          <WifiOff className="h-7 w-7 text-[#ef4444]" />
+        </div>
+        <h2 className="mt-4 text-2xl font-bold text-[#1F2937]">Database Unreachable</h2>
+        <p className="mt-2 text-sm text-[#6B7280]">Unable to load student dashboard data. Please refresh.</p>
+      </div>
+    </Card>
+  );
+}
 
 function toDateString(value: Date | string) {
   const parsed = value instanceof Date ? value : new Date(value);
   return Number.isNaN(parsed.getTime()) ? '-' : parsed.toISOString().slice(0, 10);
+}
+
+function isPlaceholderResult(result: {
+  exam: { title: string; totalMarks?: number | null };
+  subject: { name: string };
+  marksObtained: number | string | { toString(): string };
+  remarks: string | null;
+}) {
+  const title = result.exam.title.trim().toLowerCase();
+  const subject = result.subject.name.trim().toLowerCase();
+  const marks = Number(result.marksObtained);
+  const remarks = (result.remarks ?? '').trim();
+
+  return title === 'new' && subject === 'general' && result.exam.totalMarks === 100 && marks === 100 && remarks === '80';
 }
 
 const progressLineKeyMap = {
@@ -60,6 +88,43 @@ function parseProgressNotes(notes: string | null): ParsedProgress | null {
     manzilHifz: '-'
   };
 
+  if (notes.includes('[SABAQ]') || notes.includes('[SABQI]') || notes.includes('[MANZIL]')) {
+    const applyStructuredSection = (sectionKey: 'sabaq' | 'sabqi' | 'manzil') => {
+      const upper = sectionKey.toUpperCase();
+      const block = notes.match(new RegExp(`\\[${upper}\\]([\\s\\S]*?)(?=\\[|$)`))?.[1] ?? '';
+      if (!block) return;
+
+      const ranges = block
+        .split(/Range:\d+/)
+        .slice(1)
+        .map((rangeBlock) => {
+          const surahName = rangeBlock.match(/SurahName:([^\n\r]+)/)?.[1]?.trim();
+          const fromAyah = rangeBlock.match(/FromAyah:(\d+)/)?.[1];
+          const toAyah = rangeBlock.match(/ToAyah:(\d+)/)?.[1];
+          return surahName && surahName !== '-' && fromAyah && toAyah
+            ? `${surahName} (${fromAyah}-${toAyah})`
+            : null;
+        })
+        .filter((value): value is string => Boolean(value));
+
+      parsed[`${sectionKey}Miqdar`] = ranges.length ? ranges.join(', ') : '-';
+      parsed[`${sectionKey}Kaifiyat`] = block.match(/Kaifiyat:([^\n\r]+)/)?.[1]?.trim() ?? '-';
+      parsed[`${sectionKey}Tajweedi`] =
+        block.match(/TajweeditTotal:(\d+)/)?.[1] ??
+        block.match(/TajweediGhalat:(\d+)/)?.[1] ??
+        '-';
+      parsed[`${sectionKey}Hifz`] =
+        block.match(/HifzTotal:(\d+)/)?.[1] ??
+        block.match(/HifzGhalat:(\d+)/)?.[1] ??
+        '-';
+    };
+
+    applyStructuredSection('sabaq');
+    applyStructuredSection('sabqi');
+    applyStructuredSection('manzil');
+    return parsed;
+  }
+
   let currentMode: 'sabaq' | 'sabqi' | 'manzil' | null = null;
 
   for (let i = 0; i < lines.length; i += 1) {
@@ -98,7 +163,7 @@ const getCachedStudentDashboardData = unstable_cache(
       return null;
     }
 
-    const [attendanceRows, resultRows, feeRows, subjects, totalAssignments, submittedAssignments, progressRows, unreadNotifications] = await Promise.all([
+    const [attendanceRows, resultRows, feeRows, subjects, totalAssignments, submittedAssignments, progressRows] = await Promise.all([
       prisma.attendance.groupBy({
         by: ['status'],
         where: { studentId: student.id },
@@ -108,7 +173,7 @@ const getCachedStudentDashboardData = unstable_cache(
         where: { studentId: student.id },
         include: {
           subject: { select: { name: true } },
-          exam: { select: { title: true } }
+          exam: { select: { title: true, totalMarks: true } }
         },
         orderBy: { updatedAt: 'desc' },
         take: 5
@@ -135,13 +200,10 @@ const getCachedStudentDashboardData = unstable_cache(
         },
         orderBy: { date: 'desc' },
         take: 5
-      }),
-      prisma.notification.count({
-        where: { userId: student.userId, isRead: false }
       })
     ]);
 
-    return { student, attendanceRows, resultRows, feeRows, subjects, totalAssignments, submittedAssignments, progressRows, unreadNotifications };
+    return { student, attendanceRows, resultRows, feeRows, subjects, totalAssignments, submittedAssignments, progressRows };
   },
   ['student-dashboard-page-data'],
   { revalidate: 30 }
@@ -149,7 +211,12 @@ const getCachedStudentDashboardData = unstable_cache(
 
 export default async function StudentDashboardPage() {
   const session = await requireAuth([UserRole.STUDENT, UserRole.ADMIN]);
-  const dashboardData = await getCachedStudentDashboardData(session.id);
+  let dashboardData: Awaited<ReturnType<typeof getCachedStudentDashboardData>> = null;
+  try {
+    dashboardData = await getCachedStudentDashboardData(session.id);
+  } catch {
+    return <DbOfflineBanner />;
+  }
 
   if (!dashboardData) {
     return (
@@ -160,7 +227,7 @@ export default async function StudentDashboardPage() {
     );
   }
 
-  const { student, attendanceRows, resultRows, feeRows, subjects, totalAssignments, submittedAssignments, progressRows } = dashboardData;
+  const { student, attendanceRows, resultRows, feeRows, totalAssignments, submittedAssignments, progressRows } = dashboardData;
 
   const totalAttendance = attendanceRows.reduce((sum, row) => sum + row._count._all, 0);
   const presentAttendance = attendanceRows.filter((row) => row.status === 'PRESENT').reduce((sum, row) => sum + row._count._all, 0);
@@ -168,9 +235,8 @@ export default async function StudentDashboardPage() {
   const totalFees = feeRows.reduce((sum, fee) => sum + Number(fee.amount) - Number(fee.discount), 0);
   const totalPaid = feeRows.reduce((sum, fee) => sum + fee.payments.reduce((ps, p) => ps + Number(p.amountPaid), 0), 0);
   const outstanding = Math.max(totalFees - totalPaid, 0);
-  const averageMarks = resultRows.length > 0 ? Math.round(resultRows.reduce((sum, row) => sum + Number(row.marksObtained), 0) / resultRows.length) : 0;
-  const assignmentPercent = totalAssignments > 0 ? Math.round((submittedAssignments / totalAssignments) * 100) : 0;
-
+  const visibleResultRows = resultRows.filter((row) => !isPlaceholderResult(row));
+  const averageMarks = visibleResultRows.length > 0 ? Math.round(visibleResultRows.reduce((sum, row) => sum + Number(row.marksObtained), 0) / visibleResultRows.length) : 0;
   return (
     <div className="space-y-6">
       <PageHeader
@@ -186,34 +252,8 @@ export default async function StudentDashboardPage() {
         <KpiCard variant={outstanding > 0 ? 'danger' : 'success'} icon={<Wallet />} label="Outstanding Fee" value={outstanding > 0 ? `PKR ${outstanding.toLocaleString()}` : 'Paid'} />
       </section>
 
-      {/* Subjects & Results */}
-      <div className="grid gap-6 lg:grid-cols-2">
-        <Card>
-          <div className="flex items-center justify-between mb-4">
-            <div className="flex items-center gap-2">
-              <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-[#E0EBEC]">
-                <BookOpen className="h-4 w-4 text-[#1F5A5C]" />
-              </div>
-              <p className="text-sm font-bold text-[#1F2937]">Subjects</p>
-            </div>
-            <Link href="/student/schedule" className="text-xs font-semibold text-[#1F5A5C] hover:underline">
-              View
-            </Link>
-          </div>
-          {subjects.length === 0 ? (
-            <p className="text-sm text-[#6B7280]">No subjects assigned yet.</p>
-          ) : (
-            <div className="space-y-2">
-              {subjects.map((subject) => (
-                <div key={subject.id} className="rounded-lg bg-[#F9FAFB] px-4 py-3 border border-[#E5E7EB]">
-                  <p className="text-sm font-semibold text-[#1F2937]">{subject.name}</p>
-                  <p className="text-xs text-[#6B7280] mt-1">{subject.teacher?.user?.fullName ?? 'TBA'}</p>
-                </div>
-              ))}
-            </div>
-          )}
-        </Card>
-
+      {/* Results */}
+      <div>
         <Card>
           <div className="flex items-center justify-between mb-4">
             <div className="flex items-center gap-2">
@@ -226,11 +266,11 @@ export default async function StudentDashboardPage() {
               View
             </Link>
           </div>
-          {resultRows.length === 0 ? (
+          {visibleResultRows.length === 0 ? (
             <p className="text-sm text-[#6B7280]">No results published yet.</p>
           ) : (
             <div className="divide-y divide-[#E5E7EB]">
-              {resultRows.map((result) => (
+              {visibleResultRows.map((result) => (
                 <div key={result.id} className="flex items-center justify-between py-3 first:pt-0 last:pb-0">
                   <div className="min-w-0 flex-1">
                     <p className="text-sm font-semibold text-[#1F2937]">{result.subject.name}</p>

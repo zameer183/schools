@@ -134,11 +134,13 @@ export function QuickFeePaymentForm({ fees, classes, students, action }: QuickFe
           step="0.01"
           value={amountPaid}
           onChange={(event) => setAmountPaid(event.target.value)}
-          max={selectedFee?.remaining ?? undefined}
           className="h-10 w-full rounded-xl bg-[#edeeef] border-none px-3 text-sm outline-none focus:ring-2 focus:ring-[#004649]/20"
           placeholder="0.00"
           required
         />
+        {selectedFee ? (
+          <p className="text-[10px] text-[#6f7979]">Enter more than remaining to pay future months in advance.</p>
+        ) : null}
       </div>
 
       <div className="grid gap-2 sm:col-span-2 sm:grid-cols-2">

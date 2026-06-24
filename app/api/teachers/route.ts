@@ -1,9 +1,16 @@
 import { hash } from 'bcryptjs';
 import { Prisma, UserRole } from '@prisma/client';
 import { NextResponse } from 'next/server';
+import { revalidatePath } from 'next/cache';
 import { prisma } from '@/lib/prisma';
 import { ensureApiRole } from '@/lib/rbac';
-import { upsertTeacherAccess, upsertTeacherCompensation } from '@/lib/teacher-access';
+import { TEACHER_ACCESS_MODULES, upsertTeacherAccess, upsertTeacherCompensation } from '@/lib/teacher-access';
+
+function jsonNoStore(body: unknown, init?: ResponseInit) {
+  const response = NextResponse.json(body, init);
+  response.headers.set('Cache-Control', 'no-store, no-cache, must-revalidate, max-age=0');
+  return response;
+}
 
 function normalizeEmployeeCode(value: unknown): string | null {
   if (typeof value !== 'string') return null;
@@ -23,21 +30,299 @@ function generateEmployeeCode(fullName: string): string {
   return `EMP-${initials}-${randomSuffix}`;
 }
 
-export async function GET() {
-  const auth = await ensureApiRole([UserRole.ADMIN]);
-  if (!auth.authorized) return auth.response;
+function isLocalRestFallbackEnabled() {
+  return process.env.FORCE_SUPABASE_REST_DATA_FALLBACK === '1';
+}
 
-  const teachers = await prisma.teacher.findMany({
-    where: {
-      user: {
-        email: {
-          not: { startsWith: 'shots_' },
-        },
-      },
+async function supabaseRest<T>(
+  table: string,
+  params: Record<string, string>,
+  init?: { method?: string; body?: unknown; prefer?: string }
+) {
+  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+  const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+  if (!supabaseUrl || !serviceRoleKey) {
+    throw new Error('Supabase REST fallback is not configured');
+  }
+
+  const url = new URL(`/rest/v1/${table}`, supabaseUrl);
+  for (const [key, value] of Object.entries(params)) {
+    url.searchParams.set(key, value);
+  }
+
+  const response = await fetch(url, {
+    method: init?.method ?? 'GET',
+    headers: {
+      apikey: serviceRoleKey,
+      Authorization: `Bearer ${serviceRoleKey}`,
+      'Content-Type': 'application/json',
+      ...(init?.prefer ? { Prefer: init.prefer } : {})
     },
-    include: { user: true, classAssignments: { include: { class: true } } },
+    body: init?.body === undefined ? undefined : JSON.stringify(init.body),
+    cache: 'no-store'
   });
-  return NextResponse.json(teachers);
+
+  if (!response.ok) {
+    const text = await response.text().catch(() => '');
+    throw new Error(`Supabase REST ${table} failed with ${response.status}: ${text}`);
+  }
+
+  if (response.status === 204) return [] as T[];
+  const text = await response.text();
+  return text ? (JSON.parse(text) as T[]) : ([] as T[]);
+}
+
+function inFilter(ids: string[]) {
+  return `in.(${ids.join(',')})`;
+}
+
+const DEFAULT_ACCESS_LEVELS = TEACHER_ACCESS_MODULES.reduce((acc, moduleKey) => {
+  acc[moduleKey] = moduleKey === 'FEES' ? 'NONE' : 'FULL';
+  return acc;
+}, {} as Record<string, 'NONE' | 'VIEW' | 'MANAGE' | 'FULL'>);
+
+function asAccessLevel(value: string | null | undefined, enabled: boolean) {
+  if (value === 'NONE' || value === 'VIEW' || value === 'MANAGE' || value === 'FULL') return value;
+  return enabled ? 'FULL' : 'NONE';
+}
+
+async function getTeacherUserIdViaRest(id: string) {
+  const [teacher] = await supabaseRest<{ id: string; userId: string }>('Teacher', {
+    select: 'id,userId',
+    id: `eq.${id}`,
+    limit: '1'
+  });
+  return teacher?.userId ?? null;
+}
+
+async function handlePutViaRest(body: Record<string, unknown>) {
+  const {
+    id, fullName, email, password, employeeCode,
+    qualification, specialization, joiningDate,
+    phone, isActive, baseSalary, bonus, deduction,
+    access, classIds, shareCredentials: doShare,
+  } = body;
+
+  if (typeof id !== 'string' || !id) {
+    return NextResponse.json({ error: 'id is required' }, { status: 400 });
+  }
+
+  const userId = await getTeacherUserIdViaRest(id);
+  if (!userId) return NextResponse.json({ error: 'Teacher not found' }, { status: 404 });
+
+  if (doShare === true) {
+    if (!(typeof password === 'string' && password.length >= 6)) {
+      return NextResponse.json({ error: 'Provide a new password (minimum 6 characters) before sharing credentials.' }, { status: 400 });
+    }
+    await supabaseRest('User', { id: `eq.${userId}` }, {
+      method: 'PATCH',
+      body: { passwordHash: await hash(password, 12) }
+    });
+    const [userRecord] = await supabaseRest<{ email: string; fullName: string; phone: string | null }>('User', {
+      select: 'email,fullName,phone',
+      id: `eq.${userId}`,
+      limit: '1'
+    });
+    return jsonNoStore({
+      credentials: {
+        email: userRecord?.email ?? '',
+        fullName: userRecord?.fullName ?? '',
+        phone: userRecord?.phone ?? null,
+        password
+      }
+    });
+  }
+
+  const userUpdate: Record<string, unknown> = {};
+  if (fullName !== undefined) userUpdate.fullName = fullName;
+  if (phone !== undefined) userUpdate.phone = phone === '' ? null : phone;
+  if (isActive !== undefined) userUpdate.isActive = Boolean(isActive);
+  if (email !== undefined && email !== '') userUpdate.email = email;
+  if (typeof password === 'string' && password.length > 0) {
+    if (password.length < 6) {
+      return NextResponse.json({ error: 'Password must be at least 6 characters.' }, { status: 400 });
+    }
+    userUpdate.passwordHash = await hash(password, 12);
+  }
+
+  const teacherUpdate: Record<string, unknown> = {};
+  if (employeeCode !== undefined) {
+    const normalizedEmployeeCode = normalizeEmployeeCode(employeeCode);
+    if (normalizedEmployeeCode) teacherUpdate.employeeCode = normalizedEmployeeCode;
+  }
+  if (qualification !== undefined) teacherUpdate.qualification = qualification === '' ? null : qualification;
+  if (specialization !== undefined) teacherUpdate.specialization = specialization === '' ? null : specialization;
+  if (joiningDate !== undefined) teacherUpdate.joiningDate = joiningDate || null;
+
+  await Promise.all([
+    Object.keys(userUpdate).length ? supabaseRest('User', { id: `eq.${userId}` }, { method: 'PATCH', body: userUpdate }) : Promise.resolve([]),
+    Object.keys(teacherUpdate).length ? supabaseRest('Teacher', { id: `eq.${id}` }, { method: 'PATCH', body: teacherUpdate }) : Promise.resolve([])
+  ]);
+
+  if (Array.isArray(classIds)) {
+    await supabaseRest('TeacherClass', { teacherId: `eq.${id}` }, { method: 'DELETE' });
+    if (classIds.length > 0) {
+      await supabaseRest('TeacherClass', {}, {
+        method: 'POST',
+        prefer: 'return=minimal',
+        body: classIds.map((classId: string) => ({ teacherId: id, classId }))
+      });
+    }
+  }
+
+  if (baseSalary !== undefined || bonus !== undefined || deduction !== undefined) {
+    await supabaseRest('TeacherCompensation', { teacherId: `eq.${id}` }, { method: 'DELETE' });
+    await supabaseRest('TeacherCompensation', {}, {
+      method: 'POST',
+      prefer: 'return=minimal',
+      body: {
+        id: `comp_${id}`,
+        teacherId: id,
+        baseSalary: Number(baseSalary ?? 0),
+        bonus: Number(bonus ?? 0),
+        deduction: Number(deduction ?? 0)
+      }
+    });
+  }
+
+  if (access && typeof access === 'object') {
+    const accessRecord = access as Record<string, unknown>;
+    const rows = TEACHER_ACCESS_MODULES
+      .filter((moduleKey) => moduleKey in accessRecord)
+      .map((moduleKey) => {
+        const rawLevel = String(accessRecord[moduleKey] ?? '').toUpperCase();
+        const level = rawLevel === 'NONE' || rawLevel === 'VIEW' || rawLevel === 'MANAGE' || rawLevel === 'FULL'
+          ? rawLevel
+          : accessRecord[moduleKey] === false
+            ? 'NONE'
+            : 'FULL';
+        return {
+          id: `access_${id}_${moduleKey.toLowerCase()}`,
+          teacherId: id,
+          module: moduleKey,
+          enabled: level !== 'NONE',
+          level,
+          updatedAt: new Date().toISOString()
+        };
+      });
+
+    if (rows.length > 0) {
+      await supabaseRest('TeacherAccess', { teacherId: `eq.${id}` }, { method: 'DELETE' });
+      await supabaseRest('TeacherAccess', {}, {
+        method: 'POST',
+        prefer: 'return=minimal',
+        body: rows
+      });
+    }
+  }
+
+  revalidatePath('/admin/teachers');
+  revalidatePath(`/admin/teachers/${id}`);
+  const [updated] = await supabaseRest('Teacher', { select: '*', id: `eq.${id}`, limit: '1' });
+  return jsonNoStore(updated ?? { id });
+}
+
+export async function GET() {
+  try {
+    const auth = await ensureApiRole([UserRole.ADMIN]);
+    if (!auth.authorized) return auth.response;
+
+    if (isLocalRestFallbackEnabled()) {
+      const teachers = await supabaseRest<Array<Record<string, unknown>> extends Array<infer T> ? T : never>('Teacher', {
+        select: 'id,userId,employeeCode,qualification,specialization,joiningDate,createdAt',
+        order: 'createdAt.desc'
+      });
+      const userIds = Array.from(new Set(teachers.map((teacher) => String(teacher.userId)).filter(Boolean)));
+      const teacherIds = teachers.map((teacher) => String(teacher.id)).filter(Boolean);
+      const users = userIds.length
+        ? await supabaseRest<{ id: string; fullName: string; email: string; role: string; phone: string | null; isActive: boolean }>('User', {
+            select: 'id,fullName,email,role,phone,isActive',
+            id: inFilter(userIds)
+          })
+        : [];
+      const [classes, classLinks, accessRows, compensationRows] = await Promise.all([
+        supabaseRest<{ id: string; name: string; section: string }>('Class', {
+          select: 'id,name,section',
+          order: 'name.asc,section.asc'
+        }),
+        teacherIds.length
+          ? supabaseRest<{ teacherId: string; classId: string; createdAt: string }>('TeacherClass', {
+              select: 'teacherId,classId,createdAt',
+              teacherId: inFilter(teacherIds),
+              order: 'createdAt.asc'
+            })
+          : Promise.resolve([]),
+        teacherIds.length
+          ? supabaseRest<{ teacherId: string; module: string | null; enabled: boolean; level: string | null }>('TeacherAccess', {
+              select: 'teacherId,module,enabled,level',
+              teacherId: inFilter(teacherIds)
+            })
+          : Promise.resolve([]),
+        teacherIds.length
+          ? supabaseRest<{ teacherId: string; baseSalary: number | string; bonus: number | string; deduction: number | string }>('TeacherCompensation', {
+              select: 'teacherId,baseSalary,bonus,deduction',
+              teacherId: inFilter(teacherIds)
+            })
+          : Promise.resolve([])
+      ]);
+      const userMap = new Map(users.map((user) => [user.id, user]));
+      const classMap = new Map(classes.map((cls) => [cls.id, cls]));
+      const linksByTeacherId = new Map<string, Array<{ teacherId: string; classId: string; createdAt: string }>>();
+      for (const link of classLinks) {
+        linksByTeacherId.set(link.teacherId, [...(linksByTeacherId.get(link.teacherId) ?? []), link]);
+      }
+      const accessByTeacherId = new Map<string, Record<string, 'NONE' | 'VIEW' | 'MANAGE' | 'FULL'>>();
+      for (const row of accessRows) {
+        if (!row.module || !TEACHER_ACCESS_MODULES.includes(row.module as never)) continue;
+        const current = accessByTeacherId.get(row.teacherId) ?? { ...DEFAULT_ACCESS_LEVELS };
+        current[row.module] = asAccessLevel(row.level, row.enabled);
+        accessByTeacherId.set(row.teacherId, current);
+      }
+      const compensationByTeacherId = new Map(compensationRows.map((row) => {
+        const baseSalary = Number(row.baseSalary ?? 0);
+        const bonus = Number(row.bonus ?? 0);
+        const deduction = Number(row.deduction ?? 0);
+        return [row.teacherId, { baseSalary, bonus, deduction, netSalary: baseSalary + bonus - deduction }];
+      }));
+      return jsonNoStore(teachers.map((teacher) => ({
+        ...teacher,
+        user: userMap.get(String(teacher.userId)),
+        classAssignments: (linksByTeacherId.get(String(teacher.id)) ?? []).map((link) => ({
+          classId: link.classId,
+          class: classMap.get(link.classId) ?? { id: link.classId, name: 'Unknown Class', section: '' }
+        })),
+        access: accessByTeacherId.get(String(teacher.id)) ?? { ...DEFAULT_ACCESS_LEVELS },
+        compensation: compensationByTeacherId.get(String(teacher.id)) ?? { baseSalary: 0, bonus: 0, deduction: 0, netSalary: 0 }
+      })).filter((teacher) => teacher.user));
+    }
+
+    const teachers = await prisma.teacher.findMany({
+      include: { classAssignments: { include: { class: true } } },
+    });
+    const userIds = Array.from(new Set(teachers.map((t) => t.userId)));
+    const users = userIds.length
+      ? await prisma.user.findMany({
+          where: {
+            id: { in: userIds },
+            email: { not: { startsWith: 'shots_' } },
+          },
+          select: { id: true, fullName: true, email: true, role: true, phone: true, isActive: true, createdAt: true, updatedAt: true },
+        })
+      : [];
+    const userMap = new Map(users.map((u) => [u.id, u]));
+
+    const safeTeachers = teachers
+      .filter((teacher) => userMap.has(teacher.userId))
+      .map((teacher) => ({
+        ...teacher,
+        user: userMap.get(teacher.userId)!,
+      }));
+
+    return jsonNoStore(safeTeachers);
+  } catch (error) {
+    console.error('[api/teachers][GET]', error);
+    return jsonNoStore([]);
+  }
 }
 
 export async function POST(request: Request) {
@@ -126,6 +411,15 @@ export async function PUT(request: Request) {
   if (!auth.authorized) return auth.response;
 
   const body = await request.json();
+  if (isLocalRestFallbackEnabled()) {
+    try {
+      return await handlePutViaRest(body as Record<string, unknown>);
+    } catch (error) {
+      console.error('[teachers/put][rest-fallback]', error);
+      return NextResponse.json({ error: 'Unable to update teacher.' }, { status: 500 });
+    }
+  }
+
   const {
     id, fullName, email, password, employeeCode,
     qualification, specialization, joiningDate,
@@ -225,7 +519,9 @@ export async function PUT(request: Request) {
       include: { user: true, classAssignments: { include: { class: true } } },
     });
 
-    return NextResponse.json(updated);
+    revalidatePath('/admin/teachers');
+    revalidatePath(`/admin/teachers/${id}`);
+    return jsonNoStore(updated);
   } catch (error) {
     if (error instanceof Prisma.PrismaClientKnownRequestError) {
       if (error.code === 'P2002')

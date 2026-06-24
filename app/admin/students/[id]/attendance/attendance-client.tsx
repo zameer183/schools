@@ -44,10 +44,10 @@ function toLocalDateStr(date: Date): string {
 }
 
 const STATUS_CONFIG = {
-  PRESENT:  { bg: 'bg-[#dcfce7]', text: 'text-[#15803d]', dot: 'bg-[#22c55e]', label: 'Present' },
-  ABSENT:   { bg: 'bg-[#fee2e2]', text: 'text-[#b91c1c]', dot: 'bg-[#ef4444]', label: 'Absent' },
-  LATE:     { bg: 'bg-[#fff7ed]', text: 'text-[#b45309]', dot: 'bg-[#f59e0b]', label: 'Late' },
-  EXCUSED:  { bg: 'bg-[#eff6ff]', text: 'text-[#1d4ed8]', dot: 'bg-[#3b82f6]', label: 'Excused' },
+  PRESENT:  { bg: 'bg-[#16a34a]', text: 'text-white', dot: 'bg-[#16a34a]', label: 'Present' },
+  ABSENT:   { bg: 'bg-[#dc2626]', text: 'text-white', dot: 'bg-[#dc2626]', label: 'Absent' },
+  LATE:     { bg: 'bg-[#d97706]', text: 'text-white', dot: 'bg-[#d97706]', label: 'Late' },
+  EXCUSED:  { bg: 'bg-[#2563eb]', text: 'text-white', dot: 'bg-[#2563eb]', label: 'Excused' },
 } as const;
 
 const STATUSES = ['PRESENT', 'ABSENT', 'LATE', 'EXCUSED'] as const;
@@ -72,7 +72,17 @@ function Modal({ title, onClose, children }: { title: string; onClose: () => voi
 
 // ─── Main Component ───────────────────────────────────────────────────────────
 
-export default function StudentAttendanceClient({ student }: { student: StudentData }) {
+export default function StudentAttendanceClient({
+  student,
+  backHref = `/admin/students/${student.id}`,
+  backLabel = 'Back to Profile',
+  canDelete = true
+}: {
+  student: StudentData;
+  backHref?: string;
+  backLabel?: string;
+  canDelete?: boolean;
+}) {
   const [currentMonth, setCurrentMonth] = useState(new Date());
   const [records, setRecords] = useState<AttendanceRecord[]>(student.attendance);
 
@@ -239,9 +249,9 @@ export default function StudentAttendanceClient({ student }: { student: StudentD
         </div>
 
         {/* Back */}
-        <Link href={`/admin/students/${student.id}`} className="inline-flex items-center gap-1 text-xs font-semibold text-[#004649] hover:text-[#1b5e62] transition print:hidden">
+        <Link href={backHref} className="inline-flex items-center gap-1 text-xs font-semibold text-[#004649] hover:text-[#1b5e62] transition print:hidden">
           <ChevronLeft className="h-4 w-4" />
-          Back to Profile
+          {backLabel}
         </Link>
 
         {/* Hero */}
@@ -415,7 +425,7 @@ export default function StudentAttendanceClient({ student }: { student: StudentD
 
             {/* Actions */}
             <div className="flex gap-2">
-              {modal.existing && (
+              {canDelete && modal.existing && (
                 <button
                   onClick={handleDelete}
                   disabled={deleting}

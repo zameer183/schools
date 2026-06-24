@@ -1,4 +1,4 @@
-'use client';
+﻿'use client';
 
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { ChevronLeft, MessageSquarePlus, Search, Send, SlidersHorizontal, Trash2 } from 'lucide-react';
@@ -48,7 +48,7 @@ export type StudentInboxItem = {
 
 export type StudentOutgoingMap = Record<string, ChatMessage[]>;
 
-export type AvailableTeacher = { id: string; fullName: string };
+export type AvailableRecipient = { id: string; fullName: string; role: SenderRole };
 
 type InboxApiRow = {
   id: string;
@@ -95,8 +95,14 @@ function categorize(subject: string, body: string, role: SenderRole): Exclude<Ca
   return 'academic';
 }
 
-function buildConversations(inbox: StudentInboxItem[], outgoing: Record<string, ChatMessage[]>, locallyRead: Set<string>) {
+function buildConversations(
+  inbox: StudentInboxItem[],
+  outgoing: Record<string, ChatMessage[]>,
+  locallyRead: Set<string>,
+  availableRecipients: AvailableRecipient[]
+) {
   const grouped = new Map<string, Conversation>();
+  const recipientMap = new Map(availableRecipients.map((person) => [person.id, person] as const));
 
   for (const row of inbox) {
     const sender = row.message.sender;
@@ -141,12 +147,30 @@ function buildConversations(inbox: StudentInboxItem[], outgoing: Record<string, 
 
   for (const [senderId, messages] of Object.entries(outgoing)) {
     const target = grouped.get(senderId);
-    if (!target) continue;
-    target.messages.push(...messages);
     const latestOutgoing = messages.reduce((latest, item) => {
       if (!latest) return item;
       return new Date(item.createdAt).getTime() > new Date(latest.createdAt).getTime() ? item : latest;
     }, null as ChatMessage | null);
+
+    if (!target) {
+      if (!latestOutgoing) continue;
+      grouped.set(senderId, {
+        id: senderId,
+        senderId,
+        senderName: recipientMap.get(senderId)?.fullName ?? 'Teacher',
+        senderRole: recipientMap.get(senderId)?.role ?? 'TEACHER',
+        isOnline: false,
+        unreadCount: 0,
+        latestAt: latestOutgoing.createdAt,
+        latestPreview: latestOutgoing.body,
+        latestSubject: latestOutgoing.subject,
+        category: categorize(latestOutgoing.subject, latestOutgoing.body, 'TEACHER'),
+        messages: [...messages]
+      });
+      continue;
+    }
+
+    target.messages.push(...messages);
     if (latestOutgoing && new Date(latestOutgoing.createdAt).getTime() > new Date(target.latestAt).getTime()) {
       target.latestAt = latestOutgoing.createdAt;
       target.latestPreview = latestOutgoing.body;
@@ -169,7 +193,7 @@ export function StudentMessagesChatClient({
 }: {
   initialInbox: StudentInboxItem[];
   initialOutgoing?: StudentOutgoingMap;
-  availableTeachers?: AvailableTeacher[];
+  availableTeachers?: AvailableRecipient[];
 }) {
   const [mounted, setMounted] = useState(false);
   const [liveInbox, setLiveInbox] = useState<StudentInboxItem[]>(initialInbox);
@@ -179,7 +203,6 @@ export function StudentMessagesChatClient({
   const [activeId, setActiveId] = useState<string | null>(null);
   const [draft, setDraft] = useState('');
   const [isSending, setIsSending] = useState(false);
-  const [isTyping, setIsTyping] = useState(false);
   const [showMobileFilters, setShowMobileFilters] = useState(false);
   const [locallyRead, setLocallyRead] = useState<Set<string>>(new Set());
   const [localOutgoing, setLocalOutgoing] = useState<StudentOutgoingMap>(initialOutgoing);
@@ -188,10 +211,12 @@ export function StudentMessagesChatClient({
   const [composeSubject, setComposeSubject] = useState('');
   const [composeBody, setComposeBody] = useState('');
   const [isComposeSending, setIsComposeSending] = useState(false);
+  const [sendError, setSendError] = useState('');
+  const markReadInFlightRef = useRef<Set<string>>(new Set());
 
   const conversations = useMemo(
-    () => buildConversations(liveInbox, localOutgoing, locallyRead),
-    [liveInbox, localOutgoing, locallyRead]
+    () => buildConversations(liveInbox, localOutgoing, locallyRead, availableTeachers),
+    [liveInbox, localOutgoing, locallyRead, availableTeachers]
   );
 
   const filteredConversations = useMemo(() => {
@@ -211,9 +236,11 @@ export function StudentMessagesChatClient({
 
   useEffect(() => {
     let cancelled = false;
+    let intervalId: number | null = null;
     const syncInbox = async () => {
+      if (document.hidden) return;
       try {
-        const response = await fetch('/api/messages?limit=50', { cache: 'no-store' });
+        const response = await fetch('/api/messages?limit=20', { cache: 'no-store' });
         if (!response.ok) return;
         const rows = (await response.json()) as InboxApiRow[];
         if (cancelled) return;
@@ -235,19 +262,38 @@ export function StudentMessagesChatClient({
       }
     };
 
-    const timer = window.setInterval(() => {
+    const startPolling = () => {
+      if (intervalId !== null || document.hidden) return;
+      intervalId = window.setInterval(() => {
+        if (document.hidden) return;
+        void syncInbox();
+      }, 5000);
+    };
+
+    const stopPolling = () => {
+      if (intervalId === null) return;
+      window.clearInterval(intervalId);
+      intervalId = null;
+    };
+
+    const handleVisibilityChange = () => {
+      if (document.hidden) {
+        stopPolling();
+        return;
+      }
       void syncInbox();
-    }, 5000);
+      startPolling();
+    };
+
     void syncInbox();
+    startPolling();
+    document.addEventListener('visibilitychange', handleVisibilityChange);
     return () => {
       cancelled = true;
-      window.clearInterval(timer);
+      stopPolling();
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
     };
   }, []);
-
-  useEffect(() => {
-    setIsTyping(draft.trim().length > 0);
-  }, [draft]);
 
   const activeConversation = filteredConversations.find((item) => item.id === activeId) ?? null;
 
@@ -255,6 +301,15 @@ export function StudentMessagesChatClient({
     if (!activeConversation) return;
     if (activeConversation.unreadCount === 0) return;
     setLocallyRead((prev) => new Set(prev).add(activeConversation.id));
+    if (markReadInFlightRef.current.has(activeConversation.id)) return;
+    markReadInFlightRef.current.add(activeConversation.id);
+    void fetch('/api/messages', {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ senderId: activeConversation.senderId })
+    }).finally(() => {
+      markReadInFlightRef.current.delete(activeConversation.id);
+    });
   }, [activeConversation]);
 
   useEffect(() => {
@@ -282,6 +337,7 @@ export function StudentMessagesChatClient({
 
   const handleComposeSend = async () => {
     if (!composeTeacherId || composeBody.trim().length < 2 || isComposeSending) return;
+    setSendError('');
     setIsComposeSending(true);
     try {
       const response = await fetch('/api/messages', {
@@ -313,6 +369,9 @@ export function StudentMessagesChatClient({
         setComposeSubject('');
         setComposeBody('');
         setComposeTeacherId('');
+      } else {
+        const payload = (await response.json().catch(() => null)) as { error?: unknown } | null;
+        setSendError(typeof payload?.error === 'string' ? payload.error : 'Message send failed.');
       }
     } finally {
       setIsComposeSending(false);
@@ -321,6 +380,7 @@ export function StudentMessagesChatClient({
 
   const handleSend = async () => {
     if (!activeConversation || draft.trim().length < 2 || isSending) return;
+    setSendError('');
 
     const text = draft.trim();
     const tempId = `temp-${Date.now()}`;
@@ -352,6 +412,8 @@ export function StudentMessagesChatClient({
       });
 
       if (!response.ok) {
+        const payload = (await response.json().catch(() => null)) as { error?: unknown } | null;
+        setSendError(typeof payload?.error === 'string' ? payload.error : 'Message send failed.');
         setLocalOutgoing((prev) => ({
           ...prev,
           [activeConversation.senderId]: (prev[activeConversation.senderId] ?? []).filter((item) => item.id !== tempId)
@@ -505,7 +567,7 @@ export function StudentMessagesChatClient({
               </div>
               <div>
                 <p className="text-sm font-bold text-[#1a2b3d]">{activeConversation.senderName}</p>
-                <p className="text-xs text-[#607080]">Teacher</p>
+                <p className="text-xs text-[#607080]">Teacher / Admin</p>
               </div>
             </div>
           </div>
@@ -599,6 +661,11 @@ export function StudentMessagesChatClient({
             Panels
           </button>
         </div>
+        {sendError ? (
+          <p className="mt-3 rounded-xl border border-[#fecaca] bg-[#fef2f2] px-3 py-2 text-xs text-[#b91c1c]">
+            {sendError}
+          </p>
+        ) : null}
       </div>
 
       <div className="grid gap-4 lg:grid-cols-[230px_360px_minmax(0,1fr)]">
@@ -623,15 +690,15 @@ export function StudentMessagesChatClient({
 
             <div className="space-y-3">
               <div>
-                <label className="block text-[10px] font-bold uppercase tracking-widest text-[#7c8b99] mb-1">To (Teacher)</label>
+                <label className="block text-[10px] font-bold uppercase tracking-widest text-[#7c8b99] mb-1">To (Teacher/Admin)</label>
                 <select
                   value={composeTeacherId}
                   onChange={(e) => setComposeTeacherId(e.target.value)}
                   className="h-10 w-full rounded-xl bg-[#edeeef] border-none px-3 text-sm text-[#1a2b3d] outline-none focus:ring-2 focus:ring-[#004649]/20"
                 >
-                  <option value="">Select teacher...</option>
+                  <option value="">Select recipient...</option>
                   {availableTeachers.map((t) => (
-                    <option key={t.id} value={t.id}>{t.fullName}</option>
+                    <option key={t.id} value={t.id}>{t.fullName} ({t.role})</option>
                   ))}
                 </select>
               </div>
@@ -668,3 +735,5 @@ export function StudentMessagesChatClient({
     </div>
   );
 }
+
+

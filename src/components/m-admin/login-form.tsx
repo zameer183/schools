@@ -1,17 +1,14 @@
 'use client';
 
 import { useState } from 'react';
-import { useRouter } from 'next/navigation';
 import { Mail, Lock, Eye, EyeOff } from 'lucide-react';
 
 export function MobileLoginForm() {
-  const [email, setEmail] = useState('admin@stitchhms.com');
+  const [email, setEmail] = useState('manarahinstitute01@gmail.com');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
-  const router = useRouter();
-
   const onSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
@@ -20,6 +17,7 @@ export function MobileLoginForm() {
     try {
       const res = await fetch('/api/auth/login', {
         method: 'POST',
+        credentials: 'include',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email, password })
       });
@@ -35,7 +33,7 @@ export function MobileLoginForm() {
         return;
       }
 
-      router.push('/m/admin');
+      window.location.assign('/m/admin');
     } catch {
       setError('Unable to login right now');
     } finally {
@@ -55,7 +53,7 @@ export function MobileLoginForm() {
             onChange={(e) => setEmail(e.target.value)}
             required
             className="flex-1 bg-transparent text-sm text-[#111] outline-none"
-            placeholder="admin@stitchhms.com"
+            placeholder="manarahinstitute01@gmail.com"
           />
         </div>
       </div>

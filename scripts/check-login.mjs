@@ -46,9 +46,9 @@ try {
   const user = await prisma.user.findUnique({
     where: { email },
     include: {
-      student: { include: { class: true } },
-      teacher: true,
-      parent: true
+      studentProfile: { include: { class: true } },
+      teacherProfile: true,
+      parentProfile: true
     }
   });
 
@@ -66,15 +66,15 @@ try {
     isActive: user.isActive,
     passwordMatches: passwordOk,
     willLoginSucceed: !!user.isActive && passwordOk,
-    student: user.student
+    student: user.studentProfile
       ? {
-          admissionNo: user.student.admissionNo,
-          classId: user.student.classId,
-          className: user.student.class?.name ?? null
+          admissionNo: user.studentProfile.admissionNo,
+          classId: user.studentProfile.classId,
+          className: user.studentProfile.class?.name ?? null
         }
       : null,
-    teacher: user.teacher ? { id: user.teacher.id } : null,
-    parent: user.parent ? { id: user.parent.id } : null
+    teacher: user.teacherProfile ? { id: user.teacherProfile.id } : null,
+    parent: user.parentProfile ? { id: user.parentProfile.id } : null
   };
 
   console.log(JSON.stringify(result, null, 2));

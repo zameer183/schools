@@ -8,12 +8,13 @@ export const dynamic = 'force-dynamic';
 type ClassRow = Prisma.ClassGetPayload<{ include: { _count: { select: { students: true; subjects: true } } } }>;
 type SubjectRow = Prisma.SubjectGetPayload<{ include: { class: true; teacher: { include: { user: true } } } }>;
 type TeacherRow = Prisma.TeacherGetPayload<{ select: { id: true; user: { select: { fullName: true } } } }>;
-type ExamRow = Prisma.ExamGetPayload<{ include: { class: true; subject: true; createdBy: { include: { user: true } } } }>;
+type ExamRow = Prisma.ExamGetPayload<{ include: { class: true; subject: true; createdBy: { include: { user: true } }; _count: { select: { results: true } } } }>;
+type StudentRow = Prisma.StudentGetPayload<{ include: { user: { select: { fullName: true } } } }>;
 
 const getCachedAcademicsData = unstable_cache(
   async () => {
     try {
-      const [classes, subjects, teachers, exams] = await Promise.all([
+      const [classes, subjects, teachers, exams, students] = await Promise.all([
         prisma.class.findMany({
           include: { _count: { select: { students: true, subjects: true } } },
           orderBy: [{ name: 'asc' }, { section: 'asc' }]
@@ -27,19 +28,24 @@ const getCachedAcademicsData = unstable_cache(
           orderBy: { createdAt: 'desc' }
         }),
         prisma.exam.findMany({
-          include: { class: true, subject: true, createdBy: { include: { user: true } } },
+          include: { class: true, subject: true, createdBy: { include: { user: true } }, _count: { select: { results: true } } },
           orderBy: { examDate: 'desc' }
+        }),
+        prisma.student.findMany({
+          include: { user: { select: { fullName: true } } },
+          orderBy: { createdAt: 'desc' }
         })
       ]);
 
-      return { classes, subjects, teachers, exams };
+      return { classes, subjects, teachers, exams, students };
     } catch (error) {
       console.error('[admin/academics] failed to load academics data', error);
       return {
         classes: [] as ClassRow[],
         subjects: [] as SubjectRow[],
         teachers: [] as TeacherRow[],
-        exams: [] as ExamRow[]
+        exams: [] as ExamRow[],
+        students: [] as StudentRow[]
       };
     }
   },
@@ -68,7 +74,7 @@ function safeToIso(input: unknown) {
 
 export default async function AdminAcademicsPage() {
   await requireAuth([UserRole.ADMIN]);
-  const { classes, subjects, teachers, exams } = await getCachedAcademicsData();
+  const { classes, subjects, teachers, exams, students } = await getCachedAcademicsData();
 
   const normalizedExams = exams.map((exam) => {
     const parsed = parseExamTitle(exam.title);
@@ -79,7 +85,8 @@ export default async function AdminAcademicsPage() {
       examType: parsed.examType,
       examDate: examDateIso,
       dueDate: examDateIso,
-      teacherName: exam.createdBy?.user?.fullName ?? '-'
+      teacherName: exam.createdBy?.user?.fullName ?? '-',
+      resultsCount: exam._count.results
     };
   });
 
@@ -89,6 +96,12 @@ export default async function AdminAcademicsPage() {
       initialSubjects={subjects}
       initialTeachers={teachers}
       initialExams={normalizedExams}
+      initialStudents={students.map((s) => ({
+        id: s.id,
+        classId: s.classId,
+        admissionNo: s.admissionNo,
+        fullName: s.user.fullName
+      }))}
     />
   );
 }

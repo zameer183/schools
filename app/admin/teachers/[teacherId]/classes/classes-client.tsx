@@ -1,7 +1,7 @@
 'use client';
 
 import Link from 'next/link';
-import { ChevronLeft, Users, GraduationCap, CheckCircle } from 'lucide-react';
+import { ChevronLeft, Users, GraduationCap } from 'lucide-react';
 
 type TeacherClassesData = {
   id: string;

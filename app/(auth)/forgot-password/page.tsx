@@ -39,7 +39,7 @@ export default function ForgotPasswordPage() {
         <div className="w-full max-w-sm">
           <div className="text-center mb-8">
             <Image
-              src="/manarah-p4.png"
+              src="/manarah-logo.png"
               alt="Manarah Institute logo"
               width={1382}
               height={504}

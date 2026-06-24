@@ -4,35 +4,48 @@ import { prisma } from '@/lib/prisma';
 import { ensureApiRole } from '@/lib/rbac';
 
 export async function GET() {
-  const auth = await ensureApiRole([UserRole.ADMIN, UserRole.TEACHER, UserRole.STUDENT]);
-  if (!auth.authorized) return auth.response;
+  try {
+    const auth = await ensureApiRole([UserRole.ADMIN, UserRole.TEACHER, UserRole.STUDENT]);
+    if (!auth.authorized) return auth.response;
 
-  if (auth.session.role === UserRole.TEACHER) {
-    const teacher = await prisma.teacher.findUnique({ where: { userId: auth.session.id }, select: { id: true } });
-    if (!teacher) return NextResponse.json({ error: 'Teacher profile missing' }, { status: 400 });
-
-    const subjects = await prisma.subject.findMany({
-      where: { teacherId: teacher.id },
-      include: { class: true, teacher: { include: { user: true } } },
-      orderBy: { name: 'asc' }
-    });
-    return NextResponse.json(subjects);
-  }
-
-  if (auth.session.role === UserRole.STUDENT) {
-    const student = await prisma.student.findUnique({ where: { userId: auth.session.id }, select: { classId: true } });
-    if (!student?.classId) return NextResponse.json([]);
+    let where: Record<string, unknown> = {};
+    if (auth.session.role === UserRole.TEACHER) {
+      const teacher = await prisma.teacher.findUnique({ where: { userId: auth.session.id }, select: { id: true } });
+      if (!teacher) return NextResponse.json({ error: 'Teacher profile missing' }, { status: 400 });
+      where = { teacherId: teacher.id };
+    } else if (auth.session.role === UserRole.STUDENT) {
+      const student = await prisma.student.findUnique({ where: { userId: auth.session.id }, select: { classId: true } });
+      if (!student?.classId) return NextResponse.json([]);
+      where = { classId: student.classId };
+    }
 
     const subjects = await prisma.subject.findMany({
-      where: { classId: student.classId },
-      include: { class: true, teacher: { include: { user: true } } },
+      where,
+      include: { class: true, teacher: true },
       orderBy: { name: 'asc' }
     });
-    return NextResponse.json(subjects);
-  }
 
-  const subjects = await prisma.subject.findMany({ include: { class: true, teacher: { include: { user: true } } } });
-  return NextResponse.json(subjects);
+    const teacherUserIds = Array.from(new Set(subjects.map((s) => s.teacher?.userId).filter(Boolean))) as string[];
+    const users = teacherUserIds.length
+      ? await prisma.user.findMany({ where: { id: { in: teacherUserIds } }, select: { id: true, fullName: true } })
+      : [];
+    const userMap = new Map(users.map((u) => [u.id, u.fullName]));
+
+    const safeSubjects = subjects.map((subject) => ({
+      ...subject,
+      teacher: subject.teacher
+        ? {
+            ...subject.teacher,
+            user: subject.teacher.userId ? { fullName: userMap.get(subject.teacher.userId) ?? 'Unknown' } : { fullName: 'Unknown' }
+          }
+        : null
+    }));
+
+    return NextResponse.json(safeSubjects);
+  } catch (error) {
+    console.error('[api/subjects][GET]', error);
+    return NextResponse.json([]);
+  }
 }
 
 export async function POST(request: Request) {

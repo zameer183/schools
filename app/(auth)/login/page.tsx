@@ -51,7 +51,7 @@ const roles = [
 
 export default function LoginSelectorPage() {
   return (
-    <div className="relative flex min-h-[100dvh] items-center justify-center overflow-hidden bg-[#0C3D2E] px-5 py-12">
+    <div className="relative flex min-h-[100dvh] items-start justify-center overflow-hidden bg-[#0C3D2E] px-5 pb-12 pt-6 sm:pt-8">
 
       {/* Islamic geometric pattern */}
       <div className="pointer-events-none absolute inset-0 opacity-[0.04]">
@@ -78,15 +78,17 @@ export default function LoginSelectorPage() {
       <div className="relative z-10 w-full max-w-3xl text-center">
 
         {/* Logo */}
-        <div className="mb-10">
-          <Image
-            src="/manarah-p4.png"
-            alt="Manarah Institute"
-            width={1382}
-            height={504}
-            className="mx-auto h-auto w-[240px] object-contain drop-shadow-[0_4px_24px_rgba(201,149,42,0.2)]"
-            priority
-          />
+        <div className="mb-8">
+          <div className="mx-auto inline-flex rounded-2xl bg-white/95 px-4 py-3 shadow-[0_8px_30px_rgba(0,0,0,0.25)] ring-1 ring-white/70">
+            <Image
+              src="/manarah-logo.png"
+              alt="Manarah Institute"
+              width={1382}
+              height={504}
+              className="h-auto w-[270px] object-contain sm:w-[290px]"
+              priority
+            />
+          </div>
           <div className="mt-6 flex items-center justify-center gap-3">
             <div className="h-[1px] w-12 rounded-full bg-[#C9952A]/40" />
             <div className="h-1 w-1 rounded-full bg-[#C9952A]/60" />
@@ -111,6 +113,7 @@ export default function LoginSelectorPage() {
             <Link
               key={role.href}
               href={role.href}
+              prefetch={false}
               style={{ '--glow': role.glow, '--border': role.border } as React.CSSProperties}
               className="group relative overflow-hidden rounded-2xl border border-white/10 bg-white/[0.05] p-7 text-left backdrop-blur-sm transition-all duration-200 hover:-translate-y-1 hover:border-[var(--border)] hover:bg-white/[0.09] hover:shadow-[0_12px_40px_var(--glow)]"
             >
@@ -144,6 +147,30 @@ export default function LoginSelectorPage() {
               </div>
             </Link>
           ))}
+        </div>
+
+        {/* APK Download */}
+        <div className="mt-8 rounded-2xl border border-white/10 bg-white/[0.05] p-4 backdrop-blur-sm sm:p-5">
+          <div className="flex flex-wrap items-center justify-between gap-3">
+            <div className="text-left">
+              <p className="text-[11px] font-bold uppercase tracking-[0.18em] text-[#C9952A]/85">Android App</p>
+              <p className="mt-1 text-sm text-white/70">Install dedicated mobile apps for faster teacher and student access.</p>
+            </div>
+            <div className="flex w-full flex-col gap-2 sm:w-auto sm:flex-row">
+              <a
+                href="/downloads/manarah-teacher.apk"
+                className="inline-flex items-center justify-center gap-2 rounded-xl bg-[#C9952A] px-4 py-2.5 text-sm font-bold text-[#0C3D2E] transition hover:bg-[#d9ab4f]"
+              >
+                Teacher APK
+              </a>
+              <a
+                href="/downloads/manarah-student.apk"
+                className="inline-flex items-center justify-center gap-2 rounded-xl border border-[#C9952A]/60 bg-transparent px-4 py-2.5 text-sm font-bold text-[#E9C381] transition hover:bg-[#C9952A]/10"
+              >
+                Student APK
+              </a>
+            </div>
+          </div>
         </div>
 
         {/* Footer */}

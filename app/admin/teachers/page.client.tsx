@@ -12,9 +12,15 @@ import { KpiCard, Button } from '@/components/ui';
 
 // ── Types ───────────────────────────────────────────────────────────────────
 export type TeacherAccess = {
-  ACADEMICS: boolean; STUDENTS: boolean; ATTENDANCE: boolean;
-  STAFF_ATTENDANCE: boolean; ASSIGNMENTS: boolean; PROGRESS: boolean;
-  MESSAGES: boolean; EXAMS: boolean; FEES: boolean;
+  ACADEMICS: 'NONE' | 'VIEW' | 'MANAGE' | 'FULL';
+  STUDENTS: 'NONE' | 'VIEW' | 'MANAGE' | 'FULL';
+  ATTENDANCE: 'NONE' | 'VIEW' | 'MANAGE' | 'FULL';
+  STAFF_ATTENDANCE: 'NONE' | 'VIEW' | 'MANAGE' | 'FULL';
+  ASSIGNMENTS: 'NONE' | 'VIEW' | 'MANAGE' | 'FULL';
+  PROGRESS: 'NONE' | 'VIEW' | 'MANAGE' | 'FULL';
+  MESSAGES: 'NONE' | 'VIEW' | 'MANAGE' | 'FULL';
+  EXAMS: 'NONE' | 'VIEW' | 'MANAGE' | 'FULL';
+  FEES: 'NONE' | 'VIEW' | 'MANAGE' | 'FULL';
 };
 export type TeacherCompensation = {
   baseSalary: number; bonus: number; deduction: number; netSalary: number;
@@ -38,14 +44,15 @@ export type TeacherItem = {
 
 // ── Constants ────────────────────────────────────────────────────────────────
 const DEFAULT_ACCESS: TeacherAccess = {
-  ACADEMICS: true, STUDENTS: true, ATTENDANCE: true, STAFF_ATTENDANCE: true,
-  ASSIGNMENTS: true, PROGRESS: true, MESSAGES: true, EXAMS: true, FEES: false,
+  ACADEMICS: 'FULL', STUDENTS: 'FULL', ATTENDANCE: 'FULL', STAFF_ATTENDANCE: 'FULL',
+  ASSIGNMENTS: 'FULL', PROGRESS: 'FULL', MESSAGES: 'FULL', EXAMS: 'FULL', FEES: 'NONE',
 };
 const ACCESS_LABELS: Record<keyof TeacherAccess, string> = {
   ACADEMICS: 'Academics', STUDENTS: 'Students', ATTENDANCE: 'Attendance',
   STAFF_ATTENDANCE: 'Staff Attendance', ASSIGNMENTS: 'Assignments',
   PROGRESS: 'Progress', MESSAGES: 'Messages', EXAMS: 'Exams', FEES: 'Fees',
 };
+const ACCESS_LEVEL_OPTIONS: Array<TeacherAccess[keyof TeacherAccess]> = ['NONE', 'VIEW', 'MANAGE', 'FULL'];
 const AVATAR_COLORS = ['#7c3aed', '#0891b2', '#059669', '#d97706', '#dc2626', '#2563eb', '#0d9488'];
 
 const INPUT_CLS =
@@ -146,7 +153,7 @@ function ShareModal({ teacher, onClose }: { teacher: TeacherItem; onClose: () =>
   const hasPhone = rawPhone.length >= 7;
   const avatarBg = avatarColor(teacher.user.fullName);
 
-  const msg = `Hi ${teacher.user.fullName},\n\nYour teacher portal login credentials:\n📧 Email: ${teacher.user.email}\n🔑 Password: ${password}\n\nPlease keep these safe.`;
+  const msg = `Your online profile successfully generated on\nManarah Institute\n\nHere is your app link\n\nANDROID:\n${APP_LOGIN_URL}\n\nHere is your Institute gmail\n\n${teacher.user.email}\n\nHere is your password\n\n${password}`;
 
   const handleShare = async () => {
     setSaving(true);
@@ -332,6 +339,7 @@ const INITIAL_FORM: DrawerForm = {
 };
 
 const STEPS = ['Identity', 'Classes & Access', 'Compensation'];
+const APP_LOGIN_URL = 'https://schools-plum.vercel.app/login';
 
 function Drawer({
   open, editId, form, setForm, classes, saving, error, onClose, onSave,
@@ -490,13 +498,18 @@ function Drawer({
           )}
 
           {step === 2 && (
-            <div className="space-y-5">
-              <div>
-                <p className="mb-2 text-xs font-bold uppercase tracking-widest text-[#6f7979]">Assign Classes</p>
+            <div className="space-y-4">
+              <div className="rounded-2xl border border-[#e6ecf2] bg-[#f8fafc] p-3.5 sm:p-4">
+                <div className="mb-3 flex items-center justify-between gap-2">
+                  <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-[#64748b]">Assign Classes</p>
+                  <span className="rounded-full bg-[#e6f4f1] px-2.5 py-1 text-[11px] font-semibold text-[#1f5a5c]">
+                    {form.classIds.length} selected
+                  </span>
+                </div>
                 {classes.length === 0 ? (
-                  <p className="text-xs text-[#6f7979]">No classes available.</p>
+                  <p className="text-xs text-[#64748b]">No classes available.</p>
                 ) : (
-                  <div className="grid gap-2 sm:grid-cols-2">
+                  <div className="grid gap-2.5 sm:grid-cols-2">
                     {classes.map(c => {
                       const checked = form.classIds.includes(c.id);
                       return (
@@ -511,15 +524,15 @@ function Drawer({
                                 : [...p.classIds, c.id],
                             }))
                           }
-                          className={`flex items-center gap-2.5 rounded-xl border px-3 py-2.5 text-left text-sm transition-colors ${
+                          className={`flex min-h-[46px] items-center gap-2.5 rounded-2xl border px-3 py-2.5 text-left text-sm transition-all ${
                             checked
-                              ? 'border-[#004649]/30 bg-[#004649]/5 text-[#1a1c1c]'
-                              : 'border-[#e0e5e5] bg-[#f9fafb] text-[#6f7979] hover:bg-[#f3f4f5]'
+                              ? 'border-[#1f5a5c]/35 bg-[#e6f4f1] text-[#0f172a] shadow-[0_6px_14px_rgba(31,90,92,0.10)]'
+                              : 'border-[#e2e8f0] bg-white text-[#475569] hover:border-[#cbd5e1] hover:bg-[#f8fafc]'
                           }`}
                         >
                           <span
-                            className={`flex h-4 w-4 shrink-0 items-center justify-center rounded border ${
-                              checked ? 'border-[#004649] bg-[#004649]' : 'border-[#d1d5db]'
+                            className={`flex h-4.5 w-4.5 shrink-0 items-center justify-center rounded border ${
+                              checked ? 'border-[#1f5a5c] bg-[#1f5a5c]' : 'border-[#cbd5e1] bg-white'
                             }`}
                           >
                             {checked && (
@@ -528,7 +541,7 @@ function Drawer({
                               </svg>
                             )}
                           </span>
-                          {c.name} – {c.section}
+                          <span className="truncate">{c.name} - {c.section}</span>
                         </button>
                       );
                     })}
@@ -536,39 +549,54 @@ function Drawer({
                 )}
               </div>
 
-              <div>
-                <p className="mb-2 text-xs font-bold uppercase tracking-widest text-[#6f7979]">Access Permissions</p>
+              <div className="rounded-2xl border border-[#e6ecf2] bg-white p-3.5 sm:p-4">
+                <p className="mb-3 text-[11px] font-semibold uppercase tracking-[0.16em] text-[#64748b]">Access Permissions</p>
                 <div className="grid gap-2.5 sm:grid-cols-2">
                   {(Object.keys(ACCESS_LABELS) as (keyof TeacherAccess)[]).map(key => {
-                    const on = form.access[key];
+                    const level = form.access[key];
                     return (
-                      <button
+                      <div
                         key={key}
-                        type="button"
-                        onClick={() => setForm(p => ({ ...p, access: { ...p.access, [key]: !p.access[key] } }))}
-                        className={`flex min-h-[44px] items-center justify-between rounded-xl border px-3.5 py-2.5 text-sm transition-colors ${
-                          on
-                            ? 'border-[#004649]/20 bg-[#004649]/5 text-[#1a1c1c]'
-                            : 'border-[#e0e5e5] bg-[#f9fafb] text-[#6f7979]'
+                        className={`rounded-2xl border px-3 py-3 text-sm transition-all ${
+                          level !== 'NONE'
+                            ? 'border-[#1f5a5c]/20 bg-[#f8fbfb] text-[#0f172a]'
+                            : 'border-[#e2e8f0] bg-[#f8fafc] text-[#64748b]'
                         }`}
                       >
-                        <span className="pr-2 text-left">{ACCESS_LABELS[key]}</span>
-                        <span
-                          className={`relative h-6 w-10 shrink-0 rounded-full transition-colors ${on ? 'bg-[#004649]' : 'bg-[#d1d5db]'}`}
-                        >
-                          <span
-                            className={`absolute top-0.5 h-5 w-5 rounded-full bg-white shadow transition-transform ${on ? 'translate-x-4.5' : 'translate-x-0.5'}`}
-                          />
-                        </span>
-                      </button>
+                        <p className="mb-2 text-left font-medium">{ACCESS_LABELS[key]}</p>
+                        <div className="grid grid-cols-2 gap-2">
+                          {ACCESS_LEVEL_OPTIONS.map((opt) => {
+                            const active = level === opt;
+                            const label = opt === 'NONE' ? (
+                              <>
+                                <span>No</span>
+                                <span>Access</span>
+                              </>
+                            ) : opt === 'VIEW' ? 'View' : opt === 'MANAGE' ? 'Manage' : 'Full';
+                            return (
+                              <button
+                                key={opt}
+                                type="button"
+                                onClick={() => setForm(p => ({ ...p, access: { ...p.access, [key]: opt } }))}
+                                className={`flex min-h-10 items-center justify-center rounded-lg border px-2.5 text-center text-[11px] font-semibold leading-tight transition ${
+                                  active
+                                    ? 'border-[#1f5a5c] bg-[#1f5a5c] text-white shadow-[0_4px_10px_rgba(31,90,92,0.25)]'
+                                    : 'border-[#dce3ea] bg-white text-[#475569] hover:border-[#1f5a5c]/40 hover:text-[#1f5a5c]'
+                                }`}
+                              >
+                                {label}
+                              </button>
+                            );
+                          })}
+                        </div>
+                      </div>
                     );
                   })}
                 </div>
               </div>
             </div>
           )}
-
-          {step === 3 && (
+{step === 3 && (
             <div className="space-y-4">
               <div>
                 <label className={LABEL_CLS}>Base Salary</label>
@@ -684,7 +712,7 @@ export default function AdminTeachersPageClient({
   const reload = useCallback(async () => {
     setLoading(true);
     try {
-      const res = await fetch('/api/teachers', { cache: 'no-store' });
+      const res = await fetch(`/api/teachers?t=${Date.now()}`, { cache: 'no-store' });
       if (res.ok) setTeachers(await res.json());
     } finally {
       setLoading(false);
@@ -1182,3 +1210,4 @@ export default function AdminTeachersPageClient({
     </div>
   );
 }
+

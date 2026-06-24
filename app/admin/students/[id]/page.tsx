@@ -78,9 +78,12 @@ export default async function StudentProfilePage({ params }: StudentProfilePageP
         amount: true,
         discount: true,
         status: true,
+        createdAt: true,
+        fromDate: true,
+        toDate: true,
         payments: { select: { amountPaid: true } }
       },
-      orderBy: { dueDate: 'desc' },
+      orderBy: [{ createdAt: 'desc' }, { dueDate: 'desc' }],
       take: 20
     })
   ]);
@@ -91,11 +94,15 @@ export default async function StudentProfilePage({ params }: StudentProfilePageP
     (s, f) => s + f.payments.reduce((a, p) => a + Number(p.amountPaid), 0),
     0
   );
-  const dueFee = fees.reduce((s, f) => {
-    const total = Number(f.amount) - Number(f.discount);
-    const paid = f.payments.reduce((a, p) => a + Number(p.amountPaid), 0);
-    return s + Math.max(total - paid, 0);
-  }, 0);
+  const currentFee = fees[0] ?? null;
+  const dueFee = currentFee
+    ? Math.max(
+        Number(currentFee.amount) -
+          Number(currentFee.discount) -
+          currentFee.payments.reduce((a, p) => a + Number(p.amountPaid), 0),
+        0
+      )
+    : 0;
 
   return (
     <StudentProfileClient
@@ -113,6 +120,8 @@ export default async function StudentProfilePage({ params }: StudentProfilePageP
       fees={fees.map((f) => ({
         ...f,
         dueDate: f.dueDate.toISOString(),
+        fromDate: f.fromDate?.toISOString() ?? null,
+        toDate: f.toDate?.toISOString() ?? null,
         amount: Number(f.amount),
         discount: Number(f.discount),
         payments: f.payments.map((p) => ({ amountPaid: Number(p.amountPaid) }))

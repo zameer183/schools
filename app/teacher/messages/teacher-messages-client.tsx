@@ -279,10 +279,12 @@ export function TeacherMessagesClient({ messages, recipients }: TeacherMessagesC
   useEffect(() => {
     let cancelled = false;
     let shouldStop = false;
+    let intervalId: number | null = null;
 
     const syncInbox = async () => {
+      if (document.hidden || shouldStop) return;
       try {
-        const response = await fetch('/api/messages?limit=50', { cache: 'no-store', credentials: 'include' });
+        const response = await fetch('/api/messages?limit=20', { cache: 'no-store', credentials: 'include' });
         if (cancelled || shouldStop) return;
         if (response.status === 401) {
           shouldStop = true;
@@ -305,16 +307,37 @@ export function TeacherMessagesClient({ messages, recipients }: TeacherMessagesC
       }
     };
 
-    const timer = window.setInterval(() => {
-      if (shouldStop) return;
+    const startPolling = () => {
+      if (intervalId !== null || shouldStop || document.hidden) return;
+      intervalId = window.setInterval(() => {
+        if (shouldStop || document.hidden) return;
+        void syncInbox();
+      }, 5000);
+    };
+
+    const stopPolling = () => {
+      if (intervalId === null) return;
+      window.clearInterval(intervalId);
+      intervalId = null;
+    };
+
+    const handleVisibilityChange = () => {
+      if (document.hidden) {
+        stopPolling();
+        return;
+      }
       void syncInbox();
-    }, 5000);
+      startPolling();
+    };
 
     void syncInbox();
+    startPolling();
+    document.addEventListener('visibilitychange', handleVisibilityChange);
 
     return () => {
       cancelled = true;
-      window.clearInterval(timer);
+      stopPolling();
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
     };
   }, [deletedMessageIds]);
 
@@ -706,12 +729,12 @@ export function TeacherMessagesClient({ messages, recipients }: TeacherMessagesC
   ];
 
   const leftPanel = (
-    <div className="rounded-[24px] border border-white/80 bg-white p-4 shadow-[0_14px_34px_rgba(15,23,42,0.07)]">
+    <div className="rounded-[24px] border border-white/80 bg-white p-4 shadow-[0_16px_36px_rgba(15,23,42,0.08)]">
       <div className="mb-3 flex items-center justify-between">
         <h3 className="font-headline text-sm font-bold text-[#0F172A]">Categories</h3>
         <button
           onClick={() => setShowCompose(true)}
-          className="inline-flex items-center gap-1 rounded-xl bg-gradient-to-br from-[#2E2B78] to-[#4338CA] px-2.5 py-1.5 text-xs font-semibold text-white shadow-[0_10px_22px_rgba(46,43,120,0.22)] transition-all active:scale-[0.98]"
+          className="inline-flex items-center gap-1 rounded-xl bg-[#084750] px-3 py-2 text-xs font-black text-white shadow-[0_10px_22px_rgba(8,71,80,0.22)] transition-all active:scale-[0.98]"
         >
           <MessageSquarePlus className="h-3.5 w-3.5" />
           New
@@ -724,12 +747,12 @@ export function TeacherMessagesClient({ messages, recipients }: TeacherMessagesC
             onClick={() => setCategory(item.key)}
             className={`flex w-full items-center justify-between rounded-xl border-l-4 px-3 py-2 text-left text-sm transition ${
               category === item.key
-                ? 'border-l-[#004D47] bg-[#EEF8F7] text-[#004D47]'
-                : 'border-l-transparent bg-[#FBFAF8] text-[#64748B] hover:bg-[#F4EFE8]'
+                ? 'border-l-[#007A70] bg-[#7BE4D4] text-[#005C55]'
+                : 'border-l-transparent bg-[#F3F6F8] text-[#4B5563] hover:bg-[#EEF2F7]'
             }`}
           >
             <span className="font-medium">{item.label}</span>
-            <span className="rounded-full bg-[#F7E8CF] px-2 py-0.5 text-xs font-bold text-[#9A6A24]">{item.count}</span>
+            <span className="rounded-full bg-white/70 px-2 py-0.5 text-xs font-bold text-[#64748B]">{item.count}</span>
           </button>
         ))}
       </div>
@@ -763,15 +786,31 @@ export function TeacherMessagesClient({ messages, recipients }: TeacherMessagesC
   );
 
   const middlePanel = (
-    <div className="rounded-[24px] border border-white/80 bg-white p-4 shadow-[0_14px_34px_rgba(15,23,42,0.07)]">
+    <div className="rounded-[24px] border border-white bg-white p-4 shadow-[0_16px_36px_rgba(15,23,42,0.08)]">
       <div className="relative mb-3">
-        <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-[#64748B]" />
+        <Search className="pointer-events-none absolute left-4 top-1/2 h-5 w-5 -translate-y-1/2 text-[#4B5563]" />
         <input
           value={search}
           onChange={(event) => setSearch(event.target.value)}
-          placeholder="Search chats..."
-          className="h-11 w-full rounded-full border border-[#EFE8DE] bg-[#FBFAF8] pl-10 pr-4 text-sm text-[#0F172A] outline-none focus:border-[#004D47] focus:ring-4 focus:ring-[#004D47]/10"
+          placeholder="Search students, parents, or messages."
+          className="h-14 w-full rounded-2xl border border-[#CBD5E1] bg-white pl-12 pr-4 text-sm text-[#111827] outline-none focus:border-[#007A70] focus:ring-4 focus:ring-[#7BE4D4]/25"
         />
+      </div>
+
+      <div className="mb-4 flex gap-2 overflow-x-auto pb-1">
+        {categories.map((item) => (
+          <button
+            key={item.key}
+            onClick={() => setCategory(item.key)}
+            className={`shrink-0 rounded-full px-4 py-2 text-sm font-bold transition ${
+              category === item.key
+                ? 'bg-[#7BE4D4] text-[#006A61]'
+                : 'bg-[#E5E7EB] text-[#4B5563] hover:bg-[#DDE3EA]'
+            }`}
+          >
+            {item.label}
+          </button>
+        ))}
       </div>
 
       {authError ? (
@@ -780,7 +819,7 @@ export function TeacherMessagesClient({ messages, recipients }: TeacherMessagesC
         </div>
       ) : null}
 
-      <div className="max-h-[62vh] space-y-1 overflow-auto pr-1">
+      <div className="max-h-[62vh] space-y-3 overflow-auto pr-1">
         {filteredConversations.map((conversation) => (
           <button
             key={conversation.personId}
@@ -788,24 +827,25 @@ export function TeacherMessagesClient({ messages, recipients }: TeacherMessagesC
               setActiveId(conversation.personId);
               setShowMobileFilters(false);
             }}
-            className={`w-full rounded-xl border p-3 text-left transition ${
+            className={`w-full rounded-[18px] border p-4 text-left shadow-[0_8px_20px_rgba(15,23,42,0.06)] transition active:scale-[0.99] ${
               activeId === conversation.personId
-                ? 'border-[#004D47] bg-[#EEF8F7]'
-                : 'border-[#EFE8DE] bg-white hover:bg-[#FBFAF8]'
+                ? 'border-l-4 border-l-[#007A70] border-[#D7EDEA] bg-white'
+                : 'border-white bg-white hover:bg-[#F8FAFC]'
             }`}
           >
             <div className="flex items-start gap-3">
-              <div className="grid h-11 w-11 place-items-center rounded-full bg-[#004D47]/10 text-sm font-bold text-[#004D47]">
+              <div className="relative grid h-12 w-12 place-items-center rounded-full bg-[#7BE4D4] text-sm font-black text-[#006A61]">
                 {initials(conversation.personName)}
+                {conversation.unreadCount > 0 ? <span className="absolute bottom-0 right-0 h-3 w-3 rounded-full border-2 border-white bg-[#084750]" /> : null}
               </div>
               <div className="min-w-0 flex-1">
                 <div className="flex items-start justify-between gap-2">
-                  <p className="truncate text-sm font-bold text-[#0F172A]">{conversation.personName}</p>
+                  <p className="truncate text-sm font-black text-[#111827]">{conversation.personName}</p>
                   <p className="shrink-0 text-[11px] text-[#64748B]" suppressHydrationWarning>
                     {mounted ? formatTime(conversation.latestAt) : ''}
                   </p>
                 </div>
-                <p className="truncate text-xs text-[#64748B]">{conversation.latestPreview}</p>
+                <p className="mt-1 truncate text-base text-[#4B5563]">{conversation.latestPreview}</p>
               </div>
             </div>
             {conversation.unreadCount > 0 ? (
@@ -819,8 +859,12 @@ export function TeacherMessagesClient({ messages, recipients }: TeacherMessagesC
         ))}
 
         {filteredConversations.length === 0 ? (
-          <div className="rounded-xl border border-dashed border-[#cdd9e1] bg-[#f7fafb] p-5 text-center text-sm text-[#5b6b7c]">
-            No conversations in this filter.
+          <div className="rounded-[20px] border border-dashed border-[#D7E2E7] bg-gradient-to-br from-[#FBFDFC] to-[#F4F8F7] p-6 text-center shadow-inner">
+            <div className="mx-auto mb-3 grid h-11 w-11 place-items-center rounded-2xl bg-white text-[#004D47] shadow-[0_10px_24px_rgba(15,23,42,0.07)]">
+              <MessageSquarePlus className="h-5 w-5" />
+            </div>
+            <p className="text-sm font-black text-[#0F172A]">No conversations in this filter.</p>
+            <p className="mt-1 text-xs leading-5 text-[#64748B]">Start a new message or switch filters to see chats.</p>
           </div>
         ) : null}
       </div>
@@ -828,22 +872,22 @@ export function TeacherMessagesClient({ messages, recipients }: TeacherMessagesC
   );
 
   const rightPanel = (
-    <div className="flex h-[72vh] flex-col overflow-hidden rounded-[24px] border border-white/80 bg-white shadow-[0_14px_34px_rgba(15,23,42,0.07)]">
+    <div className="flex h-[calc(100vh-150px)] min-h-[620px] flex-col overflow-hidden rounded-[24px] border border-white bg-white shadow-[0_16px_36px_rgba(15,23,42,0.08)] lg:h-[72vh]">
       {activeConversation ? (
         <>
-          <div className="relative flex items-center justify-between border-b border-[#EFE8DE] bg-white/90 px-4 py-3 backdrop-blur">
+          <div className="relative flex items-center justify-between border-b border-[#E5EAF0] bg-white/95 px-4 py-3 backdrop-blur">
             <div className="flex items-center gap-3">
               <button
                 onClick={() => setActiveId(null)}
-                className="inline-flex h-8 w-8 items-center justify-center rounded-xl border border-[#EFE8DE] text-[#64748B] lg:hidden"
+                className="inline-flex h-9 w-9 items-center justify-center rounded-xl text-[#00507D] lg:hidden"
               >
                 <ChevronLeft className="h-4 w-4" />
               </button>
-              <div className="grid h-10 w-10 place-items-center rounded-full bg-[#004D47]/10 text-sm font-bold text-[#004D47]">
+              <div className="grid h-11 w-11 place-items-center rounded-full bg-[#7BE4D4] text-sm font-black text-[#006A61]">
                 {initials(activeConversation.personName)}
               </div>
               <div>
-                <p className="text-sm font-bold text-[#0F172A]">{activeConversation.personName}</p>
+                <p className="text-xl font-black leading-tight text-[#00507D]">{activeConversation.personName}</p>
                 <p className="text-xs text-[#64748B]">{recipientClassNameMap.get(activeConversation.personId) ?? 'Student'}</p>
               </div>
             </div>
@@ -868,14 +912,14 @@ export function TeacherMessagesClient({ messages, recipients }: TeacherMessagesC
             ) : null}
           </div>
 
-          <div className="flex-1 space-y-2 overflow-auto bg-[#F8F6F3] px-4 py-4">
+          <div className="flex-1 space-y-4 overflow-auto bg-[#F4F7F8] px-4 py-4">
             {activeConversation.messages.map((message) => (
               <div key={message.id} className={`group flex ${message.direction === 'out' ? 'justify-end' : 'justify-start'}`}>
                 <div
-                  className={`max-w-[85%] rounded-2xl px-3 py-2 text-sm shadow-sm ${
+                  className={`max-w-[82%] rounded-2xl px-4 py-3 text-base leading-6 shadow-sm ${
                     message.direction === 'out'
-                      ? 'rounded-br-sm bg-[#004D47] text-white shadow-[0_8px_18px_rgba(0,77,71,0.18)]'
-                      : 'rounded-bl-sm bg-white text-[#0F172A] shadow-[0_8px_18px_rgba(15,23,42,0.06)]'
+                      ? 'rounded-br-sm bg-[#084750] text-white shadow-[0_10px_22px_rgba(8,71,80,0.18)]'
+                      : 'rounded-bl-sm bg-white text-[#111827] shadow-[0_8px_18px_rgba(15,23,42,0.08)]'
                   }`}
                 >
                   <p className="whitespace-pre-wrap">{message.body}</p>
@@ -904,7 +948,7 @@ export function TeacherMessagesClient({ messages, recipients }: TeacherMessagesC
 
           <div ref={chatBottomRef} />
 
-          <div className="sticky bottom-0 border-t border-[#EFE8DE] bg-white/95 p-3 backdrop-blur">
+          <div className="sticky bottom-0 border-t border-[#E5EAF0] bg-white/95 p-3 backdrop-blur">
             <div className="flex items-center gap-2">
               <input
                 value={draft}
@@ -916,12 +960,12 @@ export function TeacherMessagesClient({ messages, recipients }: TeacherMessagesC
                   }
                 }}
                 placeholder={`Message ${activeConversation.personName.split(' ')[0]}...`}
-                className="h-11 flex-1 rounded-full border border-[#EFE8DE] bg-[#FBFAF8] px-4 text-sm text-[#0F172A] outline-none focus:border-[#004D47] focus:ring-4 focus:ring-[#004D47]/10"
+                className="h-12 flex-1 rounded-full border border-transparent bg-[#F0F2F4] px-5 text-sm text-[#111827] outline-none focus:border-[#007A70] focus:ring-4 focus:ring-[#7BE4D4]/25"
               />
               <button
                 onClick={() => void handleSend()}
                 disabled={isSending || draft.trim().length < 2}
-                className="inline-flex h-11 w-11 items-center justify-center rounded-full bg-[#2E2B78] text-white shadow-[0_10px_20px_rgba(46,43,120,0.24)] hover:bg-[#25215F] disabled:cursor-not-allowed disabled:opacity-50"
+                className="inline-flex h-12 w-12 items-center justify-center rounded-full bg-[#084750] text-white shadow-[0_10px_20px_rgba(8,71,80,0.24)] hover:bg-[#06353C] disabled:cursor-not-allowed disabled:opacity-50"
               >
                 <Send className="h-4 w-4" />
               </button>
@@ -945,72 +989,84 @@ export function TeacherMessagesClient({ messages, recipients }: TeacherMessagesC
   );
 
   return (
-    <div className="space-y-4 bg-[#F8F6F3]">
-      <div className="rounded-[24px] border border-white/80 bg-white p-5 shadow-[0_14px_34px_rgba(15,23,42,0.07)]">
-        <div className="flex items-center justify-between gap-3">
-          <div>
-            <h2 className="font-headline text-2xl font-bold text-[#0F172A]">Communications Hub</h2>
-            <p className="text-sm text-[#64748B]">Modern chat experience for class communication.</p>
+    <div className="-mx-4 -my-6 min-h-screen space-y-4 overflow-x-hidden bg-[#F8F6F3] px-4 py-5 pb-32 sm:-mx-6 sm:px-6 lg:-mx-8 lg:px-8">
+      <div className="overflow-hidden rounded-[24px] border border-white/80 bg-white p-5 shadow-[0_16px_36px_rgba(15,23,42,0.08)]">
+        <div className="flex items-start justify-between gap-3">
+          <div className="min-w-0 flex-1">
+            <p className="text-[10px] font-black uppercase tracking-[0.24em] text-[#004D47]">Manarah Institute</p>
+            <h2 className="mt-2 max-w-[250px] text-[31px] font-black leading-[0.96] tracking-[-0.05em] text-[#00507D] sm:max-w-none sm:text-5xl">Communications Hub</h2>
+            <p className="mt-4 max-w-sm text-sm leading-6 text-[#64748B] sm:text-base sm:leading-7">Modern chat experience for seamless class communication and student engagement.</p>
           </div>
           <button
             onClick={() => setShowMobileFilters((prev) => !prev)}
-            className="inline-flex items-center gap-1 rounded-xl border border-[#EFE8DE] px-3 py-2 text-sm font-semibold text-[#0F172A] lg:hidden"
+            className="inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl border border-[#E7ECEF] bg-[#F7FAFB] text-[#004D47] shadow-[0_10px_20px_rgba(15,23,42,0.08)] transition active:scale-[0.96] lg:hidden"
+            aria-label="Toggle message panels"
           >
             <SlidersHorizontal className="h-4 w-4" />
-            Panels
           </button>
         </div>
       </div>
 
-      <div className="grid gap-4 lg:grid-cols-[230px_360px_minmax(0,1fr)]">
+      <div className="grid gap-4 lg:grid-cols-[250px_380px_minmax(0,1fr)]">
         <div className={`${showMobileFilters ? 'block' : 'hidden'} lg:block`}>{leftPanel}</div>
         <div className={`${activeConversation ? 'hidden lg:block' : 'block'}`}>{middlePanel}</div>
         <div className={`${activeConversation ? 'block' : 'hidden lg:block'}`}>{rightPanel}</div>
       </div>
 
+      {!activeConversation ? (
+        <button
+          type="button"
+          onClick={() => setShowCompose(true)}
+          className="fixed bottom-[104px] right-5 z-40 inline-flex h-14 w-14 items-center justify-center rounded-2xl bg-gradient-to-br from-[#2E2B78] to-[#004D47] text-white shadow-[0_16px_30px_rgba(46,43,120,0.28)] transition active:scale-[0.96] lg:hidden"
+          aria-label="Compose new message"
+        >
+          <MessageSquarePlus className="h-6 w-6" />
+        </button>
+      ) : null}
+
       {showCompose ? (
-        <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/40 px-4 pb-4 sm:items-center sm:pb-0">
-          <div className="w-full max-w-md rounded-[24px] bg-white p-5 shadow-2xl">
-            <div className="mb-4 flex items-center justify-between">
-              <h3 className="text-sm font-bold text-[#0F172A]">New Message</h3>
+        <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/40 px-4 pb-0 sm:items-center sm:pb-0">
+          <div className="max-h-[88vh] w-full max-w-md overflow-hidden rounded-t-[20px] bg-white shadow-2xl sm:rounded-[24px]">
+            <div className="flex items-center justify-between border-b border-[#E5EAF0] px-6 py-5">
+              <h3 className="text-base font-medium text-[#111827]">New Message</h3>
               <button
                 onClick={() => setShowCompose(false)}
-                className="flex h-7 w-7 items-center justify-center rounded-full bg-[#FBFAF8] text-[#64748B] hover:bg-[#F4EFE8]"
+                className="flex h-9 w-9 items-center justify-center rounded-full text-[#4B5563] hover:bg-[#F3F6F8]"
               >
-                <X className="h-3.5 w-3.5" />
+                <X className="h-5 w-5" />
               </button>
             </div>
 
-            <div className="space-y-3">
+            <div className="max-h-[calc(88vh-88px)] space-y-6 overflow-y-auto px-6 py-6 pb-24">
               <div className="min-w-0">
-                <label className="mb-1.5 block text-[10px] font-bold uppercase tracking-widest text-[#64748B]">
-                  To - {selectedRecipients.size > 0 ? `${selectedRecipients.size} selected` : 'Select students'}
+                <label className="mb-4 block text-sm font-medium uppercase tracking-[0.16em] text-[#8A94A3]">
+                  To - {selectedRecipients.size > 0 ? `${selectedRecipients.size} selected` : 'Select Students'}
                 </label>
                 {recipients.length === 0 ? (
                   <p className="text-sm leading-snug text-[#64748B]">No students in your classes.</p>
                 ) : (
-                  <div className="max-h-40 overflow-y-auto divide-y divide-[#EFE8DE] rounded-xl border border-[#EFE8DE] bg-[#FBFAF8]">
+                  <div className="max-h-56 overflow-y-auto space-y-3">
                     {recipients.map((recipient) => {
                       const checked = selectedRecipients.has(recipient.userId);
                       return (
                         <label
                           key={recipient.userId}
-                          className={`flex cursor-pointer items-center gap-3 px-3 py-2 transition-colors ${
-                            checked ? 'bg-[#EEF8F7]' : 'hover:bg-[#F4EFE8]'
+                          className={`flex cursor-pointer items-center gap-4 rounded-2xl px-2 py-1 transition-colors ${
+                            checked ? 'bg-[#F0FCFA]' : 'hover:bg-[#F4F7F8]'
                           }`}
                         >
                           <input
                             type="checkbox"
                             checked={checked}
                             onChange={() => toggleRecipient(recipient.userId)}
-                            className="h-3.5 w-3.5 accent-[#004D47]"
+                            className="h-5 w-5 rounded border-[#94A3B8] accent-[#00507D]"
                           />
-                          <div className="flex h-7 w-7 items-center justify-center rounded-full bg-[#004D47]/10 text-xs font-bold text-[#004D47]">
+                          <div className={`flex h-11 w-11 items-center justify-center rounded-full text-sm font-black ${checked ? 'bg-[#BFE3FF] text-[#00507D]' : 'bg-[#7BE4D4] text-[#006A61]'}`}>
                             {initials(recipient.fullName)}
                           </div>
                           <div className="min-w-0 flex-1">
-                            <p className="truncate text-sm font-medium text-[#0F172A]">{recipient.fullName}</p>
-                            <p className="truncate text-[10px] text-[#64748B]">{recipient.className}</p>
+                            <p className="truncate text-base font-medium text-[#111827]">{recipient.fullName}</p>
+                            <p className="truncate text-sm text-[#8A94A3]">{recipient.className}</p>
                           </div>
                         </label>
                       );
@@ -1020,30 +1076,30 @@ export function TeacherMessagesClient({ messages, recipients }: TeacherMessagesC
               </div>
 
               <div>
-                <label className="mb-1 block text-[10px] font-bold uppercase tracking-widest text-[#64748B]">Subject</label>
+                <label className="mb-2 block text-sm font-medium uppercase tracking-[0.16em] text-[#8A94A3]">Subject</label>
                 <input
                   value={composeSubject}
                   onChange={(event) => setComposeSubject(event.target.value)}
                   placeholder="e.g. Assignment Reminder"
-                  className="h-11 w-full rounded-[18px] border border-[#EFE8DE] bg-[#FBFAF8] px-3 text-sm text-[#0F172A] outline-none focus:border-[#004D47] focus:ring-4 focus:ring-[#004D47]/10"
+                  className="h-12 w-full rounded-xl border border-[#CBD5E1] bg-white px-4 text-base text-[#111827] outline-none focus:border-[#007A70] focus:ring-4 focus:ring-[#7BE4D4]/25"
                 />
               </div>
 
               <div>
-                <label className="mb-1 block text-[10px] font-bold uppercase tracking-widest text-[#64748B]">Message</label>
+                <label className="mb-2 block text-sm font-medium uppercase tracking-[0.16em] text-[#8A94A3]">Message</label>
                 <textarea
                   value={composeBody}
                   onChange={(event) => setComposeBody(event.target.value)}
                   rows={4}
                   placeholder="Write your message..."
-                  className="w-full resize-none rounded-[18px] border border-[#EFE8DE] bg-[#FBFAF8] px-3 py-2.5 text-sm text-[#0F172A] outline-none focus:border-[#004D47] focus:ring-4 focus:ring-[#004D47]/10"
+                  className="w-full resize-none rounded-xl border border-[#CBD5E1] bg-white px-4 py-3 text-base text-[#111827] outline-none focus:border-[#007A70] focus:ring-4 focus:ring-[#7BE4D4]/25"
                 />
               </div>
 
               <button
                 onClick={() => void handleComposeSend()}
                 disabled={selectedRecipients.size === 0 || !composeBody.trim() || isComposeSending}
-                className="flex w-full items-center justify-center gap-2 rounded-[18px] bg-gradient-to-r from-[#2E2B78] to-[#4338CA] py-3 text-sm font-bold text-white shadow-[0_12px_24px_rgba(46,43,120,0.24)] disabled:cursor-not-allowed disabled:opacity-50"
+                className="fixed inset-x-6 bottom-5 z-10 mx-auto flex max-w-[390px] items-center justify-center gap-3 rounded-2xl bg-[#084750] py-4 text-base font-black text-white shadow-[0_16px_28px_rgba(8,71,80,0.28)] disabled:cursor-not-allowed disabled:opacity-50 sm:static sm:max-w-none"
               >
                 <Send className="h-4 w-4" />
                 {isComposeSending

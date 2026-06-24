@@ -3,7 +3,7 @@ import { requireAuth } from '@/lib/auth';
 import { prisma } from '@/lib/prisma';
 import { getParentContext } from '@/lib/parent-data';
 import { PageHeader, KpiCard, Card, StatusBadge } from '@/components/ui';
-import { Users2, AlertCircle, Calendar, CheckCircle2, Clock } from 'lucide-react';
+import { AlertCircle, Calendar, CheckCircle2, Clock } from 'lucide-react';
 
 export const dynamic = 'force-dynamic';
 

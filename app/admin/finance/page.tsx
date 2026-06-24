@@ -5,32 +5,89 @@ import { formatCurrency } from '@/lib/utils';
 import { KpiCard } from '@/components/ui';
 import { FinanceClientBar } from './finance-client-bar';
 import { FeeBulkList, type SerializedFeeItem } from './fee-bulk-list';
-import FeeMessagingClient, { type SerializedFeeRow } from './fee-messaging-client';
 
 export const dynamic = 'force-dynamic';
 
 type AdminFinancePageProps = {
-  searchParams?: Promise<{ status?: string; classId?: string; search?: string; sort?: string }>;
+  searchParams?: Promise<{ status?: string; classId?: string; search?: string; sort?: string; period?: string; from?: string; to?: string; month?: string }>;
 };
 
 function txnStatusBadge(status: PaymentStatus) {
   if (status === 'PAID') return 'bg-[#10B981] text-white';
-  if (status === 'OVERDUE') return 'bg-[#EF4444] text-white';
   if (status === 'PARTIAL') return 'bg-[#D69E3F] text-white';
   return 'bg-[#D69E3F] text-white';
 }
 
 const kpiIcons = [DollarSign, TrendingUp, Clock, AlertCircle, Percent];
 
+function getMonthEnd(date: Date) {
+  return new Date(date.getFullYear(), date.getMonth() + 1, 0, 23, 59, 59, 999);
+}
+
+function deriveFeeStatus(params: {
+  dueDate: Date;
+  totalAmount: number;
+  paidAmount: number;
+}): PaymentStatus {
+  const { totalAmount, paidAmount } = params;
+  const remaining = Math.max(totalAmount - paidAmount, 0);
+  if (remaining <= 0) return PaymentStatus.PAID;
+  if (paidAmount > 0) return PaymentStatus.PARTIAL;
+  return PaymentStatus.PENDING;
+}
+
 export default async function AdminFinancePage({ searchParams }: AdminFinancePageProps) {
   const params = (await searchParams) ?? {};
   const selectedStatus =
-    ['paid', 'unpaid', 'partial', 'overdue'].includes(params.status as string)
+    ['paid', 'unpaid', 'partial'].includes(params.status as string)
       ? (params.status as string)
       : 'all';
   const selectedClassId = params.classId ?? 'all';
   const searchValue = params.search ?? '';
   const selectedSort = params.sort ?? 'dueDate';
+  const selectedFrom = (params.from ?? '').trim();
+  const selectedTo = (params.to ?? '').trim();
+  const selectedMonth = /^\d{4}-\d{2}$/.test((params.month ?? '').trim()) ? (params.month ?? '').trim() : '';
+  const selectedPeriod =
+    ['all', 'mtd_1_8', 'mtd_1_15', 'mtd_full'].includes(params.period as string)
+      ? (params.period as string)
+      : 'all';
+
+  const now = new Date();
+  const rangeStart = new Date(now.getFullYear(), now.getMonth(), 1, 0, 0, 0, 0);
+  let rangeEnd: Date | null = null;
+  if (selectedPeriod === 'mtd_1_8') {
+    rangeEnd = new Date(now.getFullYear(), now.getMonth(), 8, 23, 59, 59, 999);
+  } else if (selectedPeriod === 'mtd_1_15') {
+    rangeEnd = new Date(now.getFullYear(), now.getMonth(), 15, 23, 59, 59, 999);
+  } else if (selectedPeriod === 'mtd_full') {
+    rangeEnd = new Date(now.getFullYear(), now.getMonth() + 1, 0, 23, 59, 59, 999);
+  }
+
+  const periodDueDateWhere: Prisma.DateTimeFilter | undefined = (() => {
+    const hasCustomFrom = /^\d{4}-\d{2}-\d{2}$/.test(selectedFrom);
+    const hasCustomTo = /^\d{4}-\d{2}-\d{2}$/.test(selectedTo);
+    if (hasCustomFrom || hasCustomTo) {
+      const customFrom = hasCustomFrom ? new Date(`${selectedFrom}T00:00:00.000`) : null;
+      const customTo = hasCustomTo ? new Date(`${selectedTo}T23:59:59.999`) : null;
+      return {
+        ...(customFrom ? { gte: customFrom } : {}),
+        ...(customTo ? { lte: customTo } : {})
+      };
+    }
+    if (selectedMonth) {
+      const [year, month] = selectedMonth.split('-').map(Number);
+      if (!year || !month) return undefined;
+      const monthStart = new Date(year, month - 1, 1, 0, 0, 0, 0);
+      const monthEnd = new Date(year, month, 0, 23, 59, 59, 999);
+      return { gte: monthStart, lte: monthEnd };
+    }
+    if (selectedPeriod === 'all') return undefined;
+    return {
+      gte: rangeStart,
+      ...(rangeEnd ? { lte: rangeEnd } : {})
+    };
+  })();
 
   // Determine fee status where clause
   let feeStatusWhere: Prisma.FeeWhereInput = {};
@@ -40,18 +97,12 @@ export default async function AdminFinancePage({ searchParams }: AdminFinancePag
     feeStatusWhere = { status: { in: [PaymentStatus.PENDING, PaymentStatus.PARTIAL, PaymentStatus.OVERDUE] } };
   } else if (selectedStatus === 'partial') {
     feeStatusWhere = { status: PaymentStatus.PARTIAL };
-  } else if (selectedStatus === 'overdue') {
-    feeStatusWhere = { status: PaymentStatus.OVERDUE };
   }
 
   const classWhere =
     selectedClassId !== 'all' ? { student: { classId: selectedClassId } } : {};
 
   const combinedWhere = { ...feeStatusWhere, ...classWhere };
-
-  const monthStart = new Date();
-  monthStart.setDate(1);
-  monthStart.setHours(0, 0, 0, 0);
 
   // Determine order by clause
   let orderBy: Prisma.FeeOrderByWithRelationInput[] = [{ status: 'desc' }, { dueDate: 'asc' }];
@@ -61,39 +112,45 @@ export default async function AdminFinancePage({ searchParams }: AdminFinancePag
     orderBy = [{ student: { user: { fullName: 'asc' } } }];
   }
 
+  const feeWhere: Prisma.FeeWhereInput = {
+    ...combinedWhere,
+    ...(periodDueDateWhere ? { dueDate: periodDueDateWhere } : {})
+  };
+
+  const paymentWhere: Prisma.PaymentWhereInput = {
+    ...(selectedStatus === 'all' ? {} : { fee: feeStatusWhere }),
+    ...(selectedClassId !== 'all' ? { fee: { ...(selectedStatus === 'all' ? {} : feeStatusWhere), student: { classId: selectedClassId } } } : {}),
+    ...(periodDueDateWhere ? { paidAt: periodDueDateWhere } : {})
+  };
+
   const [
     classes,
     feeAgg,
     paidAgg,
-    pendingCount,
-    overdueCount,
     recentPayments,
-    dues,
-    studentsForMessaging
+    dues
   ] = await Promise.all([
     prisma.class.findMany({
       select: { id: true, name: true, section: true },
       orderBy: { name: 'asc' }
     }),
-    prisma.fee.aggregate({ where: feeStatusWhere, _sum: { amount: true, discount: true } }),
-    prisma.payment.aggregate({
-      where: selectedStatus === 'all' ? {} : { fee: feeStatusWhere },
-      _sum: { amountPaid: true }
-    }),
-    prisma.fee.count({ where: { ...feeStatusWhere, status: { in: [PaymentStatus.PENDING, PaymentStatus.PARTIAL] } } }),
-    prisma.fee.count({ where: { ...combinedWhere, status: PaymentStatus.OVERDUE } }),
+    prisma.fee.aggregate({ where: feeWhere, _sum: { amount: true, discount: true } }),
+    prisma.payment.aggregate({ where: paymentWhere, _sum: { amountPaid: true } }),
     prisma.payment.findMany({
-      where: selectedClassId !== 'all'
-        ? { fee: { student: { classId: selectedClassId } } }
-        : selectedStatus === 'all' ? {} : { fee: feeStatusWhere },
+      where: paymentWhere,
       include: {
-        fee: { include: { student: { include: { user: { select: { fullName: true } } } } } }
+        fee: {
+          include: {
+            student: { include: { user: { select: { fullName: true } } } },
+            payments: { select: { amountPaid: true } }
+          }
+        }
       },
       orderBy: { paidAt: 'desc' },
       take: 10
     }),
     prisma.fee.findMany({
-      where: combinedWhere,
+      where: feeWhere,
       select: {
         id: true,
         title: true,
@@ -104,7 +161,11 @@ export default async function AdminFinancePage({ searchParams }: AdminFinancePag
         student: {
           select: {
             id: true,
+            classId: true,
             emergencyContact: true,
+            schoolName: true,
+            whatsApp: true,
+            class: { select: { id: true, name: true, section: true } },
             user: { select: { fullName: true, phone: true } }
           }
         },
@@ -112,29 +173,6 @@ export default async function AdminFinancePage({ searchParams }: AdminFinancePag
       },
       orderBy,
       take: 50
-    }),
-    prisma.student.findMany({
-      where: { fees: { some: {} } },
-      select: {
-        id: true,
-        classId: true,
-        whatsApp: true,
-        guardianPhone: true,
-        schoolName: true,
-        user: { select: { fullName: true } },
-        class: { select: { id: true, name: true, section: true } },
-        fees: {
-          select: {
-            amount: true,
-            discount: true,
-            status: true,
-            dueDate: true,
-            payments: { select: { amountPaid: true } }
-          },
-          take: 1,
-          orderBy: { createdAt: 'desc' }
-        }
-      }
     })
   ]);
 
@@ -144,26 +182,31 @@ export default async function AdminFinancePage({ searchParams }: AdminFinancePag
 
   // Serialize dues and calculate outstanding + overdue amounts
   let outstandingAmount = 0;
-  let overdueAmount = 0;
+  let dueAmount = 0;
 
   let serializedDues: SerializedFeeItem[] = dues.map(fee => {
     const paidAmount = fee.payments.reduce((s, p) => s + Number(p.amountPaid), 0);
     const total = Number(fee.amount) - Number(fee.discount);
     const remaining = Math.max(total - paidAmount, 0);
+    const computedStatus = deriveFeeStatus({
+      dueDate: fee.dueDate,
+      totalAmount: total,
+      paidAmount
+    });
 
-    if (fee.status !== PaymentStatus.PAID) {
+    if (computedStatus !== PaymentStatus.PAID) {
       outstandingAmount += remaining;
     }
-    if (fee.status === PaymentStatus.OVERDUE) {
-      overdueAmount += remaining;
-    }
+    if (computedStatus !== PaymentStatus.PAID) dueAmount += remaining;
 
     return {
       id: fee.id,
       title: fee.title,
-      status: fee.status,
+      status: computedStatus,
       dueDate: fee.dueDate.toISOString(),
       studentName: fee.student.user.fullName,
+      studentId: fee.student.id,
+      classLabel: fee.student.class ? `${fee.student.class.name} - ${fee.student.class.section}` : 'Unassigned',
       amount: Number(fee.amount),
       discount: Number(fee.discount),
       paidAmount,
@@ -180,63 +223,45 @@ export default async function AdminFinancePage({ searchParams }: AdminFinancePag
     );
   }
 
-  // Serialize students for Fee Messaging
-  const feeMessagingRows: SerializedFeeRow[] = studentsForMessaging.map(student => {
-    const latestFee = student.fees[0];
-    if (!latestFee) {
-      return {
-        studentId: student.id,
-        studentName: student.user.fullName,
-        classId: student.classId || '',
-        classLabel: student.class ? `${student.class.name} - ${student.class.section}` : 'Unassigned',
-        feeStatus: 'UNPAID' as const,
-        amount: 0,
-        remaining: 0,
-        dueDate: null,
-        month: '',
-        schoolName: student.schoolName?.trim() || 'Manarah Institute',
-        whatsApp: student.whatsApp
-      };
-    }
-
-    const amount = Number(latestFee.amount) - Number(latestFee.discount);
-    const paidAmount = latestFee.payments.reduce((sum, p) => sum + Number(p.amountPaid), 0);
-    const remaining = Math.max(amount - paidAmount, 0);
-
-    let feeStatus: 'PAID' | 'UNPAID' | 'PARTIAL' | 'OVERDUE' = 'UNPAID';
-    if (latestFee.status === PaymentStatus.PAID) {
-      feeStatus = 'PAID';
-    } else if (latestFee.status === PaymentStatus.PARTIAL) {
-      feeStatus = 'PARTIAL';
-    } else if (latestFee.status === PaymentStatus.OVERDUE) {
-      feeStatus = 'OVERDUE';
-    }
-
-    const dueDate = latestFee.dueDate.toISOString();
-    const month = latestFee.dueDate.toLocaleDateString('en-US', { month: 'long', year: 'numeric' });
-
-    return {
-      studentId: student.id,
-      studentName: student.user.fullName,
-      classId: student.classId || '',
-      classLabel: student.class ? `${student.class.name} - ${student.class.section}` : 'Unassigned',
-      feeStatus,
-      amount,
-      remaining,
-      dueDate,
-      month,
-      schoolName: student.schoolName?.trim() || 'Manarah Institute',
-      whatsApp: student.whatsApp
-    };
-  });
+  const dueCount = serializedDues.filter((fee) => fee.status !== PaymentStatus.PAID).length;
 
   const kpis = [
     { label: 'Total Billed',     value: formatCurrency(totalBilled) },
     { label: 'Total Collected',  value: formatCurrency(totalPaid) },
-    { label: 'Outstanding',      value: formatCurrency(outstandingAmount) },
-    { label: 'Overdue',          value: formatCurrency(overdueAmount) },
+    { label: 'Due',              value: formatCurrency(dueAmount) },
+    { label: 'Due Records',      value: String(dueCount) },
     { label: 'Collection Rate',  value: `${collectionRate}%` }
   ];
+  const recentPaymentRows = recentPayments.map((item) => {
+    const total = Number(item.fee.amount) - Number(item.fee.discount);
+    const paidAmount = item.fee.payments.reduce((sum, payment) => sum + Number(payment.amountPaid), 0);
+    return {
+      ...item,
+      computedStatus: deriveFeeStatus({
+        dueDate: item.fee.dueDate,
+        totalAmount: total,
+        paidAmount
+      })
+    };
+  });
+
+  const currentMonthEnd = getMonthEnd(now);
+  const summaryByStudent = new Map<string, { dueMonthCount: number; advanceMonthCount: number }>();
+  for (const fee of serializedDues) {
+    const summary = summaryByStudent.get(fee.studentId) ?? { dueMonthCount: 0, advanceMonthCount: 0 };
+    const dueDate = new Date(fee.dueDate);
+    if (fee.status !== PaymentStatus.PAID && dueDate <= currentMonthEnd) {
+      summary.dueMonthCount += 1;
+    }
+    if (fee.status === PaymentStatus.PAID && dueDate > currentMonthEnd) {
+      summary.advanceMonthCount += 1;
+    }
+    summaryByStudent.set(fee.studentId, summary);
+  }
+  serializedDues = serializedDues.map((fee) => ({
+    ...fee,
+    ...(summaryByStudent.get(fee.studentId) ?? {})
+  }));
 
   return (
     <div className="space-y-4">
@@ -274,17 +299,21 @@ export default async function AdminFinancePage({ searchParams }: AdminFinancePag
           selectedClassId={selectedClassId}
           selectedStatus={selectedStatus}
           selectedSort={selectedSort}
+          selectedPeriod={selectedPeriod}
+          selectedMonth={selectedMonth}
+          selectedFrom={selectedFrom}
+          selectedTo={selectedTo}
           searchValue={searchValue}
         />
       </div>
 
-      {/* ── Content: Fee List (Left/Primary) + Transactions (Right/Secondary) ── */}
-      <div className="grid gap-5 lg:grid-cols-[1fr_340px]">
+      {/* ── Content: Fee Records + Transactions ── */}
+      <div className="space-y-5">
 
         {/* Fee Records — PRIMARY */}
         <FeeBulkList
           fees={serializedDues}
-          overdueCount={overdueCount}
+          overdueCount={dueCount}
           selectedFeeStatus={selectedStatus}
         />
 
@@ -294,7 +323,7 @@ export default async function AdminFinancePage({ searchParams }: AdminFinancePag
 
           {/* Mobile cards */}
           <div className="space-y-3 md:hidden">
-            {recentPayments.map(item => (
+            {recentPaymentRows.map(item => (
               <div key={item.id} className="rounded-xl bg-[#f5f7fa] p-3">
                 <div className="flex items-start justify-between gap-2">
                   <div className="min-w-0">
@@ -304,14 +333,14 @@ export default async function AdminFinancePage({ searchParams }: AdminFinancePag
                   </div>
                   <div className="shrink-0 text-right">
                     <p className="font-bold text-[#1a1c1c] text-sm">{formatCurrency(Number(item.amountPaid))}</p>
-                    <span className={`mt-1.5 inline-block rounded-full px-2 py-0.5 text-[9px] font-bold uppercase ${txnStatusBadge(item.fee.status)}`}>
-                      {item.fee.status === PaymentStatus.PENDING ? 'DUE' : item.fee.status}
+                    <span className={`mt-1.5 inline-block rounded-full px-2 py-0.5 text-[9px] font-bold uppercase ${txnStatusBadge(item.computedStatus)}`}>
+                      {item.computedStatus === PaymentStatus.PENDING ? 'DUE' : item.computedStatus}
                     </span>
                   </div>
                 </div>
               </div>
             ))}
-            {recentPayments.length === 0 ? <p className="text-xs text-[#6f7979]">No transactions yet.</p> : null}
+            {recentPaymentRows.length === 0 ? <p className="text-xs text-[#6f7979]">No transactions yet.</p> : null}
           </div>
 
           {/* Desktop table */}
@@ -326,7 +355,7 @@ export default async function AdminFinancePage({ searchParams }: AdminFinancePag
                 </tr>
               </thead>
               <tbody>
-                {recentPayments.map(item => (
+                {recentPaymentRows.map(item => (
                   <tr
                     key={item.id}
                     className="border-b border-[#f0f2f0] transition-colors last:border-0 hover:bg-[#f9fafb]"
@@ -339,21 +368,19 @@ export default async function AdminFinancePage({ searchParams }: AdminFinancePag
                     <td className="px-3 py-2.5 font-medium text-[#1a1c1c] truncate">{item.fee.student.user.fullName}</td>
                     <td className="px-3 py-2.5 text-right font-bold text-[#1a1c1c]">{formatCurrency(Number(item.amountPaid))}</td>
                     <td className="px-3 py-2.5 text-right">
-                      <span className={`rounded-full px-2 py-0.5 text-xs font-bold uppercase ${txnStatusBadge(item.fee.status)}`}>
-                        {item.fee.status === PaymentStatus.PENDING ? 'DUE' : item.fee.status}
+                      <span className={`rounded-full px-2 py-0.5 text-xs font-bold uppercase ${txnStatusBadge(item.computedStatus)}`}>
+                        {item.computedStatus === PaymentStatus.PENDING ? 'DUE' : item.computedStatus}
                       </span>
                     </td>
                   </tr>
                 ))}
               </tbody>
             </table>
-            {recentPayments.length === 0 ? <p className="mt-4 text-xs text-[#6f7979]">No transactions yet.</p> : null}
+            {recentPaymentRows.length === 0 ? <p className="mt-4 text-xs text-[#6f7979]">No transactions yet.</p> : null}
           </div>
         </div>
       </div>
 
-      {/* ── Fee Messaging ── */}
-      <FeeMessagingClient rows={feeMessagingRows} classes={classes} />
     </div>
   );
 }
