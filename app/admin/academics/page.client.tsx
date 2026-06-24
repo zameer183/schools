@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useMemo, useState } from 'react';
+import { useMemo, useState } from 'react';
 
 export type ClassItem = {
   id: string;
@@ -90,7 +90,6 @@ export default function AdminAcademicsPageClient({
   const [resultSaving, setResultSaving] = useState(false);
   const [resultRows, setResultRows] = useState<ResultRow[]>([]);
   const [resultLoading, setResultLoading] = useState(false);
-  const [bootstrapped, setBootstrapped] = useState(false);
 
   const [subjectForm, setSubjectForm] = useState({ name: '', code: '', classId: '', teacherId: '', creditHours: 3 });
   const [examForm, setExamForm] = useState({
@@ -152,12 +151,6 @@ export default function AdminAcademicsPageClient({
     setTeachers(teachersRes.ok ? await teachersRes.json() : []);
     setExams(examsRes.ok ? await examsRes.json() : []);
   };
-
-  useEffect(() => {
-    if (bootstrapped) return;
-    setBootstrapped(true);
-    void load();
-  }, [bootstrapped]);
 
   const addSubject = async (e: React.FormEvent) => {
     e.preventDefault();

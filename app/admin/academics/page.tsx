@@ -11,43 +11,69 @@ type TeacherRow = Prisma.TeacherGetPayload<{ select: { id: true; user: { select:
 type ExamRow = Prisma.ExamGetPayload<{ include: { class: true; subject: true; createdBy: { include: { user: true } }; _count: { select: { results: true } } } }>;
 type StudentRow = Prisma.StudentGetPayload<{ include: { user: { select: { fullName: true } } } }>;
 
+function isDatabaseConnectionError(error: unknown) {
+  return (
+    error instanceof Error &&
+    (error.name === 'PrismaClientInitializationError' ||
+      error.message.includes("Can't reach database server") ||
+      error.message.includes('Timed out fetching a new connection') ||
+      error.message.includes('Connection terminated unexpectedly'))
+  );
+}
+
 const getCachedAcademicsData = unstable_cache(
   async () => {
-    try {
-      const [classes, subjects, teachers, exams, students] = await Promise.all([
-        prisma.class.findMany({
-          include: { _count: { select: { students: true, subjects: true } } },
-          orderBy: [{ name: 'asc' }, { section: 'asc' }]
-        }),
-        prisma.subject.findMany({
-          include: { class: true, teacher: { include: { user: true } } },
-          orderBy: { name: 'asc' }
-        }),
-        prisma.teacher.findMany({
-          select: { id: true, user: { select: { fullName: true } } },
-          orderBy: { createdAt: 'desc' }
-        }),
-        prisma.exam.findMany({
-          include: { class: true, subject: true, createdBy: { include: { user: true } }, _count: { select: { results: true } } },
-          orderBy: { examDate: 'desc' }
-        }),
-        prisma.student.findMany({
-          include: { user: { select: { fullName: true } } },
-          orderBy: { createdAt: 'desc' }
-        })
-      ]);
+    const [classes, subjects, teachers, exams, students] = await prisma.$transaction([
+      prisma.class.findMany({
+        select: {
+          id: true,
+          name: true,
+          section: true,
+          roomNo: true,
+          academicYear: true,
+          _count: { select: { students: true, subjects: true } }
+        },
+        orderBy: [{ name: 'asc' }, { section: 'asc' }]
+      }),
+      prisma.subject.findMany({
+        select: {
+          id: true,
+          name: true,
+          code: true,
+          classId: true,
+          class: { select: { name: true, section: true } },
+          teacher: { select: { user: { select: { fullName: true } } } }
+        },
+        orderBy: { name: 'asc' }
+      }),
+      prisma.teacher.findMany({
+        select: { id: true, user: { select: { fullName: true } } },
+        orderBy: { createdAt: 'desc' }
+      }),
+      prisma.exam.findMany({
+        select: {
+          id: true,
+          title: true,
+          examDate: true,
+          totalMarks: true,
+          passingMarks: true,
+          classId: true,
+          subjectId: true,
+          createdById: true,
+          class: { select: { name: true, section: true } },
+          subject: { select: { name: true } },
+          createdBy: { select: { user: { select: { fullName: true } } } },
+          _count: { select: { results: true } }
+        },
+        orderBy: { examDate: 'desc' }
+      }),
+      prisma.student.findMany({
+        select: { id: true, classId: true, admissionNo: true, user: { select: { fullName: true } } },
+        orderBy: { createdAt: 'desc' }
+      })
+    ]);
 
-      return { classes, subjects, teachers, exams, students };
-    } catch (error) {
-      console.error('[admin/academics] failed to load academics data', error);
-      return {
-        classes: [] as ClassRow[],
-        subjects: [] as SubjectRow[],
-        teachers: [] as TeacherRow[],
-        exams: [] as ExamRow[],
-        students: [] as StudentRow[]
-      };
-    }
+    return { classes, subjects, teachers, exams, students };
   },
   ['admin-academics-page-data'],
   { revalidate: 30 }
@@ -74,7 +100,27 @@ function safeToIso(input: unknown) {
 
 export default async function AdminAcademicsPage() {
   await requireAuth([UserRole.ADMIN]);
-  const { classes, subjects, teachers, exams, students } = await getCachedAcademicsData();
+  let data: Awaited<ReturnType<typeof getCachedAcademicsData>> | null = null;
+  try {
+    data = await getCachedAcademicsData();
+  } catch (error) {
+    console.error('[admin/academics] load failed', error);
+    if (!isDatabaseConnectionError(error)) throw error;
+  }
+
+  if (!data) {
+    return (
+      <div className="rounded-2xl bg-white p-6 shadow-[0_4px_12px_rgba(0,0,0,0.08)]">
+        <h1 className="font-headline text-2xl font-bold text-[#1a1c1c]">Academics</h1>
+        <h2 className="mt-3 text-lg font-bold text-[#111827]">Database Unreachable</h2>
+        <p className="mt-2 text-sm text-[#6b7280]">
+          Academics data is temporarily unavailable. Please refresh once the database connection recovers.
+        </p>
+      </div>
+    );
+  }
+
+  const { classes, subjects, teachers, exams, students } = data;
 
   const normalizedExams = exams.map((exam) => {
     const parsed = parseExamTitle(exam.title);
