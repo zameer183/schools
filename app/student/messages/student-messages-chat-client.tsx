@@ -240,7 +240,7 @@ export function StudentMessagesChatClient({
     const syncInbox = async () => {
       if (document.hidden) return;
       try {
-        const response = await fetch('/api/messages?limit=20', { cache: 'no-store' });
+        const response = await fetch('/api/messages?limit=10', { cache: 'no-store' });
         if (!response.ok) return;
         const rows = (await response.json()) as InboxApiRow[];
         if (cancelled) return;
@@ -285,7 +285,6 @@ export function StudentMessagesChatClient({
       startPolling();
     };
 
-    void syncInbox();
     startPolling();
     document.addEventListener('visibilitychange', handleVisibilityChange);
     return () => {
