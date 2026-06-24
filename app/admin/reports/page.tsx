@@ -1,4 +1,5 @@
 import { prisma } from '@/lib/prisma';
+import { unstable_cache } from 'next/cache';
 import {
   Users, GraduationCap, BookOpen, BarChart3,
   Download, FileText, ClipboardCheck, FileSpreadsheet,
@@ -23,6 +24,16 @@ function fmtMoney(v: number) {
 function fmtDate(v: Date | string) {
   const d = v instanceof Date ? v : new Date(v);
   return d.toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' });
+}
+
+function isDatabaseConnectionError(error: unknown) {
+  return (
+    error instanceof Error &&
+    (error.name === 'PrismaClientInitializationError' ||
+      error.message.includes("Can't reach database server") ||
+      error.message.includes('Timed out fetching a new connection') ||
+      error.message.includes('Connection terminated unexpectedly'))
+  );
 }
 
 // ─── Sub-components ───────────────────────────────────────────────────────────
@@ -87,6 +98,110 @@ function TemplateCard({ href, icon, title, description, accent = false }: {
   );
 }
 
+const getCachedReportsData = unstable_cache(
+  async (selectedClassIdRaw: string, selectedStudentIdRaw: string, selectedPeriod: string) => {
+    const monthStart = new Date();
+    monthStart.setDate(1);
+    monthStart.setHours(0, 0, 0, 0);
+
+    const classes = await prisma.class.findMany({
+      select: { id: true, name: true, section: true },
+      orderBy: { name: 'asc' }
+    });
+
+    const selectedClassId = selectedClassIdRaw !== 'all' && classes.some((c) => c.id === selectedClassIdRaw) ? selectedClassIdRaw : 'all';
+    const selectedClassFilter = selectedClassId !== 'all' ? { classId: selectedClassId } : {};
+
+    const classStudents = await prisma.student.findMany({
+      where: selectedClassFilter,
+      select: { id: true, admissionNo: true, whatsApp: true, guardianPhone: true, user: { select: { fullName: true } }, class: { select: { name: true, section: true } } },
+      orderBy: { createdAt: 'desc' }
+    });
+
+    const selectedStudentId =
+      selectedStudentIdRaw !== 'all' && classStudents.some((s) => s.id === selectedStudentIdRaw)
+        ? selectedStudentIdRaw
+        : 'all';
+
+    const studentScopeFilter = selectedStudentId !== 'all' ? { id: selectedStudentId } : selectedClassId !== 'all' ? { classId: selectedClassId } : {};
+    const attendanceFilter = selectedStudentId !== 'all' ? { studentId: selectedStudentId } : selectedClassId !== 'all' ? { classId: selectedClassId } : {};
+    const resultFilter = selectedStudentId !== 'all' ? { studentId: selectedStudentId } : selectedClassId !== 'all' ? { student: { classId: selectedClassId } } : {};
+    const feeFilter = selectedStudentId !== 'all' ? { studentId: selectedStudentId } : selectedClassId !== 'all' ? { student: { classId: selectedClassId } } : {};
+    const paymentFilter = selectedStudentId !== 'all' ? { fee: { studentId: selectedStudentId } } : selectedClassId !== 'all' ? { fee: { student: { classId: selectedClassId } } } : {};
+    const progressFilter = selectedStudentId !== 'all' ? { studentId: selectedStudentId } : selectedClassId !== 'all' ? { classId: selectedClassId } : {};
+
+    const [
+      teachers,
+      results,
+      attendanceThisMonth,
+      recentPayments,
+      feeStatusCounts,
+      feeTotals,
+      studentFeeSnapshot,
+      recentProgressReports
+    ] = await prisma.$transaction([
+      prisma.teacher.count(),
+      prisma.result.count({ where: resultFilter }),
+      prisma.attendance.count({ where: { date: { gte: monthStart }, ...attendanceFilter } }),
+      prisma.payment.findMany({
+        where: paymentFilter,
+        select: { id: true, amountPaid: true, paidAt: true, fee: { select: { title: true, student: { select: { user: { select: { fullName: true } } } } } } },
+        orderBy: { paidAt: 'desc' },
+        take: 10
+      }),
+      prisma.fee.groupBy({ by: ['status'], where: feeFilter, orderBy: { status: 'asc' }, _count: { _all: true } }),
+      prisma.fee.aggregate({ where: feeFilter, _sum: { amount: true, discount: true }, _count: { _all: true } }),
+      prisma.student.findMany({
+        where: studentScopeFilter,
+        select: {
+          id: true,
+          admissionNo: true,
+          whatsApp: true,
+          guardianPhone: true,
+          user: { select: { fullName: true } },
+          class: { select: { name: true, section: true } },
+          fees: { select: { status: true, amount: true, discount: true }, orderBy: { dueDate: 'desc' }, take: 5 }
+        },
+        orderBy: { createdAt: 'desc' },
+        take: 10
+      }),
+      prisma.studentProgress.findMany({
+        where: progressFilter,
+        select: {
+          id: true,
+          date: true,
+          class: { select: { name: true, section: true } },
+          student: { select: { user: { select: { fullName: true } } } },
+          teacher: { select: { user: { select: { fullName: true } } } },
+          tajweeditotal: true,
+          hifzTotal: true
+        },
+        orderBy: { date: 'desc' },
+        take: 8
+      })
+    ]);
+
+    return {
+      classes,
+      studentsCount: classStudents.length,
+      classStudents,
+      teachers,
+      results,
+      attendanceThisMonth,
+      recentPayments,
+      feeStatusCounts,
+      feeTotals,
+      studentFeeSnapshot,
+      recentProgressReports,
+      selectedClassId,
+      selectedStudentId,
+      selectedPeriod
+    };
+  },
+  ['admin-reports-page'],
+  { revalidate: 30 }
+);
+
 // ─── Page ─────────────────────────────────────────────────────────────────────
 
 export default async function AdminReportsPage({ searchParams }: ReportsPageProps) {
@@ -94,78 +209,55 @@ export default async function AdminReportsPage({ searchParams }: ReportsPageProp
   const selectedClassId = params.classId ?? 'all';
   const selectedStudentIdRaw = params.studentId ?? 'all';
   const selectedPeriod = params.period ?? 'monthly';
+  let data: Awaited<ReturnType<typeof getCachedReportsData>> | null = null;
+  try {
+    data = await getCachedReportsData(selectedClassId, selectedStudentIdRaw, selectedPeriod);
+  } catch (error) {
+    console.error('[admin/reports] load failed', error);
+    if (!isDatabaseConnectionError(error)) throw error;
+  }
 
-  const monthStart = new Date();
-  monthStart.setDate(1);
-  monthStart.setHours(0, 0, 0, 0);
+  if (!data) {
+    return (
+      <div className={CARD}>
+        <div className="flex items-start justify-between gap-3 border-b border-[#f1f5f9] px-5 py-4">
+          <div>
+            <h1 className="font-headline text-2xl font-bold text-[#111827]">Reports</h1>
+            <p className="mt-0.5 text-sm text-[#9ca3af]">Live summary — students, attendance, finance, progress.</p>
+          </div>
+        </div>
+        <div className="p-6">
+          <h2 className="font-headline text-lg font-bold text-[#111827]">Database Unreachable</h2>
+          <p className="mt-2 text-sm text-[#6b7280]">
+            Reports data is temporarily unavailable. The page will work again once the database connection recovers.
+          </p>
+          <p className="mt-1 text-sm text-[#6b7280]">Please refresh once after a moment.</p>
+        </div>
+      </div>
+    );
+  }
 
-  const selectedClassFilter = selectedClassId !== 'all' ? { classId: selectedClassId } : {};
-
-  const classStudents = await prisma.student.findMany({
-    where: selectedClassFilter,
-    select: { id: true, admissionNo: true, user: { select: { fullName: true } } },
-    orderBy: { createdAt: 'desc' }
-  });
-
-  const selectedStudentId =
-    selectedStudentIdRaw !== 'all' && classStudents.some((s) => s.id === selectedStudentIdRaw)
-      ? selectedStudentIdRaw
-      : 'all';
-
-  const studentScopeFilter = selectedStudentId !== 'all' ? { id: selectedStudentId } : selectedClassId !== 'all' ? { classId: selectedClassId } : {};
-  const attendanceFilter = selectedStudentId !== 'all' ? { studentId: selectedStudentId } : selectedClassId !== 'all' ? { classId: selectedClassId } : {};
-  const resultFilter = selectedStudentId !== 'all' ? { studentId: selectedStudentId } : selectedClassId !== 'all' ? { student: { classId: selectedClassId } } : {};
-  const feeFilter = selectedStudentId !== 'all' ? { studentId: selectedStudentId } : selectedClassId !== 'all' ? { student: { classId: selectedClassId } } : {};
-  const paymentFilter = selectedStudentId !== 'all' ? { fee: { studentId: selectedStudentId } } : selectedClassId !== 'all' ? { fee: { student: { classId: selectedClassId } } } : {};
-  const progressFilter = selectedStudentId !== 'all' ? { studentId: selectedStudentId } : selectedClassId !== 'all' ? { classId: selectedClassId } : {};
-
-  const [
-    students, teachers, classes, results,
-    attendanceThisMonth, recentPayments,
-    feeStatusCounts, feeTotals,
-    studentFeeSnapshot, recentProgressReports
-  ] = await Promise.all([
-    prisma.student.count({ where: studentScopeFilter }),
-    prisma.teacher.count(),
-    prisma.class.findMany({ select: { id: true, name: true, section: true }, orderBy: { name: 'asc' } }),
-    prisma.result.count({ where: resultFilter }),
-    prisma.attendance.count({ where: { date: { gte: monthStart }, ...attendanceFilter } }),
-    prisma.payment.findMany({
-      where: paymentFilter,
-      select: { id: true, amountPaid: true, paidAt: true, fee: { select: { title: true, student: { select: { user: { select: { fullName: true } } } } } } },
-      orderBy: { paidAt: 'desc' },
-      take: 10
-    }),
-    prisma.fee.groupBy({ by: ['status'], where: feeFilter, _count: { _all: true } }),
-    prisma.fee.aggregate({ where: feeFilter, _sum: { amount: true, discount: true }, _count: { _all: true } }),
-    prisma.student.findMany({
-      where: studentScopeFilter,
-      select: {
-        id: true, admissionNo: true, whatsApp: true, guardianPhone: true,
-        user: { select: { fullName: true } },
-        class: { select: { name: true, section: true } },
-        fees: { select: { status: true, amount: true, discount: true, dueDate: true }, orderBy: { dueDate: 'desc' }, take: 5 }
-      },
-      orderBy: { createdAt: 'desc' },
-      take: 10
-    }),
-    prisma.studentProgress.findMany({
-      where: progressFilter,
-      select: {
-        id: true, date: true,
-        class: { select: { name: true, section: true } },
-        student: { select: { user: { select: { fullName: true } } } },
-        teacher: { select: { user: { select: { fullName: true } } } },
-        tajweeditotal: true, hifzTotal: true
-      },
-      orderBy: { date: 'desc' },
-      take: 8
-    })
-  ]);
+  const {
+    classes,
+    studentsCount,
+    classStudents,
+    teachers,
+    results,
+    attendanceThisMonth,
+    recentPayments,
+    feeStatusCounts,
+    feeTotals,
+    studentFeeSnapshot,
+    recentProgressReports,
+    selectedClassId: safeSelectedClassId,
+    selectedStudentId
+  } = data;
 
   const totalCollected = recentPayments.reduce((s, p) => s + Number(p.amountPaid || 0), 0);
   const feeCount: Record<PaymentStatus, number> = { PENDING: 0, PARTIAL: 0, PAID: 0, OVERDUE: 0 };
-  for (const row of feeStatusCounts) feeCount[row.status] = row._count._all;
+  for (const row of feeStatusCounts as Array<{ status: PaymentStatus; _count: { _all: number } }>) {
+    feeCount[row.status] = row._count._all;
+  }
   const totalFeeAmount = Number(feeTotals._sum.amount || 0);
   const totalDiscount = Number(feeTotals._sum.discount || 0);
   const netFeeAmount = totalFeeAmount - totalDiscount;
@@ -194,7 +286,7 @@ export default async function AdminReportsPage({ searchParams }: ReportsPageProp
       <ReportsFilterBar
         classes={classes}
         students={classStudents}
-        selectedClassId={selectedClassId}
+        selectedClassId={safeSelectedClassId}
         selectedStudentId={selectedStudentId}
         selectedPeriod={selectedPeriod}
       />
@@ -208,7 +300,7 @@ export default async function AdminReportsPage({ searchParams }: ReportsPageProp
             </div>
             <div>
               <p className="text-[10px] font-semibold uppercase tracking-wider text-[#9ca3af]">Students</p>
-              <p className="text-xl font-bold text-[#111827]">{students}</p>
+              <p className="text-xl font-bold text-[#111827]">{studentsCount}</p>
             </div>
           </div>
         </div>
