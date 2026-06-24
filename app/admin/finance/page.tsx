@@ -1,4 +1,5 @@
 import { PaymentStatus, Prisma } from '@prisma/client';
+import { unstable_cache } from 'next/cache';
 import { DollarSign, TrendingUp, Clock, AlertCircle, Percent } from 'lucide-react';
 import { prisma } from '@/lib/prisma';
 import { formatCurrency } from '@/lib/utils';
@@ -36,6 +37,182 @@ function deriveFeeStatus(params: {
   return PaymentStatus.PENDING;
 }
 
+function isDatabaseConnectionError(error: unknown) {
+  return (
+    error instanceof Error &&
+    (error.name === 'PrismaClientInitializationError' ||
+      error.message.includes("Can't reach database server") ||
+      error.message.includes('Timed out fetching a new connection') ||
+      error.message.includes('Connection terminated unexpectedly'))
+  );
+}
+
+type FinancePageData = {
+  classes: Array<{ id: string; name: string; section: string }>;
+  feeAgg: { _sum: { amount: Prisma.Decimal | null; discount: Prisma.Decimal | null } };
+  paidAgg: { _sum: { amountPaid: Prisma.Decimal | null } };
+  recentPayments: Array<{
+    id: string;
+    amountPaid: Prisma.Decimal;
+    paidAt: Date;
+    fee: {
+      title: string;
+      dueDate: Date;
+      amount: Prisma.Decimal;
+      discount: Prisma.Decimal;
+      payments: Array<{ amountPaid: Prisma.Decimal }>;
+      student: {
+        user: { fullName: string };
+      };
+    };
+  }>;
+  dues: Array<{
+    id: string;
+    title: string;
+    status: PaymentStatus;
+    dueDate: Date;
+    amount: Prisma.Decimal;
+    discount: Prisma.Decimal;
+    student: {
+      id: string;
+      emergencyContact: string | null;
+      whatsApp: string | null;
+      class: { name: string; section: string } | null;
+      user: { fullName: string; phone: string | null };
+    };
+    payments: Array<{ amountPaid: Prisma.Decimal }>;
+  }>;
+};
+
+const getCachedFinanceData = unstable_cache(
+  async (selectedStatus: string, selectedClassId: string, selectedSort: string, selectedPeriod: string, selectedFrom: string, selectedTo: string, selectedMonth: string) => {
+    const now = new Date();
+    const rangeStart = new Date(now.getFullYear(), now.getMonth(), 1, 0, 0, 0, 0);
+    let rangeEnd: Date | null = null;
+    if (selectedPeriod === 'mtd_1_8') {
+      rangeEnd = new Date(now.getFullYear(), now.getMonth(), 8, 23, 59, 59, 999);
+    } else if (selectedPeriod === 'mtd_1_15') {
+      rangeEnd = new Date(now.getFullYear(), now.getMonth(), 15, 23, 59, 59, 999);
+    } else if (selectedPeriod === 'mtd_full') {
+      rangeEnd = new Date(now.getFullYear(), now.getMonth() + 1, 0, 23, 59, 59, 999);
+    }
+
+    const periodDueDateWhere: Prisma.DateTimeFilter | undefined = (() => {
+      const hasCustomFrom = /^\d{4}-\d{2}-\d{2}$/.test(selectedFrom);
+      const hasCustomTo = /^\d{4}-\d{2}-\d{2}$/.test(selectedTo);
+      if (hasCustomFrom || hasCustomTo) {
+        const customFrom = hasCustomFrom ? new Date(`${selectedFrom}T00:00:00.000`) : null;
+        const customTo = hasCustomTo ? new Date(`${selectedTo}T23:59:59.999`) : null;
+        return {
+          ...(customFrom ? { gte: customFrom } : {}),
+          ...(customTo ? { lte: customTo } : {})
+        };
+      }
+      if (selectedMonth) {
+        const [year, month] = selectedMonth.split('-').map(Number);
+        if (!year || !month) return undefined;
+        const monthStart = new Date(year, month - 1, 1, 0, 0, 0, 0);
+        const monthEnd = new Date(year, month, 0, 23, 59, 59, 999);
+        return { gte: monthStart, lte: monthEnd };
+      }
+      if (selectedPeriod === 'all') return undefined;
+      return {
+        gte: rangeStart,
+        ...(rangeEnd ? { lte: rangeEnd } : {})
+      };
+    })();
+
+    let feeStatusWhere: Prisma.FeeWhereInput = {};
+    if (selectedStatus === 'paid') {
+      feeStatusWhere = { status: PaymentStatus.PAID };
+    } else if (selectedStatus === 'unpaid') {
+      feeStatusWhere = { status: { in: [PaymentStatus.PENDING, PaymentStatus.PARTIAL, PaymentStatus.OVERDUE] } };
+    } else if (selectedStatus === 'partial') {
+      feeStatusWhere = { status: PaymentStatus.PARTIAL };
+    }
+
+    const classWhere = selectedClassId !== 'all' ? { student: { classId: selectedClassId } } : {};
+    const combinedWhere = { ...feeStatusWhere, ...classWhere };
+    let orderBy: Prisma.FeeOrderByWithRelationInput[] = [{ status: 'desc' }, { dueDate: 'asc' }];
+    if (selectedSort === 'amount') {
+      orderBy = [{ amount: 'desc' }];
+    } else if (selectedSort === 'name') {
+      orderBy = [{ student: { user: { fullName: 'asc' } } }];
+    }
+
+    const feeWhere: Prisma.FeeWhereInput = {
+      ...combinedWhere,
+      ...(periodDueDateWhere ? { dueDate: periodDueDateWhere } : {})
+    };
+
+    const paymentWhere: Prisma.PaymentWhereInput = {
+      ...(selectedStatus === 'all' ? {} : { fee: feeStatusWhere }),
+      ...(selectedClassId !== 'all' ? { fee: { ...(selectedStatus === 'all' ? {} : feeStatusWhere), student: { classId: selectedClassId } } } : {}),
+      ...(periodDueDateWhere ? { paidAt: periodDueDateWhere } : {})
+    };
+
+    const [classes, feeAgg, paidAgg, recentPayments, dues] = await prisma.$transaction([
+      prisma.class.findMany({
+        select: { id: true, name: true, section: true },
+        orderBy: { name: 'asc' }
+      }),
+      prisma.fee.aggregate({ where: feeWhere, _sum: { amount: true, discount: true } }),
+      prisma.payment.aggregate({ where: paymentWhere, _sum: { amountPaid: true } }),
+      prisma.payment.findMany({
+        where: paymentWhere,
+        select: {
+          id: true,
+          amountPaid: true,
+          paidAt: true,
+            fee: {
+              select: {
+                title: true,
+                dueDate: true,
+                amount: true,
+                discount: true,
+                payments: { select: { amountPaid: true } },
+                student: {
+                  select: {
+                    user: { select: { fullName: true } }
+                  }
+                }
+            }
+          }
+        },
+        orderBy: { paidAt: 'desc' },
+        take: 10
+      }),
+      prisma.fee.findMany({
+        where: feeWhere,
+        select: {
+          id: true,
+          title: true,
+          status: true,
+          dueDate: true,
+          amount: true,
+          discount: true,
+          student: {
+            select: {
+              id: true,
+              emergencyContact: true,
+              whatsApp: true,
+              class: { select: { name: true, section: true } },
+              user: { select: { fullName: true, phone: true } }
+            }
+          },
+          payments: { select: { amountPaid: true } }
+        },
+        orderBy,
+        take: 50
+      })
+    ]);
+
+    return { classes, feeAgg, paidAgg, recentPayments, dues };
+  },
+  ['admin-finance-page'],
+  { revalidate: 30 }
+);
+
 export default async function AdminFinancePage({ searchParams }: AdminFinancePageProps) {
   const params = (await searchParams) ?? {};
   const selectedStatus =
@@ -52,130 +229,27 @@ export default async function AdminFinancePage({ searchParams }: AdminFinancePag
     ['all', 'mtd_1_8', 'mtd_1_15', 'mtd_full'].includes(params.period as string)
       ? (params.period as string)
       : 'all';
-
-  const now = new Date();
-  const rangeStart = new Date(now.getFullYear(), now.getMonth(), 1, 0, 0, 0, 0);
-  let rangeEnd: Date | null = null;
-  if (selectedPeriod === 'mtd_1_8') {
-    rangeEnd = new Date(now.getFullYear(), now.getMonth(), 8, 23, 59, 59, 999);
-  } else if (selectedPeriod === 'mtd_1_15') {
-    rangeEnd = new Date(now.getFullYear(), now.getMonth(), 15, 23, 59, 59, 999);
-  } else if (selectedPeriod === 'mtd_full') {
-    rangeEnd = new Date(now.getFullYear(), now.getMonth() + 1, 0, 23, 59, 59, 999);
+  let data: Awaited<ReturnType<typeof getCachedFinanceData>> | null = null;
+  try {
+    data = await getCachedFinanceData(selectedStatus, selectedClassId, selectedSort, selectedPeriod, selectedFrom, selectedTo, selectedMonth);
+  } catch (error) {
+    console.error('[admin/finance] load failed', error);
+    if (!isDatabaseConnectionError(error)) throw error;
   }
 
-  const periodDueDateWhere: Prisma.DateTimeFilter | undefined = (() => {
-    const hasCustomFrom = /^\d{4}-\d{2}-\d{2}$/.test(selectedFrom);
-    const hasCustomTo = /^\d{4}-\d{2}-\d{2}$/.test(selectedTo);
-    if (hasCustomFrom || hasCustomTo) {
-      const customFrom = hasCustomFrom ? new Date(`${selectedFrom}T00:00:00.000`) : null;
-      const customTo = hasCustomTo ? new Date(`${selectedTo}T23:59:59.999`) : null;
-      return {
-        ...(customFrom ? { gte: customFrom } : {}),
-        ...(customTo ? { lte: customTo } : {})
-      };
-    }
-    if (selectedMonth) {
-      const [year, month] = selectedMonth.split('-').map(Number);
-      if (!year || !month) return undefined;
-      const monthStart = new Date(year, month - 1, 1, 0, 0, 0, 0);
-      const monthEnd = new Date(year, month, 0, 23, 59, 59, 999);
-      return { gte: monthStart, lte: monthEnd };
-    }
-    if (selectedPeriod === 'all') return undefined;
-    return {
-      gte: rangeStart,
-      ...(rangeEnd ? { lte: rangeEnd } : {})
-    };
-  })();
-
-  // Determine fee status where clause
-  let feeStatusWhere: Prisma.FeeWhereInput = {};
-  if (selectedStatus === 'paid') {
-    feeStatusWhere = { status: PaymentStatus.PAID };
-  } else if (selectedStatus === 'unpaid') {
-    feeStatusWhere = { status: { in: [PaymentStatus.PENDING, PaymentStatus.PARTIAL, PaymentStatus.OVERDUE] } };
-  } else if (selectedStatus === 'partial') {
-    feeStatusWhere = { status: PaymentStatus.PARTIAL };
+  if (!data) {
+    return (
+      <div className="rounded-2xl bg-white p-6 shadow-[0_4px_12px_rgba(0,0,0,0.08)]">
+        <h1 className="font-headline text-2xl font-bold text-[#1a1c1c]">Finance</h1>
+        <h2 className="mt-3 text-lg font-bold text-[#111827]">Database Unreachable</h2>
+        <p className="mt-2 text-sm text-[#6b7280]">
+          Finance data is temporarily unavailable. Please refresh once the connection recovers.
+        </p>
+      </div>
+    );
   }
 
-  const classWhere =
-    selectedClassId !== 'all' ? { student: { classId: selectedClassId } } : {};
-
-  const combinedWhere = { ...feeStatusWhere, ...classWhere };
-
-  // Determine order by clause
-  let orderBy: Prisma.FeeOrderByWithRelationInput[] = [{ status: 'desc' }, { dueDate: 'asc' }];
-  if (selectedSort === 'amount') {
-    orderBy = [{ amount: 'desc' }];
-  } else if (selectedSort === 'name') {
-    orderBy = [{ student: { user: { fullName: 'asc' } } }];
-  }
-
-  const feeWhere: Prisma.FeeWhereInput = {
-    ...combinedWhere,
-    ...(periodDueDateWhere ? { dueDate: periodDueDateWhere } : {})
-  };
-
-  const paymentWhere: Prisma.PaymentWhereInput = {
-    ...(selectedStatus === 'all' ? {} : { fee: feeStatusWhere }),
-    ...(selectedClassId !== 'all' ? { fee: { ...(selectedStatus === 'all' ? {} : feeStatusWhere), student: { classId: selectedClassId } } } : {}),
-    ...(periodDueDateWhere ? { paidAt: periodDueDateWhere } : {})
-  };
-
-  const [
-    classes,
-    feeAgg,
-    paidAgg,
-    recentPayments,
-    dues
-  ] = await Promise.all([
-    prisma.class.findMany({
-      select: { id: true, name: true, section: true },
-      orderBy: { name: 'asc' }
-    }),
-    prisma.fee.aggregate({ where: feeWhere, _sum: { amount: true, discount: true } }),
-    prisma.payment.aggregate({ where: paymentWhere, _sum: { amountPaid: true } }),
-    prisma.payment.findMany({
-      where: paymentWhere,
-      include: {
-        fee: {
-          include: {
-            student: { include: { user: { select: { fullName: true } } } },
-            payments: { select: { amountPaid: true } }
-          }
-        }
-      },
-      orderBy: { paidAt: 'desc' },
-      take: 10
-    }),
-    prisma.fee.findMany({
-      where: feeWhere,
-      select: {
-        id: true,
-        title: true,
-        status: true,
-        dueDate: true,
-        amount: true,
-        discount: true,
-        student: {
-          select: {
-            id: true,
-            classId: true,
-            emergencyContact: true,
-            schoolName: true,
-            whatsApp: true,
-            class: { select: { id: true, name: true, section: true } },
-            user: { select: { fullName: true, phone: true } }
-          }
-        },
-        payments: { select: { amountPaid: true } }
-      },
-      orderBy,
-      take: 50
-    })
-  ]);
-
+  const { classes, feeAgg, paidAgg, recentPayments, dues } = data;
   const totalBilled = Number(feeAgg._sum.amount ?? 0) - Number(feeAgg._sum.discount ?? 0);
   const totalPaid = Number(paidAgg._sum.amountPaid ?? 0);
   const collectionRate = totalBilled > 0 ? Math.round((totalPaid / totalBilled) * 100) : 0;
@@ -245,7 +319,7 @@ export default async function AdminFinancePage({ searchParams }: AdminFinancePag
     };
   });
 
-  const currentMonthEnd = getMonthEnd(now);
+  const currentMonthEnd = getMonthEnd(new Date());
   const summaryByStudent = new Map<string, { dueMonthCount: number; advanceMonthCount: number }>();
   for (const fee of serializedDues) {
     const summary = summaryByStudent.get(fee.studentId) ?? { dueMonthCount: 0, advanceMonthCount: 0 };
