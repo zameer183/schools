@@ -284,7 +284,7 @@ export function TeacherMessagesClient({ messages, recipients }: TeacherMessagesC
     const syncInbox = async () => {
       if (document.hidden || shouldStop) return;
       try {
-        const response = await fetch('/api/messages?limit=20', { cache: 'no-store', credentials: 'include' });
+        const response = await fetch('/api/messages?limit=10', { cache: 'no-store', credentials: 'include' });
         if (cancelled || shouldStop) return;
         if (response.status === 401) {
           shouldStop = true;
@@ -330,7 +330,6 @@ export function TeacherMessagesClient({ messages, recipients }: TeacherMessagesC
       startPolling();
     };
 
-    void syncInbox();
     startPolling();
     document.addEventListener('visibilitychange', handleVisibilityChange);
 
