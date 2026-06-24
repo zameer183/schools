@@ -1,4 +1,5 @@
-﻿import Link from 'next/link';
+import Link from 'next/link';
+import { unstable_cache } from 'next/cache';
 import { prisma } from '@/lib/prisma';
 import { PrintButton } from '@/components/reports/print-button';
 import CsvDownloadButton from './csv-download-button';
@@ -31,29 +32,29 @@ function formatDateLabel(date: Date) {
 }
 
 const SURAH_NAMES: Record<number, string> = {
-  1:'Al-Fatihah',2:'Al-Baqarah',3:'Ali Imran',4:'An-Nisa',5:'Al-Maidah',
-  6:'Al-Anam',7:'Al-Araf',8:'Al-Anfal',9:'At-Tawbah',10:'Yunus',
-  11:'Hud',12:'Yusuf',13:'Ar-Rad',14:'Ibrahim',15:'Al-Hijr',
-  16:'An-Nahl',17:'Al-Isra',18:'Al-Kahf',19:'Maryam',20:'Ta-Ha',
-  21:'Al-Anbiya',22:'Al-Hajj',23:'Al-Muminun',24:'An-Nur',25:'Al-Furqan',
-  26:'Ash-Shuara',27:'An-Naml',28:'Al-Qasas',29:'Al-Ankabut',30:'Ar-Rum',
-  31:'Luqman',32:'As-Sajdah',33:'Al-Ahzab',34:'Saba',35:'Fatir',
-  36:'Ya-Sin',37:'As-Saffat',38:'Sad',39:'Az-Zumar',40:'Ghafir',
-  41:'Fussilat',42:'Ash-Shura',43:'Az-Zukhruf',44:'Ad-Dukhan',45:'Al-Jathiyah',
-  46:'Al-Ahqaf',47:'Muhammad',48:'Al-Fath',49:'Al-Hujurat',50:'Qaf',
-  51:'Adh-Dhariyat',52:'At-Tur',53:'An-Najm',54:'Al-Qamar',55:'Ar-Rahman',
-  56:'Al-Waqiah',57:'Al-Hadid',58:'Al-Mujadila',59:'Al-Hashr',60:'Al-Mumtahanah',
-  61:'As-Saf',62:'Al-Jumuah',63:'Al-Munafiqun',64:'At-Taghabun',65:'At-Talaq',
-  66:'At-Tahrim',67:'Al-Mulk',68:'Al-Qalam',69:'Al-Haqqah',70:'Al-Maarij',
-  71:'Nuh',72:'Al-Jinn',73:'Al-Muzzammil',74:'Al-Muddaththir',75:'Al-Qiyamah',
-  76:'Al-Insan',77:'Al-Mursalat',78:'An-Naba',79:'An-Naziat',80:'Abasa',
-  81:'At-Takwir',82:'Al-Infitar',83:'Al-Mutaffifin',84:'Al-Inshiqaq',85:'Al-Buruj',
-  86:'At-Tariq',87:'Al-Ala',88:'Al-Ghashiyah',89:'Al-Fajr',90:'Al-Balad',
-  91:'Ash-Shams',92:'Al-Layl',93:'Ad-Duha',94:'Ash-Sharh',95:'At-Tin',
-  96:'Al-Alaq',97:'Al-Qadr',98:'Al-Bayyinah',99:'Az-Zalzalah',100:'Al-Adiyat',
-  101:'Al-Qariah',102:'At-Takathur',103:'Al-Asr',104:'Al-Humazah',105:'Al-Fil',
-  106:'Quraysh',107:'Al-Maun',108:'Al-Kawthar',109:'Al-Kafirun',110:'An-Nasr',
-  111:'Al-Masad',112:'Al-Ikhlas',113:'Al-Falaq',114:'An-Nas'
+  1: 'Al-Fatihah', 2: 'Al-Baqarah', 3: 'Ali Imran', 4: 'An-Nisa', 5: 'Al-Maidah',
+  6: 'Al-Anam', 7: 'Al-Araf', 8: 'Al-Anfal', 9: 'At-Tawbah', 10: 'Yunus',
+  11: 'Hud', 12: 'Yusuf', 13: 'Ar-Rad', 14: 'Ibrahim', 15: 'Al-Hijr',
+  16: 'An-Nahl', 17: 'Al-Isra', 18: 'Al-Kahf', 19: 'Maryam', 20: 'Ta-Ha',
+  21: 'Al-Anbiya', 22: 'Al-Hajj', 23: 'Al-Muminun', 24: 'An-Nur', 25: 'Al-Furqan',
+  26: 'Ash-Shuara', 27: 'An-Naml', 28: 'Al-Qasas', 29: 'Al-Ankabut', 30: 'Ar-Rum',
+  31: 'Luqman', 32: 'As-Sajdah', 33: 'Al-Ahzab', 34: 'Saba', 35: 'Fatir',
+  36: 'Ya-Sin', 37: 'As-Saffat', 38: 'Sad', 39: 'Az-Zumar', 40: 'Ghafir',
+  41: 'Fussilat', 42: 'Ash-Shura', 43: 'Az-Zukhruf', 44: 'Ad-Dukhan', 45: 'Al-Jathiyah',
+  46: 'Al-Ahqaf', 47: 'Muhammad', 48: 'Al-Fath', 49: 'Al-Hujurat', 50: 'Qaf',
+  51: 'Adh-Dhariyat', 52: 'At-Tur', 53: 'An-Najm', 54: 'Al-Qamar', 55: 'Ar-Rahman',
+  56: 'Al-Waqiah', 57: 'Al-Hadid', 58: 'Al-Mujadila', 59: 'Al-Hashr', 60: 'Al-Mumtahanah',
+  61: 'As-Saf', 62: 'Al-Jumuah', 63: 'Al-Munafiqun', 64: 'At-Taghabun', 65: 'At-Talaq',
+  66: 'At-Tahrim', 67: 'Al-Mulk', 68: 'Al-Qalam', 69: 'Al-Haqqah', 70: 'Al-Maarij',
+  71: 'Nuh', 72: 'Al-Jinn', 73: 'Al-Muzzammil', 74: 'Al-Muddaththir', 75: 'Al-Qiyamah',
+  76: 'Al-Insan', 77: 'Al-Mursalat', 78: 'An-Naba', 79: 'An-Naziat', 80: 'Abasa',
+  81: 'At-Takwir', 82: 'Al-Infitar', 83: 'Al-Mutaffifin', 84: 'Al-Inshiqaq', 85: 'Al-Buruj',
+  86: 'At-Tariq', 87: 'Al-Ala', 88: 'Al-Ghashiyah', 89: 'Al-Fajr', 90: 'Al-Balad',
+  91: 'Ash-Shams', 92: 'Al-Layl', 93: 'Ad-Duha', 94: 'Ash-Sharh', 95: 'At-Tin',
+  96: 'Al-Alaq', 97: 'Al-Qadr', 98: 'Al-Bayyinah', 99: 'Az-Zalzalah', 100: 'Al-Adiyat',
+  101: 'Al-Qariah', 102: 'At-Takathur', 103: 'Al-Asr', 104: 'Al-Humazah', 105: 'Al-Fil',
+  106: 'Quraysh', 107: 'Al-Maun', 108: 'Al-Kawthar', 109: 'Al-Kafirun', 110: 'An-Nasr',
+  111: 'Al-Masad', 112: 'Al-Ikhlas', 113: 'Al-Falaq', 114: 'An-Nas'
 };
 
 type SectionData = { range: string; kaifiyat: string; tajweed: string; hifz: string };
@@ -92,7 +93,10 @@ type ReportLoadData = {
   resultRows: ReportResult[];
 };
 
-function parseSectionFromNotes(notes: string | null, sectionKey: string): { range: string | null; kaifiyat: string | null; tajweed: string | null; hifz: string | null } {
+function parseSectionFromNotes(
+  notes: string | null,
+  sectionKey: string
+): { range: string | null; kaifiyat: string | null; tajweed: string | null; hifz: string | null } {
   const empty = { range: null, kaifiyat: null, tajweed: null, hifz: null };
   if (!notes) return empty;
   const upper = sectionKey.toUpperCase();
@@ -140,22 +144,22 @@ function getSectionData(
 ): SectionData {
   const selected = items.filter((item) => item.sectionKey.toLowerCase() === key);
   const fromNotes = parseSectionFromNotes(notes, key);
-
   let range = '-';
   if (selected.length > 0) {
-    range = selected.map((item) => {
-      const name = SURAH_NAMES[item.surahId] ?? `Surah ${item.surahId}`;
-      return `${name} (${item.fromAyah}-${item.toAyah})`;
-    }).join(', ');
+    range = selected
+      .map((item) => {
+        const name = SURAH_NAMES[item.surahId] ?? `Surah ${item.surahId}`;
+        return `${name} (${item.fromAyah}-${item.toAyah})`;
+      })
+      .join(', ');
   } else if (fromNotes.range) {
     range = fromNotes.range;
   }
-
   return {
     range,
     kaifiyat: fromNotes.kaifiyat ?? '-',
     tajweed: fromNotes.tajweed ?? '-',
-    hifz: fromNotes.hifz ?? '-',
+    hifz: fromNotes.hifz ?? '-'
   };
 }
 
@@ -190,6 +194,10 @@ function isDatabaseConnectionError(error: unknown) {
 
 function isLocalRestFallbackEnabled() {
   return process.env.FORCE_SUPABASE_REST_DATA_FALLBACK === '1';
+}
+
+function canUseFallback(error: unknown) {
+  return isDatabaseConnectionError(error) || isLocalRestFallbackEnabled();
 }
 
 async function supabaseRest<T>(table: string, params: Record<string, string | string[]>) {
@@ -234,92 +242,101 @@ function toDate(value: string | Date) {
   return value instanceof Date ? value : new Date(value);
 }
 
-function toSelectedStudent(
-  student: ReportStudent,
-  classItem: (SimpleClass & { teacherLinks: ClassTeacherLink[] }) | null
-): ReportSelectedStudent {
+function toSelectedStudent(student: ReportStudent, classItem: (SimpleClass & { teacherLinks: ClassTeacherLink[] }) | null): ReportSelectedStudent {
   return { ...student, class: classItem };
 }
 
+const getCachedIndividualCompleteReportData = unstable_cache(
+  async (classId?: string, studentId?: string, from?: string, to?: string): Promise<ReportLoadData> => {
+    const now = new Date();
+    const monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
+    const fromDate = parseDate(from, monthStart);
+    fromDate.setHours(0, 0, 0, 0);
+    const toDateBoundary = parseDate(to, now);
+    toDateBoundary.setHours(23, 59, 59, 999);
+
+    const classes = await prisma.class.findMany({
+      select: { id: true, name: true, section: true },
+      orderBy: [{ name: 'asc' }, { section: 'asc' }]
+    });
+
+    const selectedClassId = classId && classes.some((c) => c.id === classId) ? classId : 'all';
+    const selectedClassFilter = selectedClassId !== 'all' ? { classId: selectedClassId } : {};
+
+    const students = await prisma.student.findMany({
+      where: selectedClassFilter,
+      select: {
+        id: true,
+        classId: true,
+        rollNumber: true,
+        fatherName: true,
+        user: { select: { fullName: true } }
+      },
+      orderBy: { createdAt: 'desc' }
+    });
+
+    const selectedStudentId = studentId && students.some((s) => s.id === studentId) ? studentId : students[0]?.id ?? '';
+    const selectedStudentRaw = students.find((student) => student.id === selectedStudentId) ?? null;
+    const selectedClassRaw =
+      selectedStudentRaw?.classId ? classes.find((classItem) => classItem.id === selectedStudentRaw.classId) ?? null : null;
+
+    const selectedClassTeacherLinks = selectedClassRaw
+      ? await prisma.teacherClass
+          .findFirst({
+            where: { classId: selectedClassRaw.id },
+            orderBy: { isClassLead: 'desc' },
+            select: { isClassLead: true, teacher: { select: { user: { select: { fullName: true } } } } }
+          })
+          .then((link) => (link ? [link] : []))
+      : [];
+
+    const selectedStudent = selectedStudentRaw
+      ? toSelectedStudent(selectedStudentRaw, selectedClassRaw ? { ...selectedClassRaw, teacherLinks: selectedClassTeacherLinks } : null)
+      : null;
+
+    const attendanceRows = selectedStudent
+      ? await prisma.attendance.findMany({
+          where: { studentId: selectedStudent.id, date: { gte: fromDate, lte: toDateBoundary } },
+          select: { date: true, status: true },
+          orderBy: { date: 'asc' }
+        })
+      : [];
+
+    const progressRows = selectedStudent
+      ? await prisma.studentProgress.findMany({
+          where: { studentId: selectedStudent.id, date: { gte: fromDate, lte: toDateBoundary } },
+          select: {
+            id: true,
+            date: true,
+            surahRanges: { select: { sectionKey: true, surahId: true, fromAyah: true, toAyah: true } },
+            tajweeditotal: true,
+            hifzTotal: true,
+            notes: true
+          },
+          orderBy: { date: 'asc' }
+        })
+      : [];
+
+    const resultRows = selectedStudent
+      ? await prisma.result.findMany({
+          where: { studentId: selectedStudent.id, exam: { examDate: { gte: fromDate, lte: toDateBoundary } } },
+          select: {
+            marksObtained: true,
+            exam: { select: { examDate: true, title: true, totalMarks: true } },
+            subject: { select: { name: true } }
+          },
+          orderBy: { exam: { examDate: 'asc' } }
+        })
+      : [];
+
+    return { classes, students, selectedClassId, selectedStudentId, selectedStudent, attendanceRows, progressRows, resultRows };
+  },
+  ['admin-individual-complete-report'],
+  { revalidate: 60 }
+);
+
 async function loadReportViaPrisma(params: { classId?: string; studentId?: string; from?: string; to?: string }): Promise<ReportLoadData> {
-  const now = new Date();
-  const monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
-  const fromDate = parseDate(params.from, monthStart);
-  fromDate.setHours(0, 0, 0, 0);
-  const toDateBoundary = parseDate(params.to, now);
-  toDateBoundary.setHours(23, 59, 59, 999);
-
-  const classes = await prisma.class.findMany({
-    select: { id: true, name: true, section: true },
-    orderBy: [{ name: 'asc' }, { section: 'asc' }]
-  });
-
-  const selectedClassId = params.classId && classes.some((c) => c.id === params.classId) ? params.classId : 'all';
-
-  const students = await prisma.student.findMany({
-    where: selectedClassId !== 'all' ? { classId: selectedClassId } : {},
-    select: {
-      id: true,
-      classId: true,
-      rollNumber: true,
-      fatherName: true,
-      user: { select: { fullName: true } }
-    },
-    orderBy: { createdAt: 'desc' }
-  });
-
-  const selectedStudentId = students.some((s) => s.id === params.studentId) ? params.studentId ?? '' : students[0]?.id ?? '';
-  const selectedStudentRaw = students.find((student) => student.id === selectedStudentId) ?? null;
-  const selectedClassRaw =
-    selectedStudentRaw?.classId ? classes.find((classItem) => classItem.id === selectedStudentRaw.classId) ?? null : null;
-
-  const selectedClassTeacherLinks = selectedClassRaw
-    ? await prisma.teacherClass.findMany({
-        where: { classId: selectedClassRaw.id },
-        select: { isClassLead: true, teacher: { select: { user: { select: { fullName: true } } } } }
-      })
-    : [];
-
-  const selectedStudent = selectedStudentRaw
-    ? toSelectedStudent(selectedStudentRaw, selectedClassRaw ? { ...selectedClassRaw, teacherLinks: selectedClassTeacherLinks } : null)
-    : null;
-
-  const attendanceRows = selectedStudent
-    ? await prisma.attendance.findMany({
-        where: { studentId: selectedStudent.id, date: { gte: fromDate, lte: toDateBoundary } },
-        select: { date: true, status: true },
-        orderBy: { date: 'asc' }
-      })
-    : [];
-
-  const progressRows = selectedStudent
-    ? await prisma.studentProgress.findMany({
-        where: { studentId: selectedStudent.id, date: { gte: fromDate, lte: toDateBoundary } },
-        select: {
-          id: true,
-          date: true,
-          surahRanges: { select: { sectionKey: true, surahId: true, fromAyah: true, toAyah: true } },
-          tajweeditotal: true,
-          hifzTotal: true,
-          notes: true
-        },
-        orderBy: { date: 'asc' }
-      })
-    : [];
-
-  const resultRows = selectedStudent
-    ? await prisma.result.findMany({
-        where: { studentId: selectedStudent.id, exam: { examDate: { gte: fromDate, lte: toDateBoundary } } },
-        select: {
-          marksObtained: true,
-          exam: { select: { examDate: true, title: true, totalMarks: true } },
-          subject: { select: { name: true } }
-        },
-        orderBy: { exam: { examDate: 'asc' } }
-      })
-    : [];
-
-  return { classes, students, selectedClassId, selectedStudentId, selectedStudent, attendanceRows, progressRows, resultRows };
+  return getCachedIndividualCompleteReportData(params.classId, params.studentId, params.from, params.to);
 }
 
 async function loadReportViaRest(params: { classId?: string; studentId?: string; from?: string; to?: string }): Promise<ReportLoadData> {
@@ -330,11 +347,7 @@ async function loadReportViaRest(params: { classId?: string; studentId?: string;
   const toDateBoundary = parseDate(params.to, now);
   toDateBoundary.setHours(23, 59, 59, 999);
 
-  const classes = await supabaseRest<SimpleClass>('Class', {
-    select: 'id,name,section',
-    order: 'name.asc,section.asc'
-  });
-
+  const classes = await supabaseRest<SimpleClass>('Class', { select: 'id,name,section', order: 'name.asc,section.asc' });
   const selectedClassId = params.classId && classes.some((c) => c.id === params.classId) ? params.classId : 'all';
 
   const studentRows = await supabaseRest<{
@@ -351,13 +364,9 @@ async function loadReportViaRest(params: { classId?: string; studentId?: string;
 
   const studentUserIds = Array.from(new Set(studentRows.map((student) => student.userId).filter(Boolean)));
   const studentUsers = studentUserIds.length
-    ? await supabaseRest<{ id: string; fullName: string }>('User', {
-        select: 'id,fullName',
-        id: inFilter(studentUserIds)
-      }).catch(() => [])
+    ? await supabaseRest<{ id: string; fullName: string }>('User', { select: 'id,fullName', id: inFilter(studentUserIds) }).catch(() => [])
     : [];
   const studentUsersById = new Map(studentUsers.map((user) => [user.id, user]));
-
   const students: ReportStudent[] = studentRows.map((student) => ({
     id: student.id,
     classId: student.classId,
@@ -371,33 +380,27 @@ async function loadReportViaRest(params: { classId?: string; studentId?: string;
   const selectedClassRaw = selectedStudentRaw?.classId ? classes.find((classItem) => classItem.id === selectedStudentRaw.classId) ?? null : null;
 
   const selectedClassTeacherLinks = selectedClassRaw
-    ? await (async () => {
-        const teacherLinks = await supabaseRest<{ teacherId: string; classId: string; isClassLead: boolean }>('TeacherClass', {
-          select: 'teacherId,classId,isClassLead',
-          classId: `eq.${selectedClassRaw.id}`
-        }).catch(() => []);
-        const teacherIds = Array.from(new Set(teacherLinks.map((link) => link.teacherId).filter(Boolean)));
-        const teachers = teacherIds.length
-          ? await supabaseRest<{ id: string; userId: string }>('Teacher', {
-              select: 'id,userId',
-              id: inFilter(teacherIds)
-            }).catch(() => [])
-          : [];
-        const teacherUserIds = Array.from(new Set(teachers.map((teacher) => teacher.userId).filter(Boolean)));
-        const teacherUsers = teacherUserIds.length
-          ? await supabaseRest<{ id: string; fullName: string }>('User', {
-              select: 'id,fullName',
-              id: inFilter(teacherUserIds)
-            }).catch(() => [])
-          : [];
-        const teachersById = new Map(teachers.map((teacher) => [teacher.id, teacher]));
-        const teacherUsersById = new Map(teacherUsers.map((user) => [user.id, user]));
-        return teacherLinks.map((link) => {
-          const teacher = teachersById.get(link.teacherId);
-          const fullName = teacher ? teacherUsersById.get(teacher.userId)?.fullName ?? 'Unknown Teacher' : 'Unknown Teacher';
-          return { isClassLead: Boolean(link.isClassLead), teacher: { user: { fullName } } };
-        });
-      })()
+    ? await supabaseRest<{ teacherId: string; classId: string; isClassLead: boolean }>('TeacherClass', {
+        select: 'teacherId,classId,isClassLead',
+        classId: `eq.${selectedClassRaw.id}`,
+        order: 'isClassLead.desc',
+        limit: '1'
+      })
+        .catch(() => [])
+        .then(async (teacherLinks) => {
+          if (teacherLinks.length === 0) return [];
+          const teacher = await supabaseRest<{ id: string; userId: string }>('Teacher', {
+            select: 'id,userId',
+            id: inFilter([teacherLinks[0].teacherId])
+          }).catch(() => []);
+          const teacherUser = teacher.length
+            ? await supabaseRest<{ id: string; fullName: string }>('User', { select: 'id,fullName', id: inFilter([teacher[0].userId]) }).catch(() => [])
+            : [];
+          return teacherLinks.map((link) => ({
+            isClassLead: Boolean(link.isClassLead),
+            teacher: { user: { fullName: teacherUser[0]?.fullName ?? 'Unknown Teacher' } }
+          }));
+        })
     : [];
 
   const selectedStudent = selectedStudentRaw
@@ -412,10 +415,7 @@ async function loadReportViaRest(params: { classId?: string; studentId?: string;
         order: 'date.asc'
       }).catch(() => [])
     : [];
-  const attendanceRows: ReportAttendance[] = attendanceRowsRaw.map((row) => ({
-    date: toDate(row.date),
-    status: row.status
-  }));
+  const attendanceRows: ReportAttendance[] = attendanceRowsRaw.map((row) => ({ date: toDate(row.date), status: row.status }));
 
   const progressRowsRaw = selectedStudent
     ? await supabaseRest<{
@@ -431,6 +431,7 @@ async function loadReportViaRest(params: { classId?: string; studentId?: string;
         order: 'date.asc'
       }).catch(() => [])
     : [];
+
   const progressIds = progressRowsRaw.map((row) => row.id);
   const surahRanges = progressIds.length
     ? await supabaseRest<{
@@ -445,6 +446,7 @@ async function loadReportViaRest(params: { classId?: string; studentId?: string;
         order: 'progressId.asc,sectionKey.asc,createdAt.asc'
       }).catch(() => [])
     : [];
+
   const surahRangesByProgressId = new Map<string, ReportProgress['surahRanges']>();
   for (const range of surahRanges) {
     surahRangesByProgressId.set(range.progressId, [
@@ -477,6 +479,7 @@ async function loadReportViaRest(params: { classId?: string; studentId?: string;
         order: 'createdAt.asc'
       }).catch(() => [])
     : [];
+
   const examIds = Array.from(new Set(resultRowsRaw.map((row) => row.examId).filter(Boolean)));
   const subjectIds = Array.from(new Set(resultRowsRaw.map((row) => row.subjectId).filter(Boolean)));
   const [exams, subjects] = await Promise.all([
@@ -502,11 +505,7 @@ async function loadReportViaRest(params: { classId?: string; studentId?: string;
       if (!exam || !subject) return null;
       return {
         marksObtained: Number(row.marksObtained),
-        exam: {
-          examDate: toDate(exam.examDate),
-          title: exam.title,
-          totalMarks: Number(exam.totalMarks)
-        },
+        exam: { examDate: toDate(exam.examDate), title: exam.title, totalMarks: Number(exam.totalMarks) },
         subject: { name: subject.name }
       };
     })
@@ -517,14 +516,6 @@ async function loadReportViaRest(params: { classId?: string; studentId?: string;
 
 export default async function IndividualCompleteReportPage({ searchParams }: PageProps) {
   const params = (await searchParams) ?? {};
-
-  const now = new Date();
-  const monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
-
-  const fromDate = parseDate(params.from, monthStart);
-  fromDate.setHours(0, 0, 0, 0);
-  const toDateBoundary = parseDate(params.to, now);
-  toDateBoundary.setHours(23, 59, 59, 999);
 
   let classes: SimpleClass[] = [];
   let selectedClassId = 'all';
@@ -559,19 +550,15 @@ export default async function IndividualCompleteReportPage({ searchParams }: Pag
       resultRows = data.resultRows;
     } catch (restError) {
       console.error('[admin/reports/individual-complete] rest fallback failed', restError);
-      if (!isDatabaseConnectionError(error) && !isLocalRestFallbackEnabled()) {
+      if (!canUseFallback(error)) {
         throw error;
       }
 
       return (
         <div className="rounded-2xl bg-white p-6 shadow-[0_4px_12px_rgba(0,0,0,0.08)]">
           <h1 className="text-2xl font-bold text-[#1a1c1c]">Individual Complete Report</h1>
-          <p className="mt-2 text-sm text-[#6f7979]">
-            Database is temporarily unreachable, so this report cannot be loaded right now.
-          </p>
-          <p className="mt-1 text-sm text-[#6f7979]">
-            Please refresh once the connection recovers.
-          </p>
+          <p className="mt-2 text-sm text-[#6f7979]">Database is temporarily unreachable, so this report cannot be loaded right now.</p>
+          <p className="mt-1 text-sm text-[#6f7979]">Please refresh once the connection recovers.</p>
           <Link href="/admin/reports" className="mt-4 inline-flex text-sm font-semibold text-[#004649] hover:text-[#1b5e62]">
             Back to Reports
           </Link>
@@ -580,10 +567,17 @@ export default async function IndividualCompleteReportPage({ searchParams }: Pag
     }
   }
 
+  const now = new Date();
+  const monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
+  const fromDate = parseDate(params.from, monthStart);
+  fromDate.setHours(0, 0, 0, 0);
+  const toDateBoundary = parseDate(params.to, now);
+  toDateBoundary.setHours(23, 59, 59, 999);
+
   const attendanceByDate = new Map<string, 'PRESENT' | 'ABSENT' | 'LATE' | 'EXCUSED'>();
   for (const row of attendanceRows) attendanceByDate.set(dateKey(row.date), row.status);
 
-  const progressByDate = new Map<string, (typeof progressRows)[number]>();
+  const progressByDate = new Map<string, ReportProgress>();
   for (const row of progressRows) progressByDate.set(dateKey(row.date), row);
 
   const examByDate = new Map<string, string[]>();
@@ -602,22 +596,25 @@ export default async function IndividualCompleteReportPage({ searchParams }: Pag
   while (cursor <= toDateBoundary && rowCount < maxRows) {
     const key = dateKey(cursor);
     const progress = progressByDate.get(key);
-
     rows.push({
       date: new Date(cursor),
       attendance: statusCode(attendanceByDate.get(key)),
       sabq: progress ? getSectionData(progress.surahRanges, 'sabaq', progress.notes) : emptySec,
       sabqi: progress ? getSectionData(progress.surahRanges, 'sabqi', progress.notes) : emptySec,
       manzil: progress ? getSectionData(progress.surahRanges, 'manzil', progress.notes) : emptySec,
-      testExam: examByDate.get(key)?.join(' | ') || (progress ? ((progress.tajweeditotal != null || progress.hifzTotal != null) ? `T: ${progress.tajweeditotal ?? 0} | H: ${progress.hifzTotal ?? 0}` : parseProgressSummary(progress.notes)) : '-')
+      testExam:
+        examByDate.get(key)?.join(' | ') ||
+        (progress
+          ? progress.tajweeditotal != null || progress.hifzTotal != null
+            ? `T: ${progress.tajweeditotal ?? 0} | H: ${progress.hifzTotal ?? 0}`
+            : parseProgressSummary(progress.notes)
+          : '-')
     });
-
     cursor.setDate(cursor.getDate() + 1);
     rowCount++;
   }
 
-  const teacherName = selectedStudent?.class?.teacherLinks.find((link) => link.isClassLead)?.teacher.user.fullName ?? selectedStudent?.class?.teacherLinks[0]?.teacher.user.fullName ?? '-';
-
+  const teacherName = selectedStudent?.class?.teacherLinks[0]?.teacher.user.fullName ?? '-';
   const totalPresent = rows.filter((row) => row.attendance === 'P').length;
   const totalAbsent = rows.filter((row) => row.attendance === 'A').length;
   const totalLeave = rows.filter((row) => row.attendance === 'L').length;
@@ -626,7 +623,9 @@ export default async function IndividualCompleteReportPage({ searchParams }: Pag
   return (
     <div className="space-y-4 pb-8">
       <div className="rounded-2xl bg-white p-4 shadow-[0_4px_12px_rgba(0,0,0,0.08)] sm:p-6 print:hidden">
-        <Link href="/admin/reports" className="text-xs font-semibold text-[#004649] hover:text-[#1b5e62]">&larr; Back to Reports</Link>
+        <Link href="/admin/reports" className="text-xs font-semibold text-[#004649] hover:text-[#1b5e62]">
+          &larr; Back to Reports
+        </Link>
         <h1 className="mt-2 text-2xl font-bold text-[#1a1c1c]">Individual Complete Report</h1>
         <p className="mt-1 text-sm text-[#6f7979]">Date-wise complete sheet with attendance, sabq/sabqi/manzil, and test/exam notes.</p>
 
@@ -635,13 +634,21 @@ export default async function IndividualCompleteReportPage({ searchParams }: Pag
             Class
             <select name="classId" defaultValue={selectedClassId} className="mt-1 h-10 w-full rounded-xl bg-[#f3f4f5] px-3 text-sm text-[#1f2937]">
               <option value="all">All Classes</option>
-              {classes.map((classItem) => <option key={classItem.id} value={classItem.id}>{classItem.name} {classItem.section}</option>)}
+              {classes.map((classItem) => (
+                <option key={classItem.id} value={classItem.id}>
+                  {classItem.name} {classItem.section}
+                </option>
+              ))}
             </select>
           </label>
           <label className="text-xs font-semibold text-[#6f7979] lg:col-span-2">
             Student
             <select name="studentId" defaultValue={selectedStudentId} className="mt-1 h-10 w-full rounded-xl bg-[#f3f4f5] px-3 text-sm text-[#1f2937]">
-              {students.map((student) => <option key={student.id} value={student.id}>{student.user.fullName}</option>)}
+              {students.map((student) => (
+                <option key={student.id} value={student.id}>
+                  {student.user.fullName}
+                </option>
+              ))}
             </select>
           </label>
           <label className="text-xs font-semibold text-[#6f7979]">
@@ -652,7 +659,11 @@ export default async function IndividualCompleteReportPage({ searchParams }: Pag
             To
             <input type="date" name="to" defaultValue={trimToDateInput(toDateBoundary)} className="mt-1 h-10 w-full rounded-xl bg-[#f3f4f5] px-3 text-sm text-[#1f2937]" />
           </label>
-          <div className="sm:col-span-2 lg:col-span-5"><button type="submit" className="h-10 w-full rounded-xl bg-gradient-to-br from-[#004649] to-[#1b5e62] text-sm font-semibold text-white">Apply</button></div>
+          <div className="sm:col-span-2 lg:col-span-5">
+            <button type="submit" className="h-10 w-full rounded-xl bg-gradient-to-br from-[#004649] to-[#1b5e62] text-sm font-semibold text-white">
+              Apply
+            </button>
+          </div>
         </form>
       </div>
 
@@ -676,7 +687,7 @@ export default async function IndividualCompleteReportPage({ searchParams }: Pag
                 manzilKaifiyat: r.manzil.kaifiyat,
                 manzilTajweed: r.manzil.tajweed,
                 manzilHifz: r.manzil.hifz,
-                testExam: r.testExam,
+                testExam: r.testExam
               }))}
               studentName={selectedStudent.user.fullName}
               className={selectedStudent.class ? `${selectedStudent.class.name} ${selectedStudent.class.section}` : 'Unassigned'}
@@ -686,14 +697,25 @@ export default async function IndividualCompleteReportPage({ searchParams }: Pag
           </div>
           <div className="hidden print:block border-b border-[#e5e7eb] pb-2 mb-3">
             <h2 className="text-lg font-bold">Individual Complete Report</h2>
-            <p className="text-xs text-[#64748b]">Date: {formatDateLabel(fromDate)} to {formatDateLabel(toDateBoundary)}</p>
+            <p className="text-xs text-[#64748b]">
+              Date: {formatDateLabel(fromDate)} to {formatDateLabel(toDateBoundary)}
+            </p>
           </div>
           <h2 className="text-xl font-bold text-[#1a1c1c]">Individual Complete Report</h2>
           <div className="mt-2 grid gap-1 text-sm text-[#374151] sm:grid-cols-2 lg:grid-cols-4">
-            <p><span className="font-semibold">Date:</span> {formatDateLabel(fromDate)} to {formatDateLabel(toDateBoundary)}</p>
-            <p><span className="font-semibold">Name:</span> {selectedStudent.user.fullName}</p>
-            <p><span className="font-semibold">Class:</span> {selectedStudent.class ? `${selectedStudent.class.name} ${selectedStudent.class.section}` : 'Unassigned'}</p>
-            <p><span className="font-semibold">Teacher:</span> {teacherName}</p>
+            <p>
+              <span className="font-semibold">Date:</span> {formatDateLabel(fromDate)} to {formatDateLabel(toDateBoundary)}
+            </p>
+            <p>
+              <span className="font-semibold">Name:</span> {selectedStudent.user.fullName}
+            </p>
+            <p>
+              <span className="font-semibold">Class:</span>{' '}
+              {selectedStudent.class ? `${selectedStudent.class.name} ${selectedStudent.class.section}` : 'Unassigned'}
+            </p>
+            <p>
+              <span className="font-semibold">Teacher:</span> {teacherName}
+            </p>
           </div>
 
           <div className="mt-4 grid gap-2 sm:grid-cols-2 lg:grid-cols-4">
@@ -707,40 +729,56 @@ export default async function IndividualCompleteReportPage({ searchParams }: Pag
             <table className="min-w-[1600px] print:min-w-0 print:w-full w-full border-collapse text-xs print:text-[9px]">
               <thead>
                 <tr className="bg-[#004649] text-white">
-                  <th rowSpan={2} className="border-b border-r border-[#1b5e62] px-3 py-2 text-left font-semibold align-middle">Date</th>
-                  <th rowSpan={2} className="border-b border-r border-[#1b5e62] px-3 py-2 text-left font-semibold align-middle">Att.</th>
-                  <th colSpan={4} className="border-b border-r border-[#1b5e62] px-3 py-2 text-center font-semibold">Sabaq (New Lesson)</th>
-                  <th colSpan={4} className="border-b border-r border-[#1b5e62] px-3 py-2 text-center font-semibold">Sabqi (Previous)</th>
-                  <th colSpan={4} className="border-b border-r border-[#1b5e62] px-3 py-2 text-center font-semibold">Manzil (Memorised)</th>
-                  <th rowSpan={2} className="border-b border-[#1b5e62] px-3 py-2 text-left font-semibold align-middle">Test / Exam</th>
+                  <th rowSpan={2} className="border-b border-r border-[#1b5e62] px-3 py-2 text-left font-semibold align-middle">
+                    Date
+                  </th>
+                  <th rowSpan={2} className="border-b border-r border-[#1b5e62] px-3 py-2 text-left font-semibold align-middle">
+                    Att.
+                  </th>
+                  <th colSpan={4} className="border-b border-r border-[#1b5e62] px-3 py-2 text-center font-semibold">
+                    Sabaq (New Lesson)
+                  </th>
+                  <th colSpan={4} className="border-b border-r border-[#1b5e62] px-3 py-2 text-center font-semibold">
+                    Sabqi (Previous)
+                  </th>
+                  <th colSpan={4} className="border-b border-r border-[#1b5e62] px-3 py-2 text-center font-semibold">
+                    Manzil (Memorised)
+                  </th>
+                  <th rowSpan={2} className="border-b border-[#1b5e62] px-3 py-2 text-left font-semibold align-middle">
+                    Test / Exam
+                  </th>
                 </tr>
                 <tr className="bg-[#0a5558] text-white text-[11px]">
-                  {['Range','Kaifiyat','T.Ghalt','H.Ghalt','Range','Kaifiyat','T.Ghalt','H.Ghalt','Range','Kaifiyat','T.Ghalt','H.Ghalt'].map((h, i) => (
-                    <th key={i} className={`border-b border-r border-[#1b5e62] px-2 py-1 text-center font-medium ${i === 11 ? 'border-r-0' : ''}`}>{h}</th>
+                  {['Range', 'Kaifiyat', 'T.Ghalt', 'H.Ghalt', 'Range', 'Kaifiyat', 'T.Ghalt', 'H.Ghalt', 'Range', 'Kaifiyat', 'T.Ghalt', 'H.Ghalt'].map((h, i) => (
+                    <th key={i} className={`border-b border-r border-[#1b5e62] px-2 py-1 text-center font-medium ${i === 11 ? 'border-r-0' : ''}`}>
+                      {h}
+                    </th>
                   ))}
                 </tr>
               </thead>
               <tbody>
                 {rows.map((row) => (
-                  <tr key={row.date.toISOString()} className="hover:bg-[#f0fafa] even:bg-[#fafafa]">
-                    <td className="border-b border-r border-[#e5e7eb] px-3 py-2 font-medium text-[#334155] whitespace-nowrap">{formatDateLabel(row.date)}</td>
-                    <td className={`border-b border-r border-[#e5e7eb] px-3 py-2 text-center font-bold ${row.attendance === 'P' ? 'text-[#15803d]' : row.attendance === 'A' ? 'text-[#be123c]' : row.attendance === 'L' ? 'text-[#1d4ed8]' : 'text-[#9ca3af]'}`}>{row.attendance}</td>
-                    {/* Sabaq */}
+                  <tr key={row.date.toISOString()} className="even:bg-[#fafafa] hover:bg-[#f0fafa]">
+                    <td className="border-b border-r border-[#e5e7eb] px-3 py-2 font-medium whitespace-nowrap text-[#334155]">{formatDateLabel(row.date)}</td>
+                    <td
+                      className={`border-b border-r border-[#e5e7eb] px-3 py-2 text-center font-bold ${
+                        row.attendance === 'P' ? 'text-[#15803d]' : row.attendance === 'A' ? 'text-[#be123c]' : row.attendance === 'L' ? 'text-[#1d4ed8]' : 'text-[#9ca3af]'
+                      }`}
+                    >
+                      {row.attendance}
+                    </td>
                     <td className="border-b border-r border-[#e5e7eb] px-2 py-2 text-[#1e3a3a]">{row.sabq.range}</td>
                     <td className="border-b border-r border-[#e5e7eb] px-2 py-2 text-center text-[#374151]">{row.sabq.kaifiyat}</td>
                     <td className="border-b border-r border-[#e5e7eb] px-2 py-2 text-center text-[#374151]">{row.sabq.tajweed}</td>
                     <td className="border-b border-r border-[#e5e7eb] px-2 py-2 text-center text-[#374151]">{row.sabq.hifz}</td>
-                    {/* Sabqi */}
                     <td className="border-b border-r border-[#e5e7eb] px-2 py-2 text-[#1e3a3a]">{row.sabqi.range}</td>
                     <td className="border-b border-r border-[#e5e7eb] px-2 py-2 text-center text-[#374151]">{row.sabqi.kaifiyat}</td>
                     <td className="border-b border-r border-[#e5e7eb] px-2 py-2 text-center text-[#374151]">{row.sabqi.tajweed}</td>
                     <td className="border-b border-r border-[#e5e7eb] px-2 py-2 text-center text-[#374151]">{row.sabqi.hifz}</td>
-                    {/* Manzil */}
                     <td className="border-b border-r border-[#e5e7eb] px-2 py-2 text-[#1e3a3a]">{row.manzil.range}</td>
                     <td className="border-b border-r border-[#e5e7eb] px-2 py-2 text-center text-[#374151]">{row.manzil.kaifiyat}</td>
                     <td className="border-b border-r border-[#e5e7eb] px-2 py-2 text-center text-[#374151]">{row.manzil.tajweed}</td>
                     <td className="border-b border-r border-[#e5e7eb] px-2 py-2 text-center text-[#374151]">{row.manzil.hifz}</td>
-                    {/* Test */}
                     <td className="border-b border-[#e5e7eb] px-2 py-2 text-[#334155]">{row.testExam}</td>
                   </tr>
                 ))}
