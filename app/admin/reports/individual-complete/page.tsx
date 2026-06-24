@@ -57,6 +57,40 @@ const SURAH_NAMES: Record<number, string> = {
 };
 
 type SectionData = { range: string; kaifiyat: string; tajweed: string; hifz: string };
+type SimpleClass = { id: string; name: string; section: string };
+type ClassTeacherLink = { isClassLead: boolean; teacher: { user: { fullName: string } } };
+type ReportStudent = {
+  id: string;
+  classId: string | null;
+  rollNumber: string | null;
+  fatherName: string | null;
+  user: { fullName: string };
+};
+type ReportSelectedStudent = ReportStudent & { class: (SimpleClass & { teacherLinks: ClassTeacherLink[] }) | null };
+type ReportAttendance = { date: Date; status: 'PRESENT' | 'ABSENT' | 'LATE' | 'EXCUSED' };
+type ReportProgress = {
+  id: string;
+  date: Date;
+  surahRanges: { sectionKey: string; surahId: number; fromAyah: number; toAyah: number }[];
+  tajweeditotal: number | null;
+  hifzTotal: number | null;
+  notes: string | null;
+};
+type ReportResult = {
+  marksObtained: number;
+  exam: { examDate: Date; title: string; totalMarks: number };
+  subject: { name: string };
+};
+type ReportLoadData = {
+  classes: SimpleClass[];
+  students: ReportStudent[];
+  selectedClassId: string;
+  selectedStudentId: string;
+  selectedStudent: ReportSelectedStudent | null;
+  attendanceRows: ReportAttendance[];
+  progressRows: ReportProgress[];
+  resultRows: ReportResult[];
+};
 
 function parseSectionFromNotes(notes: string | null, sectionKey: string): { range: string | null; kaifiyat: string | null; tajweed: string | null; hifz: string | null } {
   const empty = { range: null, kaifiyat: null, tajweed: null, hifz: null };
@@ -144,16 +178,76 @@ function parseProgressSummary(notes: string | null): string {
   return '-';
 }
 
-export default async function IndividualCompleteReportPage({ searchParams }: PageProps) {
-  const params = (await searchParams) ?? {};
+function isDatabaseConnectionError(error: unknown) {
+  return (
+    error instanceof Error &&
+    (error.name === 'PrismaClientInitializationError' ||
+      error.message.includes("Can't reach database server") ||
+      error.message.includes('Timed out fetching a new connection') ||
+      error.message.includes('Connection terminated unexpectedly'))
+  );
+}
 
+function isLocalRestFallbackEnabled() {
+  return process.env.FORCE_SUPABASE_REST_DATA_FALLBACK === '1';
+}
+
+async function supabaseRest<T>(table: string, params: Record<string, string | string[]>) {
+  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+  const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+  if (!supabaseUrl || !serviceRoleKey) {
+    throw new Error('Supabase REST fallback is not configured');
+  }
+
+  const url = new URL(`/rest/v1/${table}`, supabaseUrl);
+  for (const [key, value] of Object.entries(params)) {
+    if (Array.isArray(value)) {
+      for (const item of value) {
+        url.searchParams.append(key, item);
+      }
+    } else {
+      url.searchParams.set(key, value);
+    }
+  }
+
+  const response = await fetch(url, {
+    headers: {
+      apikey: serviceRoleKey,
+      Authorization: `Bearer ${serviceRoleKey}`
+    },
+    cache: 'no-store'
+  });
+
+  if (!response.ok) {
+    const text = await response.text().catch(() => '');
+    throw new Error(`Supabase REST ${table} failed with ${response.status}: ${text}`);
+  }
+
+  return (await response.json()) as T[];
+}
+
+function inFilter(ids: string[]) {
+  return `in.(${ids.join(',')})`;
+}
+
+function toDate(value: string | Date) {
+  return value instanceof Date ? value : new Date(value);
+}
+
+function toSelectedStudent(
+  student: ReportStudent,
+  classItem: (SimpleClass & { teacherLinks: ClassTeacherLink[] }) | null
+): ReportSelectedStudent {
+  return { ...student, class: classItem };
+}
+
+async function loadReportViaPrisma(params: { classId?: string; studentId?: string; from?: string; to?: string }): Promise<ReportLoadData> {
   const now = new Date();
   const monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
-
   const fromDate = parseDate(params.from, monthStart);
   fromDate.setHours(0, 0, 0, 0);
-  const toDate = parseDate(params.to, now);
-  toDate.setHours(23, 59, 59, 999);
+  const toDateBoundary = parseDate(params.to, now);
+  toDateBoundary.setHours(23, 59, 59, 999);
 
   const classes = await prisma.class.findMany({
     select: { id: true, name: true, section: true },
@@ -169,45 +263,322 @@ export default async function IndividualCompleteReportPage({ searchParams }: Pag
       classId: true,
       rollNumber: true,
       fatherName: true,
-      user: { select: { fullName: true } },
-      class: {
-        select: {
-          name: true,
-          section: true,
-          teacherLinks: {
-            select: {
-              isClassLead: true,
-              teacher: { select: { user: { select: { fullName: true } } } }
-            }
-          }
-        }
-      }
+      user: { select: { fullName: true } }
     },
     orderBy: { createdAt: 'desc' }
   });
 
   const selectedStudentId = students.some((s) => s.id === params.studentId) ? params.studentId ?? '' : students[0]?.id ?? '';
-  const selectedStudent = students.find((s) => s.id === selectedStudentId) ?? null;
+  const selectedStudentRaw = students.find((student) => student.id === selectedStudentId) ?? null;
+  const selectedClassRaw =
+    selectedStudentRaw?.classId ? classes.find((classItem) => classItem.id === selectedStudentRaw.classId) ?? null : null;
+
+  const selectedClassTeacherLinks = selectedClassRaw
+    ? await prisma.teacherClass.findMany({
+        where: { classId: selectedClassRaw.id },
+        select: { isClassLead: true, teacher: { select: { user: { select: { fullName: true } } } } }
+      })
+    : [];
+
+  const selectedStudent = selectedStudentRaw
+    ? toSelectedStudent(selectedStudentRaw, selectedClassRaw ? { ...selectedClassRaw, teacherLinks: selectedClassTeacherLinks } : null)
+    : null;
 
   const attendanceRows = selectedStudent
-    ? await prisma.attendance.findMany({ where: { studentId: selectedStudent.id, date: { gte: fromDate, lte: toDate } }, select: { date: true, status: true } })
+    ? await prisma.attendance.findMany({
+        where: { studentId: selectedStudent.id, date: { gte: fromDate, lte: toDateBoundary } },
+        select: { date: true, status: true },
+        orderBy: { date: 'asc' }
+      })
     : [];
 
   const progressRows = selectedStudent
     ? await prisma.studentProgress.findMany({
-        where: { studentId: selectedStudent.id, date: { gte: fromDate, lte: toDate } },
-        select: { date: true, surahRanges: { select: { sectionKey: true, surahId: true, fromAyah: true, toAyah: true } }, tajweeditotal: true, hifzTotal: true, notes: true },
+        where: { studentId: selectedStudent.id, date: { gte: fromDate, lte: toDateBoundary } },
+        select: {
+          id: true,
+          date: true,
+          surahRanges: { select: { sectionKey: true, surahId: true, fromAyah: true, toAyah: true } },
+          tajweeditotal: true,
+          hifzTotal: true,
+          notes: true
+        },
         orderBy: { date: 'asc' }
       })
     : [];
 
   const resultRows = selectedStudent
     ? await prisma.result.findMany({
-        where: { studentId: selectedStudent.id, exam: { examDate: { gte: fromDate, lte: toDate } } },
-        select: { marksObtained: true, exam: { select: { examDate: true, title: true, totalMarks: true } }, subject: { select: { name: true } } },
+        where: { studentId: selectedStudent.id, exam: { examDate: { gte: fromDate, lte: toDateBoundary } } },
+        select: {
+          marksObtained: true,
+          exam: { select: { examDate: true, title: true, totalMarks: true } },
+          subject: { select: { name: true } }
+        },
         orderBy: { exam: { examDate: 'asc' } }
       })
     : [];
+
+  return { classes, students, selectedClassId, selectedStudentId, selectedStudent, attendanceRows, progressRows, resultRows };
+}
+
+async function loadReportViaRest(params: { classId?: string; studentId?: string; from?: string; to?: string }): Promise<ReportLoadData> {
+  const now = new Date();
+  const monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
+  const fromDate = parseDate(params.from, monthStart);
+  fromDate.setHours(0, 0, 0, 0);
+  const toDateBoundary = parseDate(params.to, now);
+  toDateBoundary.setHours(23, 59, 59, 999);
+
+  const classes = await supabaseRest<SimpleClass>('Class', {
+    select: 'id,name,section',
+    order: 'name.asc,section.asc'
+  });
+
+  const selectedClassId = params.classId && classes.some((c) => c.id === params.classId) ? params.classId : 'all';
+
+  const studentRows = await supabaseRest<{
+    id: string;
+    classId: string | null;
+    rollNumber: string | null;
+    fatherName: string | null;
+    userId: string;
+  }>('Student', {
+    select: 'id,classId,rollNumber,fatherName,userId',
+    ...(selectedClassId !== 'all' ? { classId: `eq.${selectedClassId}` } : {}),
+    order: 'createdAt.desc'
+  });
+
+  const studentUserIds = Array.from(new Set(studentRows.map((student) => student.userId).filter(Boolean)));
+  const studentUsers = studentUserIds.length
+    ? await supabaseRest<{ id: string; fullName: string }>('User', {
+        select: 'id,fullName',
+        id: inFilter(studentUserIds)
+      }).catch(() => [])
+    : [];
+  const studentUsersById = new Map(studentUsers.map((user) => [user.id, user]));
+
+  const students: ReportStudent[] = studentRows.map((student) => ({
+    id: student.id,
+    classId: student.classId,
+    rollNumber: student.rollNumber,
+    fatherName: student.fatherName,
+    user: { fullName: studentUsersById.get(student.userId)?.fullName ?? 'Unknown Student' }
+  }));
+
+  const selectedStudentId = students.some((student) => student.id === params.studentId) ? params.studentId ?? '' : students[0]?.id ?? '';
+  const selectedStudentRaw = students.find((student) => student.id === selectedStudentId) ?? null;
+  const selectedClassRaw = selectedStudentRaw?.classId ? classes.find((classItem) => classItem.id === selectedStudentRaw.classId) ?? null : null;
+
+  const selectedClassTeacherLinks = selectedClassRaw
+    ? await (async () => {
+        const teacherLinks = await supabaseRest<{ teacherId: string; classId: string; isClassLead: boolean }>('TeacherClass', {
+          select: 'teacherId,classId,isClassLead',
+          classId: `eq.${selectedClassRaw.id}`
+        }).catch(() => []);
+        const teacherIds = Array.from(new Set(teacherLinks.map((link) => link.teacherId).filter(Boolean)));
+        const teachers = teacherIds.length
+          ? await supabaseRest<{ id: string; userId: string }>('Teacher', {
+              select: 'id,userId',
+              id: inFilter(teacherIds)
+            }).catch(() => [])
+          : [];
+        const teacherUserIds = Array.from(new Set(teachers.map((teacher) => teacher.userId).filter(Boolean)));
+        const teacherUsers = teacherUserIds.length
+          ? await supabaseRest<{ id: string; fullName: string }>('User', {
+              select: 'id,fullName',
+              id: inFilter(teacherUserIds)
+            }).catch(() => [])
+          : [];
+        const teachersById = new Map(teachers.map((teacher) => [teacher.id, teacher]));
+        const teacherUsersById = new Map(teacherUsers.map((user) => [user.id, user]));
+        return teacherLinks.map((link) => {
+          const teacher = teachersById.get(link.teacherId);
+          const fullName = teacher ? teacherUsersById.get(teacher.userId)?.fullName ?? 'Unknown Teacher' : 'Unknown Teacher';
+          return { isClassLead: Boolean(link.isClassLead), teacher: { user: { fullName } } };
+        });
+      })()
+    : [];
+
+  const selectedStudent = selectedStudentRaw
+    ? toSelectedStudent(selectedStudentRaw, selectedClassRaw ? { ...selectedClassRaw, teacherLinks: selectedClassTeacherLinks } : null)
+    : null;
+
+  const attendanceRowsRaw = selectedStudent
+    ? await supabaseRest<{ date: string; status: 'PRESENT' | 'ABSENT' | 'LATE' | 'EXCUSED' }>('Attendance', {
+        select: 'date,status',
+        studentId: `eq.${selectedStudent.id}`,
+        date: [`gte.${fromDate.toISOString()}`, `lte.${toDateBoundary.toISOString()}`],
+        order: 'date.asc'
+      }).catch(() => [])
+    : [];
+  const attendanceRows: ReportAttendance[] = attendanceRowsRaw.map((row) => ({
+    date: toDate(row.date),
+    status: row.status
+  }));
+
+  const progressRowsRaw = selectedStudent
+    ? await supabaseRest<{
+        id: string;
+        date: string;
+        tajweeditotal: number | string | null;
+        hifzTotal: number | string | null;
+        notes: string | null;
+      }>('StudentProgress', {
+        select: 'id,date,tajweeditotal,hifzTotal,notes',
+        studentId: `eq.${selectedStudent.id}`,
+        date: [`gte.${fromDate.toISOString()}`, `lte.${toDateBoundary.toISOString()}`],
+        order: 'date.asc'
+      }).catch(() => [])
+    : [];
+  const progressIds = progressRowsRaw.map((row) => row.id);
+  const surahRanges = progressIds.length
+    ? await supabaseRest<{
+        progressId: string;
+        sectionKey: string;
+        surahId: number | string;
+        fromAyah: number | string;
+        toAyah: number | string;
+      }>('SurahRange', {
+        select: 'progressId,sectionKey,surahId,fromAyah,toAyah',
+        progressId: inFilter(progressIds),
+        order: 'progressId.asc,sectionKey.asc,createdAt.asc'
+      }).catch(() => [])
+    : [];
+  const surahRangesByProgressId = new Map<string, ReportProgress['surahRanges']>();
+  for (const range of surahRanges) {
+    surahRangesByProgressId.set(range.progressId, [
+      ...(surahRangesByProgressId.get(range.progressId) ?? []),
+      {
+        sectionKey: range.sectionKey,
+        surahId: Number(range.surahId),
+        fromAyah: Number(range.fromAyah),
+        toAyah: Number(range.toAyah)
+      }
+    ]);
+  }
+  const progressRows: ReportProgress[] = progressRowsRaw.map((row) => ({
+    id: row.id,
+    date: toDate(row.date),
+    surahRanges: surahRangesByProgressId.get(row.id) ?? [],
+    tajweeditotal: row.tajweeditotal == null ? null : Number(row.tajweeditotal),
+    hifzTotal: row.hifzTotal == null ? null : Number(row.hifzTotal),
+    notes: row.notes
+  }));
+
+  const resultRowsRaw = selectedStudent
+    ? await supabaseRest<{
+        marksObtained: number | string;
+        examId: string;
+        subjectId: string;
+      }>('Result', {
+        select: 'marksObtained,examId,subjectId',
+        studentId: `eq.${selectedStudent.id}`,
+        order: 'createdAt.asc'
+      }).catch(() => [])
+    : [];
+  const examIds = Array.from(new Set(resultRowsRaw.map((row) => row.examId).filter(Boolean)));
+  const subjectIds = Array.from(new Set(resultRowsRaw.map((row) => row.subjectId).filter(Boolean)));
+  const [exams, subjects] = await Promise.all([
+    examIds.length
+      ? supabaseRest<{ id: string; title: string; examDate: string; totalMarks: number | string }>('Exam', {
+          select: 'id,title,examDate,totalMarks',
+          id: inFilter(examIds)
+        }).catch(() => [])
+      : Promise.resolve([]),
+    subjectIds.length
+      ? supabaseRest<{ id: string; name: string }>('Subject', {
+          select: 'id,name',
+          id: inFilter(subjectIds)
+        }).catch(() => [])
+      : Promise.resolve([])
+  ]);
+  const examsById = new Map(exams.map((exam) => [exam.id, exam]));
+  const subjectsById = new Map(subjects.map((subject) => [subject.id, subject]));
+  const resultRows: ReportResult[] = resultRowsRaw
+    .map((row) => {
+      const exam = examsById.get(row.examId);
+      const subject = subjectsById.get(row.subjectId);
+      if (!exam || !subject) return null;
+      return {
+        marksObtained: Number(row.marksObtained),
+        exam: {
+          examDate: toDate(exam.examDate),
+          title: exam.title,
+          totalMarks: Number(exam.totalMarks)
+        },
+        subject: { name: subject.name }
+      };
+    })
+    .filter((row): row is ReportResult => Boolean(row));
+
+  return { classes, students, selectedClassId, selectedStudentId, selectedStudent, attendanceRows, progressRows, resultRows };
+}
+
+export default async function IndividualCompleteReportPage({ searchParams }: PageProps) {
+  const params = (await searchParams) ?? {};
+
+  const now = new Date();
+  const monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
+
+  const fromDate = parseDate(params.from, monthStart);
+  fromDate.setHours(0, 0, 0, 0);
+  const toDateBoundary = parseDate(params.to, now);
+  toDateBoundary.setHours(23, 59, 59, 999);
+
+  let classes: SimpleClass[] = [];
+  let selectedClassId = 'all';
+  let students: ReportStudent[] = [];
+  let selectedStudentId = '';
+  let selectedStudent: ReportSelectedStudent | null = null;
+  let attendanceRows: ReportAttendance[] = [];
+  let progressRows: ReportProgress[] = [];
+  let resultRows: ReportResult[] = [];
+
+  try {
+    const data = await loadReportViaPrisma(params);
+    classes = data.classes;
+    selectedClassId = data.selectedClassId;
+    students = data.students;
+    selectedStudentId = data.selectedStudentId;
+    selectedStudent = data.selectedStudent;
+    attendanceRows = data.attendanceRows;
+    progressRows = data.progressRows;
+    resultRows = data.resultRows;
+  } catch (error) {
+    console.error('[admin/reports/individual-complete] prisma load failed', error);
+    try {
+      const data = await loadReportViaRest(params);
+      classes = data.classes;
+      selectedClassId = data.selectedClassId;
+      students = data.students;
+      selectedStudentId = data.selectedStudentId;
+      selectedStudent = data.selectedStudent;
+      attendanceRows = data.attendanceRows;
+      progressRows = data.progressRows;
+      resultRows = data.resultRows;
+    } catch (restError) {
+      console.error('[admin/reports/individual-complete] rest fallback failed', restError);
+      if (!isDatabaseConnectionError(error) && !isLocalRestFallbackEnabled()) {
+        throw error;
+      }
+
+      return (
+        <div className="rounded-2xl bg-white p-6 shadow-[0_4px_12px_rgba(0,0,0,0.08)]">
+          <h1 className="text-2xl font-bold text-[#1a1c1c]">Individual Complete Report</h1>
+          <p className="mt-2 text-sm text-[#6f7979]">
+            Database is temporarily unreachable, so this report cannot be loaded right now.
+          </p>
+          <p className="mt-1 text-sm text-[#6f7979]">
+            Please refresh once the connection recovers.
+          </p>
+          <Link href="/admin/reports" className="mt-4 inline-flex text-sm font-semibold text-[#004649] hover:text-[#1b5e62]">
+            Back to Reports
+          </Link>
+        </div>
+      );
+    }
+  }
 
   const attendanceByDate = new Map<string, 'PRESENT' | 'ABSENT' | 'LATE' | 'EXCUSED'>();
   for (const row of attendanceRows) attendanceByDate.set(dateKey(row.date), row.status);
@@ -228,7 +599,7 @@ export default async function IndividualCompleteReportPage({ searchParams }: Pag
   const maxRows = 120;
   let rowCount = 0;
 
-  while (cursor <= toDate && rowCount < maxRows) {
+  while (cursor <= toDateBoundary && rowCount < maxRows) {
     const key = dateKey(cursor);
     const progress = progressByDate.get(key);
 
@@ -279,7 +650,7 @@ export default async function IndividualCompleteReportPage({ searchParams }: Pag
           </label>
           <label className="text-xs font-semibold text-[#6f7979]">
             To
-            <input type="date" name="to" defaultValue={trimToDateInput(toDate)} className="mt-1 h-10 w-full rounded-xl bg-[#f3f4f5] px-3 text-sm text-[#1f2937]" />
+            <input type="date" name="to" defaultValue={trimToDateInput(toDateBoundary)} className="mt-1 h-10 w-full rounded-xl bg-[#f3f4f5] px-3 text-sm text-[#1f2937]" />
           </label>
           <div className="sm:col-span-2 lg:col-span-5"><button type="submit" className="h-10 w-full rounded-xl bg-gradient-to-br from-[#004649] to-[#1b5e62] text-sm font-semibold text-white">Apply</button></div>
         </form>
@@ -310,16 +681,16 @@ export default async function IndividualCompleteReportPage({ searchParams }: Pag
               studentName={selectedStudent.user.fullName}
               className={selectedStudent.class ? `${selectedStudent.class.name} ${selectedStudent.class.section}` : 'Unassigned'}
               fromLabel={formatDateLabel(fromDate)}
-              toLabel={formatDateLabel(toDate)}
+              toLabel={formatDateLabel(toDateBoundary)}
             />
           </div>
           <div className="hidden print:block border-b border-[#e5e7eb] pb-2 mb-3">
             <h2 className="text-lg font-bold">Individual Complete Report</h2>
-            <p className="text-xs text-[#64748b]">Date: {formatDateLabel(fromDate)} to {formatDateLabel(toDate)}</p>
+            <p className="text-xs text-[#64748b]">Date: {formatDateLabel(fromDate)} to {formatDateLabel(toDateBoundary)}</p>
           </div>
           <h2 className="text-xl font-bold text-[#1a1c1c]">Individual Complete Report</h2>
           <div className="mt-2 grid gap-1 text-sm text-[#374151] sm:grid-cols-2 lg:grid-cols-4">
-            <p><span className="font-semibold">Date:</span> {formatDateLabel(fromDate)} to {formatDateLabel(toDate)}</p>
+            <p><span className="font-semibold">Date:</span> {formatDateLabel(fromDate)} to {formatDateLabel(toDateBoundary)}</p>
             <p><span className="font-semibold">Name:</span> {selectedStudent.user.fullName}</p>
             <p><span className="font-semibold">Class:</span> {selectedStudent.class ? `${selectedStudent.class.name} ${selectedStudent.class.section}` : 'Unassigned'}</p>
             <p><span className="font-semibold">Teacher:</span> {teacherName}</p>
