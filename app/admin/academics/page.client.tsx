@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 
 export type ClassItem = {
   id: string;
@@ -149,7 +149,7 @@ export default function AdminAcademicsPageClient({
     setExams(examsRes.ok ? await examsRes.json() : []);
   };
 
-  const loadStudentsForClass = async (classId: string) => {
+  const loadStudentsForClass = useCallback(async (classId: string) => {
     if (!classId || Object.prototype.hasOwnProperty.call(studentOptionsByClassId, classId)) return;
 
     setStudentOptionsLoadingClassId(classId);
@@ -173,7 +173,7 @@ export default function AdminAcademicsPageClient({
     } finally {
       setStudentOptionsLoadingClassId((current) => (current === classId ? null : current));
     }
-  };
+  }, [studentOptionsByClassId]);
 
   const addSubject = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -367,7 +367,7 @@ export default function AdminAcademicsPageClient({
     if (selectedExamClassId) {
       void loadStudentsForClass(selectedExamClassId);
     }
-  }, [selectedExamClassId]);
+  }, [loadStudentsForClass, selectedExamClassId]);
 
   return (
     <div className="space-y-4">

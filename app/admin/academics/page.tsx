@@ -1,15 +1,10 @@
-import { Prisma, UserRole } from '@prisma/client';
+import { UserRole } from '@prisma/client';
 import { unstable_cache } from 'next/cache';
 import { requireAuth } from '@/lib/auth';
 import { prisma } from '@/lib/prisma';
 import AdminAcademicsPageClient from './page.client';
 
 export const dynamic = 'force-dynamic';
-type ClassRow = Prisma.ClassGetPayload<{ include: { _count: { select: { students: true; subjects: true } } } }>;
-type SubjectRow = Prisma.SubjectGetPayload<{ include: { class: true; teacher: { include: { user: true } } } }>;
-type TeacherRow = Prisma.TeacherGetPayload<{ select: { id: true; user: { select: { fullName: true } } } }>;
-type ExamRow = Prisma.ExamGetPayload<{ include: { class: true; subject: true; createdBy: { include: { user: true } }; _count: { select: { results: true } } } }>;
-
 function isDatabaseConnectionError(error: unknown) {
   return (
     error instanceof Error &&
