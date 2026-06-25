@@ -1,6 +1,6 @@
 'use client';
 
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 
 export type ClassItem = {
   id: string;
@@ -71,25 +71,24 @@ export default function AdminAcademicsPageClient({
   initialClasses,
   initialSubjects,
   initialTeachers,
-  initialExams,
-  initialStudents
+  initialExams
 }: {
   initialClasses: ClassItem[];
   initialSubjects: SubjectItem[];
   initialTeachers: TeacherItem[];
   initialExams: ExamItem[];
-  initialStudents: StudentItem[];
 }) {
   const [classes, setClasses] = useState<ClassItem[]>(initialClasses);
   const [subjects, setSubjects] = useState<SubjectItem[]>(initialSubjects);
   const [teachers, setTeachers] = useState<TeacherItem[]>(initialTeachers);
   const [exams, setExams] = useState<ExamItem[]>(initialExams);
-  const [students] = useState<StudentItem[]>(initialStudents);
   const [message, setMessage] = useState('');
   const [examSaving, setExamSaving] = useState(false);
   const [resultSaving, setResultSaving] = useState(false);
   const [resultRows, setResultRows] = useState<ResultRow[]>([]);
   const [resultLoading, setResultLoading] = useState(false);
+  const [studentOptionsByClassId, setStudentOptionsByClassId] = useState<Record<string, StudentItem[]>>({});
+  const [studentOptionsLoadingClassId, setStudentOptionsLoadingClassId] = useState<string | null>(null);
 
   const [subjectForm, setSubjectForm] = useState({ name: '', code: '', classId: '', teacherId: '', creditHours: 3 });
   const [examForm, setExamForm] = useState({
@@ -115,18 +114,16 @@ export default function AdminAcademicsPageClient({
     [subjects, examForm.classId]
   );
   const selectedExam = useMemo(() => exams.find((e) => e.id === resultForm.examId) ?? null, [exams, resultForm.examId]);
-  const examStudents = useMemo(
-    () => (selectedExam ? students.filter((s) => s.classId === selectedExam.classId) : []),
-    [students, selectedExam]
-  );
   const classStudentCount = useMemo(() => {
     const map = new Map<string, number>();
-    for (const student of students) {
-      if (!student.classId) continue;
-      map.set(student.classId, (map.get(student.classId) ?? 0) + 1);
+    for (const item of classes) {
+      map.set(item.id, item._count?.students ?? 0);
     }
     return map;
-  }, [students]);
+  }, [classes]);
+  const examStudents = selectedExam ? studentOptionsByClassId[selectedExam.classId] ?? [] : [];
+  const examStudentsLoaded = selectedExam ? Object.prototype.hasOwnProperty.call(studentOptionsByClassId, selectedExam.classId) : false;
+  const loadingExamStudents = Boolean(selectedExam && studentOptionsLoadingClassId === selectedExam.classId && !examStudentsLoaded);
 
   const gradeFor = (marks: number, total: number) => {
     const pct = (marks / total) * 100;
@@ -150,6 +147,32 @@ export default function AdminAcademicsPageClient({
     setSubjects(subjectsRes.ok ? await subjectsRes.json() : []);
     setTeachers(teachersRes.ok ? await teachersRes.json() : []);
     setExams(examsRes.ok ? await examsRes.json() : []);
+  };
+
+  const loadStudentsForClass = async (classId: string) => {
+    if (!classId || Object.prototype.hasOwnProperty.call(studentOptionsByClassId, classId)) return;
+
+    setStudentOptionsLoadingClassId(classId);
+    try {
+      const res = await fetch(`/api/students?classId=${encodeURIComponent(classId)}&light=1`);
+      const data = (await res.json().catch(() => [])) as StudentItem[];
+      if (!res.ok) {
+        setStudentOptionsByClassId((prev) => ({ ...prev, [classId]: [] }));
+        return;
+      }
+
+      setStudentOptionsByClassId((prev) => ({
+        ...prev,
+        [classId]: data.map((student) => ({
+          id: student.id,
+          classId: student.classId,
+          admissionNo: student.admissionNo,
+          fullName: student.fullName
+        }))
+      }));
+    } finally {
+      setStudentOptionsLoadingClassId((current) => (current === classId ? null : current));
+    }
   };
 
   const addSubject = async (e: React.FormEvent) => {
@@ -325,6 +348,26 @@ export default function AdminAcademicsPageClient({
     await loadResultRows(resultForm.examId);
     await load();
   };
+
+  const selectedExamClassId = selectedExam?.classId ?? '';
+
+  const handleSelectExamForStudents = (examId: string) => {
+    const exam = exams.find((item) => item.id === examId) ?? null;
+    if (!exam) {
+      setResultForm((f) => ({ ...f, examId, studentId: '' }));
+      return;
+    }
+
+    setResultForm((f) => ({ ...f, examId, studentId: '' }));
+    void loadStudentsForClass(exam.classId);
+    void loadResultRows(examId);
+  };
+
+  useEffect(() => {
+    if (selectedExamClassId) {
+      void loadStudentsForClass(selectedExamClassId);
+    }
+  }, [selectedExamClassId]);
 
   return (
     <div className="space-y-4">
@@ -520,9 +563,7 @@ export default function AdminAcademicsPageClient({
             className="h-10 rounded-xl bg-[#edeeef] border-none px-3 text-sm outline-none"
             value={resultForm.examId}
             onChange={(e) => {
-              const examId = e.target.value;
-              setResultForm((f) => ({ ...f, examId, studentId: '' }));
-              void loadResultRows(examId);
+              handleSelectExamForStudents(e.target.value);
             }}
             required
             disabled={exams.length === 0}
@@ -530,8 +571,8 @@ export default function AdminAcademicsPageClient({
             <option value="">Select Exam</option>
             {exams.map((exam) => <option key={exam.id} value={exam.id}>{exam.title} - {exam.class.name} {exam.class.section}</option>)}
           </select>
-          <select className="h-10 rounded-xl bg-[#edeeef] border-none px-3 text-sm outline-none" value={resultForm.studentId} onChange={(e) => setResultForm((f) => ({ ...f, studentId: e.target.value }))} required disabled={!selectedExam}>
-            <option value="">{selectedExam ? 'Select Student' : 'Select Exam First'}</option>
+          <select className="h-10 rounded-xl bg-[#edeeef] border-none px-3 text-sm outline-none" value={resultForm.studentId} onChange={(e) => setResultForm((f) => ({ ...f, studentId: e.target.value }))} required disabled={!selectedExam || loadingExamStudents}>
+            <option value="">{!selectedExam ? 'Select Exam First' : loadingExamStudents ? 'Loading Students...' : 'Select Student'}</option>
             {examStudents.map((student) => <option key={student.id} value={student.id}>{student.fullName} ({student.admissionNo})</option>)}
           </select>
           <input className="h-10 rounded-xl bg-[#edeeef] border-none px-3 text-sm outline-none disabled:opacity-60" type="number" min={0} max={selectedExam?.totalMarks ?? 100} placeholder={selectedExam ? `Obtained marks (0-${selectedExam.totalMarks})` : 'Select exam first'} value={resultForm.marksObtained} onChange={(e) => setResultForm((f) => ({ ...f, marksObtained: e.target.value }))} required disabled={!selectedExam} />

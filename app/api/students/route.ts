@@ -366,6 +366,7 @@ export async function GET(request: Request) {
     const { searchParams } = new URL(request.url);
     const id = searchParams.get('id');
     const classId = searchParams.get('classId');
+    const light = searchParams.get('light') === '1';
 
     if (isLocalRestFallbackEnabled()) {
       return await getStudentsViaRest({ id, classId, auth });
@@ -430,12 +431,34 @@ export async function GET(request: Request) {
       if (!classExists) return NextResponse.json([]);
     }
 
+    const where = classId
+      ? { classId }
+      : isTeacher && !hasGlobalStudentsScope
+        ? { classId: { in: teacherScope!.classIds } }
+        : undefined;
+
+    if (light) {
+      const students = await prisma.student.findMany({
+        where,
+        select: {
+          id: true,
+          classId: true,
+          admissionNo: true,
+          user: { select: { fullName: true } }
+        },
+        orderBy: { createdAt: 'desc' }
+      });
+
+      return NextResponse.json(students.map((student) => ({
+        id: student.id,
+        classId: student.classId,
+        admissionNo: student.admissionNo,
+        fullName: student.user.fullName
+      })));
+    }
+
     const students = await prisma.student.findMany({
-      where: classId
-        ? { classId }
-        : isTeacher && !hasGlobalStudentsScope
-          ? { classId: { in: teacherScope!.classIds } }
-          : undefined,
+      where,
       include: {
         user: true,
         class: true,

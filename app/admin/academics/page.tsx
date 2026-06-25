@@ -9,7 +9,6 @@ type ClassRow = Prisma.ClassGetPayload<{ include: { _count: { select: { students
 type SubjectRow = Prisma.SubjectGetPayload<{ include: { class: true; teacher: { include: { user: true } } } }>;
 type TeacherRow = Prisma.TeacherGetPayload<{ select: { id: true; user: { select: { fullName: true } } } }>;
 type ExamRow = Prisma.ExamGetPayload<{ include: { class: true; subject: true; createdBy: { include: { user: true } }; _count: { select: { results: true } } } }>;
-type StudentRow = Prisma.StudentGetPayload<{ include: { user: { select: { fullName: true } } } }>;
 
 function isDatabaseConnectionError(error: unknown) {
   return (
@@ -23,7 +22,7 @@ function isDatabaseConnectionError(error: unknown) {
 
 const getCachedAcademicsData = unstable_cache(
   async () => {
-    const [classes, subjects, teachers, exams, students] = await prisma.$transaction([
+    const [classes, subjects, teachers, exams] = await prisma.$transaction([
       prisma.class.findMany({
         select: {
           id: true,
@@ -66,14 +65,10 @@ const getCachedAcademicsData = unstable_cache(
           _count: { select: { results: true } }
         },
         orderBy: { examDate: 'desc' }
-      }),
-      prisma.student.findMany({
-        select: { id: true, classId: true, admissionNo: true, user: { select: { fullName: true } } },
-        orderBy: { createdAt: 'desc' }
       })
     ]);
 
-    return { classes, subjects, teachers, exams, students };
+    return { classes, subjects, teachers, exams };
   },
   ['admin-academics-page-data'],
   { revalidate: 30 }
@@ -120,7 +115,7 @@ export default async function AdminAcademicsPage() {
     );
   }
 
-  const { classes, subjects, teachers, exams, students } = data;
+  const { classes, subjects, teachers, exams } = data;
 
   const normalizedExams = exams.map((exam) => {
     const parsed = parseExamTitle(exam.title);
@@ -142,12 +137,6 @@ export default async function AdminAcademicsPage() {
       initialSubjects={subjects}
       initialTeachers={teachers}
       initialExams={normalizedExams}
-      initialStudents={students.map((s) => ({
-        id: s.id,
-        classId: s.classId,
-        admissionNo: s.admissionNo,
-        fullName: s.user.fullName
-      }))}
     />
   );
 }
