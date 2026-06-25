@@ -1,5 +1,22 @@
 # Changelog
 
+## v1.0.1 Patch - 2026-06-25
+
+### Release Summary
+
+Admin performance hotspots were optimized after the `v1.0.0` release tag, with faster warm loads on reports, attendance, finance, student detail, class detail, and messages pages.
+
+### Fixed
+
+- Reduced overfetching on admin reports and detail pages
+- Removed an expensive attendance relation sort
+- Simplified finance aggregation to avoid long interactive transactions
+- Trimmed nested message and roster loads
+
+### Notes
+
+- This patch should be treated as `v1.0.1` because it landed after the `v1.0.0` tag.
+
 ## v1.0.0 Stable - 2026-06-25
 
 ### Release Summary
