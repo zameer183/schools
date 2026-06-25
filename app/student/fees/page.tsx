@@ -3,9 +3,33 @@ import { unstable_cache } from 'next/cache';
 import { requireAuth } from '@/lib/auth';
 import { prisma } from '@/lib/prisma';
 import { PageHeader, KpiCard, Card, StatusBadge } from '@/components/ui';
-import { Wallet, TrendingDown, CheckCircle2, AlertCircle } from 'lucide-react';
+import { Wallet, TrendingDown, CheckCircle2, AlertCircle, WifiOff } from 'lucide-react';
 
 export const dynamic = 'force-dynamic';
+
+function isDatabaseConnectionError(error: unknown) {
+  return (
+    error instanceof Error &&
+    (error.name === 'PrismaClientInitializationError' ||
+      error.message.includes("Can't reach database server") ||
+      error.message.includes('Timed out fetching a new connection') ||
+      error.message.includes('Connection terminated unexpectedly'))
+  );
+}
+
+function DbOfflineBanner() {
+  return (
+    <Card className="p-8">
+      <div className="flex flex-col items-center py-6 text-center">
+        <div className="flex h-14 w-14 items-center justify-center rounded-full bg-[#fef2f2]">
+          <WifiOff className="h-7 w-7 text-[#ef4444]" />
+        </div>
+        <h2 className="mt-4 text-2xl font-bold text-[#1F2937]">Database Unreachable</h2>
+        <p className="mt-2 text-sm text-[#6B7280]">Unable to load fee data right now. Please refresh once the connection recovers.</p>
+      </div>
+    </Card>
+  );
+}
 
 function toDateString(value: Date | string) {
   const parsed = value instanceof Date ? value : new Date(value);
@@ -51,7 +75,18 @@ const getCachedStudentFeesData = unstable_cache(
 
 export default async function StudentFeesPage() {
   const session = await requireAuth([UserRole.STUDENT, UserRole.ADMIN]);
-  const { student, fees } = await getCachedStudentFeesData(session.id);
+  let studentData: Awaited<ReturnType<typeof getCachedStudentFeesData>> | null = null;
+  try {
+    studentData = await getCachedStudentFeesData(session.id);
+  } catch (error) {
+    if (!isDatabaseConnectionError(error)) throw error;
+  }
+
+  if (!studentData) {
+    return <DbOfflineBanner />;
+  }
+
+  const { student, fees } = studentData;
 
   if (!student) {
     return (

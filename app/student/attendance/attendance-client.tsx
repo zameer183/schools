@@ -1,6 +1,7 @@
 'use client';
 
 import { useRouter } from 'next/navigation';
+import { useTransition } from 'react';
 
 type AttendanceStatus = 'PRESENT' | 'ABSENT' | 'LATE' | 'EXCUSED';
 
@@ -77,6 +78,7 @@ export default function AttendanceClient({
   records,
 }: Props) {
   const router = useRouter();
+  const [isNavigatingMonth, startMonthTransition] = useTransition();
 
   const [year, month] = monthKey.split('-').map(Number);
   const totalDays = daysInMonth(year, month);
@@ -109,7 +111,9 @@ export default function AttendanceClient({
 
   function handleNav(delta: number) {
     const newKey = shiftMonth(monthKey, delta);
-    router.push(`/student/attendance?month=${newKey}`);
+    startMonthTransition(() => {
+      router.push(`/student/attendance?month=${newKey}`);
+    });
   }
 
   return (
@@ -134,14 +138,16 @@ export default function AttendanceClient({
         <div className="flex items-center justify-between">
           <button
             onClick={() => handleNav(-1)}
+            disabled={isNavigatingMonth}
             className="flex h-9 w-9 items-center justify-center rounded-xl bg-[#f1f5f9] text-[#004649] hover:bg-[#e2e8f0] transition-colors"
             aria-label="Previous month"
           >
             &#8592;
           </button>
-          <span className="text-base font-bold text-[#1a1c1c]">{formatMonthYear(monthKey)}</span>
+          <span className="text-base font-bold text-[#1a1c1c]">{isNavigatingMonth ? 'Loading...' : formatMonthYear(monthKey)}</span>
           <button
             onClick={() => handleNav(1)}
+            disabled={isNavigatingMonth}
             className="flex h-9 w-9 items-center justify-center rounded-xl bg-[#f1f5f9] text-[#004649] hover:bg-[#e2e8f0] transition-colors"
             aria-label="Next month"
           >

@@ -367,6 +367,7 @@ export async function GET(request: Request) {
     const id = searchParams.get('id');
     const classId = searchParams.get('classId');
     const light = searchParams.get('light') === '1';
+    const view = searchParams.get('view');
 
     if (isLocalRestFallbackEnabled()) {
       return await getStudentsViaRest({ id, classId, auth });
@@ -455,6 +456,55 @@ export async function GET(request: Request) {
         admissionNo: student.admissionNo,
         fullName: student.user.fullName
       })));
+    }
+
+    if (view === 'teacher-progress') {
+      const students = await prisma.student.findMany({
+        where,
+        select: {
+          id: true,
+          admissionNo: true,
+          user: { select: { fullName: true, email: true } },
+          class: { select: { id: true, name: true, section: true } }
+        },
+        orderBy: { createdAt: 'desc' }
+      });
+
+      return NextResponse.json(students);
+    }
+
+    if (view === 'teacher-attendance') {
+      const students = await prisma.student.findMany({
+        where,
+        select: {
+          id: true,
+          admissionNo: true,
+          whatsApp: true,
+          guardianPhone: true,
+          user: { select: { fullName: true, email: true } },
+          class: { select: { id: true, name: true, section: true } }
+        },
+        orderBy: { createdAt: 'desc' }
+      });
+
+      return NextResponse.json(students);
+    }
+
+    if (view === 'teacher-list') {
+      const students = await prisma.student.findMany({
+        where,
+        select: {
+          id: true,
+          admissionNo: true,
+          emergencyContact: true,
+          user: { select: { fullName: true, email: true } },
+          class: { select: { id: true, name: true, section: true } },
+          attendance: { select: { status: true } }
+        },
+        orderBy: { createdAt: 'desc' }
+      });
+
+      return NextResponse.json(students);
     }
 
     const students = await prisma.student.findMany({

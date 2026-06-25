@@ -63,6 +63,8 @@ const DEFAULT_LEVELS: TeacherAccessLevelMap = {
   FEES: 'FULL',
 };
 
+let ensureTeacherControlTablesPromise: Promise<boolean> | null = null;
+
 function levelToEnabled(level: TeacherAccessLevel): boolean {
   return level !== 'NONE';
 }
@@ -92,87 +94,96 @@ async function seedDefaultTeacherAccessRows(teacherId: string): Promise<void> {
 }
 
 export async function ensureTeacherControlTables(): Promise<void> {
-  try {
-    await prisma.$executeRaw`
-      CREATE TABLE IF NOT EXISTS "TeacherAccess" (
-        "id" TEXT PRIMARY KEY,
-        "teacherId" TEXT NOT NULL REFERENCES "Teacher"("id") ON DELETE CASCADE,
-        "module" TEXT,
-        "enabled" BOOLEAN NOT NULL DEFAULT true,
-        "level" TEXT,
-        "updatedAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP
-      );
-    `;
-    await prisma.$executeRaw`ALTER TABLE "TeacherAccess" ADD COLUMN IF NOT EXISTS "module" TEXT;`;
-    await prisma.$executeRaw`ALTER TABLE "TeacherAccess" ADD COLUMN IF NOT EXISTS "enabled" BOOLEAN NOT NULL DEFAULT true;`;
-    await prisma.$executeRaw`ALTER TABLE "TeacherAccess" ADD COLUMN IF NOT EXISTS "level" TEXT;`;
-    await prisma.$executeRaw`ALTER TABLE "TeacherAccess" ADD COLUMN IF NOT EXISTS "updatedAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP;`;
-    await prisma.$executeRaw`ALTER TABLE "TeacherAccess" DROP CONSTRAINT IF EXISTS "TeacherAccess_teacherId_key";`;
-    await prisma.$executeRaw`ALTER TABLE "TeacherAccess" DROP CONSTRAINT IF EXISTS "TeacherAccess_teacherId_module_key";`;
-    await prisma.$executeRaw`
-      CREATE UNIQUE INDEX IF NOT EXISTS "TeacherAccess_teacherId_module_key"
-      ON "TeacherAccess" ("teacherId", "module");
-    `;
-    const columns = await prisma.$queryRaw<Array<{ column_name: string }>>`
-      SELECT column_name
-      FROM information_schema.columns
-      WHERE table_name = 'TeacherAccess';
-    `;
-    const columnNames = new Set(columns.map((column) => column.column_name));
+  if (!ensureTeacherControlTablesPromise) {
+    ensureTeacherControlTablesPromise = (async () => {
+      try {
+        await prisma.$executeRaw`
+          CREATE TABLE IF NOT EXISTS "TeacherAccess" (
+            "id" TEXT PRIMARY KEY,
+            "teacherId" TEXT NOT NULL REFERENCES "Teacher"("id") ON DELETE CASCADE,
+            "module" TEXT,
+            "enabled" BOOLEAN NOT NULL DEFAULT true,
+            "level" TEXT,
+            "updatedAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP
+          );
+        `;
+        await prisma.$executeRaw`ALTER TABLE "TeacherAccess" ADD COLUMN IF NOT EXISTS "module" TEXT;`;
+        await prisma.$executeRaw`ALTER TABLE "TeacherAccess" ADD COLUMN IF NOT EXISTS "enabled" BOOLEAN NOT NULL DEFAULT true;`;
+        await prisma.$executeRaw`ALTER TABLE "TeacherAccess" ADD COLUMN IF NOT EXISTS "level" TEXT;`;
+        await prisma.$executeRaw`ALTER TABLE "TeacherAccess" ADD COLUMN IF NOT EXISTS "updatedAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP;`;
+        await prisma.$executeRaw`ALTER TABLE "TeacherAccess" DROP CONSTRAINT IF EXISTS "TeacherAccess_teacherId_key";`;
+        await prisma.$executeRaw`ALTER TABLE "TeacherAccess" DROP CONSTRAINT IF EXISTS "TeacherAccess_teacherId_module_key";`;
+        await prisma.$executeRaw`
+          CREATE UNIQUE INDEX IF NOT EXISTS "TeacherAccess_teacherId_module_key"
+          ON "TeacherAccess" ("teacherId", "module");
+        `;
+        const columns = await prisma.$queryRaw<Array<{ column_name: string }>>`
+          SELECT column_name
+          FROM information_schema.columns
+          WHERE table_name = 'TeacherAccess';
+        `;
+        const columnNames = new Set(columns.map((column) => column.column_name));
 
-    if (columnNames.has('ACADEMICS')) {
-      await prisma.$executeRaw`
-        INSERT INTO "TeacherAccess" ("id", "teacherId", "module", "enabled", "level", "updatedAt")
-        SELECT CONCAT('access_', "teacherId", '_', LOWER(module_name)),
-               "teacherId",
-               module_name,
-               module_enabled,
-               CASE WHEN module_enabled THEN 'FULL' ELSE 'NONE' END,
-               NOW()
-        FROM (
-          SELECT "teacherId", 'ACADEMICS' AS module_name, COALESCE("ACADEMICS", true) AS module_enabled FROM "TeacherAccess" WHERE "module" IS NULL
-          UNION ALL
-          SELECT "teacherId", 'STUDENTS' AS module_name, COALESCE("STUDENTS", true) AS module_enabled FROM "TeacherAccess" WHERE "module" IS NULL
-          UNION ALL
-          SELECT "teacherId", 'ATTENDANCE' AS module_name, COALESCE("ATTENDANCE", true) AS module_enabled FROM "TeacherAccess" WHERE "module" IS NULL
-          UNION ALL
-          SELECT "teacherId", 'STAFF_ATTENDANCE' AS module_name, COALESCE("STAFF_ATTENDANCE", true) AS module_enabled FROM "TeacherAccess" WHERE "module" IS NULL
-          UNION ALL
-          SELECT "teacherId", 'ASSIGNMENTS' AS module_name, COALESCE("ASSIGNMENTS", true) AS module_enabled FROM "TeacherAccess" WHERE "module" IS NULL
-          UNION ALL
-          SELECT "teacherId", 'PROGRESS' AS module_name, COALESCE("PROGRESS", true) AS module_enabled FROM "TeacherAccess" WHERE "module" IS NULL
-          UNION ALL
-          SELECT "teacherId", 'MESSAGES' AS module_name, COALESCE("MESSAGES", true) AS module_enabled FROM "TeacherAccess" WHERE "module" IS NULL
-          UNION ALL
-          SELECT "teacherId", 'EXAMS' AS module_name, COALESCE("EXAMS", true) AS module_enabled FROM "TeacherAccess" WHERE "module" IS NULL
-          UNION ALL
-          SELECT "teacherId", 'FEES' AS module_name, COALESCE("FEES", true) AS module_enabled FROM "TeacherAccess" WHERE "module" IS NULL
-        ) AS legacy_rows
-        ON CONFLICT ("teacherId", "module") DO UPDATE SET
-          "enabled" = EXCLUDED."enabled",
-          "level" = EXCLUDED."level",
-          "updatedAt" = NOW();
-      `;
-    }
-    await prisma.$executeRaw`
-      UPDATE "TeacherAccess"
-      SET "level" = CASE WHEN "enabled" = true THEN 'FULL' ELSE 'NONE' END
-      WHERE "module" IS NOT NULL AND ("level" IS NULL OR "level" = '');
-    `;
-    await prisma.$executeRaw`DELETE FROM "TeacherAccess" WHERE "module" IS NULL;`;
-    await prisma.$executeRaw`
-      CREATE TABLE IF NOT EXISTS "TeacherCompensation" (
-        "id" TEXT PRIMARY KEY,
-        "teacherId" TEXT NOT NULL UNIQUE REFERENCES "Teacher"("id") ON DELETE CASCADE,
-        "baseSalary" DECIMAL(12,2) NOT NULL DEFAULT 0,
-        "bonus" DECIMAL(12,2) NOT NULL DEFAULT 0,
-        "deduction" DECIMAL(12,2) NOT NULL DEFAULT 0,
-        "updatedAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP
-      );
-    `;
-  } catch (error) {
-    console.error('[teacher-access] ensureTeacherControlTables failed', error);
+        if (columnNames.has('ACADEMICS')) {
+          await prisma.$executeRaw`
+            INSERT INTO "TeacherAccess" ("id", "teacherId", "module", "enabled", "level", "updatedAt")
+            SELECT CONCAT('access_', "teacherId", '_', LOWER(module_name)),
+                   "teacherId",
+                   module_name,
+                   module_enabled,
+                   CASE WHEN module_enabled THEN 'FULL' ELSE 'NONE' END,
+                   NOW()
+            FROM (
+              SELECT "teacherId", 'ACADEMICS' AS module_name, COALESCE("ACADEMICS", true) AS module_enabled FROM "TeacherAccess" WHERE "module" IS NULL
+              UNION ALL
+              SELECT "teacherId", 'STUDENTS' AS module_name, COALESCE("STUDENTS", true) AS module_enabled FROM "TeacherAccess" WHERE "module" IS NULL
+              UNION ALL
+              SELECT "teacherId", 'ATTENDANCE' AS module_name, COALESCE("ATTENDANCE", true) AS module_enabled FROM "TeacherAccess" WHERE "module" IS NULL
+              UNION ALL
+              SELECT "teacherId", 'STAFF_ATTENDANCE' AS module_name, COALESCE("STAFF_ATTENDANCE", true) AS module_enabled FROM "TeacherAccess" WHERE "module" IS NULL
+              UNION ALL
+              SELECT "teacherId", 'ASSIGNMENTS' AS module_name, COALESCE("ASSIGNMENTS", true) AS module_enabled FROM "TeacherAccess" WHERE "module" IS NULL
+              UNION ALL
+              SELECT "teacherId", 'PROGRESS' AS module_name, COALESCE("PROGRESS", true) AS module_enabled FROM "TeacherAccess" WHERE "module" IS NULL
+              UNION ALL
+              SELECT "teacherId", 'MESSAGES' AS module_name, COALESCE("MESSAGES", true) AS module_enabled FROM "TeacherAccess" WHERE "module" IS NULL
+              UNION ALL
+              SELECT "teacherId", 'EXAMS' AS module_name, COALESCE("EXAMS", true) AS module_enabled FROM "TeacherAccess" WHERE "module" IS NULL
+              UNION ALL
+              SELECT "teacherId", 'FEES' AS module_name, COALESCE("FEES", true) AS module_enabled FROM "TeacherAccess" WHERE "module" IS NULL
+            ) AS legacy_rows
+            ON CONFLICT ("teacherId", "module") DO UPDATE SET
+              "enabled" = EXCLUDED."enabled",
+              "level" = EXCLUDED."level",
+              "updatedAt" = NOW();
+          `;
+        }
+        await prisma.$executeRaw`
+          UPDATE "TeacherAccess"
+          SET "level" = CASE WHEN "enabled" = true THEN 'FULL' ELSE 'NONE' END
+          WHERE "module" IS NOT NULL AND ("level" IS NULL OR "level" = '');
+        `;
+        await prisma.$executeRaw`DELETE FROM "TeacherAccess" WHERE "module" IS NULL;`;
+        await prisma.$executeRaw`
+          CREATE TABLE IF NOT EXISTS "TeacherCompensation" (
+            "id" TEXT PRIMARY KEY,
+            "teacherId" TEXT NOT NULL UNIQUE REFERENCES "Teacher"("id") ON DELETE CASCADE,
+            "baseSalary" DECIMAL(12,2) NOT NULL DEFAULT 0,
+            "bonus" DECIMAL(12,2) NOT NULL DEFAULT 0,
+            "deduction" DECIMAL(12,2) NOT NULL DEFAULT 0,
+            "updatedAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP
+          );
+        `;
+        return true;
+      } catch (error) {
+        console.error('[teacher-access] ensureTeacherControlTables failed', error);
+        ensureTeacherControlTablesPromise = null;
+        return false;
+      }
+    })();
   }
+
+  await ensureTeacherControlTablesPromise;
 }
 
 export async function getTeacherAccessLevelsByTeacherId(teacherId: string): Promise<TeacherAccessLevelMap> {

@@ -19,6 +19,8 @@ export function MobileDrawer({
   role,
   doLogout,
   pathname,
+  pendingHref,
+  onNavigate,
 }: {
   isOpen: boolean;
   onClose: () => void;
@@ -27,6 +29,8 @@ export function MobileDrawer({
   role: UserRole;
   doLogout: () => void;
   pathname: string;
+  pendingHref: string | null;
+  onNavigate: (href: string) => void;
 }) {
   const initials = fullName
     .split(' ')
@@ -96,7 +100,10 @@ export function MobileDrawer({
                 key={item.href}
                 href={item.href}
                 prefetch={false}
-                onClick={onClose}
+                onClick={() => {
+                  onNavigate(item.href);
+                  onClose();
+                }}
                 className={`flex items-center gap-3 rounded-2xl px-3 py-2.5 text-sm font-bold transition-all ${
                   active
                     ? 'bg-[#084750] text-white shadow-[0_10px_22px_rgba(8,71,80,0.24)] ring-1 ring-[#D9A253]/50'
@@ -104,7 +111,7 @@ export function MobileDrawer({
                 }`}
               >
                 <Icon className="h-[18px] w-[18px] shrink-0" />
-                {item.label}
+                {pendingHref === item.href ? 'Loading...' : item.label}
               </Link>
             );
           })}

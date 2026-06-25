@@ -3,9 +3,33 @@ import { unstable_cache } from 'next/cache';
 import { requireAuth } from '@/lib/auth';
 import { prisma } from '@/lib/prisma';
 import { PageHeader, Card } from '@/components/ui';
-import { User, Mail, Phone, BookOpen, Hash, GraduationCap, Shield } from 'lucide-react';
+import { User, Mail, Phone, BookOpen, Hash, GraduationCap, Shield, WifiOff } from 'lucide-react';
 
 export const dynamic = 'force-dynamic';
+
+function isDatabaseConnectionError(error: unknown) {
+  return (
+    error instanceof Error &&
+    (error.name === 'PrismaClientInitializationError' ||
+      error.message.includes("Can't reach database server") ||
+      error.message.includes('Timed out fetching a new connection') ||
+      error.message.includes('Connection terminated unexpectedly'))
+  );
+}
+
+function DbOfflineBanner() {
+  return (
+    <Card className="p-8">
+      <div className="flex flex-col items-center py-6 text-center">
+        <div className="flex h-14 w-14 items-center justify-center rounded-full bg-[#fef2f2]">
+          <WifiOff className="h-7 w-7 text-[#ef4444]" />
+        </div>
+        <h2 className="mt-4 text-2xl font-bold text-[#1F2937]">Database Unreachable</h2>
+        <p className="mt-2 text-sm text-[#6B7280]">Unable to load profile details right now. Please refresh once the connection recovers.</p>
+      </div>
+    </Card>
+  );
+}
 
 const getCachedStudentSettingsData = unstable_cache(
   async (userId: string) =>
@@ -23,7 +47,27 @@ const getCachedStudentSettingsData = unstable_cache(
 
 export default async function StudentSettingsPage() {
   const session = await requireAuth([UserRole.STUDENT, UserRole.ADMIN]);
-  const student = await getCachedStudentSettingsData(session.id);
+  let student: Awaited<ReturnType<typeof getCachedStudentSettingsData>> | null = null;
+  let databaseUnavailable = false;
+  try {
+    student = await getCachedStudentSettingsData(session.id);
+  } catch (error) {
+    if (!isDatabaseConnectionError(error)) throw error;
+    databaseUnavailable = true;
+  }
+
+  if (databaseUnavailable) {
+    return <DbOfflineBanner />;
+  }
+
+  if (!student) {
+    return (
+      <Card className="p-8">
+        <h2 className="text-2xl md:text-3xl font-bold text-[#1F2937]">Profile Missing</h2>
+        <p className="mt-2 text-sm text-[#6B7280]">Student profile not found. Contact your administrator.</p>
+      </Card>
+    );
+  }
 
   const name = student?.user.fullName ?? 'Student';
   const initials = name.split(' ').filter(Boolean).slice(0, 2).map((w) => w[0]?.toUpperCase() ?? '').join('');

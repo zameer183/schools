@@ -533,7 +533,7 @@ export default function TeacherProgressPage() {
     try {
       const [classesRes, studentsRes] = await Promise.all([
         fetch('/api/classes', { cache: 'no-store' }),
-        fetch('/api/students', { cache: 'no-store' })
+        fetch('/api/students?view=teacher-progress', { cache: 'no-store' })
       ]);
       if (!classesRes.ok || !studentsRes.ok) {
         const classesError = await classesRes.json().catch(() => null);

@@ -92,6 +92,7 @@ export function DashboardShell({
   const router = useRouter();
   const [pending, startTransition] = useTransition();
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [pendingHref, setPendingHref] = useState<string | null>(null);
   const [unreadMessages, setUnreadMessages] = useState(0);
   const [unreadNotifications, setUnreadNotifications] = useState(0);
   const { t } = useLanguage();
@@ -160,6 +161,15 @@ export function DashboardShell({
   useEffect(() => {
     setSidebarOpen(false);
   }, [pathname]);
+
+  useEffect(() => {
+    setPendingHref(null);
+  }, [pathname]);
+
+  const handleNavigationIntent = (href: string) => {
+    if (href === pathname) return;
+    setPendingHref(href);
+  };
 
   useEffect(() => {
     // Intentionally disabled aggressive prefetch to avoid noisy failing _rsc requests.
@@ -286,11 +296,16 @@ export function DashboardShell({
 
   return (
     <div className="flex min-h-screen overflow-x-clip bg-[#F8FAFC] print:overflow-visible">
+      {pendingHref ? (
+        <div className="fixed left-0 right-0 top-0 z-[60] h-1 overflow-hidden bg-[#D7E3E8] print:hidden">
+          <div className="h-full w-1/3 animate-pulse rounded-full bg-gradient-to-r from-[#004649] via-[#1B5E62] to-[#86F2E4]" />
+        </div>
+      ) : null}
       {/* Desktop sidebar - always visible on md+ */}
       <aside className="fixed left-0 top-0 z-40 hidden h-screen w-[220px] flex-col border-r border-[#e2e8e8]/60 bg-[#f3f4f5] md:flex print:hidden">
         {/* Branding */}
         <div className="border-b border-[#e2e8e8] px-5 pb-5 pt-6">
-          <Link href={instituteProfilePath} prefetch={false}>
+          <Link href={instituteProfilePath} prefetch={false} onClick={() => handleNavigationIntent(instituteProfilePath)}>
             <Image
               src="/manarah-logo.png"
               alt="Manarah Institute logo"
@@ -312,6 +327,7 @@ export function DashboardShell({
                 key={item.href}
                 href={item.href}
                 prefetch={false}
+                onClick={() => handleNavigationIntent(item.href)}
                 className={`flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium transition-all ${
                   active
                     ? 'bg-gradient-to-r from-[#004649] to-[#1b5e62] text-white shadow-sm'
@@ -319,7 +335,7 @@ export function DashboardShell({
                 }`}
               >
                 <Icon className="h-[18px] w-[18px] shrink-0" />
-                <span className="min-w-0 flex-1 truncate">{item.label}</span>
+                <span className="min-w-0 flex-1 truncate">{pendingHref === item.href ? 'Loading...' : item.label}</span>
                 {(item.badgeCount ?? 0) > 0 ? (
                   <span
                     className={`inline-flex min-w-5 items-center justify-center rounded-full px-1.5 py-0.5 text-[10px] font-bold ${
@@ -356,6 +372,8 @@ export function DashboardShell({
         role={role}
         doLogout={doLogout}
         pathname={pathname}
+        pendingHref={pendingHref}
+        onNavigate={handleNavigationIntent}
       />
       </div>
 
@@ -365,7 +383,7 @@ export function DashboardShell({
         {!hideHeader ? (
         <header className="fixed left-0 right-0 top-0 z-20 flex h-16 items-center justify-between border-b border-[#E2E8F0] bg-white/85 px-5 shadow-[0_4px_14px_rgba(15,23,42,0.05)] backdrop-blur-xl md:left-[220px] md:px-6 print:hidden">
           <div className="flex min-w-0 items-center">
-            <Link href={instituteProfilePath} prefetch={false} className="flex items-center md:hidden">
+            <Link href={instituteProfilePath} prefetch={false} onClick={() => handleNavigationIntent(instituteProfilePath)} className="flex items-center md:hidden">
               <Image
                 src="/manarah-logo.png"
                 alt="Manarah Institute logo"
@@ -394,6 +412,7 @@ export function DashboardShell({
             <Link
               href={notificationPath}
               prefetch={false}
+              onClick={() => handleNavigationIntent(notificationPath)}
               className="relative inline-flex h-10 w-10 items-center justify-center rounded-full bg-[#F1F5F9] text-[#475569] hover:bg-[#E2E8F0]"
               aria-label="Notifications"
               title="Notifications"
@@ -427,14 +446,14 @@ export function DashboardShell({
         ) : null}
 
         {/* Page content */}
-        <main className={`w-full min-w-0 flex-1 overflow-x-hidden print:overflow-visible px-5 pb-24 md:pb-6 print:pb-0 print:px-0 ${hideHeader ? 'pt-4' : 'pt-[76px]'} md:px-6 print:pt-0`}>
+        <main aria-busy={pendingHref ? 'true' : 'false'} className={`w-full min-w-0 flex-1 overflow-x-hidden print:overflow-visible px-5 pb-24 md:pb-6 print:pb-0 print:px-0 ${hideHeader ? 'pt-4' : 'pt-[76px]'} md:px-6 print:pt-0`}>
           {children}
         </main>
       </div>
 
       {/* Mobile bottom navigation */}
       <div className="print:hidden">
-        <MobileBottomNav navItems={navItems} role={role} doLogout={doLogout} pathname={pathname} />
+        <MobileBottomNav navItems={navItems} role={role} doLogout={doLogout} pathname={pathname} pendingHref={pendingHref} onNavigate={handleNavigationIntent} />
       </div>
     </div>
   );

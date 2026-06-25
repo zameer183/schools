@@ -1,8 +1,7 @@
 'use client';
 
-import { useEffect, useMemo, useState } from 'react';
-import { useSearchParams } from 'next/navigation';
-import Link from 'next/link';
+import { useEffect, useMemo, useState, useTransition } from 'react';
+import { useRouter, useSearchParams } from 'next/navigation';
 import {
   Eye,
   GraduationCap,
@@ -41,6 +40,7 @@ function avatarTone(name: string) {
 }
 
 export default function TeacherStudentsPage() {
+  const router = useRouter();
   const searchParams = useSearchParams();
   const classIdFromUrl = searchParams.get('classId') ?? '';
   const [students, setStudents] = useState<StudentItem[]>([]);
@@ -50,7 +50,8 @@ export default function TeacherStudentsPage() {
   const [classFilter, setClassFilter] = useState('all');
   const [actionSheetStudent, setActionSheetStudent] = useState<StudentItem | null>(null);
   const [selected, setSelected] = useState<Set<string>>(new Set());
-
+  const [routeLoadingLabel, setRouteLoadingLabel] = useState('');
+  const [isRoutePending, startRouteTransition] = useTransition();
 
   const classOptions = useMemo(() => {
     const uniq = new Set<string>();
@@ -75,19 +76,29 @@ export default function TeacherStudentsPage() {
     });
   }, [students, query, classFilter]);
 
-  const attendancePercent = (s: StudentItem) => {
-    const logs = s.attendance ?? [];
-    if (!logs.length) return 0;
-    const presentLike = logs.filter((a) => a.status === 'PRESENT' || a.status === 'LATE' || a.status === 'EXCUSED').length;
-    return Math.round((presentLike / logs.length) * 100);
-  };
+  const attendancePercentByStudentId = useMemo(() => {
+    const map = new Map<string, number>();
+    for (const student of students) {
+      const logs = student.attendance ?? [];
+      if (!logs.length) {
+        map.set(student.id, 0);
+        continue;
+      }
+      const presentLike = logs.filter((a) => a.status === 'PRESENT' || a.status === 'LATE' || a.status === 'EXCUSED').length;
+      map.set(student.id, Math.round((presentLike / logs.length) * 100));
+    }
+    return map;
+  }, [students]);
 
   useEffect(() => {
     const loadData = async () => {
       setLoading(true);
       setMessage('');
       try {
-        const url = classIdFromUrl ? `/api/students?classId=${encodeURIComponent(classIdFromUrl)}` : '/api/students';
+        const baseUrl = classIdFromUrl
+          ? `/api/students?classId=${encodeURIComponent(classIdFromUrl)}`
+          : '/api/students';
+        const url = `${baseUrl}${baseUrl.includes('?') ? '&' : '?'}view=teacher-list`;
         const res = await fetch(url);
         const json = await res.json();
         setStudents(Array.isArray(json) ? json : []);
@@ -111,9 +122,28 @@ export default function TeacherStudentsPage() {
   }, [actionSheetStudent]);
 
   const closeActionSheet = () => setActionSheetStudent(null);
+  const navigateWithFeedback = (href: string, label: string) => {
+    setRouteLoadingLabel(label);
+    closeActionSheet();
+    startRouteTransition(() => {
+      router.push(href);
+    });
+  };
+
+  useEffect(() => {
+    if (!isRoutePending && routeLoadingLabel) {
+      const timer = window.setTimeout(() => setRouteLoadingLabel(''), 1200);
+      return () => window.clearTimeout(timer);
+    }
+  }, [isRoutePending, routeLoadingLabel]);
 
   return (
     <div className="min-h-screen space-y-6 bg-[#F7F9FB] pb-28">
+      {routeLoadingLabel ? (
+        <div className="rounded-xl border border-[#CDE5FF] bg-[#EFF6FF] px-4 py-3 text-sm font-medium text-[#1D4ED8]">
+          {routeLoadingLabel}
+        </div>
+      ) : null}
       <section>
         <div className="mb-4 flex items-end justify-between">
           <div>
@@ -202,12 +232,12 @@ export default function TeacherStudentsPage() {
                   <div className="space-y-2 border-t border-[#ECEEF0] pt-4">
                     <div className="flex items-center justify-between text-xs">
                       <span className="text-[#40474F]">Attendance</span>
-                      <span className="font-bold text-[#191C1E]">{attendancePercent(s)}%</span>
+                      <span className="font-bold text-[#191C1E]">{attendancePercentByStudentId.get(s.id) ?? 0}%</span>
                     </div>
                     <div className="h-1.5 w-full overflow-hidden rounded-full bg-[#ECEEF0]">
                       <div
-                        className={`h-full ${attendancePercent(s) < 70 ? 'bg-[#BA1A1A]/60' : 'bg-[#006A61]'}`}
-                        style={{ width: `${Math.max(5, attendancePercent(s))}%` }}
+                        className={`h-full ${(attendancePercentByStudentId.get(s.id) ?? 0) < 70 ? 'bg-[#BA1A1A]/60' : 'bg-[#006A61]'}`}
+                        style={{ width: `${Math.max(5, attendancePercentByStudentId.get(s.id) ?? 0)}%` }}
                       />
                     </div>
                   </div>
@@ -256,30 +286,33 @@ export default function TeacherStudentsPage() {
             </div>
 
             <div className="space-y-1.5">
-              <Link
-                href={`/teacher/students/${actionSheetStudent.id}`}
-                onClick={closeActionSheet}
+              <button
+                type="button"
+                onClick={() => navigateWithFeedback(`/teacher/students/${actionSheetStudent.id}`, 'Opening student details...')}
+                disabled={isRoutePending}
                 className="flex h-12 items-center gap-3 rounded-xl px-3 text-sm font-medium text-[#0F172A] hover:bg-[#F1F5F9]"
               >
                 <Eye className="h-4 w-4 text-[#0F766E]" />
                 View Details
-              </Link>
-              <Link
-                href={`/teacher/messages?studentId=${actionSheetStudent.id}`}
-                onClick={closeActionSheet}
+              </button>
+              <button
+                type="button"
+                onClick={() => navigateWithFeedback(`/teacher/messages?studentId=${actionSheetStudent.id}`, 'Opening messages...')}
+                disabled={isRoutePending}
                 className="flex h-12 items-center gap-3 rounded-xl px-3 text-sm font-medium text-[#0F172A] hover:bg-[#F1F5F9]"
               >
                 <MessageSquare className="h-4 w-4 text-[#0F766E]" />
                 Message
-              </Link>
-              <Link
-                href={`/teacher/students/${actionSheetStudent.id}/progress`}
-                onClick={closeActionSheet}
+              </button>
+              <button
+                type="button"
+                onClick={() => navigateWithFeedback(`/teacher/students/${actionSheetStudent.id}/progress`, 'Opening progress report...')}
+                disabled={isRoutePending}
                 className="flex h-12 items-center gap-3 rounded-xl px-3 text-sm font-medium text-[#0F172A] hover:bg-[#F1F5F9]"
               >
                 <Shield className="h-4 w-4 text-[#0F766E]" />
                 Progress
-              </Link>
+              </button>
             </div>
           </div>
         </div>

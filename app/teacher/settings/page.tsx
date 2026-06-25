@@ -3,6 +3,7 @@ import { unstable_cache } from 'next/cache';
 import { revalidatePath } from 'next/cache';
 import { requireAuth } from '@/lib/auth';
 import { prisma } from '@/lib/prisma';
+import { ensureStaffAttendanceTable } from '@/lib/staff-attendance';
 import {
   ensureTeacherControlTables,
   getTeacherAccessMapByTeacherId,
@@ -60,24 +61,6 @@ function DbOfflineBanner() {
       </div>
     </Card>
   );
-}
-
-async function ensureStaffAttendanceTable() {
-  try {
-    await prisma.$executeRaw`
-      CREATE TABLE IF NOT EXISTS "StaffAttendance" (
-        "id" TEXT PRIMARY KEY,
-        "teacherId" TEXT NOT NULL REFERENCES "Teacher"("id") ON DELETE CASCADE,
-        "date" DATE NOT NULL,
-        "status" TEXT NOT NULL,
-        "note" TEXT,
-        "markedAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
-        UNIQUE ("teacherId", "date")
-      );
-    `;
-  } catch (error) {
-    console.error('[teacher/settings] ensureStaffAttendanceTable failed', error);
-  }
 }
 
 const getCachedTeacherSettingsData = unstable_cache(
@@ -225,9 +208,6 @@ export default async function TeacherSettingsPage() {
       </div>
     );
   }
-
-  await ensureTeacherControlTables();
-  await ensureStaffAttendanceTable();
 
   const todayDateOnly = new Date().toISOString().slice(0, 10);
   const todayRow = recentAttendance.find((row) => new Date(row.date).toISOString().slice(0, 10) === todayDateOnly);

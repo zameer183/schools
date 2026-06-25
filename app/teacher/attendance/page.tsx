@@ -129,7 +129,10 @@ export default function TeacherAttendancePage() {
     setLoading(true);
     setMessage('');
     try {
-      const [classesRes, studentsRes] = await Promise.all([fetch('/api/classes'), fetch('/api/students')]);
+      const [classesRes, studentsRes] = await Promise.all([
+        fetch('/api/classes'),
+        fetch('/api/students?view=teacher-attendance')
+      ]);
 
       const classesJson = await classesRes.json();
       const studentsJson = await studentsRes.json();
