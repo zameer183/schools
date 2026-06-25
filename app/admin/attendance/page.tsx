@@ -20,12 +20,7 @@ type StaffDailyRow = {
 type AttendancePayload = {
   classes: Array<{ id: string; name: string; section: string }>;
   dailyRows: Array<{
-    student: {
-      id: string;
-      admissionNo: string;
-      classId: string | null;
-      user: { fullName: string };
-    };
+    studentId: string;
     status: AttendanceStatus;
   }>;
   dailyStatusCounts: Array<{ status: AttendanceStatus; _count: { _all: number } }>;
@@ -139,17 +134,10 @@ const getCachedAttendanceData = unstable_cache(
         tx.attendance.findMany({
           where: attendanceWhere,
           select: {
-            status: true,
-            student: {
-              select: {
-                id: true,
-                admissionNo: true,
-                classId: true,
-                user: { select: { fullName: true } }
-              }
-            }
+            studentId: true,
+            status: true
           },
-          orderBy: [{ student: { admissionNo: 'asc' } }],
+          orderBy: [{ studentId: 'asc' }],
           take: 2000
         }),
         tx.attendance.groupBy({
@@ -172,8 +160,8 @@ const getCachedAttendanceData = unstable_cache(
             classId: true,
             user: { select: { fullName: true } }
           },
-          orderBy: [{ user: { fullName: 'asc' } }],
-          take: 5000
+          orderBy: [{ admissionNo: 'asc' }],
+          take: 1000
         }),
         tx.teacher.findMany({
           select: {
@@ -181,7 +169,7 @@ const getCachedAttendanceData = unstable_cache(
             userId: true,
             user: { select: { fullName: true } }
           },
-          orderBy: [{ user: { fullName: 'asc' } }],
+          orderBy: [{ createdAt: 'asc' }],
           take: 500
         }),
         staffAttendanceEnabled
@@ -290,10 +278,10 @@ async function loadAttendanceViaRest(
     user: { fullName: usersById.get(teacher.userId)?.fullName ?? 'Unknown Teacher' }
   }));
 
-  const dailyRows = dailyRowsRaw.flatMap((row) => {
-    const student = studentsById.get(row.studentId);
-    return student ? [{ student, status: row.status }] : [];
-  });
+  const dailyRows = dailyRowsRaw.map((row) => ({
+    studentId: row.studentId,
+    status: row.status
+  }));
 
   const dailyStatusCountsMap = new Map<AttendanceStatus, number>();
   for (const row of dailyRows) {
@@ -422,7 +410,7 @@ export default async function AdminAttendancePage({ searchParams }: { searchPara
     );
   }
 
-  const studentDailyMap = new Map(dailyRows.map((row) => [row.student.id, row.status]));
+  const studentDailyMap = new Map(dailyRows.map((row) => [row.studentId, row.status]));
   const staffDailyMap = new Map(staffDailyRows.map((row) => [row.teacherId, row.status]));
   const classById = new Map(classes.map((item) => [item.id, item]));
 

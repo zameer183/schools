@@ -24,16 +24,17 @@ const getCachedAdminMessagesData = unstable_cache(
     const [students, classes, sentMessages, receivedMessages] = await Promise.all([
       prisma.student.findMany({
         include: { user: { select: { id: true, fullName: true } }, class: { select: { name: true, section: true } } },
-        orderBy: { user: { fullName: 'asc' } }
+        orderBy: { admissionNo: 'asc' },
+        take: 1000
       }),
-      prisma.class.findMany({ orderBy: [{ name: 'asc' }, { section: 'asc' }] }),
+      prisma.class.findMany({ select: { id: true, name: true, section: true }, orderBy: [{ name: 'asc' }, { section: 'asc' }] }),
       prisma.message.findMany({
         include: {
           recipients: { include: { user: { select: { id: true, fullName: true, role: true } } } }
         },
         where: { senderId: userId },
         orderBy: { createdAt: 'desc' },
-        take: 80
+        take: 50
       }),
       prisma.messageRecipient.findMany({
         where: { userId },
@@ -45,7 +46,7 @@ const getCachedAdminMessagesData = unstable_cache(
           }
         },
         orderBy: { message: { createdAt: 'desc' } },
-        take: 120
+        take: 80
       })
     ]);
 

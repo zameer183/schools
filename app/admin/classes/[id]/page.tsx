@@ -18,14 +18,21 @@ export default async function ClassDetailsPage({ params }: ClassDetailsPageProps
     where: { id },
     include: {
       teacherLinks: {
-        include: { teacher: { include: { user: { select: { fullName: true, email: true, phone: true } } } } }
+        include: {
+          teacher: {
+            select: {
+              id: true,
+              user: { select: { fullName: true, email: true, phone: true } }
+            }
+          }
+        }
       },
       students: {
         include: {
           user: { select: { id: true, fullName: true, email: true, phone: true } },
-          attendance: { select: { id: true, date: true, status: true } },
-          results: { select: { id: true, grade: true, marksObtained: true } },
-          fees: { select: { id: true, status: true, amount: true, dueDate: true } }
+          attendance: { select: { status: true }, orderBy: { date: 'desc' }, take: 30 },
+          results: { select: { grade: true, createdAt: true }, orderBy: { createdAt: 'desc' }, take: 3 },
+          fees: { select: { id: true, status: true, amount: true, dueDate: true }, orderBy: { dueDate: 'desc' }, take: 8 }
         },
         orderBy: { createdAt: 'desc' }
       }

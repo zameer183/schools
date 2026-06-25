@@ -354,7 +354,7 @@ async function loadProfileViaPrisma(id: string): Promise<ViewModel | null> {
 
   if (!student) return null;
 
-  const classes = await prisma.class
+  const classesPromise = prisma.class
     .findMany({
       select: { id: true, name: true, section: true },
       orderBy: [{ name: 'asc' }, { section: 'asc' }]
@@ -364,14 +364,14 @@ async function loadProfileViaPrisma(id: string): Promise<ViewModel | null> {
       return [];
     });
 
-  const classesById = new Map(classes.map((classItem) => [classItem.id, classItem]));
-
-  const [attendanceRows, resultRows, fees] = await Promise.all([
+  const [classes, attendanceRows, resultRows, fees] = await Promise.all([
+    classesPromise,
     prisma.attendance
       .findMany({
         where: { studentId: id },
         select: { id: true, date: true, status: true, classId: true },
-        orderBy: { date: 'desc' }
+        orderBy: { date: 'desc' },
+        take: 120
       })
       .catch((error) => {
         console.error('[admin/student-profile] attendance failed', error);
@@ -419,6 +419,8 @@ async function loadProfileViaPrisma(id: string): Promise<ViewModel | null> {
         return [];
       })
   ]);
+
+  const classesById = new Map(classes.map((classItem) => [classItem.id, classItem]));
 
   const subjectIds = [...new Set(resultRows.map((row) => row.subjectId).filter(Boolean))];
   const examIds = [...new Set(resultRows.map((row) => row.examId).filter(Boolean))];

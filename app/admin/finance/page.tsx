@@ -56,8 +56,10 @@ type FinancePageData = {
   classes: Array<{ id: string; name: string; section: string }>;
   feeAgg: { _sum: { amount: Prisma.Decimal | null; discount: Prisma.Decimal | null } };
   paidAgg: { _sum: { amountPaid: Prisma.Decimal | null } };
+  feePaidById: Record<string, number>;
   recentPayments: Array<{
     id: string;
+    feeId: string;
     amountPaid: Prisma.Decimal;
     paidAt: Date;
     fee: {
@@ -65,7 +67,6 @@ type FinancePageData = {
       dueDate: Date;
       amount: Prisma.Decimal;
       discount: Prisma.Decimal;
-      payments: Array<{ amountPaid: Prisma.Decimal }>;
       student: {
         user: { fullName: string };
       };
@@ -85,7 +86,6 @@ type FinancePageData = {
       class: { name: string; section: string } | null;
       user: { fullName: string; phone: string | null };
     };
-    payments: Array<{ amountPaid: Prisma.Decimal }>;
   }>;
 };
 
@@ -156,7 +156,7 @@ const getCachedFinanceData = unstable_cache(
       ...(periodDueDateWhere ? { paidAt: periodDueDateWhere } : {})
     };
 
-    const [classes, feeAgg, paidAgg, recentPayments, dues] = await prisma.$transaction([
+    const [classes, feeAgg, paidAgg, recentPayments, dues] = await Promise.all([
       prisma.class.findMany({
         select: { id: true, name: true, section: true },
         orderBy: { name: 'asc' }
@@ -167,20 +167,20 @@ const getCachedFinanceData = unstable_cache(
         where: paymentWhere,
         select: {
           id: true,
+          feeId: true,
           amountPaid: true,
           paidAt: true,
-            fee: {
-              select: {
-                title: true,
-                dueDate: true,
-                amount: true,
-                discount: true,
-                payments: { select: { amountPaid: true } },
-                student: {
-                  select: {
-                    user: { select: { fullName: true } }
-                  }
+          fee: {
+            select: {
+              title: true,
+              dueDate: true,
+              amount: true,
+              discount: true,
+              student: {
+                select: {
+                  user: { select: { fullName: true } }
                 }
+              }
             }
           }
         },
@@ -204,15 +204,27 @@ const getCachedFinanceData = unstable_cache(
               class: { select: { name: true, section: true } },
               user: { select: { fullName: true, phone: true } }
             }
-          },
-          payments: { select: { amountPaid: true } }
+          }
         },
         orderBy,
-        take: 50
+        take: 40
       })
     ]);
 
-    return { classes, feeAgg, paidAgg, recentPayments, dues };
+    const feeIds = Array.from(new Set([...recentPayments.map((item) => item.feeId), ...dues.map((fee) => fee.id)]));
+    const feePaidRows = feeIds.length
+      ? await prisma.payment.groupBy({
+          by: ['feeId'],
+          where: { feeId: { in: feeIds } },
+          _sum: { amountPaid: true }
+        })
+      : [];
+
+    const feePaidById = new Map(
+      feePaidRows.map((row) => [row.feeId, Number(row._sum.amountPaid ?? 0)])
+    );
+
+    return { classes, feeAgg, paidAgg, recentPayments, dues, feePaidById };
   },
   ['admin-finance-page'],
   { revalidate: 30 }
@@ -254,7 +266,8 @@ export default async function AdminFinancePage({ searchParams }: AdminFinancePag
     );
   }
 
-  const { classes, feeAgg, paidAgg, recentPayments, dues } = data;
+  const { classes, feeAgg, paidAgg, recentPayments, dues, feePaidById } = data;
+  const feePaidTotals = new Map<string, number>(Object.entries(feePaidById ?? {}));
   const totalBilled = Number(feeAgg._sum.amount ?? 0) - Number(feeAgg._sum.discount ?? 0);
   const totalPaid = Number(paidAgg._sum.amountPaid ?? 0);
   const collectionRate = totalBilled > 0 ? Math.round((totalPaid / totalBilled) * 100) : 0;
@@ -264,7 +277,7 @@ export default async function AdminFinancePage({ searchParams }: AdminFinancePag
   let dueAmount = 0;
 
   let serializedDues: SerializedFeeItem[] = dues.map(fee => {
-    const paidAmount = fee.payments.reduce((s, p) => s + Number(p.amountPaid), 0);
+    const paidAmount = Number(feePaidTotals.get(fee.id) ?? 0);
     const total = Number(fee.amount) - Number(fee.discount);
     const remaining = Math.max(total - paidAmount, 0);
     const computedStatus = deriveFeeStatus({
@@ -313,7 +326,7 @@ export default async function AdminFinancePage({ searchParams }: AdminFinancePag
   ];
   const recentPaymentRows = recentPayments.map((item) => {
     const total = Number(item.fee.amount) - Number(item.fee.discount);
-    const paidAmount = item.fee.payments.reduce((sum, payment) => sum + Number(payment.amountPaid), 0);
+    const paidAmount = Number(feePaidTotals.get(item.feeId) ?? 0);
     return {
       ...item,
       computedStatus: deriveFeeStatus({

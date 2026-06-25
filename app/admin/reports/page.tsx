@@ -115,7 +115,8 @@ const getCachedReportsData = unstable_cache(
     const classStudents = await prisma.student.findMany({
       where: selectedClassFilter,
       select: { id: true, admissionNo: true, whatsApp: true, guardianPhone: true, user: { select: { fullName: true } }, class: { select: { name: true, section: true } } },
-      orderBy: { createdAt: 'desc' }
+      orderBy: { createdAt: 'desc' },
+      take: 1000
     });
 
     const selectedStudentId =
@@ -160,10 +161,10 @@ const getCachedReportsData = unstable_cache(
           guardianPhone: true,
           user: { select: { fullName: true } },
           class: { select: { name: true, section: true } },
-          fees: { select: { status: true, amount: true, discount: true }, orderBy: { dueDate: 'desc' }, take: 5 }
+          fees: { select: { status: true, amount: true, discount: true }, orderBy: { dueDate: 'desc' }, take: 3 }
         },
         orderBy: { createdAt: 'desc' },
-        take: 10
+        take: 8
       }),
       prisma.studentProgress.findMany({
         where: progressFilter,

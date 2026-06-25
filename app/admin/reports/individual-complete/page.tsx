@@ -16,8 +16,9 @@ function parseDate(input?: string, fallback?: Date) {
   return Number.isNaN(d.getTime()) ? fallback ?? new Date() : d;
 }
 
-function dateKey(date: Date) {
-  return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
+function dateKey(date: Date | string) {
+  const value = date instanceof Date ? date : new Date(date);
+  return `${value.getFullYear()}-${String(value.getMonth() + 1).padStart(2, '0')}-${String(value.getDate()).padStart(2, '0')}`;
 }
 
 function statusCode(status?: 'PRESENT' | 'ABSENT' | 'LATE' | 'EXCUSED') {
@@ -272,7 +273,8 @@ const getCachedIndividualCompleteReportData = unstable_cache(
         fatherName: true,
         user: { select: { fullName: true } }
       },
-      orderBy: { createdAt: 'desc' }
+      orderBy: { createdAt: 'desc' },
+      take: 1000
     });
 
     const selectedStudentId = studentId && students.some((s) => s.id === studentId) ? studentId : students[0]?.id ?? '';
@@ -294,40 +296,36 @@ const getCachedIndividualCompleteReportData = unstable_cache(
       ? toSelectedStudent(selectedStudentRaw, selectedClassRaw ? { ...selectedClassRaw, teacherLinks: selectedClassTeacherLinks } : null)
       : null;
 
-    const attendanceRows = selectedStudent
-      ? await prisma.attendance.findMany({
-          where: { studentId: selectedStudent.id, date: { gte: fromDate, lte: toDateBoundary } },
-          select: { date: true, status: true },
-          orderBy: { date: 'asc' }
-        })
-      : [];
-
-    const progressRows = selectedStudent
-      ? await prisma.studentProgress.findMany({
-          where: { studentId: selectedStudent.id, date: { gte: fromDate, lte: toDateBoundary } },
-          select: {
-            id: true,
-            date: true,
-            surahRanges: { select: { sectionKey: true, surahId: true, fromAyah: true, toAyah: true } },
-            tajweeditotal: true,
-            hifzTotal: true,
-            notes: true
-          },
-          orderBy: { date: 'asc' }
-        })
-      : [];
-
-    const resultRows = selectedStudent
-      ? await prisma.result.findMany({
-          where: { studentId: selectedStudent.id, exam: { examDate: { gte: fromDate, lte: toDateBoundary } } },
-          select: {
-            marksObtained: true,
-            exam: { select: { examDate: true, title: true, totalMarks: true } },
-            subject: { select: { name: true } }
-          },
-          orderBy: { exam: { examDate: 'asc' } }
-        })
-      : [];
+    const [attendanceRows, progressRows, resultRows] = selectedStudent
+      ? await Promise.all([
+          prisma.attendance.findMany({
+            where: { studentId: selectedStudent.id, date: { gte: fromDate, lte: toDateBoundary } },
+            select: { date: true, status: true },
+            orderBy: { date: 'asc' }
+          }),
+          prisma.studentProgress.findMany({
+            where: { studentId: selectedStudent.id, date: { gte: fromDate, lte: toDateBoundary } },
+            select: {
+              id: true,
+              date: true,
+              surahRanges: { select: { sectionKey: true, surahId: true, fromAyah: true, toAyah: true } },
+              tajweeditotal: true,
+              hifzTotal: true,
+              notes: true
+            },
+            orderBy: { date: 'asc' }
+          }),
+          prisma.result.findMany({
+            where: { studentId: selectedStudent.id, exam: { examDate: { gte: fromDate, lte: toDateBoundary } } },
+            select: {
+              marksObtained: true,
+              exam: { select: { examDate: true, title: true, totalMarks: true } },
+              subject: { select: { name: true } }
+            },
+            orderBy: { exam: { examDate: 'asc' } }
+          })
+        ])
+      : [[], [], []];
 
     return { classes, students, selectedClassId, selectedStudentId, selectedStudent, attendanceRows, progressRows, resultRows };
   },
