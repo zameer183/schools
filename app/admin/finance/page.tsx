@@ -25,6 +25,11 @@ function getMonthEnd(date: Date) {
   return new Date(date.getFullYear(), date.getMonth() + 1, 0, 23, 59, 59, 999);
 }
 
+function toIsoDateString(value: Date | string | null | undefined) {
+  const date = value instanceof Date ? value : new Date(value ?? '');
+  return Number.isNaN(date.getTime()) ? '' : date.toISOString();
+}
+
 function deriveFeeStatus(params: {
   dueDate: Date;
   totalAmount: number;
@@ -277,7 +282,7 @@ export default async function AdminFinancePage({ searchParams }: AdminFinancePag
       id: fee.id,
       title: fee.title,
       status: computedStatus,
-      dueDate: fee.dueDate.toISOString(),
+      dueDate: toIsoDateString(fee.dueDate),
       studentName: fee.student.user.fullName,
       studentId: fee.student.id,
       classLabel: fee.student.class ? `${fee.student.class.name} - ${fee.student.class.section}` : 'Unassigned',
@@ -403,7 +408,7 @@ export default async function AdminFinancePage({ searchParams }: AdminFinancePag
                   <div className="min-w-0">
                     <p className="font-semibold text-[#1a1c1c] text-sm">{item.fee.student.user.fullName}</p>
                     <p className="mt-0.5 truncate text-xs text-[#6f7979]">{item.fee.title}</p>
-                    <p className="mt-1 text-xs text-[#6f7979]">{item.paidAt.toISOString().slice(0, 10)}</p>
+                    <p className="mt-1 text-xs text-[#6f7979]">{toIsoDateString(item.paidAt).slice(0, 10)}</p>
                   </div>
                   <div className="shrink-0 text-right">
                     <p className="font-bold text-[#1a1c1c] text-sm">{formatCurrency(Number(item.amountPaid))}</p>
@@ -436,7 +441,7 @@ export default async function AdminFinancePage({ searchParams }: AdminFinancePag
                   >
                     <td className="px-3 py-2.5">
                       <span className="rounded-full bg-[#edeeef] px-2 py-0.5 text-xs text-[#6f7979]">
-                        {item.paidAt.toISOString().slice(0, 10)}
+                        {toIsoDateString(item.paidAt).slice(0, 10)}
                       </span>
                     </td>
                     <td className="px-3 py-2.5 font-medium text-[#1a1c1c] truncate">{item.fee.student.user.fullName}</td>

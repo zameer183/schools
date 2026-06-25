@@ -81,45 +81,51 @@ async function ensureStaffAttendanceTable() {
 }
 
 const getCachedTeacherSettingsData = unstable_cache(
-  async (teacherId: string) => {
+  async (teacherUserId: string) => {
+    await ensureTeacherControlTables();
+    await ensureStaffAttendanceTable();
+
+    const teacher = await prisma.teacher.findUnique({
+      where: { userId: teacherUserId },
+      select: {
+        id: true,
+        specialization: true,
+        qualification: true,
+        user: { select: { fullName: true, email: true, phone: true } },
+        subjects: {
+          select: { name: true, code: true, classId: true, class: { select: { name: true, section: true } } },
+          orderBy: { name: 'asc' },
+          take: 12
+        },
+        classAssignments: {
+          select: { class: { select: { name: true, section: true } } },
+          orderBy: { createdAt: 'asc' }
+        }
+      }
+    });
+
+    if (!teacher) return null;
+
     const monthStart = new Date();
     monthStart.setDate(1);
     monthStart.setHours(0, 0, 0, 0);
     const nextMonthStart = new Date(monthStart);
     nextMonthStart.setMonth(nextMonthStart.getMonth() + 1);
 
-    const [teacher, access, compensation, recentAttendance, monthAttendance] = await Promise.all([
-      prisma.teacher.findUnique({
-        where: { id: teacherId },
-        select: {
-          id: true,
-          specialization: true,
-          qualification: true,
-          user: { select: { fullName: true, email: true, phone: true } },
-          subjects: {
-            select: { name: true, code: true, classId: true, class: { select: { name: true, section: true } } },
-            orderBy: { name: 'asc' },
-            take: 12
-          },
-          classAssignments: {
-            select: { class: { select: { name: true, section: true } } },
-            orderBy: { createdAt: 'asc' }
-          }
-        }
-      }),
-      getTeacherAccessMapByTeacherId(teacherId),
-      getTeacherCompensationByTeacherId(teacherId),
+    const [access, compensation, recentAttendance, monthAttendance] = await Promise.all([
+      getTeacherAccessMapByTeacherId(teacher.id),
+      getTeacherCompensationByTeacherId(teacher.id),
       prisma.$queryRaw<StaffAttendanceRow[]>`
         SELECT "date", "status", "note", "markedAt"
         FROM "StaffAttendance"
-        WHERE "teacherId" = ${teacherId}
+        WHERE "teacherId" = ${teacher.id}
         ORDER BY "date" DESC
         LIMIT 10;
       `,
       prisma.$queryRaw<StaffAttendanceRow[]>`
         SELECT "date", "status", "note", "markedAt"
         FROM "StaffAttendance"
-        WHERE "teacherId" = ${teacherId}
+        WHERE "teacherId" = ${teacher.id}
           AND "date" >= ${monthStart}
           AND "date" < ${nextMonthStart}
         ORDER BY "date" ASC;

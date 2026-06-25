@@ -71,3 +71,11 @@ Production-ready HMS built with Next.js App Router, TypeScript, Tailwind CSS, Pr
 - Prisma relational modeling with audit fields and unique constraints
 - Easy extension path for S3/Blob storage adapter and PDF generation microservice
 
+## Production Docs
+- [Changelog](./CHANGELOG.md)
+- [Client Release Notes](./docs/client-release-notes-v1.0.0.md)
+- [Client Handoff](./docs/client-handoff.md)
+- [Executive Summary](./docs/executive-summary-v1.0.0.md)
+- [Release Tag](./docs/release-tag-v1.0.0.md)
+- [Production Hardening & Monitoring](./docs/production-hardening.md)
+
