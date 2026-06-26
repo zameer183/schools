@@ -188,7 +188,6 @@ export async function ensureTeacherControlTables(): Promise<void> {
 
 export async function getTeacherAccessLevelsByTeacherId(teacherId: string): Promise<TeacherAccessLevelMap> {
   try {
-    await ensureTeacherControlTables();
     const rows = await prisma.$queryRaw<Array<{ module: string; enabled: boolean | null; level: string | null }>>`
       SELECT "module", "enabled", "level"
       FROM "TeacherAccess"

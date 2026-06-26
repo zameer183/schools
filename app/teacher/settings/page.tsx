@@ -65,9 +65,6 @@ function DbOfflineBanner() {
 
 const getCachedTeacherSettingsData = unstable_cache(
   async (teacherUserId: string) => {
-    await ensureTeacherControlTables();
-    await ensureStaffAttendanceTable();
-
     const teacher = await prisma.teacher.findUnique({
       where: { userId: teacherUserId },
       select: {

@@ -39,6 +39,7 @@ type TeacherMessagesPageData = {
   inbox: InboxRow[];
   sent: SentRow[];
   recipients: RecipientOption[];
+  access: Awaited<ReturnType<typeof getTeacherAccessMapByUserId>>;
 };
 
 function isDatabaseConnectionError(error: unknown) {
@@ -95,42 +96,45 @@ const getCachedTeacherMessagesData = unstable_cache(
       return null;
     }
 
-    const [inbox, sent] = await prisma.$transaction([
-      prisma.messageRecipient.findMany({
-        where: { userId },
-        select: {
-          id: true,
-          isRead: true,
-          message: {
-            select: {
-              id: true,
-              subject: true,
-              body: true,
-              createdAt: true,
-              sender: { select: { id: true, fullName: true, role: true } }
+    const [access, [inbox, sent]] = await Promise.all([
+      getTeacherAccessMapByUserId(userId),
+      prisma.$transaction([
+        prisma.messageRecipient.findMany({
+          where: { userId },
+          select: {
+            id: true,
+            isRead: true,
+            message: {
+              select: {
+                id: true,
+                subject: true,
+                body: true,
+                createdAt: true,
+                sender: { select: { id: true, fullName: true, role: true } }
+              }
             }
-          }
-        },
-        orderBy: { message: { createdAt: 'desc' } },
-        take: 10
-      }),
-      prisma.message.findMany({
-        where: { senderId: userId },
-        select: {
-          id: true,
-          subject: true,
-          body: true,
-          createdAt: true,
-          recipients: {
-            select: {
-              userId: true,
-              user: { select: { id: true, fullName: true } }
+          },
+          orderBy: { message: { createdAt: 'desc' } },
+          take: 10
+        }),
+        prisma.message.findMany({
+          where: { senderId: userId },
+          select: {
+            id: true,
+            subject: true,
+            body: true,
+            createdAt: true,
+            recipients: {
+              select: {
+                userId: true,
+                user: { select: { id: true, fullName: true } }
+              }
             }
-          }
-        },
-        orderBy: { createdAt: 'desc' },
-        take: 10
-      })
+          },
+          orderBy: { createdAt: 'desc' },
+          take: 10
+        })
+      ])
     ]);
 
     const recipientMap = new Map<string, RecipientOption>();
@@ -149,7 +153,8 @@ const getCachedTeacherMessagesData = unstable_cache(
     return {
       inbox,
       sent,
-      recipients: Array.from(recipientMap.values())
+      recipients: Array.from(recipientMap.values()),
+      access
     } satisfies TeacherMessagesPageData;
   },
   ['teacher-messages-page-data'],
@@ -159,20 +164,16 @@ const getCachedTeacherMessagesData = unstable_cache(
 export default async function TeacherMessagesPage() {
   const session = await requireAuth([UserRole.TEACHER, UserRole.ADMIN]);
 
-  let access: Awaited<ReturnType<typeof getTeacherAccessMapByUserId>> | null = null;
   let data: Awaited<ReturnType<typeof getCachedTeacherMessagesData>> | null = null;
 
   try {
-    [access, data] = await Promise.all([
-      getTeacherAccessMapByUserId(session.id),
-      getCachedTeacherMessagesData(session.id)
-    ]);
+    data = await getCachedTeacherMessagesData(session.id);
   } catch (error) {
     console.error('[teacher/messages] load failed', error);
     if (!isDatabaseConnectionError(error)) throw error;
   }
 
-  if (session.role === 'TEACHER' && access && !access.MESSAGES) {
+  if (session.role === 'TEACHER' && data && !data.access.MESSAGES) {
     return (
       <div className="rounded-2xl bg-white shadow-[0_12px_40px_rgba(43,103,110,0.06)] p-8">
         <h2 className="font-headline text-3xl font-bold text-[#1a1c1c]">Messages Access Disabled</h2>
