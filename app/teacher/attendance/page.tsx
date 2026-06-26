@@ -98,9 +98,9 @@ function firstDayOffset(year: number, month: number) {
   return day === 0 ? 6 : day - 1;
 }
 
-function shiftMonthKey(date: string, delta: number) {
-  const base = new Date(date);
-  return fmtDate(new Date(base.getFullYear(), base.getMonth() + delta, 1));
+function parseDateParts(date: string) {
+  const [year, month, day] = date.split('-').map(Number);
+  return { year, month, day };
 }
 
 function Modal({ title, onClose, children }: { title: string; onClose: () => void; children: React.ReactNode }) {
@@ -124,7 +124,10 @@ export default function TeacherAttendancePage() {
   const [students, setStudents] = useState<StudentItem[]>([]);
   const [selectedClassId, setSelectedClassId] = useState('');
   const [date, setDate] = useState(() => new Date().toISOString().slice(0, 10));
-  const [staffMonthDate, setStaffMonthDate] = useState(() => monthStart(new Date().toISOString().slice(0, 10)));
+  const [staffMonth, setStaffMonth] = useState(() => {
+    const today = new Date();
+    return new Date(today.getFullYear(), today.getMonth(), 1);
+  });
   const [records, setRecords] = useState<Record<string, AttendanceRecord>>({});
   const [dailyRows, setDailyRows] = useState<ApiAttendanceRow[]>([]);
   const [weeklyRows, setWeeklyRows] = useState<ApiAttendanceRow[]>([]);
@@ -191,7 +194,7 @@ export default function TeacherAttendancePage() {
       const [myDailyStaffRes, myWeeklyStaffRes, myMonthlyStaffRes] = await Promise.all([
         fetch(`/api/staff-attendance?date=${date}`),
         fetch(`/api/staff-attendance?from=${rangeStart(date, 6)}&to=${date}`),
-        fetch(`/api/staff-attendance?from=${monthStart(staffMonthDate)}&to=${monthEnd(staffMonthDate)}`)
+        fetch(`/api/staff-attendance?from=${fmtDate(staffMonth)}&to=${fmtDate(new Date(staffMonth.getFullYear(), staffMonth.getMonth() + 1, 0))}`)
       ]);
 
       const dailyJson = await dailyRes.json();
@@ -233,7 +236,7 @@ export default function TeacherAttendancePage() {
     } catch {
       setMessage('Failed to load existing attendance records.');
     }
-  }, [selectedClassId, date, classStudents, staffMonthDate]);
+  }, [selectedClassId, date, classStudents, staffMonth]);
 
   useEffect(() => {
     void loadExistingAttendance();
@@ -367,7 +370,8 @@ export default function TeacherAttendancePage() {
       }
       setMessage('Your attendance saved successfully.');
       setDate(staffModal.date);
-      setStaffMonthDate(monthStart(staffModal.date));
+      const { year, month } = parseDateParts(staffModal.date);
+      setStaffMonth(new Date(year, month - 1, 1));
       setStaffModal(null);
       await loadExistingAttendance();
     } catch {
@@ -429,14 +433,15 @@ export default function TeacherAttendancePage() {
   const countByStatus = (rows: { status: AttendanceStatus }[], status: AttendanceStatus) => rows.filter((row) => row.status === status).length;
   const todayStaffStatus = myDailyStaffRows[0]?.status;
   const inputBase = 'h-12 w-full rounded-2xl border border-[#D8E2E7] bg-white px-4 text-sm font-semibold text-[#0F172A] outline-none transition duration-200 focus:border-[#007A70] focus:ring-4 focus:ring-[#8BE8D8]/25';
-  const [calendarYear, calendarMonth] = staffMonthDate.split('-').map(Number);
+  const calendarYear = staffMonth.getFullYear();
+  const calendarMonth = staffMonth.getMonth() + 1;
   const staffRecordMap = useMemo(() => new Map(myMonthlyStaffRows.map((row) => [row.date, row])), [myMonthlyStaffRows]);
   const calendarDays: (number | null)[] = [
     ...Array(firstDayOffset(calendarYear, calendarMonth)).fill(null),
     ...Array.from({ length: daysInMonth(calendarYear, calendarMonth) }, (_, index) => index + 1)
   ];
   while (calendarDays.length % 7 !== 0) calendarDays.push(null);
-  const selectedMonthLabel = new Date(calendarYear, calendarMonth - 1, 1).toLocaleDateString('en-US', {
+  const selectedMonthLabel = staffMonth.toLocaleDateString('en-US', {
     month: 'long',
     year: 'numeric'
   });
@@ -520,7 +525,7 @@ export default function TeacherAttendancePage() {
           <div className="flex items-center gap-2">
             <button
               type="button"
-              onClick={() => setStaffMonthDate(shiftMonthKey(staffMonthDate, -1))}
+              onClick={() => setStaffMonth(new Date(staffMonth.getFullYear(), staffMonth.getMonth() - 1, 1))}
               className="flex h-9 w-9 items-center justify-center rounded-xl bg-[#F1F5F9] text-[#084750] transition active:scale-[0.97]"
               aria-label="Previous month"
             >
@@ -528,7 +533,7 @@ export default function TeacherAttendancePage() {
             </button>
             <button
               type="button"
-              onClick={() => setStaffMonthDate(shiftMonthKey(staffMonthDate, 1))}
+              onClick={() => setStaffMonth(new Date(staffMonth.getFullYear(), staffMonth.getMonth() + 1, 1))}
               className="flex h-9 w-9 items-center justify-center rounded-xl bg-[#F1F5F9] text-[#084750] transition active:scale-[0.97]"
               aria-label="Next month"
             >
