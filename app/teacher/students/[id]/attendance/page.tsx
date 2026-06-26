@@ -78,7 +78,7 @@ export default async function TeacherStudentAttendancePage({ params }: { params:
       student={serializedStudent}
       backHref={`/teacher/students/${student.id}`}
       backLabel="Back to Student"
-      canDelete={false}
+      canDelete
     />
   );
 }

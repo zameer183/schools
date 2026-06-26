@@ -187,12 +187,47 @@ export async function POST(request: Request) {
 }
 
 export async function DELETE(request: Request) {
-  const auth = await ensureApiRole([UserRole.ADMIN]);
+  const auth = await ensureApiRole([UserRole.ADMIN, UserRole.TEACHER]);
   if (!auth.authorized) return auth.response;
+  if (auth.session.role === UserRole.TEACHER) {
+    const canAccess = await hasTeacherAccessByUserId(auth.session.id, 'ATTENDANCE');
+    if (!canAccess) {
+      return NextResponse.json({ error: 'Attendance module access is disabled by admin.' }, { status: 403 });
+    }
+  }
 
   const { searchParams } = new URL(request.url);
   const id = searchParams.get('id');
   if (!id) return NextResponse.json({ error: 'id required' }, { status: 400 });
+
+  if (auth.session.role === UserRole.TEACHER) {
+    const teacher = await prisma.teacher.findUnique({
+      where: { userId: auth.session.id },
+      select: {
+        classAssignments: { select: { classId: true } },
+        subjects: { select: { classId: true } }
+      }
+    });
+    if (!teacher) {
+      return NextResponse.json({ error: 'Teacher profile missing' }, { status: 400 });
+    }
+
+    const allowedClassIds = Array.from(
+      new Set([
+        ...teacher.classAssignments.map((item) => item.classId),
+        ...teacher.subjects.map((item) => item.classId)
+      ])
+    );
+
+    const attendance = await prisma.attendance.findUnique({
+      where: { id },
+      select: { classId: true }
+    });
+
+    if (!attendance || !allowedClassIds.includes(attendance.classId)) {
+      return NextResponse.json({ error: 'You can only unmark attendance for your assigned classes.' }, { status: 403 });
+    }
+  }
 
   await prisma.attendance.delete({ where: { id } });
   return NextResponse.json({ success: true });

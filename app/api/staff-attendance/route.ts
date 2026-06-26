@@ -139,3 +139,48 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: 'Unable to save staff attendance right now.' }, { status: 500 });
   }
 }
+
+export async function DELETE(request: Request) {
+  try {
+    const auth = await ensureApiRole([UserRole.ADMIN, UserRole.TEACHER]);
+    if (!auth.authorized) return auth.response;
+
+    const tableReady = await ensureStaffAttendanceTable();
+    if (!tableReady) {
+      return NextResponse.json({ error: 'Staff attendance storage is unavailable.' }, { status: 503 });
+    }
+
+    const { searchParams } = new URL(request.url);
+    const date = searchParams.get('date')?.trim() ?? '';
+    const teacherIdParam = searchParams.get('teacherId')?.trim() ?? '';
+
+    if (!date) {
+      return NextResponse.json({ error: 'date is required.' }, { status: 400 });
+    }
+
+    let teacherId = teacherIdParam;
+    if (auth.session.role === UserRole.TEACHER) {
+      const teacher = await prisma.teacher.findUnique({
+        where: { userId: auth.session.id },
+        select: { id: true }
+      });
+      if (!teacher) return NextResponse.json({ error: 'Teacher profile missing.' }, { status: 400 });
+      teacherId = teacher.id;
+    }
+
+    if (!teacherId) {
+      return NextResponse.json({ error: 'teacherId is required for admin request.' }, { status: 400 });
+    }
+
+    await prisma.$executeRaw`
+      DELETE FROM "StaffAttendance"
+      WHERE "teacherId" = ${teacherId}
+        AND "date" = ${date}::date
+    `;
+
+    return NextResponse.json({ success: true });
+  } catch (error) {
+    console.error('[api/staff-attendance][DELETE]', error);
+    return NextResponse.json({ error: 'Unable to unmark staff attendance right now.' }, { status: 500 });
+  }
+}

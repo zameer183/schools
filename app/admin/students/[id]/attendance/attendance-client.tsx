@@ -9,7 +9,6 @@ import {
   Share2,
   Download,
   X,
-  Trash2,
   Check,
   Loader2
 } from 'lucide-react';
@@ -429,9 +428,9 @@ export default function StudentAttendanceClient({
                 <button
                   onClick={handleDelete}
                   disabled={deleting}
-                  className="h-11 w-11 flex-shrink-0 flex items-center justify-center rounded-xl bg-[#fef2f2] text-[#b91c1c] hover:bg-[#fee2e2] transition disabled:opacity-60"
+                  className="h-11 min-w-[108px] flex-shrink-0 rounded-xl bg-[#fef2f2] px-4 text-sm font-semibold text-[#b91c1c] transition hover:bg-[#fee2e2] disabled:opacity-60"
                 >
-                  {deleting ? <Loader2 className="h-4 w-4 animate-spin" /> : <Trash2 className="h-4 w-4" />}
+                  {deleting ? <Loader2 className="mx-auto h-4 w-4 animate-spin" /> : 'Unmark'}
                 </button>
               )}
               <button
@@ -440,7 +439,7 @@ export default function StudentAttendanceClient({
                 className="h-11 flex flex-1 items-center justify-center gap-2 rounded-xl bg-[#004649] text-white font-semibold hover:bg-[#1b5e62] transition disabled:opacity-60"
               >
                 {saving ? <Loader2 className="h-4 w-4 animate-spin" /> : <Check className="h-4 w-4" />}
-                {modal.existing ? 'Update' : 'Mark Attendance'}
+                {modal.existing ? 'Update Attendance' : 'Mark Attendance'}
               </button>
             </div>
           </div>

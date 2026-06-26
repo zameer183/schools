@@ -145,6 +145,7 @@ export default function TeacherAttendancePage() {
   const [staffModalStatus, setStaffModalStatus] = useState<AttendanceStatus>('PRESENT');
   const [staffModalNote, setStaffModalNote] = useState('');
   const [savingMyAttendance, setSavingMyAttendance] = useState(false);
+  const [deletingMyAttendance, setDeletingMyAttendance] = useState(false);
   const [staffModalError, setStaffModalError] = useState('');
 
   const loadBaseData = useCallback(async () => {
@@ -378,6 +379,30 @@ export default function TeacherAttendancePage() {
       setStaffModalError('Network error while saving your attendance.');
     } finally {
       setSavingMyAttendance(false);
+    }
+  };
+
+  const deleteMyAttendance = async () => {
+    if (!staffModal?.existing) return;
+    setDeletingMyAttendance(true);
+    setStaffModalError('');
+    try {
+      const res = await fetch(`/api/staff-attendance?date=${staffModal.date}`, { method: 'DELETE' });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        setStaffModalError(data?.error ?? 'Unable to unmark your attendance.');
+        return;
+      }
+      setMessage('Your attendance was unmarked successfully.');
+      setDate(staffModal.date);
+      const { year, month } = parseDateParts(staffModal.date);
+      setStaffMonth(new Date(year, month - 1, 1));
+      setStaffModal(null);
+      await loadExistingAttendance();
+    } catch {
+      setStaffModalError('Network error while unmarking your attendance.');
+    } finally {
+      setDeletingMyAttendance(false);
     }
   };
 
@@ -808,15 +833,27 @@ export default function TeacherAttendancePage() {
 
             {staffModalError ? <p className="text-xs font-medium text-[#b91c1c]">{staffModalError}</p> : null}
 
-            <button
-              type="button"
-              onClick={saveMyAttendance}
-              disabled={savingMyAttendance}
-              className="flex h-11 w-full items-center justify-center gap-2 rounded-xl bg-[#004649] font-semibold text-white transition hover:bg-[#1b5e62] disabled:opacity-60"
-            >
-              {savingMyAttendance ? <Loader2 className="h-4 w-4 animate-spin" /> : <Check className="h-4 w-4" />}
-              {staffModal.existing ? 'Update Attendance' : 'Mark Attendance'}
-            </button>
+            <div className="flex gap-2">
+              {staffModal.existing ? (
+                <button
+                  type="button"
+                  onClick={deleteMyAttendance}
+                  disabled={deletingMyAttendance}
+                  className="h-11 min-w-[108px] flex-shrink-0 rounded-xl bg-[#fef2f2] px-4 text-sm font-semibold text-[#b91c1c] transition hover:bg-[#fee2e2] disabled:opacity-60"
+                >
+                  {deletingMyAttendance ? <Loader2 className="mx-auto h-4 w-4 animate-spin" /> : 'Unmark'}
+                </button>
+              ) : null}
+              <button
+                type="button"
+                onClick={saveMyAttendance}
+                disabled={savingMyAttendance}
+                className="flex h-11 flex-1 items-center justify-center gap-2 rounded-xl bg-[#004649] font-semibold text-white transition hover:bg-[#1b5e62] disabled:opacity-60"
+              >
+                {savingMyAttendance ? <Loader2 className="h-4 w-4 animate-spin" /> : <Check className="h-4 w-4" />}
+                {staffModal.existing ? 'Update Attendance' : 'Mark Attendance'}
+              </button>
+            </div>
 
             {staffModal.existing ? (
               <div className="rounded-xl bg-[#f8fafc] px-3 py-2 text-xs text-[#64748B]">
