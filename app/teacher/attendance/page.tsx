@@ -1,7 +1,7 @@
 'use client';
 
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import { AlertCircle, CalendarCheck2, CheckCircle2, Clock3, NotebookPen, Send, UserRound, Users2, X, XCircle } from 'lucide-react';
+import { AlertCircle, CalendarCheck2, CheckCircle2, Check, Clock3, Loader2, Send, UserRound, Users2, X, XCircle } from 'lucide-react';
 
 type AttendanceStatus = 'PRESENT' | 'ABSENT' | 'LATE' | 'EXCUSED';
 
@@ -103,11 +103,28 @@ function shiftMonthKey(date: string, delta: number) {
   return fmtDate(new Date(base.getFullYear(), base.getMonth() + delta, 1));
 }
 
+function Modal({ title, onClose, children }: { title: string; onClose: () => void; children: React.ReactNode }) {
+  return (
+    <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/40 p-4 backdrop-blur-sm sm:items-center">
+      <div className="w-full max-w-sm rounded-2xl bg-white shadow-2xl">
+        <div className="flex items-center justify-between border-b border-[#f1f5f9] px-5 py-4">
+          <h3 className="font-bold text-[#111827]">{title}</h3>
+          <button onClick={onClose} className="text-[#9ca3af] hover:text-[#374151]">
+            <X className="h-5 w-5" />
+          </button>
+        </div>
+        <div className="p-5">{children}</div>
+      </div>
+    </div>
+  );
+}
+
 export default function TeacherAttendancePage() {
   const [classes, setClasses] = useState<ClassItem[]>([]);
   const [students, setStudents] = useState<StudentItem[]>([]);
   const [selectedClassId, setSelectedClassId] = useState('');
   const [date, setDate] = useState(() => new Date().toISOString().slice(0, 10));
+  const [staffMonthDate, setStaffMonthDate] = useState(() => monthStart(new Date().toISOString().slice(0, 10)));
   const [records, setRecords] = useState<Record<string, AttendanceRecord>>({});
   const [dailyRows, setDailyRows] = useState<ApiAttendanceRow[]>([]);
   const [weeklyRows, setWeeklyRows] = useState<ApiAttendanceRow[]>([]);
@@ -115,15 +132,17 @@ export default function TeacherAttendancePage() {
   const [myDailyStaffRows, setMyDailyStaffRows] = useState<StaffAttendanceRow[]>([]);
   const [myWeeklyStaffRows, setMyWeeklyStaffRows] = useState<StaffAttendanceRow[]>([]);
   const [myMonthlyStaffRows, setMyMonthlyStaffRows] = useState<StaffAttendanceRow[]>([]);
-  const [myStatus, setMyStatus] = useState<AttendanceStatus>('PRESENT');
-  const [myNote, setMyNote] = useState('');
-  const [savingMyAttendance, setSavingMyAttendance] = useState(false);
   const [message, setMessage] = useState('');
   const [saving, setSaving] = useState(false);
   const [loading, setLoading] = useState(true);
   const [broadcasting, setBroadcasting] = useState(false);
   const [sendFeedback, setSendFeedback] = useState('');
   const [messageChannelPicker, setMessageChannelPicker] = useState<AttendanceStatus | null>(null);
+  const [staffModal, setStaffModal] = useState<{ date: string; existing: StaffAttendanceRow | null } | null>(null);
+  const [staffModalStatus, setStaffModalStatus] = useState<AttendanceStatus>('PRESENT');
+  const [staffModalNote, setStaffModalNote] = useState('');
+  const [savingMyAttendance, setSavingMyAttendance] = useState(false);
+  const [staffModalError, setStaffModalError] = useState('');
 
   const loadBaseData = useCallback(async () => {
     setLoading(true);
@@ -172,7 +191,7 @@ export default function TeacherAttendancePage() {
       const [myDailyStaffRes, myWeeklyStaffRes, myMonthlyStaffRes] = await Promise.all([
         fetch(`/api/staff-attendance?date=${date}`),
         fetch(`/api/staff-attendance?from=${rangeStart(date, 6)}&to=${date}`),
-        fetch(`/api/staff-attendance?from=${monthStart(date)}&to=${monthEnd(date)}`)
+        fetch(`/api/staff-attendance?from=${monthStart(staffMonthDate)}&to=${monthEnd(staffMonthDate)}`)
       ]);
 
       const dailyJson = await dailyRes.json();
@@ -196,13 +215,6 @@ export default function TeacherAttendancePage() {
       setMyDailyStaffRows(myDailyStaffParsed);
       setMyWeeklyStaffRows(myWeeklyStaffParsed);
       setMyMonthlyStaffRows(myMonthlyStaffParsed);
-      if (myDailyStaffParsed[0]) {
-        setMyStatus(myDailyStaffParsed[0].status);
-        setMyNote(myDailyStaffParsed[0].note ?? '');
-      } else {
-        setMyStatus('PRESENT');
-        setMyNote('');
-      }
 
       const nextMap: Record<string, AttendanceRecord> = {};
       for (const student of classStudents) {
@@ -221,7 +233,7 @@ export default function TeacherAttendancePage() {
     } catch {
       setMessage('Failed to load existing attendance records.');
     }
-  }, [selectedClassId, date, classStudents]);
+  }, [selectedClassId, date, classStudents, staffMonthDate]);
 
   useEffect(() => {
     void loadExistingAttendance();
@@ -326,28 +338,40 @@ export default function TeacherAttendancePage() {
     }
   };
 
+  const openStaffDay = (dateString: string) => {
+    const existing = staffRecordMap.get(dateString) ?? null;
+    setStaffModal({ date: dateString, existing });
+    setStaffModalStatus(existing?.status ?? 'PRESENT');
+    setStaffModalNote(existing?.note ?? '');
+    setStaffModalError('');
+  };
+
   const saveMyAttendance = async () => {
+    if (!staffModal) return;
     setSavingMyAttendance(true);
-    setMessage('');
+    setStaffModalError('');
     try {
       const res = await fetch('/api/staff-attendance', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          date,
-          status: myStatus,
-          note: myNote.trim() || undefined
+          date: staffModal.date,
+          status: staffModalStatus,
+          note: staffModalNote.trim() || undefined
         })
       });
       const data = await res.json().catch(() => ({}));
       if (!res.ok) {
-        setMessage(data?.error ?? 'Unable to save your attendance.');
+        setStaffModalError(data?.error ?? 'Unable to save your attendance.');
         return;
       }
       setMessage('Your attendance saved successfully.');
+      setDate(staffModal.date);
+      setStaffMonthDate(monthStart(staffModal.date));
+      setStaffModal(null);
       await loadExistingAttendance();
     } catch {
-      setMessage('Network error while saving your attendance.');
+      setStaffModalError('Network error while saving your attendance.');
     } finally {
       setSavingMyAttendance(false);
     }
@@ -405,8 +429,8 @@ export default function TeacherAttendancePage() {
   const countByStatus = (rows: { status: AttendanceStatus }[], status: AttendanceStatus) => rows.filter((row) => row.status === status).length;
   const todayStaffStatus = myDailyStaffRows[0]?.status;
   const inputBase = 'h-12 w-full rounded-2xl border border-[#D8E2E7] bg-white px-4 text-sm font-semibold text-[#0F172A] outline-none transition duration-200 focus:border-[#007A70] focus:ring-4 focus:ring-[#8BE8D8]/25';
-  const [calendarYear, calendarMonth] = date.split('-').map(Number);
-  const staffRecordMap = new Map(myMonthlyStaffRows.map((row) => [row.date, row]));
+  const [calendarYear, calendarMonth] = staffMonthDate.split('-').map(Number);
+  const staffRecordMap = useMemo(() => new Map(myMonthlyStaffRows.map((row) => [row.date, row])), [myMonthlyStaffRows]);
   const calendarDays: (number | null)[] = [
     ...Array(firstDayOffset(calendarYear, calendarMonth)).fill(null),
     ...Array.from({ length: daysInMonth(calendarYear, calendarMonth) }, (_, index) => index + 1)
@@ -487,52 +511,16 @@ export default function TeacherAttendancePage() {
       </section>
 
       <section className="rounded-[24px] border border-white bg-white p-4 shadow-[0_14px_32px_rgba(15,23,42,0.07)]">
-        <h3 className="text-base font-semibold text-[#0F172A]">Mark My Attendance</h3>
-        <div className="mt-3 grid grid-cols-1 gap-3">
-          <div className="grid grid-cols-3 gap-2 rounded-2xl bg-[#F8FAFC] p-1.5">
-            {quickStatusPills.map((pill) => {
-              const active = myStatus === pill.value;
-              return (
-                <button
-                  key={pill.value}
-                  type="button"
-                  onClick={() => setMyStatus(pill.value)}
-                  className={`h-10 rounded-xl text-xs font-bold transition ${active ? 'bg-[#084750] text-white shadow-[0_8px_16px_rgba(8,71,80,0.24)]' : 'bg-white text-[#475569]'}`}
-                >
-                  {pill.label}
-                </button>
-              );
-            })}
-          </div>
-          <input
-            className={inputBase}
-            placeholder="Note (optional)"
-            value={myNote}
-            onChange={(e) => setMyNote(e.target.value)}
-          />
-        </div>
-        <button
-          type="button"
-          onClick={saveMyAttendance}
-          disabled={savingMyAttendance}
-          className="mt-3 flex h-12 w-full items-center justify-center gap-2 rounded-2xl bg-[#084750] px-4 text-sm font-black text-white shadow-[0_14px_26px_rgba(8,71,80,0.28)] disabled:opacity-60"
-        >
-          <NotebookPen className="h-4 w-4" />
-          {savingMyAttendance ? 'Saving...' : 'Save My Attendance'}
-        </button>
-      </section>
-
-      <section className="rounded-[24px] border border-white bg-white p-4 shadow-[0_14px_32px_rgba(15,23,42,0.07)]">
         <div className="flex items-start justify-between gap-3">
           <div>
             <p className="text-[11px] font-black uppercase tracking-[0.2em] text-[#084750]">My Attendance</p>
             <h3 className="mt-1 text-xl font-black text-[#0F172A]">{selectedMonthLabel}</h3>
-            <p className="mt-1 text-xs text-[#64748B]">Your monthly staff attendance, shown like the student calendar.</p>
+            <p className="mt-1 text-xs text-[#64748B]">Tap any date to mark or update your staff attendance, just like student attendance.</p>
           </div>
           <div className="flex items-center gap-2">
             <button
               type="button"
-              onClick={() => setDate(shiftMonthKey(date, -1))}
+              onClick={() => setStaffMonthDate(shiftMonthKey(staffMonthDate, -1))}
               className="flex h-9 w-9 items-center justify-center rounded-xl bg-[#F1F5F9] text-[#084750] transition active:scale-[0.97]"
               aria-label="Previous month"
             >
@@ -540,7 +528,7 @@ export default function TeacherAttendancePage() {
             </button>
             <button
               type="button"
-              onClick={() => setDate(shiftMonthKey(date, 1))}
+              onClick={() => setStaffMonthDate(shiftMonthKey(staffMonthDate, 1))}
               className="flex h-9 w-9 items-center justify-center rounded-xl bg-[#F1F5F9] text-[#084750] transition active:scale-[0.97]"
               aria-label="Next month"
             >
@@ -562,16 +550,18 @@ export default function TeacherAttendancePage() {
             const statusClasses = row ? calendarStatusStyle[row.status] : null;
             const todayRing = dateString === todayString ? 'ring-2 ring-[#084750] ring-offset-1' : '';
             return (
-              <div
+              <button
                 key={dateString}
-                title={row ? `${statusLabel[row.status]}${row.note ? ` - ${row.note}` : ''}` : 'Not marked'}
+                type="button"
+                onClick={() => openStaffDay(dateString)}
+                title={row ? `${statusLabel[row.status]}${row.note ? ` - ${row.note}` : ''}` : 'Mark attendance'}
                 className={`relative flex aspect-square items-center justify-center rounded-xl text-sm font-bold ${
                   statusClasses?.cell ?? 'bg-[#F1F5F9] text-[#94A3B8]'
-                } ${todayRing}`}
+                } ${todayRing} transition hover:scale-[1.03] active:scale-[0.98]`}
               >
                 {day}
                 {statusClasses ? <span className={`absolute bottom-1 right-1 h-1.5 w-1.5 rounded-full ${statusClasses.dot}`} /> : null}
-              </div>
+              </button>
             );
           })}
         </div>
@@ -765,6 +755,71 @@ export default function TeacherAttendancePage() {
             </div>
           </div>
         </div>
+      ) : null}
+
+      {staffModal ? (
+        <Modal
+          title={new Date(`${staffModal.date}T00:00:00`).toLocaleDateString('en-US', {
+            weekday: 'long',
+            year: 'numeric',
+            month: 'long',
+            day: 'numeric'
+          })}
+          onClose={() => setStaffModal(null)}
+        >
+          <div className="space-y-4">
+            <div>
+              <p className="mb-2 text-[10px] font-semibold uppercase tracking-wider text-[#9ca3af]">Status</p>
+              <div className="grid grid-cols-2 gap-2">
+                {(['PRESENT', 'ABSENT', 'LATE', 'EXCUSED'] as const).map((status) => {
+                  const active = staffModalStatus === status;
+                  return (
+                    <button
+                      key={status}
+                      type="button"
+                      onClick={() => setStaffModalStatus(status)}
+                      className={`h-11 rounded-xl border-2 text-sm font-semibold transition ${
+                        active
+                          ? `${calendarStatusStyle[status].cell} border-current`
+                          : 'border-transparent bg-[#f8fafc] text-[#6b7280] hover:bg-[#f1f5f9]'
+                      }`}
+                    >
+                      {statusLabel[status]}
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+
+            <div>
+              <label className="text-[10px] font-semibold uppercase tracking-wider text-[#9ca3af]">Note (optional)</label>
+              <input
+                className="mt-1 h-10 w-full rounded-xl border-none bg-[#f3f4f5] px-3 text-sm text-[#111827] outline-none focus:ring-2 focus:ring-[#004649]/30"
+                placeholder="e.g. Sick leave"
+                value={staffModalNote}
+                onChange={(e) => setStaffModalNote(e.target.value)}
+              />
+            </div>
+
+            {staffModalError ? <p className="text-xs font-medium text-[#b91c1c]">{staffModalError}</p> : null}
+
+            <button
+              type="button"
+              onClick={saveMyAttendance}
+              disabled={savingMyAttendance}
+              className="flex h-11 w-full items-center justify-center gap-2 rounded-xl bg-[#004649] font-semibold text-white transition hover:bg-[#1b5e62] disabled:opacity-60"
+            >
+              {savingMyAttendance ? <Loader2 className="h-4 w-4 animate-spin" /> : <Check className="h-4 w-4" />}
+              {staffModal.existing ? 'Update Attendance' : 'Mark Attendance'}
+            </button>
+
+            {staffModal.existing ? (
+              <div className="rounded-xl bg-[#f8fafc] px-3 py-2 text-xs text-[#64748B]">
+                Existing note: {staffModal.existing.note || 'No note added.'}
+              </div>
+            ) : null}
+          </div>
+        </Modal>
       ) : null}
     </div>
   );
