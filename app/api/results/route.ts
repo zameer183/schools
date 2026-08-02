@@ -3,6 +3,7 @@ import { randomUUID } from 'crypto';
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { ensureApiRole } from '@/lib/rbac';
+import { hasTeacherAccessByUserId } from '@/lib/teacher-access';
 
 const ALLOWED_QUALITIES = ['Excellent', 'Good', 'Needs Practice'] as const;
 
@@ -84,6 +85,7 @@ export async function GET(request: Request) {
 
     const rawStudentId = searchParams.get('studentId') ?? undefined;
     let studentFilter: Record<string, unknown> = rawStudentId ? { studentId: rawStudentId } : {};
+    let examFilter: Record<string, unknown> = examId ? { examId } : {};
 
     if (auth.session.role === UserRole.STUDENT) {
       const student = await prisma.student.findUnique({ where: { userId: auth.session.id }, select: { id: true } });
@@ -98,10 +100,37 @@ export async function GET(request: Request) {
       const childIds = parent.children.map((c) => c.studentId);
       const effectiveStudentId = rawStudentId && childIds.includes(rawStudentId) ? rawStudentId : undefined;
       studentFilter = effectiveStudentId ? { studentId: effectiveStudentId } : { studentId: { in: childIds } };
+    } else if (auth.session.role === UserRole.TEACHER) {
+      const canAccess = await hasTeacherAccessByUserId(auth.session.id, 'EXAMS');
+      if (!canAccess) {
+        return NextResponse.json({ error: 'Exams module access is disabled by admin.' }, { status: 403 });
+      }
+
+      const teacher = await prisma.teacher.findUnique({
+        where: { userId: auth.session.id },
+        select: { id: true, classAssignments: { select: { classId: true } } }
+      });
+      if (!teacher) return NextResponse.json([]);
+
+      const classIds = teacher.classAssignments.map((item) => item.classId);
+      if (!classIds.length) return NextResponse.json([]);
+
+      examFilter = { exam: { classId: { in: classIds } }, ...examFilter };
+
+      if (rawStudentId) {
+        const student = await prisma.student.findUnique({
+          where: { id: rawStudentId },
+          select: { id: true, classId: true }
+        });
+        if (!student?.classId || !classIds.includes(student.classId)) {
+          return NextResponse.json([]);
+        }
+        studentFilter = { studentId: rawStudentId };
+      }
     }
 
     const results = await prisma.result.findMany({
-      where: { ...studentFilter, examId },
+      where: { ...studentFilter, ...examFilter },
       include: {
         student: { include: { user: true } },
         exam: { include: { createdBy: { include: { user: { select: { fullName: true } } } } } },
@@ -120,6 +149,13 @@ export async function GET(request: Request) {
 export async function POST(request: Request) {
   const auth = await ensureApiRole([UserRole.ADMIN, UserRole.TEACHER]);
   if (!auth.authorized) return auth.response;
+
+  if (auth.session.role === UserRole.TEACHER) {
+    const canAccess = await hasTeacherAccessByUserId(auth.session.id, 'EXAMS');
+    if (!canAccess) {
+      return NextResponse.json({ error: 'Exams module access is disabled by admin.' }, { status: 403 });
+    }
+  }
 
   const body = await request.json().catch(() => null);
   if (!body || typeof body !== 'object') {
@@ -219,10 +255,26 @@ export async function POST(request: Request) {
     }
   }
 
+  const exam = await prisma.exam.findUnique({
+    where: { id: examId },
+    select: { id: true, subjectId: true, totalMarks: true, createdBy: { select: { userId: true } } }
+  });
+  if (!exam) {
+    return NextResponse.json({ error: 'Exam not found.' }, { status: 404 });
+  }
+
+  if (Number(marksObtained) > Number(exam.totalMarks)) {
+    return NextResponse.json({ error: `Obtained marks must be between 0 and ${exam.totalMarks}.` }, { status: 400 });
+  }
+
+  if (auth.session.role === UserRole.TEACHER && exam.createdBy.userId !== auth.session.id) {
+    return NextResponse.json({ error: 'You can only save results for your own exams.' }, { status: 403 });
+  }
+
   const result = await prisma.result.upsert({
     where: { examId_studentId: { examId, studentId } },
-    update: { marksObtained, grade, remarks, subjectId },
-    create: { examId, studentId, subjectId, marksObtained, grade, remarks }
+    update: { marksObtained, grade, remarks, subjectId: subjectId || exam.subjectId },
+    create: { examId, studentId, subjectId: subjectId || exam.subjectId, marksObtained, grade, remarks }
   });
 
   return NextResponse.json(result, { status: 201 });

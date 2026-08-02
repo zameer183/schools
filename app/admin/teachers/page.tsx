@@ -1,4 +1,5 @@
 import { UserRole } from '@prisma/client';
+import { unstable_cache } from 'next/cache';
 import { requireAuth } from '@/lib/auth';
 import { prisma } from '@/lib/prisma';
 import {
@@ -204,10 +205,32 @@ async function getTeachersData() {
 
   const [teachers, classes] = await Promise.all([
     prisma.teacher.findMany({
-      include: {
-        user: true,
+      select: {
+        id: true,
+        employeeCode: true,
+        qualification: true,
+        specialization: true,
+        joiningDate: true,
+        user: {
+          select: {
+            id: true,
+            fullName: true,
+            email: true,
+            phone: true,
+            isActive: true
+          }
+        },
         classAssignments: {
-          include: { class: true },
+          select: {
+            classId: true,
+            class: {
+              select: {
+                id: true,
+                name: true,
+                section: true
+              }
+            }
+          },
           orderBy: { createdAt: 'asc' }
         }
       },
@@ -234,14 +257,23 @@ async function getTeachersData() {
   return { enrichedTeachers, classes, teachersCount: teachers.length };
 }
 
+const getCachedTeachersData = unstable_cache(
+  async (mode: string) => {
+    return mode === 'rest'
+      ? await getTeachersDataViaSupabaseRest()
+      : await getTeachersData();
+  },
+  ['admin-teachers-page-data'],
+  { revalidate: 30 }
+);
+
 export default async function AdminTeachersPage() {
   const t0 = Date.now();
   await requireAuth([UserRole.ADMIN]);
+  const cacheMode = process.env.FORCE_SUPABASE_REST_DATA_FALLBACK === '1' ? 'rest' : 'prisma';
   let data: Awaited<ReturnType<typeof getTeachersDataViaSupabaseRest>>;
   try {
-    data = process.env.FORCE_SUPABASE_REST_DATA_FALLBACK === '1'
-      ? await getTeachersDataViaSupabaseRest()
-      : (await getTeachersData()) as unknown as Awaited<ReturnType<typeof getTeachersDataViaSupabaseRest>>;
+    data = (await getCachedTeachersData(cacheMode)) as Awaited<ReturnType<typeof getTeachersDataViaSupabaseRest>>;
   } catch (error) {
     if (!isDatabaseConnectionError(error)) throw error;
     data = await getTeachersDataViaSupabaseRest();

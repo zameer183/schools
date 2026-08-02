@@ -422,9 +422,14 @@ export async function POST(request: Request) {
 
     teacherId = scope.teacherId;
   } else {
-    const anyTeacher = await prisma.teacher.findFirst({ select: { id: true } });
-    if (!anyTeacher) return jsonNoStore({ error: 'No teacher profile found to map progress.' }, { status: 400 });
-    teacherId = anyTeacher.id;
+    const classTeacher = await prisma.teacherClass.findFirst({
+      where: { classId: parsed.data.classId },
+      select: { teacherId: true }
+    });
+    if (!classTeacher) {
+      return jsonNoStore({ error: 'No teacher is assigned to the selected class.' }, { status: 400 });
+    }
+    teacherId = classTeacher.teacherId;
   }
 
   const student = await prisma.student.findUnique({ where: { id: parsed.data.studentId }, select: { classId: true } });

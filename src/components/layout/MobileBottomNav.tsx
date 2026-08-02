@@ -1,4 +1,4 @@
-'use client';
+﻿'use client';
 
 import Link from 'next/link';
 import { useState, useMemo } from 'react';
@@ -24,14 +24,12 @@ export function MobileBottomNav({
   role,
   doLogout,
   pathname,
-  pendingHref,
   onNavigate,
 }: {
   navItems: NavItem[];
   role: UserRole;
   doLogout: () => void;
   pathname: string;
-  pendingHref: string | null;
   onNavigate: (href: string) => void;
 }) {
   const [moreSheetOpen, setMoreSheetOpen] = useState(false);
@@ -82,7 +80,10 @@ export function MobileBottomNav({
               key={item.href}
               href={item.href}
               prefetch={false}
-              onClick={() => onNavigate(item.href)}
+              onClick={(e) => {
+                e.preventDefault();
+                onNavigate(item.href);
+              }}
               className={`relative flex flex-col items-center justify-center gap-0.5 rounded-2xl px-1 text-[10px] font-medium leading-tight transition ${
                 role === 'TEACHER'
                   ? active
@@ -98,7 +99,7 @@ export function MobileBottomNav({
                   ? active ? 'text-[#084750]' : 'text-[#94A3B8]'
                   : active ? 'text-[#1F5A5C]' : 'text-[#64748B]'
               }`} />
-              <span className="truncate max-w-full">{pendingHref === item.href ? 'Loading...' : compactLabel[item.label] ?? item.label}</span>
+              <span className="truncate max-w-full">{compactLabel[item.label] ?? item.label}</span>
               {active ? (
                 <span className={`absolute -bottom-1 h-1 rounded-full ${role === 'TEACHER' ? 'w-1 bg-[#084750] shadow-[0_0_10px_rgba(8,71,80,0.3)]' : 'w-8 bg-[#1F5A5C]'}`} />
               ) : null}
@@ -129,7 +130,8 @@ export function MobileBottomNav({
                 key={item.href}
                 href={item.href}
                 prefetch={false}
-                onClick={() => {
+                onClick={(e) => {
+                  e.preventDefault();
                   onNavigate(item.href);
                   setMoreSheetOpen(false);
                 }}
@@ -162,3 +164,5 @@ export function MobileBottomNav({
     </>
   );
 }
+
+

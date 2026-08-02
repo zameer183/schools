@@ -216,9 +216,25 @@ function emptySection(): SectionForm {
   };
 }
 
+function padDatePart(value: number) {
+  return String(value).padStart(2, '0');
+}
+
 function formatDateYMD(value: Date | string) {
+  if (typeof value === 'string') {
+    const matched = value.match(/^(\d{4})-(\d{2})-(\d{2})/);
+    if (matched) return `${matched[1]}-${matched[2]}-${matched[3]}`;
+  }
+
   const parsed = value instanceof Date ? value : new Date(value);
-  return Number.isNaN(parsed.getTime()) ? '-' : parsed.toISOString().slice(0, 10);
+  if (Number.isNaN(parsed.getTime())) return '-';
+
+  return `${parsed.getFullYear()}-${padDatePart(parsed.getMonth() + 1)}-${padDatePart(parsed.getDate())}`;
+}
+
+function todayDateYMD() {
+  const today = new Date();
+  return `${today.getFullYear()}-${padDatePart(today.getMonth() + 1)}-${padDatePart(today.getDate())}`;
 }
 
 function getSurahById(id: number | null): Surah | undefined {
@@ -385,7 +401,7 @@ function parseSectionFormFromNotes(notes: string | null, sectionKey: SectionKey)
 
 function emptyProgressForm() {
   return {
-    date: new Date().toISOString().slice(0, 10),
+    date: todayDateYMD(),
     classId: '',
     studentId: '',
     sections: {

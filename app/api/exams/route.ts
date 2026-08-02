@@ -267,6 +267,11 @@ export async function GET() {
   if (!auth.authorized) return auth.response;
 
   if (isLocalRestFallbackEnabled() && auth.session.role === UserRole.TEACHER) {
+    const canAccess = await hasTeacherAccessByUserId(auth.session.id, 'EXAMS');
+    if (!canAccess) {
+      return NextResponse.json({ error: 'Exams module access is disabled by admin.' }, { status: 403 });
+    }
+
     const teacher = await getTeacherForExamViaRest(auth.session.id);
     if (!teacher) return NextResponse.json([]);
     const classIds = teacher.classAssignments.map((item) => item.classId);

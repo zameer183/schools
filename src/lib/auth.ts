@@ -80,24 +80,16 @@ export async function getVerifiedSession(): Promise<SessionUser | null> {
       role: user.role as SessionUser['role']
     };
   } catch (error) {
-    const session = await getSession();
     if (
-      session &&
       error instanceof Error &&
       (error.name === 'PrismaClientInitializationError' ||
         error.message.includes("Can't reach database server") ||
         error.message.includes('Timed out fetching a new connection'))
     ) {
-      console.warn('[auth][getVerifiedSession] using signed-session fallback because database is unavailable');
-      return {
-        id: session.id,
-        email: session.email,
-        fullName: session.fullName,
-        role: session.role
-      };
+      console.warn('[auth][getVerifiedSession] database unavailable; refusing session fallback');
+    } else {
+      console.error('[auth][getVerifiedSession]', error);
     }
-
-    console.error('[auth][getVerifiedSession]', error);
     return null;
   }
 }

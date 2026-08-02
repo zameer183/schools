@@ -148,6 +148,15 @@ export default function TeacherAttendancePage() {
   const [deletingMyAttendance, setDeletingMyAttendance] = useState(false);
   const [staffModalError, setStaffModalError] = useState('');
 
+  const upsertStaffRow = (rows: StaffAttendanceRow[], nextRow: StaffAttendanceRow) => {
+    const next = rows.filter((row) => row.date !== nextRow.date);
+    next.unshift(nextRow);
+    return next;
+  };
+
+  const removeStaffRow = (rows: StaffAttendanceRow[], dateString: string) =>
+    rows.filter((row) => row.date !== dateString);
+
   const loadBaseData = useCallback(async () => {
     setLoading(true);
     setMessage('');
@@ -370,11 +379,20 @@ export default function TeacherAttendancePage() {
         return;
       }
       setMessage('Your attendance saved successfully.');
+      const nextRow: StaffAttendanceRow = {
+        id: staffModal.date,
+        date: staffModal.date,
+        status: staffModalStatus,
+        note: staffModalNote.trim() || null
+      };
+      setMyDailyStaffRows((prev) => upsertStaffRow(prev.filter((row) => row.date === staffModal.date), nextRow));
+      setMyWeeklyStaffRows((prev) => upsertStaffRow(prev, nextRow));
+      setMyMonthlyStaffRows((prev) => upsertStaffRow(prev, nextRow));
       setDate(staffModal.date);
       const { year, month } = parseDateParts(staffModal.date);
       setStaffMonth(new Date(year, month - 1, 1));
       setStaffModal(null);
-      await loadExistingAttendance();
+      void loadExistingAttendance();
     } catch {
       setStaffModalError('Network error while saving your attendance.');
     } finally {
@@ -394,11 +412,14 @@ export default function TeacherAttendancePage() {
         return;
       }
       setMessage('Your attendance was unmarked successfully.');
+      setMyDailyStaffRows((prev) => removeStaffRow(prev, staffModal.date));
+      setMyWeeklyStaffRows((prev) => removeStaffRow(prev, staffModal.date));
+      setMyMonthlyStaffRows((prev) => removeStaffRow(prev, staffModal.date));
       setDate(staffModal.date);
       const { year, month } = parseDateParts(staffModal.date);
       setStaffMonth(new Date(year, month - 1, 1));
       setStaffModal(null);
-      await loadExistingAttendance();
+      void loadExistingAttendance();
     } catch {
       setStaffModalError('Network error while unmarking your attendance.');
     } finally {

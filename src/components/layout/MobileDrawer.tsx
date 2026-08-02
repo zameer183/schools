@@ -1,4 +1,4 @@
-'use client';
+﻿'use client';
 
 import Image from 'next/image';
 import Link from 'next/link';
@@ -19,7 +19,6 @@ export function MobileDrawer({
   role,
   doLogout,
   pathname,
-  pendingHref,
   onNavigate,
 }: {
   isOpen: boolean;
@@ -29,7 +28,6 @@ export function MobileDrawer({
   role: UserRole;
   doLogout: () => void;
   pathname: string;
-  pendingHref: string | null;
   onNavigate: (href: string) => void;
 }) {
   const initials = fullName
@@ -100,7 +98,8 @@ export function MobileDrawer({
                 key={item.href}
                 href={item.href}
                 prefetch={false}
-                onClick={() => {
+                onClick={(e) => {
+                  e.preventDefault();
                   onNavigate(item.href);
                   onClose();
                 }}
@@ -111,7 +110,7 @@ export function MobileDrawer({
                 }`}
               >
                 <Icon className="h-[18px] w-[18px] shrink-0" />
-                {pendingHref === item.href ? 'Loading...' : item.label}
+                {item.label}
               </Link>
             );
           })}
@@ -140,3 +139,5 @@ export function MobileDrawer({
     </>
   );
 }
+
+

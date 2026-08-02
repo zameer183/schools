@@ -22,7 +22,7 @@ export async function GET(request: Request) {
       return NextResponse.json({ unreadCount: 0 });
     }
 
-    if (auth.session.role === UserRole.TEACHER && !isLocalRestFallbackEnabled()) {
+    if (auth.session.role === UserRole.TEACHER) {
       const canAccess = await hasTeacherAccessByUserId(auth.session.id, 'MESSAGES');
       if (!canAccess) {
         if (countOnly) return NextResponse.json({ unreadCount: 0 });
@@ -78,9 +78,9 @@ export async function GET(request: Request) {
     console.error('[api/messages][GET]', error);
     const { searchParams } = new URL(request.url);
     if (searchParams.get('countOnly') === '1') {
-      return NextResponse.json({ unreadCount: 0 }, { status: 200 });
+      return NextResponse.json({ error: 'Unable to load messages right now.' }, { status: 500 });
     }
-    return NextResponse.json([], { status: 200 });
+    return NextResponse.json({ error: 'Unable to load messages right now.' }, { status: 500 });
   }
 }
 

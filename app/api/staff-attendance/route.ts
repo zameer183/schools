@@ -4,6 +4,7 @@ import { randomUUID } from 'crypto';
 import { ensureApiRole } from '@/lib/rbac';
 import { prisma } from '@/lib/prisma';
 import { ensureStaffAttendanceTable } from '@/lib/staff-attendance';
+import { hasTeacherAccessByUserId } from '@/lib/teacher-access';
 
 type StaffAttendanceRow = {
   id: string;
@@ -13,10 +14,23 @@ type StaffAttendanceRow = {
   note: string | null;
 };
 
+async function ensureTeacherStaffAttendanceAccess(userId: string) {
+  const canAccess = await hasTeacherAccessByUserId(userId, 'STAFF_ATTENDANCE');
+  if (!canAccess) {
+    return NextResponse.json({ error: 'Staff attendance module access is disabled by admin.' }, { status: 403 });
+  }
+  return null;
+}
+
 export async function GET(request: Request) {
   try {
     const auth = await ensureApiRole([UserRole.ADMIN, UserRole.TEACHER]);
     if (!auth.authorized) return auth.response;
+
+    if (auth.session.role === UserRole.TEACHER) {
+      const denied = await ensureTeacherStaffAttendanceAccess(auth.session.id);
+      if (denied) return denied;
+    }
 
     const tableReady = await ensureStaffAttendanceTable();
     if (!tableReady) {
@@ -94,6 +108,11 @@ export async function POST(request: Request) {
     const auth = await ensureApiRole([UserRole.ADMIN, UserRole.TEACHER]);
     if (!auth.authorized) return auth.response;
 
+    if (auth.session.role === UserRole.TEACHER) {
+      const denied = await ensureTeacherStaffAttendanceAccess(auth.session.id);
+      if (denied) return denied;
+    }
+
     const tableReady = await ensureStaffAttendanceTable();
     if (!tableReady) {
       return NextResponse.json({ error: 'Staff attendance storage is unavailable.' }, { status: 503 });
@@ -144,6 +163,11 @@ export async function DELETE(request: Request) {
   try {
     const auth = await ensureApiRole([UserRole.ADMIN, UserRole.TEACHER]);
     if (!auth.authorized) return auth.response;
+
+    if (auth.session.role === UserRole.TEACHER) {
+      const denied = await ensureTeacherStaffAttendanceAccess(auth.session.id);
+      if (denied) return denied;
+    }
 
     const tableReady = await ensureStaffAttendanceTable();
     if (!tableReady) {

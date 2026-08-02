@@ -21,12 +21,7 @@ function toIsoString(value: Date | string | null | undefined) {
 
 const getCachedAdminMessagesData = unstable_cache(
   async (userId: string) => {
-    const [students, classes, sentMessages, receivedMessages] = await Promise.all([
-      prisma.student.findMany({
-        include: { user: { select: { id: true, fullName: true } }, class: { select: { name: true, section: true } } },
-        orderBy: { admissionNo: 'asc' },
-        take: 1000
-      }),
+    const [classes, sentMessages, receivedMessages] = await Promise.all([
       prisma.class.findMany({ select: { id: true, name: true, section: true }, orderBy: [{ name: 'asc' }, { section: 'asc' }] }),
       prisma.message.findMany({
         include: {
@@ -50,7 +45,7 @@ const getCachedAdminMessagesData = unstable_cache(
       })
     ]);
 
-    return { students, classes, sentMessages, receivedMessages };
+    return { classes, sentMessages, receivedMessages };
   },
   ['admin-messages-page-data-v2'],
   { revalidate: 20 }
@@ -60,7 +55,7 @@ export default async function AdminMessagesPage({ searchParams }: AdminMessagesP
   const session = await requireAuth([UserRole.ADMIN]);
   const params = (await searchParams) ?? {};
   const presetRecipientId = params.recipientId?.trim() ?? '';
-  const { students, classes, sentMessages, receivedMessages } = await getCachedAdminMessagesData(session.id);
+  const { classes, sentMessages, receivedMessages } = await getCachedAdminMessagesData(session.id);
 
   const serializedSent = sentMessages.map((message) => ({
     id: message.id,
@@ -96,7 +91,6 @@ export default async function AdminMessagesPage({ searchParams }: AdminMessagesP
 
   return (
     <AdminMessagingWorkspace
-      students={students}
       classes={classes}
       receivedMessages={serializedReceived}
       sentMessages={serializedSent}

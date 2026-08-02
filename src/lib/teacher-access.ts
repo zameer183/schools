@@ -1,3 +1,4 @@
+import { Prisma } from '@prisma/client';
 import { prisma } from '@/lib/prisma';
 
 export type TeacherAccessModule =
@@ -372,23 +373,100 @@ export async function getTeacherAccessMapsByTeacherIds(
 export async function getTeacherAccessLevelMapsByTeacherIds(
   teacherIds: string[]
 ): Promise<Record<string, TeacherAccessLevelMap>> {
-  const output: Record<string, TeacherAccessLevelMap> = {};
-  await Promise.all(
-    teacherIds.map(async (teacherId) => {
-      output[teacherId] = await getTeacherAccessLevelsByTeacherId(teacherId);
-    })
-  );
-  return output;
+  if (teacherIds.length === 0) return {};
+
+  try {
+    const rows = await prisma.$queryRaw<Array<{
+      teacherId: string;
+      module: string | null;
+      enabled: boolean | null;
+      level: string | null;
+    }>>`
+      SELECT "teacherId", "module", "enabled", "level"
+      FROM "TeacherAccess"
+      WHERE "teacherId" IN (${Prisma.join(teacherIds)});
+    `;
+
+    const grouped = new Map<string, TeacherAccessLevelMap>();
+    for (const teacherId of teacherIds) {
+      grouped.set(teacherId, { ...DENY_ALL_LEVELS });
+    }
+
+    for (const row of rows) {
+      const moduleKey = row.module as TeacherAccessModule;
+      if (!TEACHER_ACCESS_MODULES.includes(moduleKey)) continue;
+      const current = grouped.get(row.teacherId) ?? { ...DENY_ALL_LEVELS };
+      const candidate = String(row.level ?? '').toUpperCase() as TeacherAccessLevel;
+      current[moduleKey] =
+        candidate === 'VIEW' || candidate === 'MANAGE' || candidate === 'FULL' || candidate === 'NONE'
+          ? candidate
+          : enabledToLevel(Boolean(row.enabled));
+      grouped.set(row.teacherId, current);
+    }
+
+    const teachersWithRows = new Set(rows.map((row) => row.teacherId));
+    await Promise.all(
+      teacherIds
+        .filter((teacherId) => !teachersWithRows.has(teacherId))
+        .map(async (teacherId) => {
+          await seedDefaultTeacherAccessRows(teacherId);
+          grouped.set(teacherId, { ...DEFAULT_LEVELS });
+        })
+    );
+
+    return Object.fromEntries(grouped.entries());
+  } catch {
+    const output: Record<string, TeacherAccessLevelMap> = {};
+    await Promise.all(
+      teacherIds.map(async (teacherId) => {
+        output[teacherId] = await getTeacherAccessLevelsByTeacherId(teacherId);
+      })
+    );
+    return output;
+  }
 }
 
 export async function getTeacherCompensationsByTeacherIds(
   teacherIds: string[]
 ): Promise<Record<string, TeacherCompensation>> {
-  const output: Record<string, TeacherCompensation> = {};
-  await Promise.all(
-    teacherIds.map(async (teacherId) => {
-      output[teacherId] = await getTeacherCompensationByTeacherId(teacherId);
-    })
-  );
-  return output;
+  if (teacherIds.length === 0) return {};
+
+  try {
+    const rows = await prisma.teacherCompensation.findMany({
+      where: { teacherId: { in: teacherIds } },
+      select: {
+        teacherId: true,
+        baseSalary: true,
+        bonus: true,
+        deduction: true
+      }
+    });
+
+    const output: Record<string, TeacherCompensation> = {};
+    for (const teacherId of teacherIds) {
+      output[teacherId] = { baseSalary: 0, bonus: 0, deduction: 0, netSalary: 0 };
+    }
+
+    for (const row of rows) {
+      const baseSalary = Number(row.baseSalary);
+      const bonus = Number(row.bonus);
+      const deduction = Number(row.deduction);
+      output[row.teacherId] = {
+        baseSalary,
+        bonus,
+        deduction,
+        netSalary: baseSalary + bonus - deduction
+      };
+    }
+
+    return output;
+  } catch {
+    const output: Record<string, TeacherCompensation> = {};
+    await Promise.all(
+      teacherIds.map(async (teacherId) => {
+        output[teacherId] = await getTeacherCompensationByTeacherId(teacherId);
+      })
+    );
+    return output;
+  }
 }

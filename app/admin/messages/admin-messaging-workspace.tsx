@@ -21,6 +21,7 @@ type TabKey = 'messages' | 'compose';
 type ComposeMode = 'individual_student' | 'individual_teacher' | 'class' | 'announcement';
 
 type StudentOption = {
+  id: string;
   classId: string | null;
   user: { id: string; fullName: string };
   class: { name: string; section: string } | null;
@@ -222,13 +223,11 @@ function buildConversations(
 }
 
 export default function AdminMessagingWorkspace({
-  students,
   classes,
   receivedMessages,
   sentMessages,
   presetRecipientId
 }: {
-  students: StudentOption[];
   classes: ClassOption[];
   receivedMessages: ReceivedMessage[];
   sentMessages: SentMessage[];
@@ -251,6 +250,48 @@ export default function AdminMessagingWorkspace({
   const [composeSubject, setComposeSubject] = useState('');
   const [composeBody, setComposeBody] = useState('');
   const [composeError, setComposeError] = useState('');
+  const [students, setStudents] = useState<StudentOption[]>([]);
+  const [studentsLoading, setStudentsLoading] = useState(false);
+  const [studentsLoaded, setStudentsLoaded] = useState(false);
+
+  useEffect(() => {
+    if (activeTab !== 'compose' || studentsLoaded || studentsLoading) return;
+
+    let cancelled = false;
+    setStudentsLoading(true);
+    void fetch('/api/students?light=1', { credentials: 'same-origin' })
+      .then(async (response) => {
+        if (!response.ok) return [];
+        return (await response.json()) as Array<{
+          id: string;
+          userId: string;
+          classId: string | null;
+          admissionNo: string;
+          fullName: string;
+        }>;
+      })
+      .then((rows) => {
+        if (cancelled) return;
+        const mapped = rows.map((row) => ({
+          id: row.id,
+          classId: row.classId,
+          user: { id: row.userId, fullName: row.fullName },
+          class: null
+        }));
+        setStudents(mapped);
+        setStudentsLoaded(true);
+      })
+      .catch(() => {
+        if (!cancelled) setComposeError('Unable to load students right now.');
+      })
+      .finally(() => {
+        if (!cancelled) setStudentsLoading(false);
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [activeTab, studentsLoaded, studentsLoading]);
 
   const recipientMetaMap = useMemo(
     () =>
@@ -742,7 +783,15 @@ export default function AdminMessagingWorkspace({
                     </label>
 
                     <div className="max-h-56 space-y-1 overflow-y-auto pr-1">
-                      {visibleStudents.map((student) => {
+                      {studentsLoading ? (
+                        <div className="rounded-xl border border-dashed border-[#d7e3df] bg-white px-3 py-6 text-center text-xs text-[#6b7280]">
+                          Loading students...
+                        </div>
+                      ) : visibleStudents.length === 0 ? (
+                        <div className="rounded-xl border border-dashed border-[#d7e3df] bg-white px-3 py-6 text-center text-xs text-[#6b7280]">
+                          No students found.
+                        </div>
+                      ) : visibleStudents.map((student) => {
                         const active = studentRecipientId === student.user.id;
                         return (
                           <button

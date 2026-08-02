@@ -17,6 +17,12 @@ type StaffDailyRow = {
   note: string | null;
 };
 
+type StaffMonthlyRow = {
+  teacherId: string;
+  status: AttendanceStatus;
+  count: number;
+};
+
 type AttendancePayload = {
   classes: Array<{ id: string; name: string; section: string }>;
   dailyRows: Array<{
@@ -33,6 +39,7 @@ type AttendancePayload = {
   }>;
   teachers: Array<{ id: string; userId: string; user: { fullName: string } }>;
   staffDailyRows: StaffDailyRow[];
+  staffMonthlyRows: StaffMonthlyRow[];
 };
 
 function startOfMonth(date: Date) {
@@ -125,7 +132,8 @@ const getCachedAttendanceData = unstable_cache(
         monthStatusByDay,
         classStudents,
         teachers,
-        staffDailyRows
+        staffDailyRows,
+        staffMonthlyRows
       ] = await Promise.all([
         tx.class.findMany({
           select: { id: true, name: true, section: true },
@@ -186,7 +194,21 @@ const getCachedAttendanceData = unstable_cache(
             WHERE sa."date" = ${selectedDate}::date
             ORDER BY u."fullName" ASC;
           `
-          : Promise.resolve([] as StaffDailyRow[])
+          : Promise.resolve([] as StaffDailyRow[]),
+        staffAttendanceEnabled
+          ? tx.$queryRaw<StaffMonthlyRow[]>`
+            SELECT
+              sa."teacherId",
+              sa."status",
+              COUNT(*)::int as "count"
+            FROM "StaffAttendance" sa
+            INNER JOIN "Teacher" t ON t."id" = sa."teacherId"
+            WHERE sa."date" >= ${monthStart}::date
+              AND sa."date" <= ${dayDate}::date
+            GROUP BY sa."teacherId", sa."status"
+            ORDER BY sa."teacherId" ASC, sa."status" ASC;
+          `
+          : Promise.resolve([] as StaffMonthlyRow[])
       ]);
 
       return {
@@ -196,7 +218,8 @@ const getCachedAttendanceData = unstable_cache(
         monthStatusByDay,
         classStudents,
         teachers,
-        staffDailyRows
+        staffDailyRows,
+        staffMonthlyRows
       };
     });
   },
@@ -210,7 +233,7 @@ async function loadAttendanceViaRest(
   dayDateIso: string,
   monthStartIso: string
 ): Promise<AttendancePayload> {
-  const [classes, dailyRowsRaw, monthRowsRaw, classStudentsRaw, teachersRaw, staffDailyRowsRaw] = await Promise.all([
+  const [classes, dailyRowsRaw, monthRowsRaw, classStudentsRaw, teachersRaw, staffDailyRowsRaw, staffMonthlyRowsRaw] = await Promise.all([
     supabaseRest<{ id: string; name: string; section: string }>('Class', {
       select: 'id,name,section',
       order: 'name.asc,section.asc'
@@ -246,6 +269,10 @@ async function loadAttendanceViaRest(
     supabaseRest<{ teacherId: string; userId?: string; fullName?: string; status: string; note: string | null }>('StaffAttendance', {
       select: 'teacherId,status,note',
       date: `eq.${selectedDate}`
+    }).catch(() => []),
+    supabaseRest<{ teacherId: string; status: AttendanceStatus }>('StaffAttendance', {
+      select: 'teacherId,status',
+      date: [`gte.${monthStartIso}`, `lte.${dayDateIso}`]
     }).catch(() => [])
   ]);
 
@@ -324,6 +351,26 @@ async function loadAttendanceViaRest(
     };
   });
 
+  const staffMonthlyMap = new Map<string, Record<AttendanceStatus, number>>();
+  for (const row of staffMonthlyRowsRaw) {
+    const current = staffMonthlyMap.get(row.teacherId) ?? {
+      [AttendanceStatus.PRESENT]: 0,
+      [AttendanceStatus.ABSENT]: 0,
+      [AttendanceStatus.LATE]: 0,
+      [AttendanceStatus.EXCUSED]: 0
+    };
+    current[row.status] += 1;
+    staffMonthlyMap.set(row.teacherId, current);
+  }
+
+  const staffMonthlyRows = Array.from(staffMonthlyMap.entries()).flatMap(([teacherId, counts]) =>
+    ([AttendanceStatus.PRESENT, AttendanceStatus.ABSENT, AttendanceStatus.LATE] as AttendanceStatus[]).map((status) => ({
+      teacherId,
+      status,
+      count: counts[status] ?? 0
+    }))
+  );
+
   return {
     classes,
     dailyRows,
@@ -331,7 +378,8 @@ async function loadAttendanceViaRest(
     monthStatusByDay,
     classStudents,
     teachers,
-    staffDailyRows
+    staffDailyRows,
+    staffMonthlyRows
   };
 }
 
@@ -354,6 +402,7 @@ export default async function AdminAttendancePage({ searchParams }: { searchPara
   let classStudents: AttendancePayload['classStudents'] = [];
   let teachers: AttendancePayload['teachers'] = [];
   let staffDailyRows: StaffDailyRow[] = [];
+  let staffMonthlyRows: StaffMonthlyRow[] = [];
   let attendanceDataLoadFailed = false;
 
   try {
@@ -378,6 +427,7 @@ export default async function AdminAttendancePage({ searchParams }: { searchPara
     classStudents = data.classStudents;
     teachers = data.teachers;
     staffDailyRows = data.staffDailyRows;
+    staffMonthlyRows = data.staffMonthlyRows;
   } catch (error) {
     console.error('[admin/attendance] prisma load failed', error);
     try {
@@ -389,6 +439,7 @@ export default async function AdminAttendancePage({ searchParams }: { searchPara
       classStudents = data.classStudents;
       teachers = data.teachers;
       staffDailyRows = data.staffDailyRows;
+      staffMonthlyRows = data.staffMonthlyRows;
     } catch (restError) {
       console.error('[admin/attendance] rest fallback failed', restError);
       attendanceDataLoadFailed = true;
@@ -412,6 +463,14 @@ export default async function AdminAttendancePage({ searchParams }: { searchPara
 
   const studentDailyMap = new Map(dailyRows.map((row) => [row.studentId, row.status]));
   const staffDailyMap = new Map(staffDailyRows.map((row) => [row.teacherId, row.status]));
+  const staffMonthlyMap = new Map<string, { present: number; absent: number; late: number }>();
+  for (const row of staffMonthlyRows) {
+    const current = staffMonthlyMap.get(row.teacherId) ?? { present: 0, absent: 0, late: 0 };
+    if (row.status === AttendanceStatus.PRESENT) current.present += row.count;
+    if (row.status === AttendanceStatus.ABSENT) current.absent += row.count;
+    if (row.status === AttendanceStatus.LATE) current.late += row.count;
+    staffMonthlyMap.set(row.teacherId, current);
+  }
   const classById = new Map(classes.map((item) => [item.id, item]));
 
   const serializedMonthStatusByDay = monthStatusByDay.map((row) => ({
@@ -448,6 +507,16 @@ export default async function AdminAttendancePage({ searchParams }: { searchPara
         fullName: teacher.user.fullName,
         status: staffDailyMap.get(teacher.id) ?? null
       }))}
+      teacherMonthlySummary={teachers.map((teacher) => {
+        const summary = staffMonthlyMap.get(teacher.id) ?? { present: 0, absent: 0, late: 0 };
+        return {
+          teacherId: teacher.id,
+          present: summary.present,
+          absent: summary.absent,
+          late: summary.late,
+          total: summary.present + summary.absent + summary.late
+        };
+      })}
       overview={{
         present: presentCount,
         absent: absentCount,

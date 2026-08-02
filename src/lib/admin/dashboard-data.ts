@@ -92,32 +92,85 @@ export type RecentInvoiceItem = {
 };
 
 export async function getRecentInvoices(limit = 3): Promise<RecentInvoiceItem[]> {
-  const rows = await prisma.payment.findMany({
+  const payments = await prisma.payment.findMany({
     orderBy: { paidAt: 'desc' },
     take: limit,
-    include: {
-      fee: {
-        include: {
-          student: {
-            include: {
-              class: true,
-              user: true
-            }
-          }
-        }
-      }
+    select: {
+      id: true,
+      feeId: true,
+      amountPaid: true,
+      paidAt: true
     }
   });
 
-  return rows.map((row) => ({
-    id: row.id,
-    studentName: row.fee.student.user.fullName,
-    admissionNo: row.fee.student.admissionNo,
-    classLabel: row.fee.student.class ? `${row.fee.student.class.name}-${row.fee.student.class.section}` : 'Unassigned',
-    amountPaid: Number(row.amountPaid),
-    paidAt: row.paidAt,
-    status: row.fee.status
-  }));
+  const feeIds = Array.from(new Set(payments.map((payment) => payment.feeId).filter((id): id is string => Boolean(id))));
+  if (feeIds.length === 0) return [];
+
+  const fees = await prisma.fee.findMany({
+    where: { id: { in: feeIds } },
+    select: {
+      id: true,
+      status: true,
+      studentId: true
+    }
+  });
+  const feeMap = new Map(fees.map((fee) => [fee.id, fee]));
+
+  const studentIds = Array.from(new Set(fees.map((fee) => fee.studentId).filter((id): id is string => Boolean(id))));
+  const students = studentIds.length
+    ? await prisma.student.findMany({
+        where: { id: { in: studentIds } },
+        select: {
+          id: true,
+          admissionNo: true,
+          classId: true,
+          userId: true
+        }
+      })
+    : [];
+  const studentMap = new Map(students.map((student) => [student.id, student]));
+
+  const userIds = Array.from(new Set(students.map((student) => student.userId).filter((id): id is string => Boolean(id))));
+  const users = userIds.length
+    ? await prisma.user.findMany({
+        where: { id: { in: userIds } },
+        select: {
+          id: true,
+          fullName: true
+        }
+      })
+    : [];
+  const userMap = new Map(users.map((user) => [user.id, user]));
+
+  const classIds = Array.from(new Set(students.map((student) => student.classId).filter((id): id is string => Boolean(id))));
+  const classes = classIds.length
+    ? await prisma.class.findMany({
+        where: { id: { in: classIds } },
+        select: {
+          id: true,
+          name: true,
+          section: true
+        }
+      })
+    : [];
+  const classMap = new Map(classes.map((cls) => [cls.id, cls]));
+
+  return payments.map((payment) => {
+    const fee = feeMap.get(payment.feeId);
+    const student = fee ? studentMap.get(fee.studentId) : null;
+    const user = student ? userMap.get(student.userId) : null;
+    const cls = student?.classId ? classMap.get(student.classId) : null;
+
+    return {
+      id: payment.id,
+      studentName: user?.fullName ?? 'Unknown Student',
+      admissionNo: student?.admissionNo ?? 'N/A',
+      classLabel: cls ? `${cls.name}-${cls.section}` : 'Unassigned',
+      amountPaid: Number(payment.amountPaid),
+      paidAt: payment.paidAt,
+      status: fee?.status ?? 'PENDING'
+    };
+  });
 }
 
 export type AttendanceClassAverage = {
@@ -148,10 +201,5 @@ export async function getAttendanceClassAverages(limit = 4): Promise<AttendanceC
 
   if (withData.length > 0) return withData;
 
-  return [
-    { label: 'Islamic Studies', value: 98 },
-    { label: 'Arabic Language', value: 92 },
-    { label: 'Humanities', value: 85 },
-    { label: 'Advanced Math', value: 78 }
-  ];
+  return [];
 }

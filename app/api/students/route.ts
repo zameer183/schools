@@ -300,6 +300,12 @@ async function getStudentsViaRest({
 
   const students = await supabaseRest<Array<Record<string, unknown>> extends Array<infer T> ? T : never>('Student', params);
   if (id && students.length === 0) return NextResponse.json(null);
+  if (id && students.length > 0 && isTeacher && teacherScope) {
+    const studentClassId = String(students[0].classId ?? '');
+    if (!studentClassId || !teacherScope.classIds.includes(studentClassId)) {
+      return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
+    }
+  }
 
   const userIds = Array.from(new Set(students.map((student) => String(student.userId)).filter(Boolean)));
   const classIds = Array.from(new Set(students.map((student) => String(student.classId ?? '')).filter(Boolean)));
@@ -420,7 +426,11 @@ export async function GET(request: Request) {
           }
         }
       });
-      if (isTeacher && !hasGlobalStudentsScope && student?.classId && !teacherScope!.classIds.includes(student.classId)) {
+      if (
+        isTeacher &&
+        !hasGlobalStudentsScope &&
+        (!student?.classId || !teacherScope!.classIds.includes(student.classId))
+      ) {
         return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
       }
       const extraClassIds = student ? (await getExtraClassIdsViaPrisma([student.id])).get(student.id) ?? [] : [];
@@ -443,6 +453,7 @@ export async function GET(request: Request) {
         where,
         select: {
           id: true,
+          userId: true,
           classId: true,
           admissionNo: true,
           user: { select: { fullName: true } }
@@ -452,6 +463,7 @@ export async function GET(request: Request) {
 
       return NextResponse.json(students.map((student) => ({
         id: student.id,
+        userId: student.userId,
         classId: student.classId,
         admissionNo: student.admissionNo,
         fullName: student.user.fullName
@@ -557,6 +569,13 @@ export async function POST(request: Request) {
 
   if (isTeacher && !teacherScope) {
     return NextResponse.json({ error: 'Teacher profile missing' }, { status: 400 });
+  }
+
+  if (isTeacher) {
+    const teacherLevels = await getTeacherAccessLevelsByUserId(auth.session.id);
+    if ((teacherLevels?.STUDENTS ?? 'NONE') === 'NONE') {
+      return NextResponse.json({ error: 'Students module access is disabled for this teacher.' }, { status: 403 });
+    }
   }
 
   if (isTeacher && !payload.data.classId) {
@@ -693,7 +712,12 @@ export async function PATCH(request: Request) {
       const teacherScope = isLocalRestFallbackEnabled() ? await getTeacherScopeViaRest(auth.session.id) : await getTeacherScope(auth.session.id);
       if (!teacherScope) return NextResponse.json({ error: 'Teacher profile missing' }, { status: 400 });
 
-      if (student.classId && !teacherScope.classIds.includes(student.classId)) {
+      const teacherLevels = await getTeacherAccessLevelsByUserId(auth.session.id);
+      if ((teacherLevels?.STUDENTS ?? 'NONE') === 'NONE') {
+        return NextResponse.json({ error: 'Students module access is disabled for this teacher.' }, { status: 403 });
+      }
+
+      if (!student.classId || !teacherScope.classIds.includes(student.classId)) {
         return NextResponse.json({ error: 'You can only update your own class students.' }, { status: 403 });
       }
 
