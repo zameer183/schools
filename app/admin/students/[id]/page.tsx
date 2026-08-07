@@ -56,6 +56,8 @@ type ViewModel = {
   }>;
   collectedFee: number;
   dueFee: number;
+  monthlyFee: number | null;
+  classTeacher: string | null;
 };
 
 function toIso(value: Date | string | null | undefined) {
@@ -324,8 +326,31 @@ async function loadProfileViaRest(id: string): Promise<ViewModel | null> {
     }),
     fees: mappedFees,
     collectedFee,
-    dueFee
+    dueFee,
+    monthlyFee: mappedFees[0] ? mappedFees[0].amount : null,
+    classTeacher: null
   };
+}
+
+async function loadClassTeacherName(classId: string | null | undefined): Promise<string | null> {
+  if (!classId) return null;
+  try {
+    const lead = await prisma.teacherClass.findFirst({
+      where: { classId, isClassLead: true },
+      select: { teacher: { select: { user: { select: { fullName: true } } } } }
+    });
+    if (lead?.teacher?.user?.fullName) return lead.teacher.user.fullName;
+
+    const anyTeacher = await prisma.teacherClass.findFirst({
+      where: { classId },
+      orderBy: { createdAt: 'asc' },
+      select: { teacher: { select: { user: { select: { fullName: true } } } } }
+    });
+    return anyTeacher?.teacher?.user?.fullName ?? null;
+  } catch (error) {
+    console.error('[admin/student-profile] class teacher failed', error);
+    return null;
+  }
 }
 
 async function loadProfileViaPrisma(id: string): Promise<ViewModel | null> {
@@ -481,6 +506,8 @@ async function loadProfileViaPrisma(id: string): Promise<ViewModel | null> {
       )
     : 0;
 
+  const classTeacher = await loadClassTeacherName(student.classId);
+
   return {
     student: {
       ...student,
@@ -529,7 +556,9 @@ async function loadProfileViaPrisma(id: string): Promise<ViewModel | null> {
       payments: fee.payments.map((payment) => ({ amountPaid: Number(payment.amountPaid) }))
     })),
     collectedFee,
-    dueFee
+    dueFee,
+    monthlyFee: currentFee ? Number(currentFee.amount) : null,
+    classTeacher
   };
 }
 
@@ -543,6 +572,8 @@ function renderProfile(data: ViewModel) {
       fees={data.fees}
       collectedFee={data.collectedFee}
       dueFee={data.dueFee}
+      monthlyFee={data.monthlyFee}
+      classTeacher={data.classTeacher}
     />
   );
 }

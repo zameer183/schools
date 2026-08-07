@@ -651,6 +651,7 @@ export async function PATCH(request: Request) {
       fullName,
       email,
       phone,
+      isActive,
       password,
       shareCredentials,
       feeAmount,
@@ -795,6 +796,9 @@ export async function PATCH(request: Request) {
     }
     if (phone !== undefined) {
       userUpdate.phone = phone === '' ? null : phone;
+    }
+    if (typeof isActive === 'boolean') {
+      userUpdate.isActive = isActive;
     }
     if (email !== undefined && email !== '') {
       const existing = await prisma.user.findFirst({

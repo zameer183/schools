@@ -9,6 +9,8 @@ import {
   BarChart3,
   BookOpen,
   Calendar,
+  ChevronLeft,
+  ChevronRight,
   CreditCard,
   DollarSign,
   Eye,
@@ -21,8 +23,10 @@ import {
   MessageSquare,
   Pencil,
   Phone,
+  Plus,
   Save,
   School,
+  Share2,
   Shield,
   User,
   UserCog,
@@ -97,6 +101,8 @@ type Props = {
   fees: FeeRecord[];
   collectedFee: number;
   dueFee: number;
+  monthlyFee: number | null;
+  classTeacher: string | null;
 };
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
@@ -151,6 +157,34 @@ function normalizeWhatsAppPk(raw?: string | null) {
   }
   return null;
 }
+
+function toLocalDateStr(d: Date) {
+  const y = d.getFullYear();
+  const m = String(d.getMonth() + 1).padStart(2, '0');
+  const day = String(d.getDate()).padStart(2, '0');
+  return `${y}-${m}-${day}`;
+}
+
+function phoneDigitsForTel(raw?: string | null) {
+  if (!raw) return null;
+  const digits = raw.replace(/[^\d+]/g, '');
+  return digits.length >= 7 ? digits : null;
+}
+
+function phoneDigitsForWa(raw?: string | null) {
+  const normalized = normalizeWhatsAppPk(raw);
+  if (normalized) return normalized.replace(/\D/g, '');
+  if (!raw) return null;
+  const digits = raw.replace(/\D/g, '');
+  return digits.length >= 10 ? digits : null;
+}
+
+const ATT_DAY_TONE: Record<string, string> = {
+  PRESENT: 'bg-[#dcfce7] text-[#15803d]',
+  ABSENT: 'bg-[#fee2e2] text-[#b91c1c]',
+  LATE: 'bg-[#fef3c7] text-[#b45309]',
+  EXCUSED: 'bg-[#dbeafe] text-[#1d4ed8]'
+};
 
 // ─── Sub-components ───────────────────────────────────────────────────────────
 
@@ -244,7 +278,9 @@ export default function StudentProfileClient({
   attendance,
   results,
   collectedFee,
-  dueFee
+  dueFee,
+  monthlyFee,
+  classTeacher
 }: Props) {
   const router = useRouter();
 
@@ -252,6 +288,9 @@ export default function StudentProfileClient({
   const [editMode, setEditMode] = useState(false);
   const [profileSaving, setProfileSaving] = useState(false);
   const [profileMsg, setProfileMsg] = useState('');
+  const [isActive, setIsActive] = useState(student.user.isActive);
+  const [activeSaving, setActiveSaving] = useState(false);
+  const [calMonth, setCalMonth] = useState(() => new Date(new Date().getFullYear(), new Date().getMonth(), 1));
 
   const [pf, setPf] = useState({
     fullName: student.user.fullName,
@@ -296,7 +335,75 @@ export default function StudentProfileClient({
   const attPct = attTotal ? Math.round((attPresent / attTotal) * 100) : 0;
   const attBarColor = attPct >= 75 ? '#16a34a' : attPct >= 50 ? '#f59e0b' : '#ef4444';
 
+  const callPhone = phoneDigitsForTel(student.user.phone || student.guardianPhone);
+  const waPhone = phoneDigitsForWa(student.whatsApp || student.guardianPhone || student.user.phone);
+  const classLabel = student.class ? `${student.class.name} – ${student.class.section}` : 'Not Assigned';
+  const monthName = calMonth.toLocaleDateString('en-US', { month: 'long', year: 'numeric' });
+  const daysInMonth = new Date(calMonth.getFullYear(), calMonth.getMonth() + 1, 0).getDate();
+  const firstDow = (new Date(calMonth.getFullYear(), calMonth.getMonth(), 1).getDay() + 6) % 7; // Mon=0
+  const monthAttMap = new Map(
+    attendance
+      .filter((row) => {
+        const d = new Date(row.date);
+        return d.getFullYear() === calMonth.getFullYear() && d.getMonth() === calMonth.getMonth();
+      })
+      .map((row) => [toLocalDateStr(new Date(row.date)), row.status] as const)
+  );
+  const monthStats = {
+    present: [...monthAttMap.values()].filter((s) => s === 'PRESENT').length,
+    absent: [...monthAttMap.values()].filter((s) => s === 'ABSENT').length,
+    late: [...monthAttMap.values()].filter((s) => s === 'LATE').length,
+    leave: [...monthAttMap.values()].filter((s) => s === 'EXCUSED').length
+  };
+
   // ─── API Handlers ───────────────────────────────────────────────────────────
+
+  async function toggleActive() {
+    setActiveSaving(true);
+    setProfileMsg('');
+    const next = !isActive;
+    try {
+      const res = await fetch('/api/students', {
+        method: 'PATCH',
+        credentials: 'same-origin',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ id: student.id, isActive: next })
+      });
+      const data = await res.json().catch(() => ({}));
+      if (res.status === 401) {
+        setProfileMsg(SESSION_EXPIRED_MESSAGE);
+        redirectToAdminLogin();
+        return;
+      }
+      if (!res.ok) {
+        setProfileMsg(data.error ?? 'Failed to update active status.');
+        return;
+      }
+      setIsActive(next);
+      router.refresh();
+    } catch {
+      setProfileMsg('Network error. Please try again.');
+    } finally {
+      setActiveSaving(false);
+    }
+  }
+
+  function shareAttendanceReport() {
+    if (!waPhone) return;
+    const msg = [
+      '📅 Attendance Report',
+      '',
+      `Student: ${student.user.fullName}`,
+      `Class: ${classLabel}`,
+      `Month: ${monthName}`,
+      '',
+      `✅ Present: ${monthStats.present}`,
+      `❌ Absent: ${monthStats.absent}`,
+      `🕒 Late: ${monthStats.late}`,
+      `📋 Leave: ${monthStats.leave}`
+    ].join('\n');
+    window.open(`https://wa.me/${waPhone}?text=${encodeURIComponent(msg)}`, '_blank');
+  }
 
   async function saveProfile() {
     setProfileSaving(true);
@@ -467,9 +574,9 @@ export default function StudentProfileClient({
               {initials(student.user.fullName)}
             </div>
             <div>
-              <div className="flex items-center gap-2">
+              <div className="flex flex-wrap items-center gap-2">
                 <h2 className="font-headline text-xl font-bold text-[#111827]">{student.user.fullName}</h2>
-                {student.user.isActive ? (
+                {isActive ? (
                   <span className="rounded-full bg-[#dcfce7] px-2 py-0.5 text-[10px] font-bold uppercase text-[#15803d]">Active</span>
                 ) : (
                   <span className="rounded-full bg-[#fee2e2] px-2 py-0.5 text-[10px] font-bold uppercase text-[#b91c1c]">Inactive</span>
@@ -482,6 +589,19 @@ export default function StudentProfileClient({
 
           {/* Right */}
           <div className="flex w-full flex-wrap items-center gap-2 sm:w-auto sm:justify-end">
+            <button
+              type="button"
+              onClick={toggleActive}
+              disabled={activeSaving}
+              className={`flex flex-1 items-center justify-center gap-1.5 rounded-xl px-4 py-2 text-sm font-semibold transition sm:flex-none disabled:opacity-60 ${
+                isActive
+                  ? 'border border-[#fecaca] bg-[#fef2f2] text-[#b91c1c] hover:bg-[#fee2e2]'
+                  : 'border border-[#bbf7d0] bg-[#f0fdf4] text-[#15803d] hover:bg-[#dcfce7]'
+              }`}
+            >
+              {activeSaving ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : null}
+              {isActive ? 'Mark Inactive' : 'Mark Active'}
+            </button>
             {!editMode ? (
               <button
                 onClick={() => { setEditMode(true); setProfileMsg(''); }}
@@ -509,40 +629,77 @@ export default function StudentProfileClient({
           </div>
         </div>
 
-        {/* Stats row */}
-        <div className="mt-5 border-t border-[#f1f5f9] pt-4">
-          <div className="grid grid-cols-2 gap-4 sm:grid-cols-4">
-            {/* Class */}
+        {/* Class / fee summary card */}
+        <div className="mt-5 rounded-2xl border border-[#e8eef0] bg-[#f8fafb] p-4">
+          <div className="flex flex-wrap items-start justify-between gap-3">
             <div>
-              <p className="text-[10px] font-semibold uppercase tracking-wider text-[#9ca3af]">Class</p>
-              <p className="mt-1 font-bold text-[#111827]">
-                {student.class ? `${student.class.name} – ${student.class.section}` : 'Not Assigned'}
+              <p className="text-[10px] font-semibold uppercase tracking-wider text-[#9ca3af]">Class / Batch</p>
+              <p className="mt-1 text-base font-bold text-[#111827]">{classLabel}</p>
+              <p className="mt-1 text-sm text-[#64748b]">
+                Teacher: <span className="font-semibold text-[#0f172a]">{classTeacher || '—'}</span>
               </p>
             </div>
-            {/* Attendance */}
-            <div>
-              <p className="text-[10px] font-semibold uppercase tracking-wider text-[#9ca3af]">Attendance</p>
-              <p className="mt-1 font-bold text-[#111827]">{attPct}%</p>
-              <div className="mt-1 h-1.5 w-full rounded-full bg-[#f1f5f9] overflow-hidden">
-                <div
-                  className="h-full rounded-full transition-all"
-                  style={{ width: `${attPct}%`, backgroundColor: attBarColor }}
-                />
-              </div>
-            </div>
-            {/* Collected */}
-            <div>
-              <p className="text-[10px] font-semibold uppercase tracking-wider text-[#9ca3af]">Collected</p>
-              <p className="mt-1 font-bold text-[#15803d]">{fmtCurrency(collectedFee)}</p>
-            </div>
-            {/* Due */}
-            <div>
-              <p className="text-[10px] font-semibold uppercase tracking-wider text-[#9ca3af]">Due</p>
-              <p className={`mt-1 font-bold ${dueFee > 0 ? 'text-[#b91c1c]' : 'text-[#111827]'}`}>
-                {fmtCurrency(dueFee)}
-              </p>
+            <div className="rounded-xl bg-white px-3 py-2 text-right shadow-sm">
+              <p className="text-[10px] font-semibold uppercase tracking-wider text-[#9ca3af]">Monthly Fee</p>
+              <p className="mt-0.5 text-lg font-bold text-[#004649]">{monthlyFee != null ? fmtCurrency(monthlyFee) : '—'}</p>
             </div>
           </div>
+          <div className="mt-4 grid grid-cols-2 gap-3 sm:grid-cols-4">
+            <div>
+              <p className="text-[10px] font-semibold uppercase tracking-wider text-[#9ca3af]">Join Date</p>
+              <p className="mt-1 text-sm font-bold text-[#111827]">{fmtDate(student.joinDate)}</p>
+            </div>
+            <div>
+              <p className="text-[10px] font-semibold uppercase tracking-wider text-[#9ca3af]">Attendance</p>
+              <p className="mt-1 text-sm font-bold text-[#111827]">{attPct}%</p>
+              <div className="mt-1 h-1.5 w-full overflow-hidden rounded-full bg-[#e2e8f0]">
+                <div className="h-full rounded-full" style={{ width: `${attPct}%`, backgroundColor: attBarColor }} />
+              </div>
+            </div>
+            <div>
+              <p className="text-[10px] font-semibold uppercase tracking-wider text-[#9ca3af]">Collected</p>
+              <p className="mt-1 text-sm font-bold text-[#15803d]">{fmtCurrency(collectedFee)}</p>
+            </div>
+            <div>
+              <p className="text-[10px] font-semibold uppercase tracking-wider text-[#9ca3af]">Due</p>
+              <p className={`mt-1 text-sm font-bold ${dueFee > 0 ? 'text-[#b91c1c]' : 'text-[#111827]'}`}>{fmtCurrency(dueFee)}</p>
+            </div>
+          </div>
+        </div>
+
+        {/* Quick contact actions */}
+        <div className="mt-4 flex flex-wrap gap-2">
+          <a
+            href={callPhone ? `tel:${callPhone}` : undefined}
+            aria-disabled={!callPhone}
+            className={`inline-flex h-11 flex-1 items-center justify-center gap-2 rounded-xl text-sm font-semibold transition sm:flex-none sm:px-4 ${
+              callPhone ? 'bg-[#004649] text-white hover:bg-[#1b5e62]' : 'cursor-not-allowed bg-[#f1f5f9] text-[#94a3b8]'
+            }`}
+            onClick={(e) => { if (!callPhone) e.preventDefault(); }}
+          >
+            <Phone className="h-4 w-4" />
+            Call
+          </a>
+          <a
+            href={waPhone ? `https://wa.me/${waPhone}` : undefined}
+            target="_blank"
+            rel="noreferrer"
+            aria-disabled={!waPhone}
+            className={`inline-flex h-11 flex-1 items-center justify-center gap-2 rounded-xl text-sm font-semibold transition sm:flex-none sm:px-4 ${
+              waPhone ? 'bg-[#25d366] text-white hover:brightness-95' : 'cursor-not-allowed bg-[#f1f5f9] text-[#94a3b8]'
+            }`}
+            onClick={(e) => { if (!waPhone) e.preventDefault(); }}
+          >
+            <MessageSquare className="h-4 w-4" />
+            WhatsApp
+          </a>
+          <Link
+            href={`/admin/messages?recipientId=${student.user.id}`}
+            className="inline-flex h-11 flex-1 items-center justify-center gap-2 rounded-xl bg-[#f0f2f5] text-sm font-semibold text-[#1a1c1c] transition hover:bg-[#e2e8e8] sm:flex-none sm:px-4"
+          >
+            <Mail className="h-4 w-4" />
+            Message
+          </Link>
         </div>
       </div>
 
@@ -607,6 +764,20 @@ export default function StudentProfileClient({
                   inputType="tel"
                 />
                 <InfoField
+                  icon={User}
+                  label="Father's Name"
+                  value={student.fatherName}
+                  editMode={editMode}
+                  editValue={pf.fatherName}
+                  onChange={(v) => setPf((p) => ({ ...p, fatherName: v }))}
+                />
+                <InfoField
+                  icon={Users}
+                  label="Mother / Guardian Phone"
+                  value={student.guardianPhone}
+                  editMode={false}
+                />
+                <InfoField
                   icon={Calendar}
                   label="Date of Birth"
                   value={fmtDate(student.dateOfBirth)}
@@ -627,14 +798,6 @@ export default function StudentProfileClient({
                     { value: 'Female', label: 'Female' },
                     { value: 'Other', label: 'Other' }
                   ]}
-                />
-                <InfoField
-                  icon={User}
-                  label="Father's Name"
-                  value={student.fatherName}
-                  editMode={editMode}
-                  editValue={pf.fatherName}
-                  onChange={(v) => setPf((p) => ({ ...p, fatherName: v }))}
                 />
                 <InfoField
                   icon={CreditCard}
@@ -693,6 +856,100 @@ export default function StudentProfileClient({
                   {profileMsg}
                 </p>
               )}
+            </div>
+          </div>
+
+          {/* ATTENDANCE MINI CALENDAR */}
+          <div className={CARD}>
+            <CardHeader
+              title="Attendance Summary"
+              trailing={
+                <Link href={`/admin/students/${student.id}/attendance`} className="text-xs font-semibold text-[#004649] hover:underline">
+                  Open full calendar
+                </Link>
+              }
+            />
+            <div className="p-5">
+              <div className="mb-4 flex items-center justify-between">
+                <button
+                  type="button"
+                  onClick={() => setCalMonth(new Date(calMonth.getFullYear(), calMonth.getMonth() - 1, 1))}
+                  className="flex h-10 w-10 items-center justify-center rounded-xl bg-[#f0f2f5] hover:bg-[#e2e8e8]"
+                >
+                  <ChevronLeft className="h-4 w-4" />
+                </button>
+                <p className="text-sm font-semibold text-[#111827]">{monthName}</p>
+                <button
+                  type="button"
+                  onClick={() => setCalMonth(new Date(calMonth.getFullYear(), calMonth.getMonth() + 1, 1))}
+                  className="flex h-10 w-10 items-center justify-center rounded-xl bg-[#f0f2f5] hover:bg-[#e2e8e8]"
+                >
+                  <ChevronRight className="h-4 w-4" />
+                </button>
+              </div>
+              <div className="mb-2 grid grid-cols-7 gap-1 text-center text-[10px] font-semibold text-[#94a3b8]">
+                {['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'].map((d) => (
+                  <div key={d}>{d}</div>
+                ))}
+              </div>
+              <div className="grid grid-cols-7 gap-1">
+                {Array.from({ length: firstDow }).map((_, i) => (
+                  <div key={`pad-${i}`} className="aspect-square" />
+                ))}
+                {Array.from({ length: daysInMonth }).map((_, i) => {
+                  const day = i + 1;
+                  const dateStr = toLocalDateStr(new Date(calMonth.getFullYear(), calMonth.getMonth(), day));
+                  const status = monthAttMap.get(dateStr);
+                  return (
+                    <div
+                      key={dateStr}
+                      className={`aspect-square flex items-center justify-center rounded-lg text-xs font-semibold ${
+                        status ? ATT_DAY_TONE[status] : 'bg-[#f8fafc] text-[#94a3b8]'
+                      }`}
+                    >
+                      {day}
+                    </div>
+                  );
+                })}
+              </div>
+              <div className="mt-4 grid grid-cols-4 gap-2">
+                <div className="rounded-xl bg-[#f0fdf4] p-2 text-center">
+                  <p className="text-[10px] font-semibold text-[#9ca3af]">Present</p>
+                  <p className="text-sm font-bold text-[#15803d]">{monthStats.present}</p>
+                </div>
+                <div className="rounded-xl bg-[#fef2f2] p-2 text-center">
+                  <p className="text-[10px] font-semibold text-[#9ca3af]">Absent</p>
+                  <p className="text-sm font-bold text-[#b91c1c]">{monthStats.absent}</p>
+                </div>
+                <div className="rounded-xl bg-[#fffbeb] p-2 text-center">
+                  <p className="text-[10px] font-semibold text-[#9ca3af]">Late</p>
+                  <p className="text-sm font-bold text-[#b45309]">{monthStats.late}</p>
+                </div>
+                <div className="rounded-xl bg-[#eff6ff] p-2 text-center">
+                  <p className="text-[10px] font-semibold text-[#9ca3af]">Leave</p>
+                  <p className="text-sm font-bold text-[#1d4ed8]">{monthStats.leave}</p>
+                </div>
+              </div>
+              <div className="mt-4 flex flex-col gap-2 sm:flex-row">
+                <button
+                  type="button"
+                  onClick={shareAttendanceReport}
+                  disabled={!waPhone}
+                  className={`h-11 flex flex-1 items-center justify-center gap-2 rounded-xl text-sm font-semibold transition ${
+                    waPhone ? 'bg-[#25d366] text-white hover:brightness-95' : 'cursor-not-allowed bg-[#f1f5f9] text-[#94a3b8]'
+                  }`}
+                >
+                  <Share2 className="h-4 w-4" />
+                  Share Attendance Report
+                </button>
+                <Link
+                  href={`/admin/students/${student.id}/fees`}
+                  className="h-11 flex flex-1 items-center justify-center gap-2 rounded-xl bg-[#004649] text-sm font-semibold text-white transition hover:bg-[#1b5e62]"
+                >
+                  <Plus className="h-4 w-4" />
+                  Add Fee
+                </Link>
+              </div>
             </div>
           </div>
 
