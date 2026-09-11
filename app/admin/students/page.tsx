@@ -1,3 +1,6 @@
+import React from 'react';
+import { DashboardRouteLoading } from '@/components/ui/dashboard-route-loading';
+import { PageHeader } from '@/components/ui';
 import { UserRole } from '@prisma/client';
 import { requireAuth } from '@/lib/auth';
 import { prisma } from '@/lib/prisma';
@@ -89,7 +92,7 @@ async function getPaginatedStudentsData(where: any, skip: number, take: number, 
   return { totalStudents, active, pendingFees, newThisMonth, students, classes };
 }
 
-export default async function AdminStudentsPage(props: { searchParams: Promise<{ [key: string]: string | string[] | undefined }> }) {
+async function StudentListContent(props: { searchParams: Promise<{ [key: string]: string | string[] | undefined }> }) {
   await requireAuth([UserRole.ADMIN]);
   const searchParams = await props.searchParams;
   const page = Number(searchParams.page) || 1;
@@ -180,4 +183,16 @@ export default async function AdminStudentsPage(props: { searchParams: Promise<{
   });
 
   return <AdminStudentsPageClient initialStudents={normalizedStudents} initialClasses={classes as any} totalStudents={totalStudents} stats={{ total: totalStudents, active, pendingFees, newThisMonth }} currentPage={page} pageSize={pageSize} viewMode={view as 'grid' | 'list'} searchQ={search} classIdQ={classFilter} statusQ={statusFilter as any} />;
+}
+
+
+export default function AdminStudentsPage(props: { searchParams: Promise<{ [key: string]: string | string[] | undefined }> }) {
+  return (
+    <div className="w-full space-y-6">
+      <PageHeader title="Student Directory" description="Manage enrolled students and fee records." />
+      <React.Suspense fallback={<DashboardRouteLoading title="Loading Students..." hint="Fetching student directory from database..." />}>
+        <StudentListContent searchParams={props.searchParams} />
+      </React.Suspense>
+    </div>
+  );
 }

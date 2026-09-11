@@ -1,3 +1,6 @@
+import React from 'react';
+import { DashboardRouteLoading } from '@/components/ui/dashboard-route-loading';
+import { PageHeader } from '@/components/ui';
 import { AttendanceStatus, UserRole } from '@prisma/client';
 import { unstable_cache } from 'next/cache';
 import { requireAuth } from '@/lib/auth';
@@ -383,7 +386,7 @@ async function loadAttendanceViaRest(
   };
 }
 
-export default async function AdminAttendancePage({ searchParams }: { searchParams?: Promise<SearchParams> }) {
+async function AttendanceContent({ searchParams }: { searchParams?: Promise<SearchParams> }) {
   await requireAuth([UserRole.ADMIN]);
 
   const params = (await searchParams) ?? {};
@@ -527,5 +530,17 @@ export default async function AdminAttendancePage({ searchParams }: { searchPara
       }}
       monthStatusByDay={serializedMonthStatusByDay}
     />
+  );
+}
+
+
+export default function AdminAttendancePage(props: { searchParams?: Promise<any> }) {
+  return (
+    <div className="w-full space-y-6">
+      <PageHeader title="Attendance Registry" description="Track daily attendance for students and staff." />
+      <React.Suspense fallback={<DashboardRouteLoading title="Loading Attendance..." hint="Fetching daily records from the database..." />}>
+        <AttendanceContent searchParams={props.searchParams} />
+      </React.Suspense>
+    </div>
   );
 }
