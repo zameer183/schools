@@ -68,13 +68,26 @@ function getWhatsAppUrl(fee: SerializedFeeItem): string | null {
 export function FeeBulkList({
   fees,
   overdueCount,
-  selectedFeeStatus
+  selectedFeeStatus,
+  currentPage,
+  totalDuesCount,
+  pageSize
 }: {
   fees: SerializedFeeItem[];
   overdueCount: number;
   selectedFeeStatus: string;
+  currentPage: number;
+  totalDuesCount: number;
+  pageSize: number;
 }) {
   const router = useRouter();
+  const totalPages = Math.max(1, Math.ceil(totalDuesCount / pageSize));
+  
+  function navigate(pageStr: string) {
+    const params = new URLSearchParams(window.location.search);
+    params.set('page', pageStr);
+    router.push(`?${params.toString()}`);
+  }
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [loading, setLoading] = useState(false);
   const [loadingIds, setLoadingIds] = useState<Set<string>>(new Set());
@@ -431,6 +444,40 @@ export function FeeBulkList({
                 );
               })}
             </div>
+          
+            {totalPages > 1 && (
+              <div className="flex items-center justify-between border-t border-[#edf0f2] bg-[#f8fafc] px-4 py-3 mt-4 rounded-xl">
+                <div className="text-sm text-[#6b7280]">
+                  Showing <span className="font-semibold text-[#111827]">{(currentPage - 1) * pageSize + 1}</span> to <span className="font-semibold text-[#111827]">{Math.min(currentPage * pageSize, totalDuesCount)}</span> of <span className="font-semibold text-[#111827]">{totalDuesCount}</span> records
+                </div>
+                <div className="flex gap-2">
+                  {currentPage > 1 ? (
+                    <button
+                      onClick={() => navigate(String(currentPage - 1))}
+                      className="inline-flex h-9 items-center justify-center rounded-lg border border-[#e5e7eb] bg-white px-3 text-sm font-semibold text-[#374151] hover:bg-[#f3f4f5] transition"
+                    >
+                      Previous
+                    </button>
+                  ) : (
+                    <span className="inline-flex h-9 items-center justify-center rounded-lg border border-[#e5e7eb] bg-[#f9fafb] px-3 text-sm font-semibold text-[#d1d5db] cursor-not-allowed">
+                      Previous
+                    </span>
+                  )}
+                  {currentPage < totalPages ? (
+                    <button
+                      onClick={() => navigate(String(currentPage + 1))}
+                      className="inline-flex h-9 items-center justify-center rounded-lg border border-[#e5e7eb] bg-white px-3 text-sm font-semibold text-[#374151] hover:bg-[#f3f4f5] transition"
+                    >
+                      Next
+                    </button>
+                  ) : (
+                    <span className="inline-flex h-9 items-center justify-center rounded-lg border border-[#e5e7eb] bg-[#f9fafb] px-3 text-sm font-semibold text-[#d1d5db] cursor-not-allowed">
+                      Next
+                    </span>
+                  )}
+                </div>
+              </div>
+            )}
           </>
         ) : (
           <div className="rounded-xl bg-[#f8fafc] px-4 py-10 text-center">

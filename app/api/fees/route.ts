@@ -58,6 +58,7 @@ export async function GET(request: Request) {
   }
 
   const fees = await prisma.fee.findMany({
+    take: 100,
     where: {
       ...studentFilter,
       ...(classId && auth.session.role === UserRole.ADMIN ? { student: { classId } } : {}),

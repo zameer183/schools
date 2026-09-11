@@ -373,6 +373,7 @@ export async function GET(request: Request) {
     const id = searchParams.get('id');
     const classId = searchParams.get('classId');
     const light = searchParams.get('light') === '1';
+  const limit = Math.min(Math.max(parseInt(searchParams.get('limit') ?? '100') || 100, 1), 1000);
     const view = searchParams.get('view');
 
     if (isLocalRestFallbackEnabled()) {
@@ -450,7 +451,7 @@ export async function GET(request: Request) {
 
     if (light) {
       const students = await prisma.student.findMany({
-        where,
+        where, take: limit,
         select: {
           id: true,
           userId: true,
@@ -472,7 +473,7 @@ export async function GET(request: Request) {
 
     if (view === 'teacher-progress') {
       const students = await prisma.student.findMany({
-        where,
+        where, take: limit,
         select: {
           id: true,
           admissionNo: true,
@@ -487,7 +488,7 @@ export async function GET(request: Request) {
 
     if (view === 'teacher-attendance') {
       const students = await prisma.student.findMany({
-        where,
+        where, take: limit,
         select: {
           id: true,
           admissionNo: true,
@@ -504,7 +505,7 @@ export async function GET(request: Request) {
 
     if (view === 'teacher-list') {
       const students = await prisma.student.findMany({
-        where,
+        where, take: limit,
         select: {
           id: true,
           admissionNo: true,
@@ -520,7 +521,7 @@ export async function GET(request: Request) {
     }
 
     const students = await prisma.student.findMany({
-      where,
+      where, take: limit,
       include: {
         user: true,
         class: true,

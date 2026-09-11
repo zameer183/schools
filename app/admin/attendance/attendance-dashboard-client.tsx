@@ -1,4 +1,4 @@
-﻿'use client';
+'use client';
 
 import { useEffect, useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
@@ -126,7 +126,8 @@ export default function AttendanceDashboardClient({
   teachers,
   teacherMonthlySummary,
   overview,
-  monthStatusByDay
+  monthStatusByDay,
+  page
 }: {
   initialTab: 'overview' | 'students' | 'teachers';
   selectedDate: string;
@@ -137,9 +138,11 @@ export default function AttendanceDashboardClient({
   teacherMonthlySummary: TeacherMonthlySummaryRow[];
   overview: { present: number; absent: number; late: number; percentage: number };
   monthStatusByDay: MonthDayStatus[];
+  page?: number;
 }) {
   const router = useRouter();
   const [tab, setTab] = useState<TabKey>(initialTab);
+  const currentPage = page || 1;
   const [studentStatusMap, setStudentStatusMap] = useState<Record<string, string | null>>(
     Object.fromEntries(students.map((item) => [item.id, item.status]))
   );

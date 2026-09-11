@@ -4,7 +4,7 @@ import ClassAttendanceClient from './class-attendance-client';
 export const dynamic = 'force-dynamic';
 
 type PageProps = {
-  searchParams?: Promise<{ classId?: string; month?: string }>;
+  searchParams?: Promise<{ classId?: string; month?: string; page?: string }>;
 };
 
 function dateKey(date: Date) {
@@ -37,6 +37,9 @@ export default async function ClassAttendanceReportPage({ searchParams }: PagePr
   end.setHours(23, 59, 59, 999);
   const monthLabel = start.toLocaleDateString('en-US', { month: 'short', year: 'numeric' });
 
+  const page = Math.max(1, Number(params.page) || 1);
+  const pageSize = 50;
+
   const classes = await prisma.class.findMany({
     select: {
       id: true,
@@ -53,67 +56,86 @@ export default async function ClassAttendanceReportPage({ searchParams }: PagePr
     classes.some((c) => c.id === params.classId) ? params.classId ?? '' : classes[0]?.id ?? '';
   const selectedClassRaw = classes.find((c) => c.id === selectedClassId) ?? null;
 
-  const students = selectedClassRaw
-    ? await prisma.student.findMany({
-        where: { classId: selectedClassRaw.id },
-        select: { id: true, rollNumber: true, user: { select: { fullName: true } } },
-        orderBy: { rollNumber: 'asc' }
-      })
-    : [];
-
-  const attendance = selectedClassRaw
-    ? await prisma.attendance.findMany({
-        where: { classId: selectedClassRaw.id, date: { gte: start, lte: end } },
-        select: { studentId: true, date: true, status: true }
-      })
-    : [];
-
-  // Build per-student date maps
-  const rowsByStudent = new Map<string, Map<string, 'PRESENT' | 'ABSENT' | 'LATE' | 'EXCUSED'>>();
-  for (const row of attendance) {
-    if (!rowsByStudent.has(row.studentId)) rowsByStudent.set(row.studentId, new Map());
-    rowsByStudent.get(row.studentId)!.set(dateKey(row.date), row.status);
-  }
+  let totalStudents = 0;
+  let overallPresent = 0;
+  let overallAbsent = 0;
+  let overallLeave = 0;
+  let studentRows: any[] = [];
 
   const totalDays = new Date(year, month, 0).getDate();
   const dayColumns = Array.from({ length: totalDays }, (_, i) => i + 1);
 
-  // Build student rows
-  let overallPresent = 0;
-  let overallAbsent = 0;
-  let overallLeave = 0;
+  if (selectedClassRaw) {
+    // 1. Fetch lightweight aggregated totals across ALL matching records to preserve exact math
+    const [countStudents, statusCounts] = await Promise.all([
+      prisma.student.count({ where: { classId: selectedClassRaw.id } }),
+      prisma.attendance.groupBy({
+        by: ['status'],
+        where: { classId: selectedClassRaw.id, date: { gte: start, lte: end } },
+        _count: { status: true }
+      })
+    ]);
 
-  const studentRows = students.map((student) => {
-    const dayMap = rowsByStudent.get(student.id) ?? new Map();
-    let totalPresent = 0;
-    let totalAbsent = 0;
-    let totalLeave = 0;
+    totalStudents = countStudents;
 
-    const codes = dayColumns.map((day) => {
-      const d = new Date(year, month - 1, day);
-      const key = dateKey(d);
-      const weekend = d.getDay() === 0 || d.getDay() === 6;
-      const code = codeForStatus(dayMap.get(key), weekend);
-      if (code === 'P') totalPresent++;
-      if (code === 'A') totalAbsent++;
-      if (code === 'L') totalLeave++;
-      return code;
+    for (const group of statusCounts) {
+      if (group.status === 'PRESENT' || group.status === 'LATE') overallPresent += group._count.status;
+      if (group.status === 'ABSENT') overallAbsent += group._count.status;
+      if (group.status === 'EXCUSED') overallLeave += group._count.status;
+    }
+
+    // 2. Fetch paginated students for the current page
+    const students = await prisma.student.findMany({
+      where: { classId: selectedClassRaw.id },
+      select: { id: true, rollNumber: true, user: { select: { fullName: true } } },
+      orderBy: { rollNumber: 'asc' },
+      skip: (page - 1) * pageSize,
+      take: pageSize
     });
 
-    overallPresent += totalPresent;
-    overallAbsent += totalAbsent;
-    overallLeave += totalLeave;
+    // 3. Fetch attendance only for these paginated students
+    const studentIds = students.map((s) => s.id);
+    const attendance = studentIds.length > 0 ? await prisma.attendance.findMany({
+      where: { classId: selectedClassRaw.id, date: { gte: start, lte: end }, studentId: { in: studentIds } },
+      select: { studentId: true, date: true, status: true }
+    }) : [];
 
-    return {
-      id: student.id,
-      fullName: student.user.fullName,
-      rollNumber: student.rollNumber,
-      codes,
-      totalPresent,
-      totalAbsent,
-      totalLeave
-    };
-  });
+    // Build per-student date maps
+    const rowsByStudent = new Map<string, Map<string, 'PRESENT' | 'ABSENT' | 'LATE' | 'EXCUSED'>>();
+    for (const row of attendance) {
+      if (!rowsByStudent.has(row.studentId)) rowsByStudent.set(row.studentId, new Map());
+      rowsByStudent.get(row.studentId)!.set(dateKey(row.date), row.status);
+    }
+
+    // Build student rows
+    studentRows = students.map((student) => {
+      const dayMap = rowsByStudent.get(student.id) ?? new Map();
+      let totalPresent = 0;
+      let totalAbsent = 0;
+      let totalLeave = 0;
+
+      const codes = dayColumns.map((day) => {
+        const d = new Date(year, month - 1, day);
+        const key = dateKey(d);
+        const weekend = d.getDay() === 0 || d.getDay() === 6;
+        const code = codeForStatus(dayMap.get(key), weekend);
+        if (code === 'P') totalPresent++;
+        if (code === 'A') totalAbsent++;
+        if (code === 'L') totalLeave++;
+        return code;
+      });
+
+      return {
+        id: student.id,
+        fullName: student.user.fullName,
+        rollNumber: student.rollNumber,
+        codes,
+        totalPresent,
+        totalAbsent,
+        totalLeave
+      };
+    });
+  }
 
   const leadTeacher =
     selectedClassRaw?.teacherLinks.find((l) => l.isClassLead)?.teacher.user.fullName ??
@@ -136,6 +158,9 @@ export default async function ClassAttendanceReportPage({ searchParams }: PagePr
       overallPresent={overallPresent}
       overallAbsent={overallAbsent}
       overallLeave={overallLeave}
+      currentPage={page}
+      totalStudents={totalStudents}
+      pageSize={pageSize}
     />
   );
 }

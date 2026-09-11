@@ -32,16 +32,13 @@ export default async function IndividualAttendanceReportPage({ searchParams }: P
   const selectedClassId =
     params.classId && classes.some((c) => c.id === params.classId) ? params.classId : 'all';
 
+  // 1. Fetch lightweight dropdown students
   const students = await prisma.student.findMany({
     where: selectedClassId !== 'all' ? { classId: selectedClassId } : {},
     select: {
       id: true,
       admissionNo: true,
-      rollNumber: true,
-      whatsApp: true,
-      guardianPhone: true,
-      user: { select: { fullName: true, isActive: true } },
-      class: { select: { name: true, section: true } }
+      user: { select: { fullName: true } }
     },
     orderBy: { createdAt: 'desc' }
   });
@@ -50,7 +47,18 @@ export default async function IndividualAttendanceReportPage({ searchParams }: P
     ? params.studentId ?? ''
     : students[0]?.id ?? '';
 
-  const selectedStudent = students.find((s) => s.id === selectedStudentId) ?? null;
+  const selectedStudent = selectedStudentId ? await prisma.student.findUnique({
+    where: { id: selectedStudentId },
+    select: {
+      id: true,
+      admissionNo: true,
+      rollNumber: true,
+      whatsApp: true,
+      guardianPhone: true,
+      user: { select: { fullName: true, isActive: true } },
+      class: { select: { name: true, section: true } }
+    }
+  }) : null;
 
   const attendanceRows = selectedStudent
     ? await prisma.attendance.findMany({
@@ -63,12 +71,12 @@ export default async function IndividualAttendanceReportPage({ searchParams }: P
   const studentList = students.map((s) => ({
     id: s.id,
     admissionNo: s.admissionNo,
-    rollNumber: s.rollNumber,
-    whatsApp: s.whatsApp,
-    guardianPhone: s.guardianPhone,
+    rollNumber: null,
+    whatsApp: null,
+    guardianPhone: null,
     fullName: s.user.fullName,
-    isActive: s.user.isActive,
-    className: s.class ? `${s.class.name} ${s.class.section}` : null
+    isActive: true,
+    className: null
   }));
 
   const selectedStudentSerialized = selectedStudent

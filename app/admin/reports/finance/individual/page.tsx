@@ -30,18 +30,27 @@ export default async function IndividualFinanceReportPage({ searchParams }: Page
   const to = new Date(year, 11, 31);
   to.setHours(23, 59, 59, 999);
 
+  // 1. Fetch lightweight dropdown students
   const students = await prisma.student.findMany({
     select: {
       id: true,
       admissionNo: true,
-      user: { select: { fullName: true } },
-      class: { select: { name: true, section: true } }
+      user: { select: { fullName: true } }
     },
     orderBy: { createdAt: 'desc' }
   });
 
   const selectedStudentId = students.some((s) => s.id === params.studentId) ? params.studentId ?? '' : students[0]?.id ?? '';
-  const selectedStudent = students.find((s) => s.id === selectedStudentId) ?? null;
+  // 2. Fetch full selected student
+  const selectedStudent = selectedStudentId ? await prisma.student.findUnique({
+    where: { id: selectedStudentId },
+    select: {
+      id: true,
+      admissionNo: true,
+      user: { select: { fullName: true } },
+      class: { select: { name: true, section: true } }
+    }
+  }) : null;
 
   const fees = selectedStudent
     ? await prisma.fee.findMany({

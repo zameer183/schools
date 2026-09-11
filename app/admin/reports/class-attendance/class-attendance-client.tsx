@@ -26,6 +26,9 @@ type Props = {
   overallPresent: number;
   overallAbsent: number;
   overallLeave: number;
+  currentPage: number;
+  totalStudents: number;
+  pageSize: number;
 };
 
 function cellStyle(code: string) {
@@ -44,9 +47,11 @@ function shiftMonth(key: string, delta: number) {
 
 export default function ClassAttendanceClient({
   classes, selectedClassId, selectedClass, monthKey, monthLabel,
-  dayColumns, students, overallPresent, overallAbsent, overallLeave
+  dayColumns, students, overallPresent, overallAbsent, overallLeave,
+  currentPage, totalStudents, pageSize
 }: Props) {
   const router = useRouter();
+  const totalPages = Math.max(1, Math.ceil(totalStudents / pageSize));
 
   function navigate(overrides: Record<string, string>) {
     const params = new URLSearchParams({ classId: selectedClassId, month: monthKey, ...overrides });
@@ -59,14 +64,14 @@ export default function ClassAttendanceClient({
       `Class: ${selectedClass.name} ${selectedClass.section}`,
       `Teacher: ${selectedClass.leadTeacher}`,
       `Month: ${monthLabel}`,
-      `Total Students: ${students.length}`,
+      `Total Students: ${totalStudents}`,
       `Class Present: ${overallPresent} | Class Absent: ${overallAbsent} | Class Leave: ${overallLeave}`,
       ''
     ].join('\n');
 
     const cols = ['#', 'Student Name', ...dayColumns.map(String), 'Total P', 'Total A', 'Total L'];
     const rows = students.map((s, i) => [
-      String(s.rollNumber ?? i + 1),
+      String(s.rollNumber ?? (currentPage - 1) * pageSize + i + 1),
       s.fullName,
       ...s.codes,
       String(s.totalPresent),
@@ -79,7 +84,7 @@ export default function ClassAttendanceClient({
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
-    a.download = `class_attendance_${selectedClass.name}_${selectedClass.section}_${monthLabel.replace(/\s+/g, '_')}.csv`;
+    a.download = `class_attendance_${selectedClass.name}_${selectedClass.section}_${monthLabel.replace(/\s+/g, '_')}_page${currentPage}.csv`;
     a.click();
     URL.revokeObjectURL(url);
   }
@@ -99,7 +104,7 @@ export default function ClassAttendanceClient({
             Class
             <select
               value={selectedClassId}
-              onChange={(e) => navigate({ classId: e.target.value })}
+              onChange={(e) => navigate({ classId: e.target.value, page: '1' })}
               className="mt-1 h-10 w-full rounded-xl bg-[#f3f4f5] px-3 text-sm text-[#1f2937]"
             >
               {classes.map((c) => (
@@ -112,19 +117,19 @@ export default function ClassAttendanceClient({
             <input
               type="month"
               value={monthKey}
-              onChange={(e) => navigate({ month: e.target.value })}
+              onChange={(e) => navigate({ month: e.target.value, page: '1' })}
               className="mt-1 h-10 w-full rounded-xl bg-[#f3f4f5] px-3 text-sm text-[#1f2937]"
             />
           </label>
           <div className="flex items-end gap-2">
             <button
-              onClick={() => navigate({ month: shiftMonth(monthKey, -1) })}
+              onClick={() => navigate({ month: shiftMonth(monthKey, -1), page: '1' })}
               className="h-10 flex-1 rounded-xl bg-[#f3f4f5] text-sm font-semibold text-[#374151] hover:bg-[#e5e7eb] transition"
             >
               ← Prev
             </button>
             <button
-              onClick={() => navigate({ month: shiftMonth(monthKey, 1) })}
+              onClick={() => navigate({ month: shiftMonth(monthKey, 1), page: '1' })}
               className="h-10 flex-1 rounded-xl bg-[#f3f4f5] text-sm font-semibold text-[#374151] hover:bg-[#e5e7eb] transition"
             >
               Next →
@@ -142,7 +147,7 @@ export default function ClassAttendanceClient({
               <span><span className="font-semibold">Class:</span> {selectedClass.name} {selectedClass.section}</span>
               <span><span className="font-semibold">Month:</span> {monthLabel}</span>
               <span><span className="font-semibold">Teacher:</span> {selectedClass.leadTeacher}</span>
-              <span><span className="font-semibold">Students:</span> {students.length}</span>
+              <span><span className="font-semibold">Students:</span> {totalStudents}</span>
             </div>
           </div>
 
@@ -155,7 +160,7 @@ export default function ClassAttendanceClient({
               <div className="mt-1 flex flex-wrap gap-4 text-sm text-[#374151]">
                 <span><span className="font-semibold">Month:</span> {monthLabel}</span>
                 <span><span className="font-semibold">Teacher:</span> {selectedClass.leadTeacher}</span>
-                <span><span className="font-semibold">Students:</span> {students.length}</span>
+                <span><span className="font-semibold">Students:</span> {totalStudents}</span>
               </div>
             </div>
             <div className="flex items-center gap-2 flex-shrink-0">
@@ -165,7 +170,7 @@ export default function ClassAttendanceClient({
                 className="flex items-center gap-2 rounded-xl bg-[#004649] px-4 py-2 text-sm font-semibold text-white hover:bg-[#1b5e62] transition"
               >
                 <Download className="h-4 w-4" />
-                CSV
+                CSV (Page)
               </button>
             </div>
           </div>
@@ -223,6 +228,41 @@ export default function ClassAttendanceClient({
                 )}
               </tbody>
             </table>
+            
+            {/* Pagination Footer */}
+            {totalPages > 1 && (
+              <div className="flex items-center justify-between border-t border-[#e5e7eb] bg-[#f8fafc] px-4 py-3 print:hidden sticky left-0">
+                <div className="text-sm text-[#6b7280]">
+                  Showing <span className="font-semibold text-[#111827]">{(currentPage - 1) * pageSize + 1}</span> to <span className="font-semibold text-[#111827]">{Math.min(currentPage * pageSize, totalStudents)}</span> of <span className="font-semibold text-[#111827]">{totalStudents}</span> students
+                </div>
+                <div className="flex gap-2">
+                  {currentPage > 1 ? (
+                    <button
+                      onClick={() => navigate({ page: String(currentPage - 1) })}
+                      className="inline-flex h-9 items-center justify-center rounded-lg border border-[#e5e7eb] bg-white px-3 text-sm font-semibold text-[#374151] hover:bg-[#f3f4f5] transition"
+                    >
+                      Previous
+                    </button>
+                  ) : (
+                    <span className="inline-flex h-9 items-center justify-center rounded-lg border border-[#e5e7eb] bg-[#f9fafb] px-3 text-sm font-semibold text-[#d1d5db] cursor-not-allowed">
+                      Previous
+                    </span>
+                  )}
+                  {currentPage < totalPages ? (
+                    <button
+                      onClick={() => navigate({ page: String(currentPage + 1) })}
+                      className="inline-flex h-9 items-center justify-center rounded-lg border border-[#e5e7eb] bg-white px-3 text-sm font-semibold text-[#374151] hover:bg-[#f3f4f5] transition"
+                    >
+                      Next
+                    </button>
+                  ) : (
+                    <span className="inline-flex h-9 items-center justify-center rounded-lg border border-[#e5e7eb] bg-[#f9fafb] px-3 text-sm font-semibold text-[#d1d5db] cursor-not-allowed">
+                      Next
+                    </span>
+                  )}
+                </div>
+              </div>
+            )}
           </div>
 
           {/* Class totals */}

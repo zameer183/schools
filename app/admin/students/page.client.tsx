@@ -925,11 +925,11 @@ ${showPwd ? password : '********'}`}
    Main page client component
 ───────────────────────────────────────────────────────────────────────── */
 export default function AdminStudentsPageClient({
-  initialStudents,
-  initialClasses,
+  initialStudents, initialClasses, totalStudents, stats, currentPage, pageSize, viewMode, searchQ, classIdQ, statusQ,
 }: {
-  initialStudents: StudentItem[];
-  initialClasses: ClassItem[];
+  initialStudents: StudentItem[]; initialClasses: ClassItem[]; totalStudents: number;
+  stats: { total: number; active: number; pendingFees: number; newThisMonth: number };
+  currentPage: number; pageSize: number; viewMode: 'grid' | 'list'; searchQ: string; classIdQ: string; statusQ: StatusFilter;
 }) {
   const router = useRouter();
   const [students, setStudents] = useState<StudentItem[]>(normalizeStudentsData(initialStudents));
@@ -938,11 +938,36 @@ export default function AdminStudentsPageClient({
   const [saving, setSaving] = useState(false);
   const [message, setMessage] = useState('');
 
-  const [search, setSearch] = useState('');
-  const [classFilter, setClassFilter] = useState('');
-  const [statusFilter, setStatusFilter] = useState<StatusFilter>('all');
-  const [view, setView] = useState<'grid' | 'list'>('grid');
-  const [page, setPage] = useState(1);
+  const [search, setSearch] = useState(searchQ);
+  const [classFilter, setClassFilter] = useState(classIdQ);
+  const [statusFilter, setStatusFilter] = useState<StatusFilter>(statusQ);
+  const [view, setView] = useState<'grid' | 'list'>(viewMode);
+  const [page, setPage] = useState(currentPage);
+
+  useEffect(() => {
+    setStudents(normalizeStudentsData(initialStudents));
+    setSearch(searchQ);
+    setClassFilter(classIdQ);
+    setStatusFilter(statusQ);
+    setView(viewMode);
+    setPage(currentPage);
+  }, [initialStudents, searchQ, classIdQ, statusQ, viewMode, currentPage]);
+
+  const updateFilters = (newParams: Record<string, string>) => {
+    const params = new URLSearchParams(window.location.search);
+    for (const [key, val] of Object.entries(newParams)) {
+      if (val) params.set(key, val);
+      else params.delete(key);
+    }
+    router.push(`?${params.toString()}`);
+  };
+
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      if (search !== searchQ) updateFilters({ search, page: '1' });
+    }, 500);
+    return () => clearTimeout(timer);
+  }, [search, searchQ]);
 
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [showPromoteModal, setShowPromoteModal] = useState(false);
@@ -967,37 +992,8 @@ export default function AdminStudentsPageClient({
     return () => media.removeEventListener('change', sync);
   }, []);
 
-  /* ── Stats ── */
-  const stats = useMemo(() => {
-    const now = new Date();
-    const monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
-    return {
-      total: students.length,
-      active: students.filter((s) => s.user.isActive).length,
-      pendingFees: students.filter((s) => s.feeStatus !== 'PAID').length,
-      newThisMonth: students.filter((s) => {
-        const d = safeDate(s.createdAt);
-        return d !== null && d >= monthStart;
-      }).length,
-    };
-  }, [students]);
-
-  /* ── Filter ── */
-  const filteredStudents = useMemo(() => {
-    return students.filter((s) => {
-      if (classFilter && s.classId !== classFilter && !(s.extraClassIds ?? []).includes(classFilter)) return false;
-      if (statusFilter === 'active'   && !s.user.isActive)          return false;
-      if (statusFilter === 'inactive' &&  s.user.isActive)          return false;
-      if (statusFilter === 'pending'  && s.feeStatus === 'PAID')    return false;
-      const text = search.trim().toLowerCase();
-      if (text && !s.user.fullName.toLowerCase().includes(text)) return false;
-      return true;
-    });
-  }, [students, classFilter, search, statusFilter]);
-
-  useEffect(() => { setPage(1); }, [search, classFilter, statusFilter]);
-
-  const PAGE_SIZE = view === 'grid' ? 12 : BASE_PAGE_SIZE;
+  const filteredStudents = students;
+  const PAGE_SIZE = pageSize;
   const totalPages  = Math.max(1, Math.ceil(filteredStudents.length / PAGE_SIZE));
   const pagedStudents = filteredStudents.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);
   const allPageSelected = pagedStudents.length > 0 && pagedStudents.every((s) => selected.has(s.id));
@@ -1319,7 +1315,7 @@ export default function AdminStudentsPageClient({
         <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
           <select
             value={classFilter}
-            onChange={(e) => setClassFilter(e.target.value)}
+            onChange={(e) => updateFilters({ classId: e.target.value, page: '1' })}
             className="h-11 rounded-xl border-none bg-[#f3f4f5] px-3 text-sm text-[#374151] outline-none focus:ring-2 focus:ring-[#16a34a]/30 sm:h-10 sm:flex-none sm:w-auto"
             aria-label="Filter by class"
           >
@@ -1334,7 +1330,7 @@ export default function AdminStudentsPageClient({
                 <button
                   key={filter.value}
                   type="button"
-                  onClick={() => setStatusFilter(filter.value)}
+                  onClick={() => updateFilters({ status: filter.value, page: '1' })}
                   className={`shrink-0 inline-flex h-11 items-center justify-center rounded-full px-3 text-xs font-semibold transition sm:h-10 ${
                     statusFilter === filter.value
                       ? 'bg-gradient-to-br from-[#004649] to-[#1b5e62] text-white shadow-sm'
@@ -1361,13 +1357,13 @@ export default function AdminStudentsPageClient({
 
           <div className="hidden sm:flex items-center gap-1 rounded-xl bg-[#edeeef] p-1 sm:ml-auto">
             <button
-              onClick={() => setView('grid')}
+              onClick={() => updateFilters({ view: 'grid', page: '1' })}
               className={`flex h-10 w-10 items-center justify-center rounded-lg transition-colors ${view === 'grid' ? 'bg-gradient-to-br from-[#004649] to-[#1b5e62] text-white shadow-sm' : 'text-[#6f7979] hover:text-[#1a1c1c]'}`}
             >
               <Grid3X3 size={15} />
             </button>
             <button
-              onClick={() => setView('list')}
+              onClick={() => updateFilters({ view: 'list', page: '1' })}
               className={`flex h-10 w-10 items-center justify-center rounded-lg transition-colors ${view === 'list' ? 'bg-gradient-to-br from-[#004649] to-[#1b5e62] text-white shadow-sm' : 'text-[#6f7979] hover:text-[#1a1c1c]'}`}
             >
               <List size={15} />
@@ -1699,7 +1695,7 @@ export default function AdminStudentsPageClient({
             </p>
             <div className="flex items-center gap-1">
               <button
-                onClick={() => setPage((p) => Math.max(1, p - 1))}
+                onClick={() => updateFilters({ page: String(Math.max(1, page - 1)) })}
                 disabled={page === 1}
                 className="flex h-11 w-11 items-center justify-center rounded-xl bg-[#f3f4f5] text-[#6b7280] transition hover:bg-[#e9eaeb] disabled:opacity-40 sm:h-8 sm:w-8"
               >
@@ -1711,7 +1707,7 @@ export default function AdminStudentsPageClient({
                 return (
                   <button
                     key={p}
-                    onClick={() => setPage(p)}
+                    onClick={() => updateFilters({ page: String(p) })}
                     className={`flex h-11 w-11 items-center justify-center rounded-xl text-xs font-semibold transition sm:h-8 sm:w-8 ${
                       p === page
                         ? 'bg-[#16a34a] text-white shadow-[0_4px_12px_rgba(22,163,74,0.3)]'
@@ -1723,7 +1719,7 @@ export default function AdminStudentsPageClient({
                 );
               })}
               <button
-                onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
+                onClick={() => updateFilters({ page: String(Math.min(totalPages, page + 1)) })}
                 disabled={page === totalPages}
                 className="flex h-11 w-11 items-center justify-center rounded-xl bg-[#f3f4f5] text-[#6b7280] transition hover:bg-[#e9eaeb] disabled:opacity-40 sm:h-8 sm:w-8"
               >

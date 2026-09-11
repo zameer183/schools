@@ -6,7 +6,7 @@ import type { Prisma } from '@prisma/client';
 export const dynamic = 'force-dynamic';
 
 type PageProps = {
-  searchParams?: Promise<{ classId?: string; month?: string }>;
+  searchParams?: Promise<{ classId?: string; month?: string; page?: string }>;
 };
 
 function monthBounds(monthKey?: string) {
@@ -30,6 +30,9 @@ export default async function HigherStudentsFinanceReportPage({ searchParams }: 
   const params = (await searchParams) ?? {};
   const { monthKey, label, start, end } = monthBounds(params.month);
 
+  const page = Math.max(1, Number(params.page) || 1);
+  const pageSize = 50;
+
   const classes = await prisma.class.findMany({
     select: { id: true, name: true, section: true },
     orderBy: [{ name: 'asc' }, { section: 'asc' }]
@@ -50,11 +53,55 @@ export default async function HigherStudentsFinanceReportPage({ searchParams }: 
     }
   };
 
-  const whereClause: Prisma.StudentWhereInput =
+  const studentWhere: Prisma.StudentWhereInput =
     selectedClassId !== 'all' ? { classId: selectedClassId } : higherClassFilter;
 
+  // 1. Fetch lightweight aggregated totals across ALL matching records to preserve exact math
+  const [totalStudents, fees] = await Promise.all([
+    prisma.student.count({ where: studentWhere }),
+    prisma.fee.findMany({
+      where: {
+        dueDate: { gte: start, lte: end },
+        student: studentWhere
+      },
+      select: {
+        studentId: true,
+        amount: true,
+        discount: true,
+        payments: { select: { amountPaid: true } }
+      }
+    })
+  ]);
+
+  const studentFeeTotals = new Map<string, { fee: number; paid: number }>();
+  for (const f of fees) {
+    const feeAmt = Math.max(Number(f.amount || 0) - Number(f.discount || 0), 0);
+    const paidAmt = f.payments.reduce((sum, p) => sum + Number(p.amountPaid || 0), 0);
+    
+    const curr = studentFeeTotals.get(f.studentId) || { fee: 0, paid: 0 };
+    curr.fee += feeAmt;
+    curr.paid += paidAmt;
+    studentFeeTotals.set(f.studentId, curr);
+  }
+
+  let paidStudents = 0;
+  let unpaidStudents = 0;
+  let totalFee = 0;
+  let totalPaid = 0;
+  let totalUnpaid = 0;
+
+  for (const stats of studentFeeTotals.values()) {
+    const unpaid = Math.max(stats.fee - stats.paid, 0);
+    totalFee += stats.fee;
+    totalPaid += stats.paid;
+    totalUnpaid += unpaid;
+    if (stats.fee > 0 && unpaid === 0) paidStudents++;
+    if (unpaid > 0) unpaidStudents++;
+  }
+
+  // 2. Fetch paginated students for the current page
   const students = await prisma.student.findMany({
-    where: whereClause,
+    where: studentWhere,
     select: {
       id: true,
       user: { select: { fullName: true } },
@@ -64,7 +111,9 @@ export default async function HigherStudentsFinanceReportPage({ searchParams }: 
         select: { amount: true, discount: true, payments: { select: { amountPaid: true } } }
       }
     },
-    orderBy: { user: { fullName: 'asc' } }
+    orderBy: { user: { fullName: 'asc' } },
+    skip: (page - 1) * pageSize,
+    take: pageSize
   });
 
   const rows = students.map((student) => {
@@ -84,12 +133,7 @@ export default async function HigherStudentsFinanceReportPage({ searchParams }: 
     };
   });
 
-  const totalStudents = rows.length;
-  const paidStudents = rows.filter((row) => row.fee > 0 && row.unpaid === 0).length;
-  const unpaidStudents = rows.filter((row) => row.unpaid > 0).length;
-  const totalFee = rows.reduce((sum, row) => sum + row.fee, 0);
-  const totalPaid = rows.reduce((sum, row) => sum + row.paid, 0);
-  const totalUnpaid = rows.reduce((sum, row) => sum + row.unpaid, 0);
+  const totalPages = Math.ceil(totalStudents / pageSize);
 
   return (
     <div className="space-y-4 pb-8">
@@ -186,6 +230,40 @@ export default async function HigherStudentsFinanceReportPage({ searchParams }: 
               </tr>
             </tfoot>
           </table>
+          
+          {totalPages > 1 && (
+            <div className="flex items-center justify-between border-t border-[#e5e7eb] bg-[#f8fafc] px-4 py-3 print:hidden">
+              <div className="text-sm text-[#6b7280]">
+                Showing <span className="font-semibold text-[#111827]">{(page - 1) * pageSize + 1}</span> to <span className="font-semibold text-[#111827]">{Math.min(page * pageSize, totalStudents)}</span> of <span className="font-semibold text-[#111827]">{totalStudents}</span> students
+              </div>
+              <div className="flex gap-2">
+                {page > 1 ? (
+                  <Link
+                    href={`?classId=${selectedClassId}&month=${monthKey}&page=${page - 1}`}
+                    className="inline-flex h-9 items-center justify-center rounded-lg border border-[#e5e7eb] bg-white px-3 text-sm font-semibold text-[#374151] hover:bg-[#f3f4f5] transition"
+                  >
+                    Previous
+                  </Link>
+                ) : (
+                  <span className="inline-flex h-9 items-center justify-center rounded-lg border border-[#e5e7eb] bg-[#f9fafb] px-3 text-sm font-semibold text-[#d1d5db] cursor-not-allowed">
+                    Previous
+                  </span>
+                )}
+                {page < totalPages ? (
+                  <Link
+                    href={`?classId=${selectedClassId}&month=${monthKey}&page=${page + 1}`}
+                    className="inline-flex h-9 items-center justify-center rounded-lg border border-[#e5e7eb] bg-white px-3 text-sm font-semibold text-[#374151] hover:bg-[#f3f4f5] transition"
+                  >
+                    Next
+                  </Link>
+                ) : (
+                  <span className="inline-flex h-9 items-center justify-center rounded-lg border border-[#e5e7eb] bg-[#f9fafb] px-3 text-sm font-semibold text-[#d1d5db] cursor-not-allowed">
+                    Next
+                  </span>
+                )}
+              </div>
+            </div>
+          )}
         </div>
 
         <div className="hidden print:flex mt-8 justify-between text-xs text-[#475569]">
@@ -211,5 +289,3 @@ function SummaryCard({ label, value, tone }: { label: string; value: string; ton
     </div>
   );
 }
-
-

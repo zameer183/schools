@@ -31,6 +31,7 @@ export async function GET(request: Request) {
     const student = await prisma.student.findUnique({ where: { userId: auth.session.id }, select: { id: true } });
     if (!student) return NextResponse.json([]);
     const records = await prisma.attendance.findMany({
+      take: 100,
       where: {
         studentId: student.id,
         date: date
@@ -43,8 +44,7 @@ export async function GET(request: Request) {
             : undefined
       },
       include: { student: { include: { user: true } }, class: true },
-      orderBy: { date: 'desc' },
-      take
+      orderBy: { date: 'desc' }
     });
     return NextResponse.json(records);
   }
@@ -71,8 +71,7 @@ export async function GET(request: Request) {
             : undefined
       },
       include: { student: { include: { user: true } }, class: true },
-      orderBy: { date: 'desc' },
-      take
+      orderBy: { date: 'desc' }
     });
     return NextResponse.json(records);
   }
@@ -109,9 +108,8 @@ export async function GET(request: Request) {
           : undefined
     },
     include: { student: { include: { user: true } }, class: true },
-    orderBy: { date: 'desc' },
-    take
-  });
+    orderBy: { date: 'desc' }
+    });
 
   return NextResponse.json(records);
 }

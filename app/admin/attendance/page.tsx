@@ -7,7 +7,7 @@ import AttendanceDashboardClient from './attendance-dashboard-client';
 
 export const dynamic = 'force-dynamic';
 
-type SearchParams = { date?: string; classId?: string; tab?: string };
+type SearchParams = { date?: string; classId?: string; tab?: string; page?: string; };
 
 type StaffDailyRow = {
   teacherId: string;
@@ -112,8 +112,11 @@ const getCachedAttendanceData = unstable_cache(
     selectedClassId: string,
     dayDateIso: string,
     monthStartIso: string,
-    staffEnabledFlag: '1' | '0'
+    staffEnabledFlag: '1' | '0',
+    page: number
   ) => {
+    const pageSize = 50;
+    const skip = (page - 1) * pageSize;
     const dayDate = new Date(dayDateIso);
     const monthStart = new Date(monthStartIso);
     const staffAttendanceEnabled = staffEnabledFlag === '1';
@@ -139,15 +142,7 @@ const getCachedAttendanceData = unstable_cache(
           select: { id: true, name: true, section: true },
           orderBy: [{ name: 'asc' }, { section: 'asc' }]
         }),
-        tx.attendance.findMany({
-          where: attendanceWhere,
-          select: {
-            studentId: true,
-            status: true
-          },
-          orderBy: [{ studentId: 'asc' }],
-          take: 2000
-        }),
+        Promise.resolve([]),
         tx.attendance.groupBy({
           by: ['status'],
           where: attendanceWhere,
@@ -166,10 +161,15 @@ const getCachedAttendanceData = unstable_cache(
             id: true,
             admissionNo: true,
             classId: true,
-            user: { select: { fullName: true } }
+            user: { select: { fullName: true } },
+            attendance: {
+              where: { date: dayDate },
+              select: { status: true }
+            }
           },
           orderBy: [{ admissionNo: 'asc' }],
-          take: 1000
+          take: pageSize,
+          skip
         }),
         tx.teacher.findMany({
           select: {
@@ -390,6 +390,7 @@ export default async function AdminAttendancePage({ searchParams }: { searchPara
   const selectedDate = params.date ?? new Date().toISOString().slice(0, 10);
   const selectedClassId = params.classId?.trim() ?? '';
   const initialTab = params.tab === 'students' || params.tab === 'teachers' || params.tab === 'overview' ? params.tab : 'overview';
+  const page = Math.max(1, parseInt(params.page ?? '1') || 1);
 
   const dayDate = new Date(selectedDate);
   dayDate.setHours(0, 0, 0, 0);
@@ -418,7 +419,8 @@ export default async function AdminAttendancePage({ searchParams }: { searchPara
       selectedClassId,
       dayDate.toISOString(),
       monthStart.toISOString(),
-      staffAttendanceEnabled ? '1' : '0'
+      staffAttendanceEnabled ? '1' : '0',
+      page
     );
     classes = data.classes;
     dailyRows = data.dailyRows;
@@ -461,7 +463,7 @@ export default async function AdminAttendancePage({ searchParams }: { searchPara
     );
   }
 
-  const studentDailyMap = new Map(dailyRows.map((row) => [row.studentId, row.status]));
+  // studentDailyMap replaced by embedded relation
   const staffDailyMap = new Map(staffDailyRows.map((row) => [row.teacherId, row.status]));
   const staffMonthlyMap = new Map<string, { present: number; absent: number; late: number }>();
   for (const row of staffMonthlyRows) {
@@ -500,7 +502,7 @@ export default async function AdminAttendancePage({ searchParams }: { searchPara
         admissionNo: student.admissionNo,
         classId: student.classId ?? '',
         classLabel: student.classId ? (classById.get(student.classId) ? `${classById.get(student.classId)?.name} - ${classById.get(student.classId)?.section}` : 'No class') : 'No class',
-        status: studentDailyMap.get(student.id) ?? null
+        status: (student as any).attendance?.[0]?.status ?? null
       }))}
       teachers={teachers.map((teacher) => ({
         id: teacher.id,

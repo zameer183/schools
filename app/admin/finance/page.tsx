@@ -10,7 +10,7 @@ import { FeeBulkList, type SerializedFeeItem } from './fee-bulk-list';
 export const dynamic = 'force-dynamic';
 
 type AdminFinancePageProps = {
-  searchParams?: Promise<{ status?: string; classId?: string; search?: string; sort?: string; period?: string; from?: string; to?: string; month?: string }>;
+  searchParams?: Promise<{ status?: string; classId?: string; search?: string; sort?: string; period?: string; from?: string; to?: string; month?: string; page?: string }>;
 };
 
 function txnStatusBadge(status: PaymentStatus) {
@@ -90,7 +90,9 @@ type FinancePageData = {
 };
 
 const getCachedFinanceData = unstable_cache(
-  async (selectedStatus: string, selectedClassId: string, selectedSort: string, selectedPeriod: string, selectedFrom: string, selectedTo: string, selectedMonth: string) => {
+  async (selectedStatus: string, selectedClassId: string, selectedSort: string, selectedPeriod: string, selectedFrom: string, selectedTo: string, selectedMonth: string, page: number) => {
+    const pageSize = 40;
+    const skip = (page - 1) * pageSize;
     const now = new Date();
     const rangeStart = new Date(now.getFullYear(), now.getMonth(), 1, 0, 0, 0, 0);
     let rangeEnd: Date | null = null;
@@ -156,7 +158,7 @@ const getCachedFinanceData = unstable_cache(
       ...(periodDueDateWhere ? { paidAt: periodDueDateWhere } : {})
     };
 
-    const [classes, feeAgg, paidAgg, recentPayments, dues] = await Promise.all([
+    const [classes, feeAgg, paidAgg, recentPayments, totalDuesCount, dues] = await Promise.all([
       prisma.class.findMany({
         select: { id: true, name: true, section: true },
         orderBy: { name: 'asc' }
@@ -187,6 +189,7 @@ const getCachedFinanceData = unstable_cache(
         orderBy: { paidAt: 'desc' },
         take: 10
       }),
+      prisma.fee.count({ where: feeWhere }),
       prisma.fee.findMany({
         where: feeWhere,
         select: {
@@ -207,7 +210,7 @@ const getCachedFinanceData = unstable_cache(
           }
         },
         orderBy,
-        take: 40
+        skip, take: pageSize
       })
     ]);
 
@@ -224,7 +227,7 @@ const getCachedFinanceData = unstable_cache(
       feePaidRows.map((row) => [row.feeId, Number(row._sum.amountPaid ?? 0)])
     );
 
-    return { classes, feeAgg, paidAgg, recentPayments, dues, feePaidById };
+    return { classes, feeAgg, paidAgg, recentPayments, totalDuesCount, dues, feePaidById };
   },
   ['admin-finance-page'],
   { revalidate: 30 }
@@ -242,13 +245,20 @@ export default async function AdminFinancePage({ searchParams }: AdminFinancePag
   const selectedFrom = (params.from ?? '').trim();
   const selectedTo = (params.to ?? '').trim();
   const selectedMonth = /^\d{4}-\d{2}$/.test((params.month ?? '').trim()) ? (params.month ?? '').trim() : '';
+  
+  let defaultPeriod = 'all';
+  if (!params.period && !params.month && !params.from && !params.to) {
+      defaultPeriod = 'mtd_full';
+  }
   const selectedPeriod =
     ['all', 'mtd_1_8', 'mtd_1_15', 'mtd_full'].includes(params.period as string)
       ? (params.period as string)
-      : 'all';
+      : defaultPeriod;
+      
+  const page = Math.max(1, Number(params.page) || 1);
   let data: Awaited<ReturnType<typeof getCachedFinanceData>> | null = null;
   try {
-    data = await getCachedFinanceData(selectedStatus, selectedClassId, selectedSort, selectedPeriod, selectedFrom, selectedTo, selectedMonth);
+    data = await getCachedFinanceData(selectedStatus, selectedClassId, selectedSort, selectedPeriod, selectedFrom, selectedTo, selectedMonth, page);
   } catch (error) {
     console.error('[admin/finance] load failed', error);
     if (!isDatabaseConnectionError(error)) throw error;
@@ -266,7 +276,7 @@ export default async function AdminFinancePage({ searchParams }: AdminFinancePag
     );
   }
 
-  const { classes, feeAgg, paidAgg, recentPayments, dues, feePaidById } = data;
+  const { classes, feeAgg, paidAgg, recentPayments, totalDuesCount, dues, feePaidById } = data;
   const feePaidTotals = new Map<string, number>(Object.entries(feePaidById ?? {}));
   const totalBilled = Number(feeAgg._sum.amount ?? 0) - Number(feeAgg._sum.discount ?? 0);
   const totalPaid = Number(paidAgg._sum.amountPaid ?? 0);
@@ -407,6 +417,9 @@ export default async function AdminFinancePage({ searchParams }: AdminFinancePag
           fees={serializedDues}
           overdueCount={dueCount}
           selectedFeeStatus={selectedStatus}
+          currentPage={page}
+          totalDuesCount={totalDuesCount}
+          pageSize={40}
         />
 
         {/* Recent Transactions — SECONDARY */}

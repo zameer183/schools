@@ -9,6 +9,7 @@ export const dynamic = 'force-dynamic';
 type AdminMessagesPageProps = {
   searchParams?: Promise<{
     recipientId?: string;
+    page?: string;
   }>;
 };
 
@@ -20,7 +21,9 @@ function toIsoString(value: Date | string | null | undefined) {
 }
 
 const getCachedAdminMessagesData = unstable_cache(
-  async (userId: string) => {
+  async (userId: string, page: number) => {
+    const pageSize = 50;
+    const skip = (page - 1) * pageSize;
     const [classes, sentMessages, receivedMessages] = await Promise.all([
       prisma.class.findMany({ select: { id: true, name: true, section: true }, orderBy: [{ name: 'asc' }, { section: 'asc' }] }),
       prisma.message.findMany({
@@ -29,7 +32,8 @@ const getCachedAdminMessagesData = unstable_cache(
         },
         where: { senderId: userId },
         orderBy: { createdAt: 'desc' },
-        take: 50
+        take: pageSize,
+        skip
       }),
       prisma.messageRecipient.findMany({
         where: { userId },
@@ -41,7 +45,8 @@ const getCachedAdminMessagesData = unstable_cache(
           }
         },
         orderBy: { message: { createdAt: 'desc' } },
-        take: 80
+        take: pageSize,
+        skip
       })
     ]);
 
@@ -55,7 +60,8 @@ export default async function AdminMessagesPage({ searchParams }: AdminMessagesP
   const session = await requireAuth([UserRole.ADMIN]);
   const params = (await searchParams) ?? {};
   const presetRecipientId = params.recipientId?.trim() ?? '';
-  const { classes, sentMessages, receivedMessages } = await getCachedAdminMessagesData(session.id);
+  const page = Math.max(1, parseInt(params.page ?? '1') || 1);
+  const { classes, sentMessages, receivedMessages } = await getCachedAdminMessagesData(session.id, page);
 
   const serializedSent = sentMessages.map((message) => ({
     id: message.id,
@@ -95,6 +101,7 @@ export default async function AdminMessagesPage({ searchParams }: AdminMessagesP
       receivedMessages={serializedReceived}
       sentMessages={serializedSent}
       presetRecipientId={presetRecipientId}
+      page={page}
     />
   );
 }

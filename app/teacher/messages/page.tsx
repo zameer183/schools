@@ -67,7 +67,9 @@ function DbOfflineBanner() {
 }
 
 const getCachedTeacherMessagesData = unstable_cache(
-  async (userId: string) => {
+  async (userId: string, page: number) => {
+    const pageSize = 50;
+    const skip = (page - 1) * pageSize;
     const teacher = await prisma.teacher.findUnique({
       where: { userId },
       select: {
@@ -115,7 +117,8 @@ const getCachedTeacherMessagesData = unstable_cache(
             }
           },
           orderBy: { message: { createdAt: 'desc' } },
-          take: 10
+          take: pageSize,
+          skip
         }),
         prisma.message.findMany({
           where: { senderId: userId },
@@ -132,7 +135,8 @@ const getCachedTeacherMessagesData = unstable_cache(
             }
           },
           orderBy: { createdAt: 'desc' },
-          take: 10
+          take: pageSize,
+          skip
         })
       ])
     ]);
@@ -161,13 +165,16 @@ const getCachedTeacherMessagesData = unstable_cache(
   { revalidate: 30 }
 );
 
-export default async function TeacherMessagesPage() {
+type Props = { searchParams?: Promise<{ page?: string }> };
+export default async function TeacherMessagesPage({ searchParams }: Props) {
   const session = await requireAuth([UserRole.TEACHER, UserRole.ADMIN]);
+  const params = (await searchParams) ?? {};
+  const page = Math.max(1, parseInt(params.page ?? '1') || 1);
 
   let data: Awaited<ReturnType<typeof getCachedTeacherMessagesData>> | null = null;
 
   try {
-    data = await getCachedTeacherMessagesData(session.id);
+    data = await getCachedTeacherMessagesData(session.id, page);
   } catch (error) {
     console.error('[teacher/messages] load failed', error);
     if (!isDatabaseConnectionError(error)) throw error;

@@ -676,19 +676,42 @@ function SkeletonCard() {
 
 // ── Main Component ────────────────────────────────────────────────────────────
 export default function AdminTeachersPageClient({
-  initialTeachers,
-  initialClasses,
+  initialTeachers, initialClasses, totalFiltered, stats, currentPage, pageSize, viewMode, searchQ
 }: {
-  initialTeachers: TeacherItem[];
-  initialClasses: ClassItem[];
+  initialTeachers: TeacherItem[]; initialClasses: ClassItem[]; totalFiltered: number;
+  stats: { total: number; active: number; uniqueClasses: number; avgSalary: number };
+  currentPage: number; pageSize: number; viewMode: 'grid' | 'table'; searchQ: string;
 }) {
   const router = useRouter();
   const [teachers, setTeachers] = useState<TeacherItem[]>(initialTeachers);
   const [classes] = useState<ClassItem[]>(initialClasses);
-  const [view, setView] = useState<'grid' | 'table'>('grid');
-  const [search, setSearch] = useState('');
-  const [page, setPage] = useState(1);
+  const [view, setView] = useState<'grid' | 'table'>(viewMode);
+  const [search, setSearch] = useState(searchQ);
+  const [page, setPage] = useState(currentPage);
   const [loading, setLoading] = useState(false);
+
+  useEffect(() => {
+    setTeachers(initialTeachers);
+    setSearch(searchQ);
+    setView(viewMode);
+    setPage(currentPage);
+  }, [initialTeachers, searchQ, viewMode, currentPage]);
+
+  const updateFilters = (newParams: Record<string, string>) => {
+    const params = new URLSearchParams(window.location.search);
+    for (const [key, val] of Object.entries(newParams)) {
+      if (val) params.set(key, val);
+      else params.delete(key);
+    }
+    router.push(`?${params.toString()}`);
+  };
+
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      if (search !== searchQ) updateFilters({ search, page: '1' });
+    }, 500);
+    return () => clearTimeout(timer);
+  }, [search, searchQ]);
 
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [editId, setEditId] = useState<string | null>(null);
@@ -710,41 +733,13 @@ export default function AdminTeachersPageClient({
   const removeToast = useCallback((id: number) => setToasts(p => p.filter(t => t.id !== id)), []);
 
   const reload = useCallback(async () => {
-    setLoading(true);
-    try {
-      const res = await fetch(`/api/teachers?t=${Date.now()}`, { cache: 'no-store' });
-      if (res.ok) setTeachers(await res.json());
-    } finally {
-      setLoading(false);
-    }
-  }, []);
+    router.refresh();
+  }, [router]);
 
-  const filtered = useMemo(() => {
-    const q = search.trim().toLowerCase();
-    if (!q) return teachers;
-    return teachers.filter(t =>
-      t.user.fullName.toLowerCase().includes(q) ||
-      t.user.email.toLowerCase().includes(q) ||
-      (t.specialization ?? '').toLowerCase().includes(q) ||
-      (t.qualification ?? '').toLowerCase().includes(q) ||
-      (t.employeeCode ?? '').toLowerCase().includes(q)
-    );
-  }, [teachers, search]);
-
-  useEffect(() => { setPage(1); }, [search, view]);
-
-  const PAGE_SIZE = view === 'grid' ? 9 : 15;
-  const totalPages = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE));
-  const paged = filtered.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);
-
-  const stats = useMemo(() => {
-    const total = teachers.length;
-    const active = teachers.filter(t => t.user.isActive).length;
-    const uniqueClasses = new Set(teachers.flatMap(t => t.classAssignments.map(ca => ca.classId))).size;
-    const avgSalary =
-      total > 0 ? teachers.reduce((s, t) => s + (t.compensation?.netSalary ?? 0), 0) / total : 0;
-    return { total, active, uniqueClasses, avgSalary };
-  }, [teachers]);
+  const PAGE_SIZE = pageSize;
+  const totalPages = Math.max(1, Math.ceil(totalFiltered / PAGE_SIZE));
+  const paged = teachers;
+  const filtered = teachers;
 
   const openAdd = () => {
     setEditId(null);
@@ -878,13 +873,13 @@ export default function AdminTeachersPageClient({
           </div>
           <div className="flex items-center gap-1 rounded-xl bg-[#edeeef] p-1">
             <button
-              onClick={() => setView('grid')}
+              onClick={() => updateFilters({ view: 'grid', page: '1' })}
               className={`rounded-lg p-1.5 transition-colors ${view === 'grid' ? 'bg-gradient-to-br from-[#004649] to-[#1b5e62] text-white shadow-sm' : 'text-[#6f7979] hover:text-[#1a1c1c]'}`}
             >
               <Grid3X3 size={15} />
             </button>
             <button
-              onClick={() => setView('table')}
+              onClick={() => updateFilters({ view: 'table', page: '1' })}
               className={`rounded-lg p-1.5 transition-colors ${view === 'table' ? 'bg-gradient-to-br from-[#004649] to-[#1b5e62] text-white shadow-sm' : 'text-[#6f7979] hover:text-[#1a1c1c]'}`}
             >
               <List size={15} />
@@ -1107,7 +1102,7 @@ export default function AdminTeachersPageClient({
           </p>
           <div className="flex items-center gap-1">
             <button
-              onClick={() => setPage(p => Math.max(1, p - 1))}
+              onClick={() => updateFilters({ page: String(Math.max(1, page - 1)) })}
               disabled={page === 1}
               className="rounded-lg p-2 text-[#6f7979] hover:bg-[#f3f4f5] hover:text-[#1a1c1c] disabled:cursor-not-allowed disabled:opacity-40"
             >
@@ -1138,7 +1133,7 @@ export default function AdminTeachersPageClient({
                 )
               )}
             <button
-              onClick={() => setPage(p => Math.min(totalPages, p + 1))}
+              onClick={() => updateFilters({ page: String(Math.min(totalPages, page + 1)) })}
               disabled={page === totalPages}
               className="rounded-lg p-2 text-[#6f7979] hover:bg-[#f3f4f5] hover:text-[#1a1c1c] disabled:cursor-not-allowed disabled:opacity-40"
             >

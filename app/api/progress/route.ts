@@ -245,6 +245,7 @@ export async function GET(request: Request) {
     if (!scope) return jsonNoStore({ error: 'Teacher profile missing' }, { status: 400 });
 
     const records = await prisma.studentProgress.findMany({
+      take: 100,
       where: {
         classId: classId ? classId : { in: scope.classIds },
         studentId,

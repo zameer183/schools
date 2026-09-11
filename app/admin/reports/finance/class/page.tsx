@@ -1,11 +1,11 @@
-﻿import Link from 'next/link';
+import Link from 'next/link';
 import { prisma } from '@/lib/prisma';
 import { PrintButton } from '@/components/reports/print-button';
 
 export const dynamic = 'force-dynamic';
 
 type PageProps = {
-  searchParams?: Promise<{ classId?: string; month?: string }>;
+  searchParams?: Promise<{ classId?: string; month?: string; page?: string }>;
 };
 
 function monthBounds(monthKey?: string) {
@@ -28,6 +28,9 @@ function formatMoney(value: number) {
 export default async function ClassFinanceReportPage({ searchParams }: PageProps) {
   const params = (await searchParams) ?? {};
   const { monthKey, label, start, end } = monthBounds(params.month);
+  
+  const page = Math.max(1, Number(params.page) || 1);
+  const pageSize = 50;
 
   const classes = await prisma.class.findMany({
     select: { id: true, name: true, section: true },
@@ -37,46 +40,96 @@ export default async function ClassFinanceReportPage({ searchParams }: PageProps
   const selectedClassId = classes.some((c) => c.id === params.classId) ? params.classId ?? '' : classes[0]?.id ?? '';
   const selectedClass = classes.find((c) => c.id === selectedClassId) ?? null;
 
-  const students = selectedClass
-    ? await prisma.student.findMany({
-        where: { classId: selectedClass.id },
-        select: {
-          id: true,
-          user: { select: { fullName: true } },
-          fees: {
-            where: { dueDate: { gte: start, lte: end } },
-            select: { amount: true, discount: true, payments: { select: { amountPaid: true } } }
-          }
+  let totalStudents = 0;
+  let paidStudents = 0;
+  let unpaidStudents = 0;
+  let totalFee = 0;
+  let totalPaid = 0;
+  let totalUnpaid = 0;
+  
+  let rows: any[] = [];
+  let totalPages = 0;
+
+  if (selectedClass) {
+    // 1. Fetch lightweight aggregated totals across ALL matching records to preserve exact math
+    const studentWhere = { classId: selectedClass.id };
+
+    const [countStudents, fees] = await Promise.all([
+      prisma.student.count({ where: studentWhere }),
+      prisma.fee.findMany({
+        where: {
+          dueDate: { gte: start, lte: end },
+          student: studentWhere
         },
-        orderBy: { user: { fullName: 'asc' } }
+        select: {
+          studentId: true,
+          amount: true,
+          discount: true,
+          payments: { select: { amountPaid: true } }
+        }
       })
-    : [];
+    ]);
 
-  const rows = students.map((student) => {
-    const fee = student.fees.reduce((sum, item) => sum + Math.max(Number(item.amount || 0) - Number(item.discount || 0), 0), 0);
-    const paid = student.fees.reduce(
-      (sum, item) => sum + item.payments.reduce((inner, payment) => inner + Number(payment.amountPaid || 0), 0),
-      0
-    );
-    const unpaid = Math.max(fee - paid, 0);
-    return {
-      id: student.id,
-      name: student.user.fullName,
-      fee,
-      paid,
-      unpaid
-    };
-  });
+    totalStudents = countStudents;
 
-  const totalFee = rows.reduce((sum, row) => sum + row.fee, 0);
-  const totalPaid = rows.reduce((sum, row) => sum + row.paid, 0);
-  const totalUnpaid = rows.reduce((sum, row) => sum + row.unpaid, 0);
-  const paidStudents = rows.filter((row) => row.fee > 0 && row.unpaid === 0).length;
-  const unpaidStudents = rows.filter((row) => row.unpaid > 0).length;
+    const studentFeeTotals = new Map<string, { fee: number; paid: number }>();
+    for (const f of fees) {
+      const feeAmt = Math.max(Number(f.amount || 0) - Number(f.discount || 0), 0);
+      const paidAmt = f.payments.reduce((sum, p) => sum + Number(p.amountPaid || 0), 0);
+      
+      const curr = studentFeeTotals.get(f.studentId) || { fee: 0, paid: 0 };
+      curr.fee += feeAmt;
+      curr.paid += paidAmt;
+      studentFeeTotals.set(f.studentId, curr);
+    }
+
+    for (const stats of studentFeeTotals.values()) {
+      const unpaid = Math.max(stats.fee - stats.paid, 0);
+      totalFee += stats.fee;
+      totalPaid += stats.paid;
+      totalUnpaid += unpaid;
+      if (stats.fee > 0 && unpaid === 0) paidStudents++;
+      if (unpaid > 0) unpaidStudents++;
+    }
+
+    // 2. Fetch paginated students for the current page
+    const students = await prisma.student.findMany({
+      where: studentWhere,
+      select: {
+        id: true,
+        user: { select: { fullName: true } },
+        fees: {
+          where: { dueDate: { gte: start, lte: end } },
+          select: { amount: true, discount: true, payments: { select: { amountPaid: true } } }
+        }
+      },
+      orderBy: { user: { fullName: 'asc' } },
+      skip: (page - 1) * pageSize,
+      take: pageSize
+    });
+
+    rows = students.map((student) => {
+      const fee = student.fees.reduce((sum, item) => sum + Math.max(Number(item.amount || 0) - Number(item.discount || 0), 0), 0);
+      const paid = student.fees.reduce(
+        (sum, item) => sum + item.payments.reduce((inner, payment) => inner + Number(payment.amountPaid || 0), 0),
+        0
+      );
+      const unpaid = Math.max(fee - paid, 0);
+      return {
+        id: student.id,
+        name: student.user.fullName,
+        fee,
+        paid,
+        unpaid
+      };
+    });
+
+    totalPages = Math.ceil(totalStudents / pageSize);
+  }
 
   return (
     <div className="space-y-4 pb-8">
-      <div className="rounded-2xl bg-white p-4 shadow-[0_4px_12px_rgba(0,0,0,0.08)] sm:p-6">
+      <div className="rounded-2xl bg-white p-4 shadow-[0_4px_12px_rgba(0,0,0,0.08)] sm:p-6 print:hidden">
         <Link href="/admin/reports" className="text-xs font-semibold text-[#004649] hover:text-[#1b5e62]">&larr; Back to Reports</Link>
         <h1 className="mt-2 text-2xl font-bold text-[#1a1c1c]">Class Finance Report</h1>
         <p className="mt-1 text-sm text-[#6f7979]">Monthly class-wise fee, paid, unpaid report with totals.</p>
@@ -161,6 +214,40 @@ export default async function ClassFinanceReportPage({ searchParams }: PageProps
                 </tr>
               </tfoot>
             </table>
+            
+            {totalPages > 1 && (
+              <div className="flex items-center justify-between border-t border-[#e5e7eb] bg-[#f8fafc] px-4 py-3 print:hidden">
+                <div className="text-sm text-[#6b7280]">
+                  Showing <span className="font-semibold text-[#111827]">{(page - 1) * pageSize + 1}</span> to <span className="font-semibold text-[#111827]">{Math.min(page * pageSize, totalStudents)}</span> of <span className="font-semibold text-[#111827]">{totalStudents}</span> students
+                </div>
+                <div className="flex gap-2">
+                  {page > 1 ? (
+                    <Link
+                      href={`?classId=${selectedClassId}&month=${monthKey}&page=${page - 1}`}
+                      className="inline-flex h-9 items-center justify-center rounded-lg border border-[#e5e7eb] bg-white px-3 text-sm font-semibold text-[#374151] hover:bg-[#f3f4f5] transition"
+                    >
+                      Previous
+                    </Link>
+                  ) : (
+                    <span className="inline-flex h-9 items-center justify-center rounded-lg border border-[#e5e7eb] bg-[#f9fafb] px-3 text-sm font-semibold text-[#d1d5db] cursor-not-allowed">
+                      Previous
+                    </span>
+                  )}
+                  {page < totalPages ? (
+                    <Link
+                      href={`?classId=${selectedClassId}&month=${monthKey}&page=${page + 1}`}
+                      className="inline-flex h-9 items-center justify-center rounded-lg border border-[#e5e7eb] bg-white px-3 text-sm font-semibold text-[#374151] hover:bg-[#f3f4f5] transition"
+                    >
+                      Next
+                    </Link>
+                  ) : (
+                    <span className="inline-flex h-9 items-center justify-center rounded-lg border border-[#e5e7eb] bg-[#f9fafb] px-3 text-sm font-semibold text-[#d1d5db] cursor-not-allowed">
+                      Next
+                    </span>
+                  )}
+                </div>
+              </div>
+            )}
           </div>
         </div>
       ) : (

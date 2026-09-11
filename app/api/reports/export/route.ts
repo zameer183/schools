@@ -361,7 +361,24 @@ export async function GET(request: Request) {
     const teachersAdded = await safeQuery('teacher.count.period', () => prisma.teacher.count({ where: { createdAt: { gte: start, lte: end } } }), 0);
     const classesAdded = await safeQuery('class.count.period', () => prisma.class.count({ where: { createdAt: { gte: start, lte: end } } }), 0);
     const resultsAdded = await safeQuery('result.count.period', () => prisma.result.count({ where: { createdAt: { gte: start, lte: end } } }), 0);
-    const attendanceRows = await safeQuery('attendance.period', () => prisma.attendance.findMany({ where: { date: { gte: start, lte: end } }, select: { status: true } }), []);
+    const attendanceRows = await safeQuery('attendance.period', async () => {
+      const rows = [];
+      let s = 0;
+      const t = 2000;
+      while(true) {
+        const batch = await prisma.attendance.findMany({
+          where: { date: { gte: start, lte: end } },
+          select: { status: true },
+          skip: s,
+          take: t,
+          orderBy: { id: 'asc' }
+        });
+        if (batch.length === 0) break;
+        rows.push(...batch);
+        s += t;
+      }
+      return rows;
+    }, []);
     const feesGenerated = await safeQuery('fee.count.period', () => prisma.fee.count({ where: { createdAt: { gte: start, lte: end } } }), 0);
     const paymentsAggregate = await safeQuery(
       'payment.aggregate.period',
@@ -370,18 +387,31 @@ export async function GET(request: Request) {
     );
     const dueFeeRows = await safeQuery(
       'fee.outstanding.findMany',
-      () =>
-        prisma.fee.findMany({
-          where: {
-            status: { not: PaymentStatus.PAID },
-            dueDate: { lte: end }
-          },
-          select: {
-            amount: true,
-            discount: true,
-            payments: { select: { amountPaid: true } }
-          }
-        }),
+      async () => {
+        const rows = [];
+        let s = 0;
+        const t = 1000;
+        while(true) {
+          const batch = await prisma.fee.findMany({
+            where: {
+              status: { not: PaymentStatus.PAID },
+              dueDate: { lte: end }
+            },
+            select: {
+              amount: true,
+              discount: true,
+              payments: { select: { amountPaid: true } }
+            },
+            skip: s,
+            take: t,
+            orderBy: { id: 'asc' }
+          });
+          if (batch.length === 0) break;
+          rows.push(...batch);
+          s += t;
+        }
+        return rows;
+      },
       []
     );
     const dueFeeTotal = dueFeeRows.reduce((sum, fee) => {

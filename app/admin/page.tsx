@@ -246,6 +246,7 @@ export default async function AdminDashboardPage() {
       ? await getAdminDashboardDataViaSupabaseRest()
       : await getCachedAdminDashboardData();
   } catch (error) {
+    console.error('[ADMIN PAGE ERROR]', error);
     if (!isDatabaseConnectionError(error)) {
       return <DbOfflineBanner />;
     }

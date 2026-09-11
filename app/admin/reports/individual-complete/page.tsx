@@ -61,14 +61,8 @@ const SURAH_NAMES: Record<number, string> = {
 type SectionData = { range: string; kaifiyat: string; tajweed: string; hifz: string };
 type SimpleClass = { id: string; name: string; section: string };
 type ClassTeacherLink = { isClassLead: boolean; teacher: { user: { fullName: string } } };
-type ReportStudent = {
-  id: string;
-  classId: string | null;
-  rollNumber: string | null;
-  fatherName: string | null;
-  user: { fullName: string };
-};
-type ReportSelectedStudent = ReportStudent & { class: (SimpleClass & { teacherLinks: ClassTeacherLink[] }) | null };
+type ReportStudent = { id: string; user: { fullName: string }; admissionNo: string | null; };
+type ReportSelectedStudent = ReportStudent & { class: (SimpleClass & { teacherLinks: ClassTeacherLink[] }) | null; classId?: string | null; rollNumber?: string | null; fatherName?: string | null; };
 type ReportAttendance = { date: Date; status: 'PRESENT' | 'ABSENT' | 'LATE' | 'EXCUSED' };
 type ReportProgress = {
   id: string;
@@ -266,19 +260,23 @@ const getCachedIndividualCompleteReportData = unstable_cache(
 
     const students = await prisma.student.findMany({
       where: selectedClassFilter,
-      select: {
-        id: true,
-        classId: true,
-        rollNumber: true,
-        fatherName: true,
-        user: { select: { fullName: true } }
-      },
+      select: { id: true, admissionNo: true, user: { select: { fullName: true } } },
       orderBy: { createdAt: 'desc' },
       take: 1000
     });
 
     const selectedStudentId = studentId && students.some((s) => s.id === studentId) ? studentId : students[0]?.id ?? '';
-    const selectedStudentRaw = students.find((student) => student.id === selectedStudentId) ?? null;
+    const selectedStudentRaw = selectedStudentId ? await prisma.student.findUnique({
+      where: { id: selectedStudentId },
+      select: {
+        id: true,
+        classId: true,
+        rollNumber: true,
+        fatherName: true,
+        admissionNo: true,
+        user: { select: { fullName: true } }
+      }
+    }) : null;
     const selectedClassRaw =
       selectedStudentRaw?.classId ? classes.find((classItem) => classItem.id === selectedStudentRaw.classId) ?? null : null;
 
@@ -367,14 +365,19 @@ async function loadReportViaRest(params: { classId?: string; studentId?: string;
   const studentUsersById = new Map(studentUsers.map((user) => [user.id, user]));
   const students: ReportStudent[] = studentRows.map((student) => ({
     id: student.id,
-    classId: student.classId,
-    rollNumber: student.rollNumber,
-    fatherName: student.fatherName,
+    admissionNo: (student as any).admissionNo ?? null,
     user: { fullName: studentUsersById.get(student.userId)?.fullName ?? 'Unknown Student' }
   }));
 
   const selectedStudentId = students.some((student) => student.id === params.studentId) ? params.studentId ?? '' : students[0]?.id ?? '';
-  const selectedStudentRaw = students.find((student) => student.id === selectedStudentId) ?? null;
+  let selectedStudentRaw = null;
+  if (selectedStudentId) {
+    const raw = await supabaseRest<any>('Student', { select: 'id,classId,rollNumber,fatherName,userId,admissionNo', id: `eq.${selectedStudentId}`, limit: '1' }).then(r => r[0]);
+    if (raw) {
+      const u = await supabaseRest<any>('User', { select: 'fullName', id: `eq.${raw.userId}`, limit: '1' }).then(r => r[0]);
+      selectedStudentRaw = { ...raw, user: { fullName: u?.fullName ?? '' } };
+    }
+  }
   const selectedClassRaw = selectedStudentRaw?.classId ? classes.find((classItem) => classItem.id === selectedStudentRaw.classId) ?? null : null;
 
   const selectedClassTeacherLinks = selectedClassRaw

@@ -18,34 +18,44 @@ export async function PATCH(request: Request) {
   if (status === PaymentStatus.PAID) {
     const updated = await prisma.$transaction(async (tx) => {
       let count = 0;
-      for (const id of ids as string[]) {
-        const fee = await tx.fee.findUnique({
-          where: { id },
-          select: { id: true, amount: true, discount: true, payments: { select: { amountPaid: true } } }
-        });
-        if (!fee) continue;
-
+      
+      const fees = await tx.fee.findMany({
+        where: { id: { in: ids as string[] } },
+        select: { id: true, amount: true, discount: true, payments: { select: { amountPaid: true } } }
+      });
+      
+      const paymentsToCreate = [];
+      const feesToUpdate = [];
+      
+      for (const fee of fees) {
         const net = Number(fee.amount) - Number(fee.discount);
         const paid = fee.payments.reduce((sum, p) => sum + Number(p.amountPaid), 0);
         const remaining = Math.max(net - paid, 0);
 
         if (remaining > 0) {
-          await tx.payment.create({
-            data: {
-              feeId: fee.id,
-              amountPaid: remaining,
-              method: TransactionType.CASH,
-              transactionRef: 'AUTO_MARK_PAID'
-            }
+          paymentsToCreate.push({
+            feeId: fee.id,
+            amountPaid: remaining,
+            method: TransactionType.CASH,
+            transactionRef: 'AUTO_MARK_PAID'
           });
         }
-
-        await tx.fee.update({
-          where: { id: fee.id },
-          data: { status: PaymentStatus.PAID }
-        });
+        
+        feesToUpdate.push(fee.id);
         count += 1;
       }
+      
+      if (paymentsToCreate.length > 0) {
+        await tx.payment.createMany({ data: paymentsToCreate });
+      }
+      
+      if (feesToUpdate.length > 0) {
+        await tx.fee.updateMany({
+          where: { id: { in: feesToUpdate } },
+          data: { status: PaymentStatus.PAID }
+        });
+      }
+      
       return count;
     });
 

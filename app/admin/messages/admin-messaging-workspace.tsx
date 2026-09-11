@@ -1,6 +1,7 @@
 'use client';
 
 import { FormEvent, useEffect, useMemo, useRef, useState } from 'react';
+import Link from 'next/link';
 import {
   CircleDot,
   Trash2,
@@ -226,13 +227,16 @@ export default function AdminMessagingWorkspace({
   classes,
   receivedMessages,
   sentMessages,
-  presetRecipientId
+  presetRecipientId,
+  page
 }: {
   classes: ClassOption[];
   receivedMessages: ReceivedMessage[];
   sentMessages: SentMessage[];
   presetRecipientId: string;
+  page?: number;
 }) {
+  const currentPage = page || 1;
   const [activeTab, setActiveTab] = useState<TabKey>('messages');
   const [receivedState, setReceivedState] = useState(receivedMessages);
   const [sentState, setSentState] = useState(sentMessages);
@@ -922,8 +926,29 @@ export default function AdminMessagingWorkspace({
               )}
             </div>
           </section>
+
+          <div className="col-span-full mt-4 flex items-center justify-between border-t border-[#d7e3df] pt-4 lg:col-span-2">
+            <span className="text-sm text-[#4b5563]">Page {currentPage}</span>
+            <div className="flex gap-2">
+              {currentPage > 1 && (
+                <Link
+                  href={`/admin/messages?page=${currentPage - 1}`}
+                  className="rounded-lg bg-white px-3 py-1.5 text-sm font-semibold text-[#4b5563] border border-[#d7e3df] hover:bg-gray-50"
+                >
+                  Previous
+                </Link>
+              )}
+              <Link
+                href={`/admin/messages?page=${currentPage + 1}`}
+                className="rounded-lg bg-white px-3 py-1.5 text-sm font-semibold text-[#4b5563] border border-[#d7e3df] hover:bg-gray-50"
+              >
+                Next
+              </Link>
+            </div>
+          </div>
         </div>
       )}
     </div>
   );
 }
+

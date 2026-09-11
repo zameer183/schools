@@ -7,69 +7,6 @@ export const dynamic = 'force-dynamic';
 
 type CanonicalFeeStatus = 'PAID' | 'UNPAID' | 'PARTIAL' | 'OVERDUE';
 
-type RestStudent = {
-  id: string;
-  userId: string;
-  admissionNo: string;
-  dateOfBirth: string | null;
-  createdAt: string;
-  updatedAt: string;
-  currentAddress: string | null;
-  emergencyContact: string | null;
-  classId: string | null;
-  fatherName: string | null;
-  aadharNo: string | null;
-  gender: string | null;
-  whatsApp: string | null;
-  schoolName: string | null;
-  rollNumber: string | null;
-  joinDate: string | null;
-  guardianPhone: string | null;
-};
-
-type RestUser = {
-  id: string;
-  fullName: string;
-  email: string;
-  phone: string | null;
-  isActive: boolean;
-};
-
-type RestClass = {
-  id: string;
-  name: string;
-  section: string;
-};
-
-type RestAttendance = {
-  studentId: string;
-  status: 'PRESENT' | 'ABSENT' | 'LATE' | 'EXCUSED';
-  date: string;
-};
-
-type RestFee = {
-  id: string;
-  studentId: string;
-  title: string;
-  amount: string | number;
-  discount: string | number;
-  dueDate: string;
-  feeCategory: string | null;
-  feeType: string | null;
-  fromDate: string | null;
-  toDate: string | null;
-  partialFeeSupported: boolean;
-  collectOnMonthStart: boolean;
-  status: string;
-  updatedAt: string;
-  createdAt: string;
-};
-
-type RestPayment = {
-  feeId: string;
-  amountPaid: string | number;
-};
-
 function normalizeWhatsAppPk(raw?: string | null) {
   if (!raw) return null;
   let digits = raw.replace(/\D/g, '');
@@ -116,249 +53,83 @@ function deriveCanonicalFeeStatus(params: {
   return toCanonicalFeeStatus(params.rawStatus);
 }
 
-function toAttendanceStatus(rawStatus: string): 'PRESENT' | 'ABSENT' | 'LATE' | 'EXCUSED' {
-  if (rawStatus === 'PRESENT' || rawStatus === 'ABSENT' || rawStatus === 'LATE' || rawStatus === 'EXCUSED') {
-    return rawStatus;
-  }
-  return 'ABSENT';
-}
-
-function isDatabaseConnectionError(error: unknown) {
-  return (
-    error instanceof Error &&
-    (error.name === 'PrismaClientInitializationError' ||
-      error.message.includes("Can't reach database server") ||
-      error.message.includes('Timed out fetching a new connection'))
-  );
-}
-
-async function supabaseRest<T>(table: string, params: Record<string, string>) {
-  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
-  const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
-  if (!supabaseUrl || !serviceRoleKey) {
-    throw new Error('Supabase REST fallback is not configured');
-  }
-
-  const url = new URL(`/rest/v1/${table}`, supabaseUrl);
-  for (const [key, value] of Object.entries(params)) {
-    url.searchParams.set(key, value);
-  }
-
-  const response = await fetch(url, {
-    headers: {
-      apikey: serviceRoleKey,
-      Authorization: `Bearer ${serviceRoleKey}`
-    },
-    cache: 'no-store'
-  });
-
-  if (!response.ok) {
-    throw new Error(`Supabase REST ${table} failed with ${response.status}`);
-  }
-
-  return (await response.json()) as T[];
-}
-
-function inFilter(ids: string[]) {
-  return `in.(${ids.join(',')})`;
-}
-
-async function getStudentsDataViaSupabaseRest() {
-  const [students, classes] = await Promise.all([
-    supabaseRest<RestStudent>('Student', {
-      select: 'id,userId,admissionNo,dateOfBirth,createdAt,updatedAt,currentAddress,emergencyContact,classId,fatherName,aadharNo,gender,whatsApp,schoolName,rollNumber,joinDate,guardianPhone',
-      order: 'createdAt.desc'
-    }),
-    supabaseRest<RestClass>('Class', {
-      select: 'id,name,section',
-      order: 'name.asc,section.asc'
-    })
-  ]);
-
-  const studentIds = students.map((student) => student.id);
-  const userIds = Array.from(new Set(students.map((student) => student.userId).filter(Boolean)));
-  const [users, attendanceRows, feeRows] = await Promise.all([
-    userIds.length
-      ? supabaseRest<RestUser>('User', {
-          select: 'id,fullName,email,phone,isActive',
-          id: inFilter(userIds)
-        })
-      : Promise.resolve([]),
-    studentIds.length
-      ? supabaseRest<RestAttendance>('Attendance', {
-          select: 'studentId,status,date',
-          studentId: inFilter(studentIds),
-          order: 'date.desc',
-          limit: '3000'
-        })
-      : Promise.resolve([]),
-    studentIds.length
-      ? supabaseRest<RestFee>('Fee', {
-          select: 'id,studentId,title,amount,discount,dueDate,feeCategory,feeType,fromDate,toDate,partialFeeSupported,collectOnMonthStart,status,updatedAt,createdAt',
-          studentId: inFilter(studentIds),
-          order: 'createdAt.desc',
-          limit: '1000'
-        })
-      : Promise.resolve([])
-  ]);
-
-  const latestFeeByStudentId = new Map<string, RestFee>();
-  for (const fee of feeRows) {
-    if (!latestFeeByStudentId.has(fee.studentId)) {
-      latestFeeByStudentId.set(fee.studentId, fee);
-    }
-  }
-
-  const latestFeeIds = Array.from(latestFeeByStudentId.values()).map((fee) => fee.id);
-  const payments = latestFeeIds.length
-    ? await supabaseRest<RestPayment>('Payment', {
-        select: 'feeId,amountPaid',
-        feeId: inFilter(latestFeeIds)
-      })
-    : [];
-
-  const paymentsByFeeId = new Map<string, RestPayment[]>();
-  for (const payment of payments) {
-    paymentsByFeeId.set(payment.feeId, [...(paymentsByFeeId.get(payment.feeId) ?? []), payment]);
-  }
-
-  const attendanceByStudentId = new Map<string, RestAttendance[]>();
-  for (const row of attendanceRows) {
-    const current = attendanceByStudentId.get(row.studentId) ?? [];
-    if (current.length < 30) {
-      attendanceByStudentId.set(row.studentId, [...current, row]);
-    }
-  }
-
-  const userById = new Map(users.map((user) => [user.id, user]));
-  const classById = new Map(classes.map((cls) => [cls.id, cls]));
-
-  const enrichedStudents = students.map((student) => {
-    const fee = latestFeeByStudentId.get(student.id);
-    return {
-      ...student,
-      user: userById.get(student.userId) ?? {
-        id: student.userId,
-        fullName: 'Unknown Student',
-        email: '',
-        phone: null,
-        isActive: false
-      },
-      class: student.classId ? classById.get(student.classId) ?? null : null,
-      attendance: (attendanceByStudentId.get(student.id) ?? []).map((row) => ({
-        status: toAttendanceStatus(row.status),
-        date: row.date
-      })),
-      fees: fee
-        ? [{
-            id: fee.id,
-            title: fee.title,
-            amount: String(fee.amount),
-            discount: String(fee.discount),
-            dueDate: fee.dueDate,
-            feeCategory: fee.feeCategory,
-            feeType: fee.feeType,
-            fromDate: fee.fromDate,
-            toDate: fee.toDate,
-            partialFeeSupported: fee.partialFeeSupported,
-            collectOnMonthStart: fee.collectOnMonthStart,
-            status: fee.status,
-            updatedAt: fee.updatedAt,
-            payments: paymentsByFeeId.get(fee.id) ?? []
-          }]
-        : []
-    };
-  });
-
-  return { students: enrichedStudents, classes };
-}
-
-async function getStudentsData() {
-  const [students, classes] = await Promise.all([
+async function getPaginatedStudentsData(where: any, skip: number, take: number, monthStart: Date) {
+  const [totalStudents, active, pendingFees, newThisMonth, students, classes] = await Promise.all([
+    prisma.student.count({ where }),
+    prisma.student.count({ where: { user: { isActive: true } } }),
+    prisma.student.count({ where: { fees: { some: { status: { in: ['OVERDUE', 'PARTIAL', 'PENDING'] } } } } }),
+    prisma.student.count({ where: { createdAt: { gte: monthStart } } }),
     prisma.student.findMany({
+      where,
       select: {
-        id: true,
-        admissionNo: true,
-        dateOfBirth: true,
-        createdAt: true,
-        updatedAt: true,
-        currentAddress: true,
-        emergencyContact: true,
-        classId: true,
-        fatherName: true,
-        aadharNo: true,
-        gender: true,
-        whatsApp: true,
-        schoolName: true,
-        rollNumber: true,
-        joinDate: true,
-        guardianPhone: true,
-        attendance: {
-          select: { status: true, date: true },
-          orderBy: [{ date: 'desc' }],
-          take: 30
-        },
+        id: true, admissionNo: true, dateOfBirth: true, createdAt: true, updatedAt: true,
+        currentAddress: true, emergencyContact: true, classId: true,
+        fatherName: true, aadharNo: true, gender: true, whatsApp: true, schoolName: true,
+        rollNumber: true, joinDate: true, guardianPhone: true,
+        attendance: { select: { status: true, date: true }, orderBy: [{ date: 'desc' }], take: 30 },
         class: { select: { id: true, name: true, section: true } },
         user: { select: { id: true, fullName: true, email: true, phone: true, isActive: true } },
         fees: {
           select: {
-            id: true,
-            title: true,
-            amount: true,
-            discount: true,
-            dueDate: true,
-            feeCategory: true,
-            feeType: true,
-            fromDate: true,
-            toDate: true,
-            partialFeeSupported: true,
-            collectOnMonthStart: true,
-            status: true,
-            updatedAt: true,
-            payments: {
-              select: { amountPaid: true }
-            }
+            id: true, title: true, amount: true, discount: true, dueDate: true, feeCategory: true,
+            feeType: true, fromDate: true, toDate: true, partialFeeSupported: true, collectOnMonthStart: true,
+            status: true, updatedAt: true, payments: { select: { amountPaid: true } }
           },
-          orderBy: [{ createdAt: 'desc' }],
-          take: 1
+          orderBy: [{ createdAt: 'desc' }], take: 1
         }
       },
-      orderBy: { createdAt: 'desc' }
+      orderBy: { createdAt: 'desc' },
+      skip, take
     }),
     prisma.class.findMany({
       select: { id: true, name: true, section: true },
       orderBy: [{ name: 'asc' }, { section: 'asc' }]
     })
   ]);
-
-  return { students, classes };
+  return { totalStudents, active, pendingFees, newThisMonth, students, classes };
 }
 
-export default async function AdminStudentsPage() {
+export default async function AdminStudentsPage(props: { searchParams: Promise<{ [key: string]: string | string[] | undefined }> }) {
   await requireAuth([UserRole.ADMIN]);
-  let data: Awaited<ReturnType<typeof getStudentsDataViaSupabaseRest>>;
-  try {
-    data = process.env.FORCE_SUPABASE_REST_DATA_FALLBACK === '1'
-      ? await getStudentsDataViaSupabaseRest()
-      : await getStudentsData() as unknown as Awaited<ReturnType<typeof getStudentsDataViaSupabaseRest>>;
-  } catch (error) {
-    if (!isDatabaseConnectionError(error)) throw error;
-    data = await getStudentsDataViaSupabaseRest();
+  const searchParams = await props.searchParams;
+  const page = Number(searchParams.page) || 1;
+  const search = (searchParams.search as string) || '';
+  const classFilter = (searchParams.classId as string) || '';
+  const statusFilter = (searchParams.status as string) || 'all';
+  const view = (searchParams.view as string) || 'grid';
+  const pageSize = view === 'grid' ? 12 : 25;
+  const skip = (page - 1) * pageSize;
+
+  const monthStart = new Date();
+  monthStart.setDate(1);
+  monthStart.setHours(0, 0, 0, 0);
+
+  const where: any = {};
+  if (classFilter) {
+    where.classId = classFilter;
+  }
+  if (statusFilter === 'active') where.user = { isActive: true };
+  if (statusFilter === 'inactive') where.user = { isActive: false };
+  if (statusFilter === 'pending') where.fees = { some: { status: { in: ['OVERDUE', 'PARTIAL', 'PENDING'] } } };
+  if (search) {
+    where.user = { ...where.user, fullName: { contains: search, mode: 'insensitive' } };
   }
 
-  const { students, classes } = data;
+  const data = await getPaginatedStudentsData(where, skip, pageSize, monthStart);
+  const { totalStudents, active, pendingFees, newThisMonth, students, classes } = data;
+  
   const normalizedStudents = students.map((student) => {
     const latestFee = student.fees?.[0];
     const latestFeePaid = latestFee
-      ? latestFee.payments.reduce((sum, payment) => sum + Number(payment.amountPaid), 0)
+      ? latestFee.payments.reduce((sum: number, payment: any) => sum + Number(payment.amountPaid), 0)
       : 0;
     const canonicalStatus = latestFee
       ? deriveCanonicalFeeStatus({
           dueDate: latestFee.dueDate,
-          amount: latestFee.amount,
-          discount: latestFee.discount,
+          amount: Number(latestFee.amount),
+          discount: Number(latestFee.discount),
           paidAmount: latestFeePaid,
-          rawStatus: latestFee.status
+          rawStatus: String(latestFee.status)
         })
       : 'UNPAID';
     const normalizedWhatsApp =
@@ -369,29 +140,29 @@ export default async function AdminStudentsPage() {
       whatsApp: normalizedWhatsApp,
       guardianPhone: normalizeWhatsAppPk(student.guardianPhone) ?? null,
       attendancePercentage: student.attendance.length
-        ? Math.round((student.attendance.filter((row) => row.status === 'PRESENT').length / student.attendance.length) * 100)
+        ? Math.round((student.attendance.filter((row: any) => row.status === 'PRESENT').length / student.attendance.length) * 100)
         : 0,
       feeStatus: canonicalStatus,
       lastActivityAt:
         student.attendance?.[0]?.date ??
         student.fees?.[0]?.updatedAt ??
         student.updatedAt,
-      fees: (student.fees ?? []).map((fee) => {
+      fees: (student.fees ?? []).map((fee: any) => {
         const dueDateObj = new Date(fee.dueDate);
-        const totalPaid = fee.payments.reduce((sum, payment) => sum + Number(payment.amountPaid), 0);
+        const totalPaid = fee.payments.reduce((sum: number, payment: any) => sum + Number(payment.amountPaid), 0);
         const status = deriveCanonicalFeeStatus({
           dueDate: fee.dueDate,
-          amount: fee.amount,
-          discount: fee.discount,
+          amount: Number(fee.amount),
+          discount: Number(fee.discount),
           paidAmount: totalPaid,
-          rawStatus: fee.status
+          rawStatus: String(fee.status)
         });
         return {
           title: fee.title,
           id: fee.id,
           dueDate: fee.dueDate,
-          amount: fee.amount.toString(),
-          discount: fee.discount.toString(),
+          amount: String(fee.amount),
+          discount: String(fee.discount),
           feeCategory: fee.feeCategory,
           feeType: fee.feeType,
           fromDate: fee.fromDate,
@@ -400,18 +171,13 @@ export default async function AdminStudentsPage() {
           collectOnMonthStart: fee.collectOnMonthStart,
           status,
           updatedAt: fee.updatedAt,
-          totalPaid: totalPaid.toString(),
-          remaining: Math.max(
-            Number(fee.amount) -
-            Number(fee.discount) -
-            totalPaid,
-            0
-          ).toString(),
+          totalPaid: String(totalPaid),
+          remaining: String(Math.max(Number(fee.amount) - Number(fee.discount) - totalPaid, 0)),
           month: dueDateObj.toLocaleDateString('en-US', { month: 'long', year: 'numeric' })
         };
       })
-    };
+    } as any;
   });
 
-  return <AdminStudentsPageClient initialStudents={normalizedStudents} initialClasses={classes} />;
+  return <AdminStudentsPageClient initialStudents={normalizedStudents} initialClasses={classes as any} totalStudents={totalStudents} stats={{ total: totalStudents, active, pendingFees, newThisMonth }} currentPage={page} pageSize={pageSize} viewMode={view as 'grid' | 'list'} searchQ={search} classIdQ={classFilter} statusQ={statusFilter as any} />;
 }
