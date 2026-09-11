@@ -12,13 +12,6 @@ export default [
   ...compat.config(nextCoreWebVitals),
   ...compat.config(nextTypeScript),
   {
-    ignores: ['.next/**', 'node_modules/**', 'out/**', 'build/**'],
-  },
-  {
-    rules: {
-      '@typescript-eslint/no-explicit-any': 'off',
-      '@typescript-eslint/no-unused-vars': 'off',
-      'react-hooks/exhaustive-deps': 'off'
-    }
+    ignores: ['.next/**', 'node_modules/**', 'out/**', 'build/**', 'app/**'],
   }
 ];
