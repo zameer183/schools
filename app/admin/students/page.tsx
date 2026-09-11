@@ -1,4 +1,5 @@
 import React from 'react';
+export const revalidate = 3600;
 import { DashboardRouteLoading } from '@/components/ui/dashboard-route-loading';
 import { PageHeader } from '@/components/ui';
 import { UserRole } from '@prisma/client';
@@ -6,7 +7,6 @@ import { requireAuth } from '@/lib/auth';
 import { prisma } from '@/lib/prisma';
 import AdminStudentsPageClient from './page.client';
 
-export const dynamic = 'force-dynamic';
 
 type CanonicalFeeStatus = 'PAID' | 'UNPAID' | 'PARTIAL' | 'OVERDUE';
 

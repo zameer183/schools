@@ -26,7 +26,6 @@ import {
 import { formatCurrency } from '@/lib/utils';
 import { PageHeader, KpiCard, Card, SectionTitle, StatusBadge } from '@/components/ui';
 
-export const dynamic = 'force-dynamic';
 
 type RestStudent = {
   id: string;

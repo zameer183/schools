@@ -8,7 +8,6 @@ import { prisma } from '@/lib/prisma';
 import { ensureStaffAttendanceTable } from '@/lib/staff-attendance';
 import AttendanceDashboardClient from './attendance-dashboard-client';
 
-export const dynamic = 'force-dynamic';
 
 type SearchParams = { date?: string; classId?: string; tab?: string; page?: string; };
 

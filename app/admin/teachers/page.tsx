@@ -1,3 +1,7 @@
+import React from 'react';
+export const revalidate = 3600;
+import { DashboardRouteLoading } from '@/components/ui/dashboard-route-loading';
+import { PageHeader } from '@/components/ui';
 import { UserRole } from '@prisma/client';
 import { requireAuth } from '@/lib/auth';
 import { prisma } from '@/lib/prisma';
@@ -8,9 +12,8 @@ import {
 } from '@/lib/teacher-access';
 import AdminTeachersPageClient from './page.client';
 
-export const dynamic = 'force-dynamic';
 
-export default async function AdminTeachersPage(props: { searchParams: Promise<{ [key: string]: string | string[] | undefined }> }) {
+async function TeachersContent(props: { searchParams: Promise<{ [key: string]: string | string[] | undefined }> }) {
   const t0 = Date.now();
   await requireAuth([UserRole.ADMIN]);
   await ensureTeacherControlTables();
@@ -93,4 +96,16 @@ export default async function AdminTeachersPage(props: { searchParams: Promise<{
     viewMode={view as 'grid'|'table'}
     searchQ={search}
   />;
+}
+
+
+export default function AdminTeachersPage(props: { searchParams: Promise<{ [key: string]: string | string[] | undefined }> }) {
+  return (
+    <div className="w-full space-y-6">
+      <PageHeader title="Staff Directory" description="Manage teachers and access levels." />
+      <React.Suspense fallback={<DashboardRouteLoading title="Loading Staff..." hint="Fetching directory..." />}>
+        <TeachersContent searchParams={props.searchParams} />
+      </React.Suspense>
+    </div>
+  );
 }
