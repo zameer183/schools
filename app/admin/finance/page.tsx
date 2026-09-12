@@ -378,18 +378,20 @@ export default async function AdminFinancePage({ searchParams }: AdminFinancePag
       </div>
 
       {/* ── KPI Cards ── */}
-      <div className="grid gap-3 sm:gap-4 sm:grid-cols-2 lg:grid-cols-5">
+      <div className="grid grid-cols-2 lg:grid-cols-5 gap-2.5 sm:gap-4">
         {kpis.map(({ label, value }, i) => {
           const Icon = kpiIcons[i];
           const variants: ('primary' | 'accent' | 'success' | 'danger')[] = ['primary', 'success', 'accent', 'danger', 'primary'];
+          const isLast = i === 4;
           return (
-            <KpiCard
-              key={label}
-              variant={variants[i] || 'primary'}
-              icon={<Icon size={20} />}
-              label={label}
-              value={value}
-            />
+            <div key={label} className={isLast ? 'col-span-2 lg:col-span-1' : ''}>
+              <KpiCard
+                variant={variants[i] || 'primary'}
+                icon={<Icon size={20} />}
+                label={label}
+                value={value}
+              />
+            </div>
           );
         })}
       </div>

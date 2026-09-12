@@ -124,31 +124,46 @@ export function FinanceClientBar({
 
   return (
     <>
-      <div className="w-full space-y-3">
+      <div className="w-full space-y-3.5">
+        
         {/* Search input — full width */}
         <div className="relative">
-          <Search className="absolute left-3 top-2.5 h-5 w-5 text-[#6f7979]" />
-          <input
-            type="text"
-            placeholder="Search student name..."
-            value={search}
-            onChange={e => setSearch(e.target.value)}
-            className="h-11 w-full pl-10 pr-4 rounded-xl bg-[#f0f2f5] border-none text-sm text-[#2c3e50] placeholder:text-[#6f7979]/60 outline-none focus:ring-2 focus:ring-[#004649]/20"
-          />
+          <label className="flex h-11 items-center gap-2.5 rounded-xl bg-[#f8fafc] border border-[#e2e8f0] px-3.5 transition focus-within:bg-white focus-within:ring-2 focus-within:ring-[#004649]/20 focus-within:border-[#004649]">
+            <Search className="h-4 w-4 shrink-0 text-[#94a3b8]" />
+            <input
+              type="text"
+              placeholder="Search by student name or fee description…"
+              value={search}
+              onChange={e => setSearch(e.target.value)}
+              className="w-full bg-transparent text-xs sm:text-sm text-[#0f172a] outline-none placeholder:text-[#94a3b8]"
+            />
+            {search ? (
+              <button
+                type="button"
+                onClick={() => setSearch('')}
+                className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg text-[#94a3b8] hover:bg-[#e2e8f0] hover:text-[#0f172a] transition"
+                aria-label="Clear search"
+              >
+                <X className="h-3.5 w-3.5" />
+              </button>
+            ) : null}
+          </label>
         </div>
 
-        {/* Status chips + Sort */}
-        <div className="flex flex-wrap items-center gap-2">
-          {/* Status chips — scrollable on mobile */}
-          <div className="flex-1 overflow-x-auto flex gap-2 pb-1">
+        {/* Primary Controls: Class, Period & Status Chips */}
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+          
+          {/* Status chips */}
+          <div className="flex items-center gap-1.5 overflow-x-auto py-0.5">
             {statusChips.map(chip => (
               <button
                 key={chip.value}
+                type="button"
                 onClick={() => updateFilter('status', chip.value)}
-                className={`shrink-0 h-10 px-3 rounded-xl text-xs font-semibold transition-all ${
+                className={`shrink-0 inline-flex h-9 items-center justify-center rounded-xl px-3.5 text-xs font-bold transition-all active:scale-95 ${
                   selectedStatus === chip.value
-                    ? 'bg-gradient-to-br from-[#004649] to-[#1b5e62] text-white shadow-sm'
-                    : 'bg-[#f0f2f5] text-[#2c3e50] hover:bg-[#e8ecf0]'
+                    ? 'bg-gradient-to-r from-[#004649] to-[#1b5e62] text-white shadow-2xs'
+                    : 'bg-[#f8fafc] border border-[#e2e8f0] text-[#64748b] hover:bg-[#f1f5f9] hover:text-[#0f172a]'
                 }`}
               >
                 {chip.label}
@@ -156,38 +171,64 @@ export function FinanceClientBar({
             ))}
           </div>
 
-          {/* Sort dropdown */}
-          <select
-            value={selectedSort || 'dueDate'}
-            onChange={e => updateFilter('sort', e.target.value)}
-            className="h-10 rounded-xl bg-[#f0f2f5] border-none px-3 text-xs font-semibold text-[#2c3e50] outline-none focus:ring-2 focus:ring-[#004649]/20"
-          >
-            {sortOptions.map(opt => (
-              <option key={opt.value} value={opt.value}>{opt.label}</option>
-            ))}
-          </select>
+          {/* Action buttons (Auto Fees & Add Fee) */}
+          <div className="flex items-center gap-2">
+            <button
+              type="button"
+              onClick={handleAutoRun}
+              disabled={autoRunPending}
+              title="Create monthly fees for current active students"
+              className="flex-1 sm:flex-none inline-flex h-9 items-center justify-center gap-1.5 rounded-xl border border-[#004649]/30 bg-[#e0eff0]/60 px-3.5 text-xs font-bold text-[#004649] hover:bg-[#e0eff0] active:scale-95 transition disabled:opacity-60"
+            >
+              <RefreshCw className={`h-3.5 w-3.5 ${autoRunPending ? 'animate-spin' : ''}`} />
+              <span>Auto Fees</span>
+            </button>
+
+            <button
+              type="button"
+              onClick={() => setShowModal(true)}
+              className="flex-1 sm:flex-none inline-flex h-9 items-center justify-center gap-1.5 rounded-xl bg-gradient-to-r from-[#004649] to-[#1b5e62] px-4 text-xs font-bold text-white shadow-2xs hover:brightness-105 active:scale-95 transition"
+            >
+              <Plus className="h-4 w-4" />
+              <span>+ Add Fee</span>
+            </button>
+          </div>
         </div>
 
-        {/* Class filter + Period + Date range + Action buttons */}
-        <div className="flex flex-wrap items-center gap-2">
+        {/* Secondary Filters: Class, Period, Sort, and Dates */}
+        <div className="flex flex-wrap items-center gap-2 pt-1 border-t border-[#f1f5f9]">
+          
           <select
             value={selectedClassId}
             onChange={e => updateFilter('classId', e.target.value)}
-            className="h-10 rounded-xl bg-[#f0f2f5] border-none px-3 text-sm text-[#2c3e50] outline-none focus:ring-2 focus:ring-[#004649]/20"
+            className="h-9 rounded-xl bg-[#f8fafc] border border-[#cbd5e1] px-3 text-xs font-semibold text-[#0f172a] outline-none focus:ring-2 focus:ring-[#004649]/20 focus:border-[#004649] transition cursor-pointer"
+            aria-label="Filter by class"
           >
-            <option value="all">All Classes</option>
+            <option value="all">All Classes & Sections</option>
             {classes.map(c => (
-              <option key={c.id} value={c.id}>{c.name} - {c.section}</option>
+              <option key={c.id} value={c.id}>{c.name} – {c.section}</option>
             ))}
           </select>
 
           <select
             value={selectedPeriod || 'all'}
             onChange={e => updateFilter('period', e.target.value)}
-            className="h-10 rounded-xl bg-[#f0f2f5] border-none px-3 text-sm text-[#2c3e50] outline-none focus:ring-2 focus:ring-[#004649]/20"
+            className="h-9 rounded-xl bg-[#f8fafc] border border-[#cbd5e1] px-3 text-xs font-semibold text-[#0f172a] outline-none focus:ring-2 focus:ring-[#004649]/20 focus:border-[#004649] transition cursor-pointer"
+            aria-label="Filter by period"
           >
             {periodOptions.map(opt => (
               <option key={opt.value} value={opt.value}>{opt.label}</option>
+            ))}
+          </select>
+
+          <select
+            value={selectedSort || 'dueDate'}
+            onChange={e => updateFilter('sort', e.target.value)}
+            className="h-9 rounded-xl bg-[#f8fafc] border border-[#cbd5e1] px-3 text-xs font-semibold text-[#0f172a] outline-none focus:ring-2 focus:ring-[#004649]/20 focus:border-[#004649] transition cursor-pointer"
+            aria-label="Sort records"
+          >
+            {sortOptions.map(opt => (
+              <option key={opt.value} value={opt.value}>Sort: {opt.label}</option>
             ))}
           </select>
 
@@ -202,67 +243,31 @@ export function FinanceClientBar({
                 setToDate('');
               }
             }}
-            className="h-10 rounded-xl bg-[#f0f2f5] border-none px-3 text-sm text-[#2c3e50] outline-none focus:ring-2 focus:ring-[#004649]/20"
+            className="h-9 rounded-xl bg-[#f8fafc] border border-[#cbd5e1] px-2.5 text-xs font-medium text-[#0f172a] outline-none focus:ring-2 focus:ring-[#004649]/20"
             aria-label="Month filter"
           />
 
-          <input
-            type="date"
-            value={fromDate}
-            onChange={e => {
-              setFromDate(e.target.value);
-              if (e.target.value) setMonth('');
-            }}
-            className="h-10 rounded-xl bg-[#f0f2f5] border-none px-3 text-sm text-[#2c3e50] outline-none focus:ring-2 focus:ring-[#004649]/20"
-            aria-label="From date"
-          />
-          <input
-            type="date"
-            value={toDate}
-            onChange={e => {
-              setToDate(e.target.value);
-              if (e.target.value) setMonth('');
-            }}
-            className="h-10 rounded-xl bg-[#f0f2f5] border-none px-3 text-sm text-[#2c3e50] outline-none focus:ring-2 focus:ring-[#004649]/20"
-            aria-label="To date"
-          />
-          <button
-            onClick={() => {
-              setMonth('');
-              setFromDate('');
-              setToDate('');
-              const p = new URLSearchParams();
-              p.set('search', search);
-              p.set('status', selectedStatus);
-              p.set('sort', selectedSort);
-              p.set('classId', selectedClassId);
-              p.set('period', selectedPeriod);
-              router.push(`/admin/finance?${p.toString()}`);
-            }}
-            className="h-10 rounded-xl bg-[#f0f2f5] px-3 text-xs font-semibold text-[#2c3e50] hover:bg-[#e8ecf0]"
-          >
-            Clear Dates
-          </button>
-
-          {/* Auto Fees — teal gradient */}
-          <button
-            onClick={handleAutoRun}
-            disabled={autoRunPending}
-            title="Create monthly fees for the current month"
-            className="flex h-10 items-center gap-1.5 rounded-xl bg-gradient-to-br from-[#004649] to-[#1b5e62] px-3 text-xs font-semibold text-white shadow-[0_4px_12px_rgba(0,70,73,0.2)] transition-all duration-200 hover:scale-105 hover:shadow-[0_6px_16px_rgba(0,70,73,0.3)] active:scale-[0.98] disabled:opacity-60"
-          >
-            <RefreshCw className={`h-3.5 w-3.5 ${autoRunPending ? 'animate-spin' : ''}`} />
-            Auto Fees
-          </button>
-
-          {/* Add Fee — orange gradient */}
-          <button
-            onClick={() => setShowModal(true)}
-            className="flex h-10 items-center gap-1.5 rounded-xl bg-gradient-to-br from-[#ff8c42] to-[#e67e22] px-4 text-sm font-semibold text-white shadow-[0_4px_12px_rgba(255,140,66,0.35)] transition-all duration-200 hover:scale-105 hover:shadow-[0_6px_16px_rgba(255,140,66,0.45)] active:scale-[0.98]"
-          >
-            <Plus className="h-4 w-4" />
-            Add Fee
-          </button>
+          {(month || fromDate || toDate) && (
+            <button
+              type="button"
+              onClick={() => {
+                setMonth('');
+                setFromDate('');
+                setToDate('');
+                const p = new URLSearchParams();
+                p.set('search', search);
+                p.set('status', selectedStatus);
+                p.set('sort', selectedSort);
+                p.set('classId', selectedClassId);
+                p.set('period', selectedPeriod);
+                router.push(`/admin/finance?${p.toString()}`);
+              }}
+              className="h-9 inline-flex items-center gap-1 rounded-xl border border-[#e2e8f0] bg-[#f8fafc] px-2.5 text-xs font-bold text-[#b91c1c] hover:bg-[#fee2e2] transition active:scale-95"
+            >
+              <X className="h-3 w-3" />
+              <span>Clear Dates</span>
+            </button>
+          )}
         </div>
       </div>
 
