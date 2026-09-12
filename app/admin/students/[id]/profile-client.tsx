@@ -980,24 +980,26 @@ export default function StudentProfileClient({
               </div>
 
               {/* Attendance action buttons */}
-              <div className="mt-4 flex flex-col sm:flex-row gap-2.5">
+              <div className="mt-5 grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <button
                   type="button"
                   onClick={shareAttendanceReport}
                   disabled={!waPhone}
-                  className={`h-10 sm:h-11 flex flex-1 items-center justify-center gap-2 rounded-xl text-xs sm:text-sm font-semibold transition active:scale-[0.98] ${
-                    waPhone ? 'bg-[#25d366] text-white hover:brightness-95 shadow-xs' : 'cursor-not-allowed bg-[#f1f5f9] text-[#94a3b8]'
+                  className={`h-11 flex items-center justify-center gap-2 rounded-xl text-xs sm:text-sm font-bold transition-all active:scale-[0.98] ${
+                    waPhone
+                      ? 'bg-[#25D366]/15 border border-[#25D366]/40 text-[#128C7E] hover:bg-[#25D366]/25 shadow-2xs'
+                      : 'cursor-not-allowed bg-[#f1f5f9] border border-[#e2e8f0] text-[#94a3b8]'
                   }`}
                 >
                   <Share2 className="h-4 w-4" />
-                  <span>Share Attendance Report</span>
+                  <span>Share Report (WhatsApp)</span>
                 </button>
                 <Link
                   href={`/admin/students/${student.id}/fees`}
-                  className="h-10 sm:h-11 flex sm:flex-none items-center justify-center gap-2 rounded-xl bg-[#004649] px-5 text-xs sm:text-sm font-semibold text-white shadow-xs hover:bg-[#1b5e62] active:scale-[0.98] transition"
+                  className="h-11 flex items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-[#004649] to-[#1b5e62] text-white text-xs sm:text-sm font-bold shadow-2xs hover:shadow-md hover:brightness-105 active:scale-[0.98] transition-all"
                 >
                   <Plus className="h-4 w-4" />
-                  <span>Add Fee</span>
+                  <span>+ Add New Fee</span>
                 </Link>
               </div>
             </div>
@@ -1005,37 +1007,54 @@ export default function StudentProfileClient({
 
           {/* QUICK LINKS CARD */}
           <div className={CARD}>
-            <CardHeader title="Quick Access" />
-            <div className="p-4 sm:p-6 grid grid-cols-1 sm:grid-cols-3 gap-2.5 sm:gap-3">
+            <CardHeader title="Quick Actions & History" />
+            <div className="p-4 sm:p-6 grid grid-cols-1 sm:grid-cols-3 gap-3">
               <Link
                 href={`/admin/students/${student.id}/attendance`}
-                className="group flex items-center justify-between sm:justify-center gap-2 rounded-xl bg-gradient-to-br from-[#004649] to-[#1b5e62] p-3.5 text-white shadow-xs hover:shadow-md active:scale-[0.98] transition"
+                className="group flex items-center justify-between rounded-2xl bg-white border border-[#e2e8f0] p-4 shadow-2xs hover:border-[#004649]/40 hover:shadow-sm active:scale-[0.98] transition-all"
               >
-                <div className="flex items-center gap-2.5">
-                  <Calendar className="h-4 w-4 text-[#e0eff0]" />
-                  <span className="text-xs sm:text-sm font-bold">Attendance Records</span>
+                <div className="flex items-center gap-3">
+                  <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-[#e0eff0] text-[#004649]">
+                    <Calendar className="h-5 w-5" />
+                  </div>
+                  <div>
+                    <p className="text-xs sm:text-sm font-bold text-[#0f172a] group-hover:text-[#004649] transition-colors">Attendance Records</p>
+                    <p className="text-[11px] text-[#64748b]">View monthly calendar</p>
+                  </div>
                 </div>
-                <ChevronRight className="h-4 w-4 sm:hidden opacity-70 group-hover:translate-x-0.5 transition-transform" />
+                <ChevronRight className="h-4 w-4 text-[#94a3b8] group-hover:text-[#004649] group-hover:translate-x-0.5 transition-all" />
               </Link>
+
               <Link
                 href={`/admin/students/${student.id}/fees`}
-                className="group flex items-center justify-between sm:justify-center gap-2 rounded-xl bg-white border border-[#e2e8f0] p-3.5 text-[#0f172a] shadow-xs hover:bg-[#f8fafc] active:scale-[0.98] transition"
+                className="group flex items-center justify-between rounded-2xl bg-white border border-[#e2e8f0] p-4 shadow-2xs hover:border-[#16a34a]/40 hover:shadow-sm active:scale-[0.98] transition-all"
               >
-                <div className="flex items-center gap-2.5">
-                  <DollarSign className="h-4 w-4 text-[#16a34a]" />
-                  <span className="text-xs sm:text-sm font-bold">Fee History</span>
+                <div className="flex items-center gap-3">
+                  <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-[#dcfce7] text-[#16a34a]">
+                    <DollarSign className="h-5 w-5" />
+                  </div>
+                  <div>
+                    <p className="text-xs sm:text-sm font-bold text-[#0f172a] group-hover:text-[#16a34a] transition-colors">Fee & Invoices</p>
+                    <p className="text-[11px] text-[#64748b]">History & payments</p>
+                  </div>
                 </div>
-                <ChevronRight className="h-4 w-4 sm:hidden text-[#94a3b8] group-hover:translate-x-0.5 transition-transform" />
+                <ChevronRight className="h-4 w-4 text-[#94a3b8] group-hover:text-[#16a34a] group-hover:translate-x-0.5 transition-all" />
               </Link>
+
               <Link
                 href={`/admin/reports/individual-complete?studentId=${student.id}`}
-                className="group flex items-center justify-between sm:justify-center gap-2 rounded-xl bg-white border border-[#e2e8f0] p-3.5 text-[#0f172a] shadow-xs hover:bg-[#f8fafc] active:scale-[0.98] transition"
+                className="group flex items-center justify-between rounded-2xl bg-white border border-[#e2e8f0] p-4 shadow-2xs hover:border-[#0284c7]/40 hover:shadow-sm active:scale-[0.98] transition-all"
               >
-                <div className="flex items-center gap-2.5">
-                  <BarChart3 className="h-4 w-4 text-[#0284c7]" />
-                  <span className="text-xs sm:text-sm font-bold">Progress Report</span>
+                <div className="flex items-center gap-3">
+                  <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-[#e0f2fe] text-[#0284c7]">
+                    <BarChart3 className="h-5 w-5" />
+                  </div>
+                  <div>
+                    <p className="text-xs sm:text-sm font-bold text-[#0f172a] group-hover:text-[#0284c7] transition-colors">Progress Report</p>
+                    <p className="text-[11px] text-[#64748b]">Exams & performance</p>
+                  </div>
                 </div>
-                <ChevronRight className="h-4 w-4 sm:hidden text-[#94a3b8] group-hover:translate-x-0.5 transition-transform" />
+                <ChevronRight className="h-4 w-4 text-[#94a3b8] group-hover:text-[#0284c7] group-hover:translate-x-0.5 transition-all" />
               </Link>
             </div>
           </div>
@@ -1127,14 +1146,14 @@ export default function StudentProfileClient({
           <div className={`${CARD} overflow-hidden`}>
             
             {/* Tab nav Segmented Control */}
-            <div className="p-2 sm:p-2.5 bg-[#f8fafc] border-b border-[#e2e8f0]">
-              <div className="grid grid-cols-3 gap-1 rounded-xl bg-[#e2e8f0]/60 p-1">
+            <div className="p-3 sm:p-4 bg-[#f8fafc] border-b border-[#e2e8f0]">
+              <div className="grid grid-cols-3 gap-1.5 rounded-2xl bg-[#f1f5f9] p-1.5 border border-[#e2e8f0]">
                 <button
                   type="button"
                   onClick={() => setActiveTab('class')}
-                  className={`flex items-center justify-center gap-1.5 rounded-lg py-2 text-xs font-bold transition active:scale-[0.98] ${
+                  className={`flex items-center justify-center gap-1.5 rounded-xl py-2.5 text-xs font-bold transition-all active:scale-[0.98] ${
                     activeTab === 'class'
-                      ? 'bg-white text-[#004649] shadow-2xs'
+                      ? 'bg-white text-[#004649] shadow-xs border border-[#e2e8f0]'
                       : 'text-[#64748b] hover:text-[#0f172a]'
                   }`}
                 >
@@ -1144,9 +1163,9 @@ export default function StudentProfileClient({
                 <button
                   type="button"
                   onClick={() => setActiveTab('security')}
-                  className={`flex items-center justify-center gap-1.5 rounded-lg py-2 text-xs font-bold transition active:scale-[0.98] ${
+                  className={`flex items-center justify-center gap-1.5 rounded-xl py-2.5 text-xs font-bold transition-all active:scale-[0.98] ${
                     activeTab === 'security'
-                      ? 'bg-white text-[#004649] shadow-2xs'
+                      ? 'bg-white text-[#004649] shadow-xs border border-[#e2e8f0]'
                       : 'text-[#64748b] hover:text-[#0f172a]'
                   }`}
                 >
@@ -1156,9 +1175,9 @@ export default function StudentProfileClient({
                 <button
                   type="button"
                   onClick={() => setActiveTab('guardian')}
-                  className={`flex items-center justify-center gap-1.5 rounded-lg py-2 text-xs font-bold transition active:scale-[0.98] ${
+                  className={`flex items-center justify-center gap-1.5 rounded-xl py-2.5 text-xs font-bold transition-all active:scale-[0.98] ${
                     activeTab === 'guardian'
-                      ? 'bg-white text-[#004649] shadow-2xs'
+                      ? 'bg-white text-[#004649] shadow-xs border border-[#e2e8f0]'
                       : 'text-[#64748b] hover:text-[#0f172a]'
                   }`}
                 >
@@ -1172,23 +1191,29 @@ export default function StudentProfileClient({
             {activeTab === 'class' && (
               <div className="p-4 sm:p-6 space-y-4">
                 <div>
-                  <p className="text-[10px] font-bold uppercase tracking-wider text-[#64748b] mb-1.5">Current Class</p>
-                  <div className="rounded-xl bg-[#f0fdf4] border border-[#bbf7d0] px-3.5 py-2.5">
-                    <p className="text-xs sm:text-sm font-bold text-[#15803d]">
-                      {student.class ? `${student.class.name} – ${student.class.section}` : 'Not Assigned'}
-                    </p>
+                  <p className="text-[10px] font-bold uppercase tracking-wider text-[#64748b] mb-1.5">Current Enrolled Class</p>
+                  <div className="flex items-center justify-between rounded-xl bg-[#f8fafc] border border-[#e2e8f0] px-4 py-3">
+                    <div className="flex items-center gap-2.5 min-w-0">
+                      <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-[#e0eff0] text-[#004649]">
+                        <BookOpen className="h-4 w-4" />
+                      </div>
+                      <span className="text-xs sm:text-sm font-bold text-[#0f172a] truncate">
+                        {student.class ? `${student.class.name} – ${student.class.section}` : 'Not Assigned'}
+                      </span>
+                    </div>
+                    <span className="rounded-md bg-[#dcfce7] border border-[#bbf7d0] px-2 py-0.5 text-[10px] font-bold text-[#15803d]">Enrolled</span>
                   </div>
                 </div>
                 <div>
                   <label className="text-[10px] font-bold uppercase tracking-wider text-[#64748b]">
-                    Assign New Class
+                    Assign Different Class
                   </label>
                   <select
                     value={selectedClass}
                     onChange={(e) => setSelectedClass(e.target.value)}
-                    className="mt-1.5 h-10 w-full rounded-xl bg-white border border-[#cbd5e1] px-3 text-xs sm:text-sm text-[#0f172a] outline-none focus:ring-2 focus:ring-[#004649]/20 focus:border-[#004649]"
+                    className="mt-1.5 h-11 w-full rounded-xl bg-white border border-[#cbd5e1] px-3.5 text-xs sm:text-sm text-[#0f172a] outline-none focus:ring-2 focus:ring-[#004649]/20 focus:border-[#004649]"
                   >
-                    <option value="">— No Class —</option>
+                    <option value="">— Select Class —</option>
                     {classes.map((c) => (
                       <option key={c.id} value={c.id}>
                         {c.name} – {c.section}
@@ -1200,10 +1225,10 @@ export default function StudentProfileClient({
                   type="button"
                   onClick={saveClass}
                   disabled={classSaving}
-                  className="flex w-full items-center justify-center gap-2 bg-[#16a34a] text-white rounded-xl h-10 text-xs sm:text-sm font-bold shadow-xs hover:bg-[#15803d] active:scale-[0.98] transition disabled:opacity-60"
+                  className="flex w-full items-center justify-center gap-2 bg-gradient-to-r from-[#004649] to-[#1b5e62] text-white rounded-xl h-11 text-xs sm:text-sm font-bold shadow-2xs hover:shadow-md hover:brightness-105 active:scale-[0.98] transition-all disabled:opacity-60"
                 >
                   {classSaving ? <Loader2 className="h-4 w-4 animate-spin" /> : <UserCog className="h-4 w-4" />}
-                  <span>Save Class</span>
+                  <span>Save Class Assignment</span>
                 </button>
                 {classMsg && (
                   <p className={`text-xs sm:text-sm font-medium ${classMsg.toLowerCase().includes('success') ? 'text-[#15803d]' : 'text-[#b91c1c]'}`}>
@@ -1226,12 +1251,12 @@ export default function StudentProfileClient({
                       value={newPassword}
                       onChange={(e) => setNewPassword(e.target.value)}
                       placeholder="Min. 6 characters"
-                      className="h-10 w-full rounded-xl bg-white border border-[#cbd5e1] pl-3 pr-10 text-xs sm:text-sm text-[#0f172a] outline-none focus:ring-2 focus:ring-[#004649]/20 focus:border-[#004649]"
+                      className="h-11 w-full rounded-xl bg-white border border-[#cbd5e1] pl-3.5 pr-10 text-xs sm:text-sm text-[#0f172a] outline-none focus:ring-2 focus:ring-[#004649]/20 focus:border-[#004649]"
                     />
                     <button
                       type="button"
                       onClick={() => setShowPassword((v) => !v)}
-                      className="absolute right-3 top-1/2 -translate-y-1/2 text-[#94a3b8] hover:text-[#475569]"
+                      className="absolute right-3.5 top-1/2 -translate-y-1/2 text-[#94a3b8] hover:text-[#475569]"
                     >
                       {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
                     </button>
@@ -1248,7 +1273,7 @@ export default function StudentProfileClient({
                     setShowPwdConfirm(true);
                   }}
                   disabled={pwdSaving}
-                  className="flex w-full items-center justify-center gap-2 bg-[#16a34a] text-white rounded-xl h-10 text-xs sm:text-sm font-bold shadow-xs hover:bg-[#15803d] active:scale-[0.98] transition disabled:opacity-60"
+                  className="flex w-full items-center justify-center gap-2 bg-gradient-to-r from-[#004649] to-[#1b5e62] text-white rounded-xl h-11 text-xs sm:text-sm font-bold shadow-2xs hover:shadow-md hover:brightness-105 active:scale-[0.98] transition-all disabled:opacity-60"
                 >
                   {pwdSaving ? <Loader2 className="h-4 w-4 animate-spin" /> : <Lock className="h-4 w-4" />}
                   <span>Update Password</span>
@@ -1269,13 +1294,13 @@ export default function StudentProfileClient({
                     Guardian Phone Number
                   </label>
                   <div className="relative mt-1.5">
-                    <Phone className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-[#94a3b8]" />
+                    <Phone className="absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-[#94a3b8]" />
                     <input
                       type="tel"
                       value={guardianPhone}
                       onChange={(e) => setGuardianPhone(e.target.value)}
                       placeholder="e.g. +92 300 1234567"
-                      className="h-10 w-full rounded-xl bg-white border border-[#cbd5e1] pl-9 pr-3 text-xs sm:text-sm text-[#0f172a] outline-none focus:ring-2 focus:ring-[#004649]/20 focus:border-[#004649]"
+                      className="h-11 w-full rounded-xl bg-white border border-[#cbd5e1] pl-10 pr-3.5 text-xs sm:text-sm text-[#0f172a] outline-none focus:ring-2 focus:ring-[#004649]/20 focus:border-[#004649]"
                     />
                   </div>
                 </div>
@@ -1284,13 +1309,13 @@ export default function StudentProfileClient({
                     Guardian Email Address
                   </label>
                   <div className="relative mt-1.5">
-                    <Mail className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-[#94a3b8]" />
+                    <Mail className="absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-[#94a3b8]" />
                     <input
                       type="email"
                       value={guardianEmail}
                       onChange={(e) => setGuardianEmail(e.target.value)}
                       placeholder="guardian@example.com"
-                      className="h-10 w-full rounded-xl bg-white border border-[#cbd5e1] pl-9 pr-3 text-xs sm:text-sm text-[#0f172a] outline-none focus:ring-2 focus:ring-[#004649]/20 focus:border-[#004649]"
+                      className="h-11 w-full rounded-xl bg-white border border-[#cbd5e1] pl-10 pr-3.5 text-xs sm:text-sm text-[#0f172a] outline-none focus:ring-2 focus:ring-[#004649]/20 focus:border-[#004649]"
                     />
                   </div>
                 </div>
@@ -1298,7 +1323,7 @@ export default function StudentProfileClient({
                   type="button"
                   onClick={saveGuardian}
                   disabled={guardianSaving}
-                  className="flex w-full items-center justify-center gap-2 bg-[#16a34a] text-white rounded-xl h-10 text-xs sm:text-sm font-bold shadow-xs hover:bg-[#15803d] active:scale-[0.98] transition disabled:opacity-60"
+                  className="flex w-full items-center justify-center gap-2 bg-gradient-to-r from-[#004649] to-[#1b5e62] text-white rounded-xl h-11 text-xs sm:text-sm font-bold shadow-2xs hover:shadow-md hover:brightness-105 active:scale-[0.98] transition-all disabled:opacity-60"
                 >
                   {guardianSaving ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />}
                   <span>Save Guardian Info</span>
