@@ -1,9 +1,31 @@
 'use client';
 
-import { useCallback, useEffect, useMemo, useState } from 'react';
-import { BookOpenCheck, CalendarDays, Search, Sparkles, Star, TrendingUp } from 'lucide-react';
+import React, { useState, useEffect, useMemo, useCallback } from 'react';
+import {
+  BookOpenCheck,
+  CalendarDays,
+  Search,
+  Sparkles,
+  Star,
+  TrendingUp,
+  ChevronDown,
+  X,
+  Trash2,
+  Edit3,
+  Eye,
+  CheckCircle2,
+  AlertCircle,
+  Plus,
+  BookOpen,
+  GraduationCap,
+  Users,
+  Award,
+  AlertTriangle,
+  Flame,
+  Check,
+  RotateCcw
+} from 'lucide-react';
 
-type ClassItem = { id: string; name: string; section: string };
 type StudentItem = {
   id: string;
   admissionNo: string;
@@ -927,86 +949,133 @@ export default function TeacherProgressPage() {
   const selectedStudent = selectedStudents.find((item) => item.id === form.studentId);
 
   return (
-    <div className="-mx-4 -my-6 min-h-screen space-y-4 bg-[#F7F9FB] px-4 py-5 pb-44 text-[#111827] sm:-mx-6 sm:px-6 sm:pb-28 lg:-mx-8 lg:px-8">
-      <div className="overflow-hidden rounded-[24px] border border-white/70 bg-[linear-gradient(135deg,#FFFFFF_0%,#EEF7F6_52%,#EEF2FF_100%)] p-5 shadow-[0_18px_45px_rgba(15,23,42,0.08)]">
-        <div className="flex items-start justify-between gap-4">
-          <div>
-            <p className="text-[11px] font-bold uppercase tracking-[0.22em] text-[#006A61]">Manarah Institute</p>
-            <h1 className="mt-2 text-[28px] font-black leading-tight tracking-[-0.04em] text-[#0F172A]">Daily Progress Report</h1>
-            <p className="mt-1 text-sm font-medium text-[#64748B]">Track Quran progress with focused daily feedback.</p>
+    <div className="w-full space-y-6 pb-32 text-slate-800">
+      {/* Top Hero Banner */}
+      <div className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-teal-900 via-teal-800 to-emerald-950 p-6 text-white shadow-xl shadow-teal-950/10 sm:p-8">
+        <div className="pointer-events-none absolute -right-16 -top-16 h-64 w-64 rounded-full bg-teal-500/10 blur-3xl" />
+        <div className="pointer-events-none absolute -bottom-16 left-1/3 h-64 w-64 rounded-full bg-emerald-500/10 blur-3xl" />
+
+        <div className="relative flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+          <div className="space-y-1.5">
+            <div className="inline-flex items-center gap-2 rounded-full bg-teal-400/15 px-3 py-1 text-xs font-semibold text-teal-200 backdrop-blur-sm">
+              <BookOpenCheck className="h-3.5 w-3.5" />
+              <span>Daily Quran Assessment</span>
+            </div>
+            <h1 className="text-2xl font-black tracking-tight text-white sm:text-3xl">
+              Daily Progress Report
+            </h1>
+            <p className="text-sm font-medium text-teal-100/80">
+              Track Sabaq, Sabqi, and Manzil assessments with instant feedback.
+            </p>
           </div>
-          <div className="grid h-12 w-12 shrink-0 place-items-center rounded-2xl bg-[#004D47] text-white shadow-[0_14px_28px_rgba(0,77,71,0.24)]">
-            <BookOpenCheck className="h-6 w-6" />
+
+          <div className="flex items-center gap-3">
+            <div className="grid h-12 w-12 place-items-center rounded-2xl bg-white/10 backdrop-blur-md shadow-inner text-teal-200">
+              <Sparkles className="h-6 w-6" />
+            </div>
           </div>
         </div>
 
-        <div className="mt-5 grid grid-cols-3 gap-2">
-          <div className="rounded-2xl border border-white/70 bg-white/75 p-3 shadow-sm backdrop-blur">
-            <p className="text-[10px] font-bold uppercase tracking-wide text-[#94A3B8]">Class</p>
-            <p className="mt-1 truncate text-sm font-extrabold text-[#004D47]">{selectedClass ? `${selectedClass.name} ${selectedClass.section}` : 'Select'}</p>
+        {/* Live Stat Badges Bar */}
+        <div className="relative mt-6 grid grid-cols-3 gap-2.5 sm:gap-4">
+          <div className="rounded-2xl border border-white/10 bg-white/10 p-3 backdrop-blur-md">
+            <p className="text-[10px] font-bold uppercase tracking-wider text-teal-200/80">Active Class</p>
+            <p className="mt-1 truncate text-xs font-black text-white sm:text-sm">
+              {selectedClass ? `${selectedClass.name} - ${selectedClass.section}` : 'Select Class'}
+            </p>
           </div>
-          <div className="rounded-2xl border border-white/70 bg-white/75 p-3 shadow-sm backdrop-blur">
-            <p className="text-[10px] font-bold uppercase tracking-wide text-[#94A3B8]">Student</p>
-            <p className="mt-1 truncate text-sm font-extrabold text-[#2E2B78]">{selectedStudent?.user.fullName ?? 'Pending'}</p>
+
+          <div className="rounded-2xl border border-white/10 bg-white/10 p-3 backdrop-blur-md">
+            <p className="text-[10px] font-bold uppercase tracking-wider text-teal-200/80">Active Student</p>
+            <p className="mt-1 truncate text-xs font-black text-white sm:text-sm">
+              {selectedStudent ? selectedStudent.user.fullName : 'Select Student'}
+            </p>
           </div>
-          <div className="rounded-2xl border border-white/70 bg-white/75 p-3 shadow-sm backdrop-blur">
-            <p className="text-[10px] font-bold uppercase tracking-wide text-[#94A3B8]">Mistakes</p>
-            <p className="mt-1 text-sm font-extrabold text-[#B45309]">{summary.totalMistakes}</p>
+
+          <div className="rounded-2xl border border-white/10 bg-white/10 p-3 backdrop-blur-md">
+            <p className="text-[10px] font-bold uppercase tracking-wider text-teal-200/80">Total Mistakes</p>
+            <div className="mt-1 flex items-center gap-1.5">
+              <span className={`inline-flex items-center rounded-full px-2 py-0.5 text-xs font-black ${
+                summary.totalMistakes === 0 
+                  ? 'bg-emerald-400/20 text-emerald-300' 
+                  : summary.totalMistakes <= 3 
+                    ? 'bg-amber-400/20 text-amber-300' 
+                    : 'bg-rose-400/20 text-rose-300'
+              }`}>
+                {summary.totalMistakes}
+              </span>
+              <span className="hidden text-[11px] font-semibold text-teal-100/70 sm:inline">
+                ({summary.overallPerformance})
+              </span>
+            </div>
           </div>
         </div>
 
+        {/* Notifications */}
         {notifications.length > 0 && (
-          <div className="mt-4 grid gap-2 md:grid-cols-2">
+          <div className="relative mt-4 grid gap-2 sm:grid-cols-2">
             {notifications.map((notice) => (
               <div
                 key={notice.id}
-                className={`rounded-2xl px-4 py-3 text-sm font-bold shadow-sm ${
+                className={`flex items-center gap-2 rounded-2xl px-4 py-2.5 text-xs font-bold shadow-lg backdrop-blur-md ${
                   notice.type === 'success'
-                    ? 'bg-[#DDF8EA] text-[#065F46]'
+                    ? 'border border-emerald-400/30 bg-emerald-500/20 text-emerald-100'
                     : notice.type === 'error'
-                      ? 'bg-[#FEE2E2] text-[#991B1B]'
-                      : 'bg-[#E0F2FE] text-[#075985]'
+                      ? 'border border-rose-400/30 bg-rose-500/20 text-rose-100'
+                      : 'border border-teal-400/30 bg-teal-500/20 text-teal-100'
                 }`}
               >
-                {notice.text}
+                {notice.type === 'success' && <CheckCircle2 className="h-4 w-4 shrink-0 text-emerald-300" />}
+                {notice.type === 'error' && <AlertCircle className="h-4 w-4 shrink-0 text-rose-300" />}
+                {notice.type === 'info' && <Sparkles className="h-4 w-4 shrink-0 text-teal-300" />}
+                <span className="truncate">{notice.text}</span>
               </div>
             ))}
           </div>
         )}
       </div>
 
-
-      <section className="grid gap-5 xl:grid-cols-[1.7fr_1fr]">
-        <div className="space-y-4">
-          <form onSubmit={submit}>
-            <div className="space-y-4 rounded-[24px] border border-white bg-white p-4 shadow-[0_16px_40px_rgba(15,23,42,0.07)] sm:p-6">
-              <div className="flex items-center gap-3">
-                <div className="grid h-10 w-10 place-items-center rounded-2xl bg-[#E6F3F1] text-[#004D47]">
-                  <CalendarDays className="h-5 w-5" />
-                </div>
-                <div>
-                  <h2 className="text-base font-black tracking-[-0.02em] text-[#0F172A]">Report Filters</h2>
-                  <p className="text-xs font-medium text-[#64748B]">Choose class, date, and student before saving.</p>
+      {/* Main Form & Performance Layout */}
+      <div className="grid grid-cols-1 gap-6 xl:grid-cols-12">
+        {/* Left Assessment Column */}
+        <div className="space-y-6 xl:col-span-8">
+          <form onSubmit={submit} className="space-y-6">
+            {/* Card 1: Session & Student Selector */}
+            <div className="rounded-3xl border border-slate-200/80 bg-white p-5 shadow-sm sm:p-6">
+              <div className="mb-4 flex items-center justify-between border-b border-slate-100 pb-3">
+                <div className="flex items-center gap-2.5">
+                  <div className="grid h-9 w-9 place-items-center rounded-xl bg-teal-50 text-teal-700">
+                    <CalendarDays className="h-5 w-5" />
+                  </div>
+                  <div>
+                    <h2 className="text-base font-bold text-slate-900">Session & Student Selection</h2>
+                    <p className="text-xs font-medium text-slate-500">Choose date, target class, and student</p>
+                  </div>
                 </div>
               </div>
-              <div className="grid gap-3 md:grid-cols-3">
+
+              <div className="grid grid-cols-1 gap-3.5 sm:grid-cols-3">
                 <div>
-                  <label className="mb-2 block text-[11px] font-bold uppercase tracking-wide text-[#64748B]">Date</label>
+                  <label className="mb-1.5 block text-xs font-bold uppercase tracking-wider text-slate-500">
+                    Assessment Date
+                  </label>
                   <input
                     type="date"
                     value={form.date}
                     onChange={(e) => setForm((prev) => ({ ...prev, date: e.target.value }))}
-                    className="h-12 w-full rounded-2xl border border-[#E2E8F0] bg-[#F8FAFC] px-4 text-sm font-semibold text-[#0F172A] outline-none transition focus:border-[#006A61] focus:bg-white focus:ring-4 focus:ring-[#006A61]/10"
+                    className="h-11 w-full rounded-2xl border border-slate-200 bg-slate-50/50 px-3.5 text-sm font-semibold text-slate-800 outline-none transition focus:border-teal-600 focus:bg-white focus:ring-4 focus:ring-teal-500/10"
                     required
                   />
                 </div>
 
                 <div>
-                  <label className="mb-2 block text-[11px] font-bold uppercase tracking-wide text-[#64748B]">Class</label>
+                  <label className="mb-1.5 block text-xs font-bold uppercase tracking-wider text-slate-500">
+                    Class & Section
+                  </label>
                   <select
                     value={form.classId}
                     onChange={(e) => setForm((prev) => ({ ...prev, classId: e.target.value, studentId: '' }))}
-                    className="h-12 w-full rounded-2xl border border-[#E2E8F0] bg-[#F8FAFC] px-4 text-sm font-semibold text-[#0F172A] outline-none transition focus:border-[#006A61] focus:bg-white focus:ring-4 focus:ring-[#006A61]/10"
+                    className="h-11 w-full rounded-2xl border border-slate-200 bg-slate-50/50 px-3.5 text-sm font-semibold text-slate-800 outline-none transition focus:border-teal-600 focus:bg-white focus:ring-4 focus:ring-teal-500/10"
                     required
                   >
                     <option value="">Select Class</option>
@@ -1019,39 +1088,48 @@ export default function TeacherProgressPage() {
                 </div>
 
                 <div>
-                  <label className="mb-2 block text-[11px] font-bold uppercase tracking-wide text-[#64748B]">Search</label>
+                  <label className="mb-1.5 block text-xs font-bold uppercase tracking-wider text-slate-500">
+                    Search Student
+                  </label>
                   <div className="relative">
-                    <Search className="pointer-events-none absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-[#94A3B8]" />
+                    <Search className="pointer-events-none absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
                     <input
                       value={studentSearch}
                       onChange={(e) => setStudentSearch(e.target.value)}
-                      placeholder="Student name"
-                      className="h-12 w-full rounded-2xl border border-[#E2E8F0] bg-[#F8FAFC] pl-10 pr-4 text-sm font-semibold text-[#0F172A] placeholder:text-[#94A3B8] outline-none transition focus:border-[#006A61] focus:bg-white focus:ring-4 focus:ring-[#006A61]/10"
+                      placeholder="Filter by name..."
+                      className="h-11 w-full rounded-2xl border border-slate-200 bg-slate-50/50 pl-10 pr-3 text-sm font-semibold text-slate-800 placeholder:text-slate-400 outline-none transition focus:border-teal-600 focus:bg-white focus:ring-4 focus:ring-teal-500/10"
                     />
                   </div>
                 </div>
               </div>
 
-              <div>
-                <label className="mb-2 block text-[11px] font-bold uppercase tracking-wide text-[#64748B]">Student</label>
+              <div className="mt-3.5">
+                <label className="mb-1.5 flex items-center justify-between text-xs font-bold uppercase tracking-wider text-slate-500">
+                  <span>Student Target ({selectedStudents.length} available)</span>
+                  {selectedStudent && (
+                    <span className="text-[11px] font-semibold text-teal-700">
+                      Admission #{selectedStudent.admissionNo || 'N/A'}
+                    </span>
+                  )}
+                </label>
                 <select
                   value={form.studentId}
                   onChange={(e) => setForm((prev) => ({ ...prev, studentId: e.target.value }))}
-                  className="h-12 w-full rounded-2xl border border-[#E2E8F0] bg-[#F8FAFC] px-4 text-sm font-semibold text-[#0F172A] outline-none transition focus:border-[#006A61] focus:bg-white focus:ring-4 focus:ring-[#006A61]/10"
+                  className="h-11 w-full rounded-2xl border border-slate-200 bg-slate-50/50 px-3.5 text-sm font-semibold text-slate-800 outline-none transition focus:border-teal-600 focus:bg-white focus:ring-4 focus:ring-teal-500/10"
                   required
                 >
                   <option value="">Select Student</option>
                   {selectedStudents.map((student) => (
                     <option key={student.id} value={student.id}>
-                      {student.user.fullName} ({student.admissionNo})
+                      {student.user.fullName} {student.admissionNo ? `(${student.admissionNo})` : ''}
                     </option>
                   ))}
                 </select>
               </div>
             </div>
 
-            {/* Tab Navigation */}
-            <div className="mt-4 grid grid-cols-3 gap-2">
+            {/* Assessment Tabs Segmented Control */}
+            <div className="grid grid-cols-3 gap-2 rounded-2xl bg-slate-200/70 p-1.5">
               {sectionMeta.map((section) => {
                 const badge = sectionBadges[section.key];
                 const isActive = activeTab === section.key;
@@ -1060,184 +1138,304 @@ export default function TeacherProgressPage() {
                     key={section.key}
                     type="button"
                     onClick={() => setActiveTab(section.key)}
-                    className={`min-w-0 rounded-2xl px-2 py-2.5 text-[11px] font-black shadow-sm transition-all active:scale-[0.98] sm:text-sm ${
+                    className={`group relative flex flex-col items-center justify-center rounded-xl py-2.5 transition-all active:scale-[0.98] sm:py-3 ${
                       isActive
-                        ? 'bg-[#084750] text-white shadow-[0_12px_28px_rgba(8,71,80,0.22)]'
-                        : 'border border-white bg-white text-[#64748B] hover:bg-[#F8FAFC]'
+                        ? 'bg-white text-teal-900 shadow-md shadow-slate-950/5 ring-1 ring-black/5'
+                        : 'text-slate-600 hover:text-slate-900'
                     }`}
                   >
-                    <span className="block truncate">{section.icon} {section.title}</span>
-                    <span className="mt-1 inline-flex rounded-full bg-white/20 px-1.5 py-0.5 text-[9px] font-bold opacity-90">
-                      {badge.rangeCount} · {badge.mistakeCount}✗
-                    </span>
+                    <div className="flex items-center gap-1.5">
+                      <span className="text-base">{section.icon}</span>
+                      <span className="text-xs font-black sm:text-sm">{section.title}</span>
+                    </div>
+                    <div className="mt-1 flex items-center gap-1">
+                      <span className={`rounded-md px-1.5 py-0.5 text-[10px] font-bold ${
+                        isActive ? 'bg-teal-50 text-teal-800' : 'bg-slate-300/60 text-slate-700'
+                      }`}>
+                        {badge.rangeCount} R
+                      </span>
+                      {badge.mistakeCount > 0 ? (
+                        <span className="rounded-md bg-amber-100 px-1.5 py-0.5 text-[10px] font-extrabold text-amber-800">
+                          {badge.mistakeCount} ✗
+                        </span>
+                      ) : (
+                        <span className="rounded-md bg-emerald-100 px-1.5 py-0.5 text-[10px] font-extrabold text-emerald-800">
+                          0 ✗
+                        </span>
+                      )}
+                    </div>
                   </button>
                 );
               })}
             </div>
 
-            {/* Tab Content */}
-            <div className="mt-4">
-              {sectionMeta.map((section) => {
-                if (activeTab !== section.key) return null;
-                const formSection = form.sections[section.key];
+            {/* Active Tab Content Card */}
+            {sectionMeta.map((section) => {
+              if (activeTab !== section.key) return null;
+              const formSection = form.sections[section.key];
 
-                return (
-                  <div key={section.key} className="space-y-4 rounded-[24px] border border-white bg-white p-4 shadow-[0_16px_40px_rgba(15,23,42,0.07)] sm:p-6">
+              return (
+                <div key={section.key} className="space-y-5 rounded-3xl border border-slate-200/80 bg-white p-5 shadow-sm sm:p-6">
+                  {/* Section Title Bar */}
+                  <div className="flex flex-col gap-2 border-b border-slate-100 pb-4 sm:flex-row sm:items-center sm:justify-between">
+                    <div>
+                      <div className="flex items-center gap-2">
+                        <span className="text-xl">{section.icon}</span>
+                        <h3 className="text-lg font-black text-slate-900">{section.title} Assessment</h3>
+                        {section.key !== 'sabaq' && (
+                          <span className="rounded-full bg-slate-100 px-2 py-0.5 text-[10px] font-bold text-slate-500">
+                            Optional
+                          </span>
+                        )}
+                      </div>
+                      <p className="mt-0.5 text-xs font-medium text-slate-500">
+                        {section.key === 'sabaq' && 'New daily lesson tracking and recitation quality.'}
+                        {section.key === 'sabqi' && 'Recent Surahs revision assessment.'}
+                        {section.key === 'manzil' && 'Long-term Quran revision and consolidation.'}
+                      </p>
+                    </div>
+
+                    {formSection.kaifiyat && (
+                      <div className="inline-flex items-center gap-1.5 rounded-2xl bg-teal-50 px-3 py-1.5 text-xs font-black text-teal-800">
+                        <Star className="h-3.5 w-3.5 fill-amber-400 text-amber-500" />
+                        <span>{formSection.kaifiyat}</span>
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Quick Rating & Mistakes Shortcuts Bar */}
+                  <div className="rounded-2xl border border-slate-100 bg-slate-50/80 p-3.5">
+                    <p className="mb-2.5 text-[11px] font-bold uppercase tracking-wider text-slate-500">
+                      Quick Grade & Mistakes Presets
+                    </p>
                     <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-                      <div className="min-w-0">
-                        <p className="text-[11px] font-bold uppercase tracking-[0.2em] text-[#006A61]">Active Section</p>
-                        <h3 className="mt-1 text-xl font-black tracking-[-0.03em] text-[#0F172A]">{section.icon} {section.title}</h3>
+                      {/* Rating Presets */}
+                      <div className="flex flex-wrap items-center gap-1.5">
+                        <span className="mr-1 text-[11px] font-bold text-slate-400">Rating:</span>
+                        {(
+                          [
+                            { label: 'Ex', val: 'Excellent ⭐⭐⭐⭐⭐' },
+                            { label: 'Good', val: 'Good ⭐⭐⭐⭐' },
+                            { label: 'Avg', val: 'Average ⭐⭐⭐' },
+                            { label: 'Weak', val: 'Weak ⭐⭐' }
+                          ] as const
+                        ).map((item) => (
+                          <button
+                            key={item.label}
+                            type="button"
+                            onClick={() => applyQuickPerformanceToTab(item.val)}
+                            className={`rounded-xl px-3 py-1.5 text-xs font-bold transition active:scale-95 ${
+                              formSection.kaifiyat === item.val
+                                ? 'bg-teal-700 text-white shadow-sm'
+                                : 'bg-white text-slate-700 hover:bg-teal-50 hover:text-teal-900 border border-slate-200'
+                            }`}
+                          >
+                            {item.label}
+                          </button>
+                        ))}
                       </div>
-                      <div className="flex w-full items-center justify-between rounded-2xl bg-[#F8FAFC] px-3 py-2 sm:block sm:w-auto sm:min-w-[118px] sm:text-right">
-                        <p className="text-[10px] font-bold uppercase text-[#94A3B8]">Score</p>
-                        <p className="max-w-[150px] truncate text-sm font-black text-[#00507D] sm:max-w-none">{summary.overallPerformance}</p>
+
+                      {/* Mistakes Presets */}
+                      <div className="flex flex-wrap items-center gap-1.5">
+                        <span className="mr-1 text-[11px] font-bold text-slate-400">Mistakes:</span>
+                        {(['0', '1-2', '3+'] as const).map((m) => (
+                          <button
+                            key={m}
+                            type="button"
+                            onClick={() => applyQuickMistakesToTab(m)}
+                            className="rounded-xl border border-slate-200 bg-white px-2.5 py-1.5 text-xs font-bold text-slate-700 transition hover:bg-amber-50 hover:text-amber-900 active:scale-95"
+                          >
+                            {m}
+                          </button>
+                        ))}
                       </div>
                     </div>
+                  </div>
 
-                    {/* Quick Actions (tab-scoped) */}
-                    <div className="rounded-[20px] border border-[#E2E8F0] bg-[#F8FAFC] p-3">
-                      <p className="mb-3 text-[11px] font-bold uppercase tracking-wide text-[#64748B]">Quick Actions</p>
-                      <div className="flex flex-wrap gap-3">
-                        <div className="flex flex-wrap gap-1">
-                          <span className="self-center text-[10px] font-bold uppercase text-[#94A3B8]">Rating</span>
-                          <button type="button" onClick={() => applyQuickPerformanceToTab('Excellent ⭐⭐⭐⭐⭐')} className="rounded-xl bg-[#006A61] px-3 py-1.5 text-xs font-bold text-white shadow-sm transition hover:bg-[#004D47]">Ex</button>
-                          <button type="button" onClick={() => applyQuickPerformanceToTab('Good ⭐⭐⭐⭐')} className="rounded-xl bg-[#006A61] px-3 py-1.5 text-xs font-bold text-white shadow-sm transition hover:bg-[#004D47]">Good</button>
-                          <button type="button" onClick={() => applyQuickPerformanceToTab('Average ⭐⭐⭐')} className="rounded-xl bg-[#006A61] px-3 py-1.5 text-xs font-bold text-white shadow-sm transition hover:bg-[#004D47]">Avg</button>
-                          <button type="button" onClick={() => applyQuickPerformanceToTab('Weak ⭐⭐')} className="rounded-xl bg-[#006A61] px-3 py-1.5 text-xs font-bold text-white shadow-sm transition hover:bg-[#004D47]">Weak</button>
-                        </div>
-                        <div className="flex flex-wrap gap-1">
-                          <span className="self-center text-[10px] font-bold uppercase text-[#94A3B8]">Mistakes</span>
-                          <button type="button" onClick={() => applyQuickMistakesToTab('0')} className="rounded-xl border border-[#FCD34D]/60 bg-[#FFFBEB] px-3 py-1.5 text-xs font-bold text-[#B45309] transition hover:bg-[#FEF3C7]">0</button>
-                          <button type="button" onClick={() => applyQuickMistakesToTab('1-2')} className="rounded-xl border border-[#FCD34D]/60 bg-[#FFFBEB] px-3 py-1.5 text-xs font-bold text-[#B45309] transition hover:bg-[#FEF3C7]">1–2</button>
-                          <button type="button" onClick={() => applyQuickMistakesToTab('3+')} className="rounded-xl border border-[#FCD34D]/60 bg-[#FFFBEB] px-3 py-1.5 text-xs font-bold text-[#B45309] transition hover:bg-[#FEF3C7]">3+</button>
-                        </div>
+                  {/* Auto Suggestion Banner (Sabaq Only) */}
+                  {section.key === 'sabaq' && suggestedNextSabaq && (
+                    <div className="flex flex-col gap-2.5 rounded-2xl border border-teal-200 bg-teal-50/70 p-3.5 sm:flex-row sm:items-center sm:justify-between">
+                      <div className="flex items-center gap-2 text-xs font-bold text-teal-900">
+                        <Sparkles className="h-4 w-4 shrink-0 text-teal-600" />
+                        <span>Suggested Next Lesson:</span>
+                        <span className="rounded-lg bg-teal-100 px-2 py-0.5 font-extrabold text-teal-800">
+                          {suggestedNextSabaq.label}
+                        </span>
                       </div>
+                      <button
+                        type="button"
+                        onClick={applyAutoSuggestion}
+                        className="inline-flex items-center justify-center gap-1.5 rounded-xl bg-teal-700 px-3.5 py-1.5 text-xs font-black text-white shadow-sm transition hover:bg-teal-800 active:scale-95 sm:w-auto"
+                      >
+                        <Plus className="h-3.5 w-3.5" />
+                        <span>Apply Suggestion</span>
+                      </button>
                     </div>
+                  )}
 
-                    {/* Auto Suggest (Sabaq only) */}
-                    {section.key === 'sabaq' && suggestedNextSabaq ? (
-                      <div className="mb-4 flex flex-wrap items-center gap-2 rounded-2xl border border-[#BFE7DF] bg-[#ECFDF5] p-3 text-sm text-[#006A61]">
-                        <Sparkles className="h-4 w-4" />
-                        <span className="font-semibold">Auto Suggest:</span>
-                        <span>{suggestedNextSabaq.label}</span>
-                        <button type="button" onClick={applyAutoSuggestion} className="rounded-xl bg-[#006A61] px-3 py-1.5 text-xs font-bold text-white shadow-sm transition hover:bg-[#004D47]">
-                          Apply
-                        </button>
-                      </div>
-                    ) : null}
+                  {/* Surah Ranges List */}
+                  <div className="space-y-3">
+                    <p className="text-xs font-bold uppercase tracking-wider text-slate-500">
+                      Surah Ranges ({formSection.ranges.length})
+                    </p>
 
-                    <div className="mb-4 space-y-3">
-                      {formSection.ranges.map((range, rangeIdx) => {
-                        const selectedSurah = getSurahById(range.surahId || 0);
-                        const ayahCount = selectedSurah?.ayahs ?? 0;
+                    {formSection.ranges.map((range, rangeIdx) => {
+                      const selectedSurah = getSurahById(range.surahId || 0);
+                      const ayahCount = selectedSurah?.ayahs ?? 0;
 
-                        return (
-                          <div key={rangeIdx} className="space-y-3 rounded-[20px] border border-[#E2E8F0] bg-[#F8FAFC] p-4">
-                            <div className="flex items-center justify-between">
-                              <p className="text-xs font-black text-[#0F172A]">Surah Range {rangeIdx + 1}</p>
-                              <button
-                                type="button"
-                                onClick={() => handleRemoveRange(section.key, rangeIdx)}
-                                className="rounded-full bg-[#FEE2E2] px-3 py-1 text-xs font-bold text-[#B91C1C] transition hover:bg-[#FECACA]"
-                              >
-                                {formSection.ranges.length > 1 ? 'Remove' : 'Clear'}
-                              </button>
+                      return (
+                        <div
+                          key={rangeIdx}
+                          className="rounded-2xl border border-slate-200/80 bg-slate-50/60 p-4 transition focus-within:border-teal-400 focus-within:bg-white"
+                        >
+                          <div className="mb-3 flex items-center justify-between">
+                            <div className="flex items-center gap-2">
+                              <span className="grid h-6 w-6 place-items-center rounded-full bg-teal-100 text-xs font-black text-teal-800">
+                                {rangeIdx + 1}
+                              </span>
+                              <span className="text-xs font-bold text-slate-700">Range #{rangeIdx + 1}</span>
+                              {selectedSurah && (
+                                <span className="rounded-full bg-slate-200/70 px-2 py-0.5 text-[10px] font-bold text-slate-600">
+                                  {ayahCount} Total Ayahs
+                                </span>
+                              )}
                             </div>
 
-                            <div className="grid gap-2 md:grid-cols-3">
-                              <div>
-                                <p className="mb-2 text-[11px] font-bold uppercase tracking-wide text-[#64748B]">Surah</p>
-                                <select
-                                  value={selectedSurah ? `${selectedSurah.id}. ${selectedSurah.name}` : ''}
-                                  onChange={(e) => handleSurahInput(section.key, rangeIdx, e.target.value)}
-                                  className="h-11 w-full rounded-2xl border border-[#E2E8F0] bg-white px-3 text-sm font-semibold text-[#0F172A] outline-none transition focus:border-[#006A61] focus:ring-4 focus:ring-[#006A61]/10 disabled:bg-[#EEF2F7] disabled:text-[#94A3B8]"
-                                  required
-                                >
-                                  <option value="">Select Surah</option>
-                                  {SURAH_LIST.map((surah) => (
-                                    <option key={surah.id} value={`${surah.id}. ${surah.name}`}>{surah.id}. {surah.name}</option>
-                                  ))}
-                                </select>
-                              </div>
+                            <button
+                              type="button"
+                              onClick={() => handleRemoveRange(section.key, rangeIdx)}
+                              className="inline-flex items-center gap-1 rounded-xl px-2.5 py-1 text-xs font-bold text-rose-600 transition hover:bg-rose-50"
+                            >
+                              <Trash2 className="h-3.5 w-3.5" />
+                              <span>{formSection.ranges.length > 1 ? 'Remove' : 'Clear'}</span>
+                            </button>
+                          </div>
 
-                              <div>
-                                <p className="mb-2 text-[11px] font-bold uppercase tracking-wide text-[#64748B]">From</p>
-                                <input
-                                  type="number"
-                                  min={1}
-                                  max={ayahCount || 1}
-                                  value={range.fromAyah}
-                                  onChange={(e) => {
-                                    const value = e.target.value;
-                                    const updatedRanges = [...formSection.ranges];
-                                    if (value === '') {
-                                      updatedRanges[rangeIdx] = { ...updatedRanges[rangeIdx], fromAyah: '' };
-                                    } else {
-                                      const numeric = Number(value);
-                                      const safeValue = selectedSurah && Number.isFinite(numeric)
+                          <div className="grid grid-cols-1 gap-3 sm:grid-cols-12">
+                            {/* Surah selector */}
+                            <div className="sm:col-span-6">
+                              <label className="mb-1 block text-[11px] font-bold uppercase tracking-wider text-slate-500">
+                                Surah
+                              </label>
+                              <select
+                                value={selectedSurah ? `${selectedSurah.id}. ${selectedSurah.name}` : ''}
+                                onChange={(e) => handleSurahInput(section.key, rangeIdx, e.target.value)}
+                                className="h-10 w-full rounded-xl border border-slate-200 bg-white px-3 text-xs font-semibold text-slate-800 outline-none transition focus:border-teal-600 focus:ring-4 focus:ring-teal-500/10"
+                                required={section.key === 'sabaq'}
+                              >
+                                <option value="">Select Surah</option>
+                                {SURAH_LIST.map((surah) => (
+                                  <option key={surah.id} value={`${surah.id}. ${surah.name}`}>
+                                    {surah.id}. {surah.name} ({surah.ayahs} Ayahs)
+                                  </option>
+                                ))}
+                              </select>
+                            </div>
+
+                            {/* From Ayah */}
+                            <div className="sm:col-span-3">
+                              <label className="mb-1 block text-[11px] font-bold uppercase tracking-wider text-slate-500">
+                                From Ayah
+                              </label>
+                              <input
+                                type="number"
+                                min={1}
+                                max={ayahCount || 1}
+                                value={range.fromAyah}
+                                onChange={(e) => {
+                                  const value = e.target.value;
+                                  const updatedRanges = [...formSection.ranges];
+                                  if (value === '') {
+                                    updatedRanges[rangeIdx] = { ...updatedRanges[rangeIdx], fromAyah: '' };
+                                  } else {
+                                    const numeric = Number(value);
+                                    const safeValue =
+                                      selectedSurah && Number.isFinite(numeric)
                                         ? String(Math.max(1, Math.min(numeric, selectedSurah.ayahs)))
                                         : value;
-                                      updatedRanges[rangeIdx] = { ...updatedRanges[rangeIdx], fromAyah: safeValue };
+                                    updatedRanges[rangeIdx] = { ...updatedRanges[rangeIdx], fromAyah: safeValue };
+                                  }
+                                  setForm((prev) => ({
+                                    ...prev,
+                                    sections: {
+                                      ...prev.sections,
+                                      [section.key]: { ...formSection, ranges: updatedRanges }
                                     }
-                                    setForm(prev => ({ ...prev, sections: { ...prev.sections, [section.key]: { ...formSection, ranges: updatedRanges } } }));
-                                  }}
-                                  className="h-11 w-full rounded-2xl border border-[#E2E8F0] bg-white px-3 text-sm font-semibold text-[#0F172A] outline-none transition focus:border-[#006A61] focus:ring-4 focus:ring-[#006A61]/10 disabled:bg-[#EEF2F7] disabled:text-[#94A3B8]"
-                                  disabled={!selectedSurah}
-                                  placeholder="From"
-                                />
-                              </div>
+                                  }));
+                                }}
+                                className="h-10 w-full rounded-xl border border-slate-200 bg-white px-3 text-xs font-semibold text-slate-800 outline-none transition focus:border-teal-600 focus:ring-4 focus:ring-teal-500/10 disabled:bg-slate-100 disabled:text-slate-400"
+                                disabled={!selectedSurah}
+                                placeholder="1"
+                              />
+                            </div>
 
-                              <div>
-                                <p className="mb-2 text-[11px] font-bold uppercase tracking-wide text-[#64748B]">To</p>
-                                <input
-                                  type="number"
-                                  min={range.fromAyah ? Number(range.fromAyah) : 1}
-                                  max={ayahCount || 1}
-                                  value={range.toAyah}
-                                  onChange={(e) => {
-                                    const value = e.target.value;
-                                    const updatedRanges = [...formSection.ranges];
-                                    if (value === '') {
-                                      updatedRanges[rangeIdx] = { ...updatedRanges[rangeIdx], toAyah: '' };
-                                    } else {
-                                      const numeric = Number(value);
-                                      const minAllowed = Number(range.fromAyah || 1);
-                                      const maxAllowed = selectedSurah ? selectedSurah.ayahs : 1;
-                                      const safeValue = Number.isFinite(numeric)
-                                        ? String(Math.max(minAllowed, Math.min(numeric, maxAllowed)))
-                                        : value;
-                                      updatedRanges[rangeIdx] = { ...updatedRanges[rangeIdx], toAyah: safeValue };
+                            {/* To Ayah */}
+                            <div className="sm:col-span-3">
+                              <label className="mb-1 block text-[11px] font-bold uppercase tracking-wider text-slate-500">
+                                To Ayah
+                              </label>
+                              <input
+                                type="number"
+                                min={range.fromAyah ? Number(range.fromAyah) : 1}
+                                max={ayahCount || 1}
+                                value={range.toAyah}
+                                onChange={(e) => {
+                                  const value = e.target.value;
+                                  const updatedRanges = [...formSection.ranges];
+                                  if (value === '') {
+                                    updatedRanges[rangeIdx] = { ...updatedRanges[rangeIdx], toAyah: '' };
+                                  } else {
+                                    const numeric = Number(value);
+                                    const minAllowed = Number(range.fromAyah || 1);
+                                    const maxAllowed = selectedSurah ? selectedSurah.ayahs : 1;
+                                    const safeValue = Number.isFinite(numeric)
+                                      ? String(Math.max(minAllowed, Math.min(numeric, maxAllowed)))
+                                      : value;
+                                    updatedRanges[rangeIdx] = { ...updatedRanges[rangeIdx], toAyah: safeValue };
+                                  }
+                                  setForm((prev) => ({
+                                    ...prev,
+                                    sections: {
+                                      ...prev.sections,
+                                      [section.key]: { ...formSection, ranges: updatedRanges }
                                     }
-                                    setForm(prev => ({ ...prev, sections: { ...prev.sections, [section.key]: { ...formSection, ranges: updatedRanges } } }));
-                                  }}
-                                  className="h-11 w-full rounded-2xl border border-[#E2E8F0] bg-white px-3 text-sm font-semibold text-[#0F172A] outline-none transition focus:border-[#006A61] focus:ring-4 focus:ring-[#006A61]/10 disabled:bg-[#EEF2F7] disabled:text-[#94A3B8]"
-                                  disabled={!selectedSurah}
-                                  placeholder="To"
+                                  }));
+                                }}
+                                className="h-10 w-full rounded-xl border border-slate-200 bg-white px-3 text-xs font-semibold text-slate-800 outline-none transition focus:border-teal-600 focus:ring-4 focus:ring-teal-500/10 disabled:bg-slate-100 disabled:text-slate-400"
+                                disabled={!selectedSurah}
+                                placeholder={selectedSurah ? String(Math.min(5, ayahCount)) : 'To'}
                               />
                             </div>
                           </div>
                         </div>
                       );
                     })}
-                  </div>
 
                     <button
                       type="button"
                       onClick={() => handleAddRange(section.key)}
-                      className="mb-4 inline-flex h-10 items-center rounded-2xl bg-[#E6F3F1] px-4 text-xs font-black text-[#004D47] transition hover:bg-[#D7EDEA]"
+                      className="inline-flex w-full items-center justify-center gap-2 rounded-2xl border-2 border-dashed border-slate-200 bg-white py-3 text-xs font-bold text-teal-800 transition hover:border-teal-400 hover:bg-teal-50/50"
                     >
-                      + Add Another Surah Range
+                      <Plus className="h-4 w-4" />
+                      <span>Add Another Surah Range</span>
                     </button>
+                  </div>
 
-                    <div className="grid gap-3 md:grid-cols-2">
-                      <div>
-                        <p className="mb-2 text-[11px] font-bold uppercase tracking-wide text-[#64748B]">Kaifiyat (Performance)</p>
-                        <select
-                          value={formSection.kaifiyat}
-                          onChange={(e) => setSectionValue(section.key, { kaifiyat: e.target.value as KaifiyatValue })}
-                          className="h-12 w-full rounded-2xl border border-[#E2E8F0] bg-[#F8FAFC] px-4 text-sm font-semibold text-[#0F172A] outline-none transition focus:border-[#006A61] focus:bg-white focus:ring-4 focus:ring-[#006A61]/10"
-                          required
-                        >
+                  {/* Kaifiyat & Mistakes Grid */}
+                  <div className="grid grid-cols-1 gap-4 pt-2 sm:grid-cols-3">
+                    {/* Kaifiyat Selection */}
+                    <div>
+                      <label className="mb-1.5 block text-xs font-bold uppercase tracking-wider text-slate-500">
+                        Kaifiyat (Rating)
+                      </label>
+                      <select
+                        value={formSection.kaifiyat}
+                        onChange={(e) =>
+                          setSectionValue(section.key, { kaifiyat: e.target.value as KaifiyatValue })
+                        }
+                        className="h-11 w-full rounded-2xl border border-slate-200 bg-slate-50/50 px-3 text-xs font-bold text-slate-800 outline-none transition focus:border-teal-600 focus:bg-white focus:ring-4 focus:ring-teal-500/10"
+                        required={section.key === 'sabaq'}
+                      >
                         <option value="">Select Rating</option>
                         <option value="Excellent ⭐⭐⭐⭐⭐">Excellent ⭐⭐⭐⭐⭐</option>
                         <option value="Good ⭐⭐⭐⭐">Good ⭐⭐⭐⭐</option>
@@ -1246,282 +1444,372 @@ export default function TeacherProgressPage() {
                       </select>
                     </div>
 
-                      <div>
-                        <p className="mb-2 text-[11px] font-bold uppercase tracking-wide text-[#64748B]">Tajweedi Ghaltiyan (0-99)</p>
-                        <div className="flex flex-col gap-2">
-                          <input
-                            type="number"
-                            min={0}
-                            max={99}
-                            value={formSection.tajweeditotal}
-                            onChange={(e) => setSectionValue(section.key, { tajweeditotal: e.target.value })}
-                            placeholder="0"
-                            className="h-12 w-full rounded-2xl border border-[#FDE68A] bg-[#FFFBEB] px-3 text-sm font-semibold text-[#0F172A] outline-none transition focus:border-[#D9A253] focus:ring-4 focus:ring-[#D9A253]/15"
-                            required
-                          />
-                          <div className="flex flex-wrap gap-1">
-                            {[0, 1, 2, 3, 5, 10].map(val => (
-                              <button
-                                key={val}
-                                type="button"
-                                onClick={() => setSectionValue(section.key, { tajweeditotal: String(val) })}
-                                className={`rounded-xl border px-3 py-1.5 text-xs font-bold transition ${formSection.tajweeditotal === String(val) ? 'border-[#D9A253] bg-[#FEF3C7] text-[#92400E]' : 'border-[#FDE68A] bg-white text-[#B45309] hover:bg-[#FFFBEB]'}`}
-                              >
-                                {val}
-                              </button>
-                            ))}
-                          </div>
+                    {/* Tajweedi Mistakes */}
+                    <div>
+                      <label className="mb-1.5 block text-xs font-bold uppercase tracking-wider text-slate-500">
+                        Tajweedi Mistakes
+                      </label>
+                      <div className="space-y-1.5">
+                        <input
+                          type="number"
+                          min={0}
+                          max={99}
+                          value={formSection.tajweeditotal}
+                          onChange={(e) => setSectionValue(section.key, { tajweeditotal: e.target.value })}
+                          placeholder="0"
+                          className="h-11 w-full rounded-2xl border border-amber-200 bg-amber-50/40 px-3 text-sm font-black text-amber-900 outline-none transition focus:border-amber-400 focus:bg-white focus:ring-4 focus:ring-amber-400/10"
+                        />
+                        <div className="flex flex-wrap gap-1">
+                          {[0, 1, 2, 3, 5, 10].map((val) => (
+                            <button
+                              key={val}
+                              type="button"
+                              onClick={() => setSectionValue(section.key, { tajweeditotal: String(val) })}
+                              className={`rounded-lg border px-2 py-0.5 text-[11px] font-bold transition ${
+                                formSection.tajweeditotal === String(val)
+                                  ? 'border-amber-500 bg-amber-200 text-amber-900'
+                                  : 'border-slate-200 bg-white text-slate-600 hover:bg-amber-50'
+                              }`}
+                            >
+                              {val}
+                            </button>
+                          ))}
                         </div>
                       </div>
+                    </div>
 
-                      <div>
-                        <p className="mb-2 text-[11px] font-bold uppercase tracking-wide text-[#64748B]">Hifz Ghaltiyan (0-99)</p>
-                        <div className="flex flex-col gap-2">
-                          <input
-                            type="number"
-                            min={0}
-                            max={99}
-                            value={formSection.hifztotal}
-                            onChange={(e) => setSectionValue(section.key, { hifztotal: e.target.value })}
-                            placeholder="0"
-                            className="h-12 w-full rounded-2xl border border-[#FDE68A] bg-[#FFFBEB] px-3 text-sm font-semibold text-[#0F172A] outline-none transition focus:border-[#D9A253] focus:ring-4 focus:ring-[#D9A253]/15"
-                            required
-                          />
-                          <div className="flex flex-wrap gap-1">
-                            {[0, 1, 2, 3, 5, 10].map(val => (
-                              <button
-                                key={val}
-                                type="button"
-                                onClick={() => setSectionValue(section.key, { hifztotal: String(val) })}
-                                className={`rounded-xl border px-3 py-1.5 text-xs font-bold transition ${formSection.hifztotal === String(val) ? 'border-[#D9A253] bg-[#FEF3C7] text-[#92400E]' : 'border-[#FDE68A] bg-white text-[#B45309] hover:bg-[#FFFBEB]'}`}
-                              >
-                                {val}
-                              </button>
-                            ))}
-                          </div>
+                    {/* Hifz Mistakes */}
+                    <div>
+                      <label className="mb-1.5 block text-xs font-bold uppercase tracking-wider text-slate-500">
+                        Hifz Mistakes
+                      </label>
+                      <div className="space-y-1.5">
+                        <input
+                          type="number"
+                          min={0}
+                          max={99}
+                          value={formSection.hifztotal}
+                          onChange={(e) => setSectionValue(section.key, { hifztotal: e.target.value })}
+                          placeholder="0"
+                          className="h-11 w-full rounded-2xl border border-amber-200 bg-amber-50/40 px-3 text-sm font-black text-amber-900 outline-none transition focus:border-amber-400 focus:bg-white focus:ring-4 focus:ring-amber-400/10"
+                        />
+                        <div className="flex flex-wrap gap-1">
+                          {[0, 1, 2, 3, 5, 10].map((val) => (
+                            <button
+                              key={val}
+                              type="button"
+                              onClick={() => setSectionValue(section.key, { hifztotal: String(val) })}
+                              className={`rounded-lg border px-2 py-0.5 text-[11px] font-bold transition ${
+                                formSection.hifztotal === String(val)
+                                  ? 'border-amber-500 bg-amber-200 text-amber-900'
+                                  : 'border-slate-200 bg-white text-slate-600 hover:bg-amber-50'
+                              }`}
+                            >
+                              {val}
+                            </button>
+                          ))}
                         </div>
                       </div>
                     </div>
                   </div>
-                );
-              })}
-            </div>
-
+                </div>
+              );
+            })}
           </form>
         </div>
 
-        <aside className="hidden space-y-4 md:block">
-          <div className="space-y-4 rounded-[24px] border border-white bg-[linear-gradient(135deg,#FFFFFF_0%,#EEF7F6_100%)] p-4 shadow-[0_16px_40px_rgba(15,23,42,0.07)] sm:p-6">
-            <div className="flex items-center gap-3">
-              <div className="rounded-2xl bg-[#E6F3F1] p-2">
-                <Sparkles className="h-5 w-5 text-[#004D47]" />
+        {/* Right Insights Column (Desktop Sidebar / Mobile Accordion) */}
+        <div className="space-y-6 xl:col-span-4">
+          {/* Performance Card */}
+          <div className="rounded-3xl border border-slate-200/80 bg-white p-5 shadow-sm sm:p-6">
+            <div className="mb-4 flex items-center gap-2.5 border-b border-slate-100 pb-3">
+              <div className="grid h-9 w-9 place-items-center rounded-xl bg-teal-50 text-teal-700">
+                <Sparkles className="h-5 w-5" />
               </div>
-              <h3 className="font-bold text-[#1F2937]">Performance</h3>
+              <h3 className="text-base font-bold text-slate-900">Performance Summary</h3>
             </div>
+
             <div className="space-y-3">
-              <div className="rounded-2xl border border-white bg-white/80 p-3 shadow-sm">
-                <p className="mb-1 text-[11px] font-bold uppercase tracking-wide text-[#94A3B8]">Overall</p>
-                <p className="font-black text-[#004D47]">{summary.overallPerformance}</p>
+              <div className="flex items-center justify-between rounded-2xl bg-slate-50 p-3">
+                <span className="text-xs font-bold text-slate-500">Overall Rating</span>
+                <span className="text-sm font-black text-teal-900">{summary.overallPerformance}</span>
               </div>
-              <div className="rounded-2xl border border-white bg-white/80 p-3 shadow-sm">
-                <p className="mb-1 text-[11px] font-bold uppercase tracking-wide text-[#94A3B8]">Mistakes</p>
-                <p className="font-black text-[#B45309]">{summary.totalMistakes}</p>
+
+              <div className="flex items-center justify-between rounded-2xl bg-slate-50 p-3">
+                <span className="text-xs font-bold text-slate-500">Total Mistakes</span>
+                <span className={`text-sm font-black ${
+                  summary.totalMistakes === 0 ? 'text-emerald-700' : 'text-amber-700'
+                }`}>
+                  {summary.totalMistakes} mistakes
+                </span>
               </div>
-              <div className="rounded-2xl border border-white bg-white/80 p-3 shadow-sm">
-                <p className="mb-2 text-[11px] font-bold uppercase tracking-wide text-[#94A3B8]">Suggestion</p>
-                <p className="text-sm text-[#1F2937]">{summary.suggestion}</p>
+
+              <div className="rounded-2xl border border-teal-100 bg-teal-50/50 p-3.5">
+                <p className="mb-1 text-[10px] font-bold uppercase tracking-wider text-teal-800">
+                  Pedagogical Suggestion
+                </p>
+                <p className="text-xs font-medium leading-relaxed text-teal-950">{summary.suggestion}</p>
               </div>
-              <div className="flex items-center justify-center gap-1 pt-2">
+
+              <div className="flex items-center justify-center gap-1.5 pt-2">
                 {Array.from({ length: 5 }).map((_, i) => (
-                  <Star key={i} className={`h-5 w-5 ${i < summary.avgStars ? 'fill-[#df8d29] text-[#df8d29]' : 'text-[#E5E7EB]'}`} />
+                  <Star
+                    key={i}
+                    className={`h-5 w-5 ${
+                      i < summary.avgStars ? 'fill-amber-400 text-amber-500' : 'text-slate-200'
+                    }`}
+                  />
                 ))}
               </div>
             </div>
           </div>
 
-
-          <div className="rounded-[24px] border border-white bg-white p-4 shadow-[0_16px_40px_rgba(15,23,42,0.07)] sm:p-6">
-            <div className="flex items-center gap-2 mb-3">
-              <TrendingUp className="h-4 w-4 text-[#004649]" />
-              <h3 className="font-bold text-[#1F2937]">Teacher Guidance</h3>
+          {/* Teacher Guidance Card */}
+          <div className="rounded-3xl border border-slate-200/80 bg-gradient-to-br from-slate-50 to-white p-5 shadow-sm sm:p-6">
+            <div className="mb-3 flex items-center gap-2 text-slate-800">
+              <TrendingUp className="h-4 w-4 text-teal-700" />
+              <h3 className="text-sm font-bold">Assessment Guidelines</h3>
             </div>
-            <ul className="space-y-1 text-sm text-[#6B7280]">
-              <li>- Keep sabaq range realistic for quality.</li>
-              <li>- If mistakes increase, reduce range and revise.</li>
-              <li>- Use auto-suggest to continue lesson sequence.</li>
+            <ul className="space-y-2 text-xs leading-relaxed text-slate-600">
+              <li className="flex items-start gap-2">
+                <span className="mt-1 h-1.5 w-1.5 rounded-full bg-teal-600 shrink-0" />
+                <span>Keep new Sabaq length manageable based on recitation fluency.</span>
+              </li>
+              <li className="flex items-start gap-2">
+                <span className="mt-1 h-1.5 w-1.5 rounded-full bg-teal-600 shrink-0" />
+                <span>If total mistakes exceed 3, pause lesson forward progress for revision.</span>
+              </li>
+              <li className="flex items-start gap-2">
+                <span className="mt-1 h-1.5 w-1.5 rounded-full bg-teal-600 shrink-0" />
+                <span>Use &quot;Save &amp; Next Student&quot; for rapid class evaluations.</span>
+              </li>
             </ul>
           </div>
-        </aside>
-      </section>
-
-      {/* Mobile Auto Summary (collapsible) */}
-      <div className="mb-4 md:hidden">
-        <details className="rounded-[24px] border border-white bg-white p-4 shadow-[0_16px_40px_rgba(15,23,42,0.07)]">
-          <summary className="flex cursor-pointer items-center gap-3 font-black text-[#0F172A]">
-            <Sparkles className="h-5 w-5 text-[#004D47]" />
-            <span>Performance Summary</span>
-            <span className="ml-auto text-xs text-[#6B7280]">▼</span>
-          </summary>
-          <div className="mt-4 space-y-3 text-sm">
-            <div className="flex items-center justify-between rounded-xl bg-white p-3 border border-[#E5E7EB]">
-              <span className="text-[#6B7280]">Overall Performance</span>
-              <span className="font-black text-[#004D47]">{summary.overallPerformance}</span>
-            </div>
-            <div className="flex items-center justify-between rounded-xl bg-white p-3 border border-[#E5E7EB]">
-              <span className="text-[#6B7280]">Total Mistakes</span>
-              <span className="font-black text-[#B45309]">{summary.totalMistakes}</span>
-            </div>
-            <div className="rounded-2xl border border-white bg-white/80 p-3 shadow-sm">
-              <p className="mb-1 text-[11px] font-bold uppercase tracking-wide text-[#94A3B8]">Suggestion</p>
-              <p className="text-sm text-[#1F2937] font-medium">{summary.suggestion}</p>
-            </div>
-            <div className="flex items-center justify-center gap-1 pt-2">
-              {Array.from({ length: 5 }).map((_, i) => (
-                <Star key={i} className={`h-5 w-5 ${i < summary.avgStars ? 'fill-[#df8d29] text-[#df8d29]' : 'text-[#E5E7EB]'}`} />
-              ))}
-            </div>
-          </div>
-        </details>
-      </div>
-
-      {/* Mobile-safe actions */}
-      <div className="rounded-[24px] border border-white/70 bg-white/95 p-3 shadow-[0_16px_40px_rgba(15,23,42,0.08)] backdrop-blur-xl">
-        {editingReportId ? (
-          <div className="mb-3 rounded-2xl border border-[#FCD34D] bg-[#FFFBEB] px-4 py-3 text-sm font-bold text-[#92400E]">
-            Editing saved report. Update it or cancel editing.
-          </div>
-        ) : null}
-        <div className="mx-auto flex max-w-4xl flex-col gap-2 sm:flex-row sm:justify-end sm:gap-3">
-          {editingReportId ? (
-            <button
-              type="button"
-              onClick={cancelEditReport}
-              disabled={saving}
-              className="h-12 w-full rounded-2xl border border-[#D8E2E7] bg-white px-6 text-sm font-black text-[#64748B] transition-all active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-50 sm:w-auto"
-            >
-              Cancel Edit
-            </button>
-          ) : null}
-          <button
-            type="button"
-            onClick={async () => {
-              setSaveAndMoveNext(false);
-              await submit({ preventDefault: () => {} } as React.FormEvent);
-            }}
-            disabled={saving || loading || featureDisabled}
-            className="h-12 w-full rounded-2xl bg-[#084750] px-6 text-sm font-black text-white shadow-[0_16px_32px_rgba(8,71,80,0.26)] transition-all active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-50 sm:w-auto"
-          >
-            {saving ? 'Saving...' : editingReportId ? 'Update Report' : 'Save Report'}
-          </button>
-          <button
-            type="button"
-            onClick={async () => {
-              setSaveAndMoveNext(true);
-              await submit({ preventDefault: () => {} } as React.FormEvent);
-            }}
-            disabled={saving || loading || featureDisabled || Boolean(editingReportId) || !selectedStudents.some((s) => s.id > form.studentId)}
-            className="h-12 w-full rounded-2xl border border-[#D8E2E7] bg-white px-6 text-sm font-black text-[#004D47] transition-all active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-30 sm:w-auto"
-          >
-            {saving ? 'Saving...' : 'Save & Next →'}
-          </button>
         </div>
       </div>
 
-      <div className="rounded-[24px] border border-white bg-white p-4 shadow-[0_16px_40px_rgba(15,23,42,0.07)] sm:p-6">
-        <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between mb-4">
-          <h3 className="text-xl font-black tracking-[-0.03em] text-[#0F172A]">Saved Reports</h3>
-          <div className="grid gap-2 md:grid-cols-2">
+      {/* Floating Action Bar */}
+      <div className="sticky bottom-4 z-30 rounded-3xl border border-slate-200/80 bg-white/95 p-3.5 shadow-2xl backdrop-blur-xl">
+        {editingReportId && (
+          <div className="mb-3 flex items-center justify-between rounded-2xl border border-amber-200 bg-amber-50 px-4 py-2 text-xs font-bold text-amber-900">
+            <span>You are currently editing a saved report.</span>
+            <button
+              type="button"
+              onClick={cancelEditReport}
+              className="text-xs font-black underline hover:text-amber-950"
+            >
+              Cancel Edit
+            </button>
+          </div>
+        )}
+
+        <div className="flex flex-col gap-2.5 sm:flex-row sm:items-center sm:justify-between">
+          <div className="hidden items-center gap-2 text-xs font-medium text-slate-500 sm:flex">
+            <span>Target:</span>
+            <span className="font-bold text-slate-900">
+              {selectedStudent ? selectedStudent.user.fullName : 'No student selected'}
+            </span>
+          </div>
+
+          <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
+            {editingReportId && (
+              <button
+                type="button"
+                onClick={cancelEditReport}
+                disabled={saving}
+                className="h-11 w-full rounded-2xl border border-slate-200 bg-white px-5 text-xs font-bold text-slate-700 transition hover:bg-slate-50 active:scale-98 sm:w-auto"
+              >
+                Cancel
+              </button>
+            )}
+
+            <button
+              type="button"
+              onClick={async () => {
+                setSaveAndMoveNext(false);
+                await submit({ preventDefault: () => {} } as React.FormEvent);
+              }}
+              disabled={saving || loading || featureDisabled}
+              className="inline-flex h-11 w-full items-center justify-center gap-2 rounded-2xl bg-teal-700 px-6 text-xs font-black text-white shadow-lg shadow-teal-700/20 transition hover:bg-teal-800 active:scale-98 disabled:opacity-50 sm:w-auto"
+            >
+              <Check className="h-4 w-4" />
+              <span>{saving ? 'Saving...' : editingReportId ? 'Update Report' : 'Save Report'}</span>
+            </button>
+
+            <button
+              type="button"
+              onClick={async () => {
+                setSaveAndMoveNext(true);
+                await submit({ preventDefault: () => {} } as React.FormEvent);
+              }}
+              disabled={
+                saving ||
+                loading ||
+                featureDisabled ||
+                Boolean(editingReportId) ||
+                !selectedStudents.some((s) => s.id > form.studentId)
+              }
+              className="inline-flex h-11 w-full items-center justify-center gap-2 rounded-2xl border border-teal-200 bg-teal-50 px-6 text-xs font-black text-teal-800 transition hover:bg-teal-100 active:scale-98 disabled:opacity-30 sm:w-auto"
+            >
+              <span>{saving ? 'Saving...' : 'Save & Next Student →'}</span>
+            </button>
+          </div>
+        </div>
+      </div>
+
+      {/* Saved Reports Section */}
+      <div className="rounded-3xl border border-slate-200/80 bg-white p-5 shadow-sm sm:p-6">
+        <div className="mb-5 flex flex-col gap-3 border-b border-slate-100 pb-4 sm:flex-row sm:items-center sm:justify-between">
+          <div>
+            <h3 className="text-lg font-black text-slate-900">Saved Daily Reports</h3>
+            <p className="text-xs font-medium text-slate-500">
+              {filteredReports.length} reports logged for selected filters
+            </p>
+          </div>
+
+          <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
             <input
               type="date"
               value={reportDate}
               onChange={(e) => setReportDate(e.target.value)}
-              className="h-11 rounded-2xl border border-[#E2E8F0] bg-[#F8FAFC] px-4 text-sm font-semibold text-[#0F172A] outline-none transition focus:border-[#006A61] focus:bg-white focus:ring-4 focus:ring-[#006A61]/10"
+              className="h-10 rounded-2xl border border-slate-200 bg-slate-50 px-3 text-xs font-semibold text-slate-800 outline-none transition focus:border-teal-600 focus:bg-white"
             />
-            <input
-              value={reportQuery}
-              onChange={(e) => setReportQuery(e.target.value)}
-              placeholder="Search student"
-              className="h-11 rounded-2xl border border-[#E2E8F0] bg-[#F8FAFC] px-4 text-sm font-semibold text-[#0F172A] placeholder:text-[#94A3B8] outline-none transition focus:border-[#006A61] focus:bg-white focus:ring-4 focus:ring-[#006A61]/10"
-            />
+            <div className="relative">
+              <Search className="pointer-events-none absolute left-3 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-slate-400" />
+              <input
+                value={reportQuery}
+                onChange={(e) => setReportQuery(e.target.value)}
+                placeholder="Filter saved reports..."
+                className="h-10 w-full rounded-2xl border border-slate-200 bg-slate-50 pl-9 pr-3 text-xs font-semibold text-slate-800 placeholder:text-slate-400 outline-none transition focus:border-teal-600 focus:bg-white"
+              />
+            </div>
           </div>
         </div>
 
         {filteredReports.length === 0 ? (
-          <p className="text-sm text-[#6B7280]">No reports found for selected filters.</p>
+          <div className="rounded-2xl border border-dashed border-slate-200 py-12 text-center">
+            <BookOpen className="mx-auto h-8 w-8 text-slate-300" />
+            <p className="mt-2 text-sm font-bold text-slate-600">No saved reports found</p>
+            <p className="text-xs text-slate-400">Save a daily progress report above to populate this log.</p>
+          </div>
         ) : (
-          <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-3">
+          <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-3">
             {filteredReports.map((item) => {
               const parsed = parseStructuredNotes(item.notes);
               const stars = computeStars(parsed);
               const mistakes = computeReportMistakes(parsed);
-              const surahLabel = getSectionLabelFromNotes(item.notes, 'sabaq');
+              const sabaqLabel = getSectionLabelFromNotes(item.notes, 'sabaq');
+              const isDetailsOpen = openReportId === item.id;
 
               return (
-                <div key={item.id} className="rounded-[20px] border border-[#E2E8F0] bg-[#F8FAFC] p-4 transition hover:-translate-y-0.5 hover:bg-white hover:shadow-[0_12px_28px_rgba(15,23,42,0.08)]">
-                  <p className="text-xs font-semibold uppercase tracking-widest text-[#6B7280]">{formatDateYMD(item.date)}</p>
-                  <p className="mt-1 text-base font-bold text-[#1F2937]">{item.student.user.fullName}</p>
-                  <p className="text-xs text-[#9CA3AF]">{item.class.name} - {item.class.section}</p>
-                  <p className="mt-2 text-sm text-[#004649]"><span className="font-semibold">Sabaq:</span> {surahLabel}</p>
+                <div
+                  key={item.id}
+                  className="flex flex-col justify-between rounded-2xl border border-slate-200/80 bg-slate-50/50 p-4 transition-all hover:border-teal-200 hover:bg-white hover:shadow-md"
+                >
+                  <div>
+                    <div className="flex items-center justify-between">
+                      <span className="rounded-full bg-slate-200/70 px-2.5 py-0.5 text-[10px] font-bold text-slate-700">
+                        {formatDateYMD(item.date)}
+                      </span>
+                      <div className="flex items-center gap-0.5">
+                        {Array.from({ length: 5 }).map((_, i) => (
+                          <Star
+                            key={i}
+                            className={`h-3 w-3 ${
+                              i < stars ? 'fill-amber-400 text-amber-500' : 'text-slate-200'
+                            }`}
+                          />
+                        ))}
+                      </div>
+                    </div>
 
-                  <div className="mt-2 flex items-center gap-1">
-                    {Array.from({ length: 5 }).map((_, i) => (
-                      <Star key={i} className={`h-4 w-4 ${i < stars ? 'fill-[#df8d29] text-[#df8d29]' : 'text-[#E5E7EB]'}`} />
-                    ))}
+                    <h4 className="mt-2.5 text-sm font-black text-slate-900">{item.student.user.fullName}</h4>
+                    <p className="text-xs font-semibold text-slate-500">
+                      {item.class.name} · {item.class.section}
+                    </p>
+
+                    <div className="mt-3 rounded-xl bg-white p-2.5 border border-slate-100">
+                      <p className="text-[11px] font-bold text-teal-900">
+                        <span className="text-slate-400 font-semibold mr-1">Sabaq:</span>
+                        {sabaqLabel}
+                      </p>
+                    </div>
+
+                    <div className="mt-2.5 flex items-center gap-2">
+                      <span className={`inline-flex rounded-md px-2 py-0.5 text-[10px] font-black ${
+                        mistakes === 0 
+                          ? 'bg-emerald-100 text-emerald-800' 
+                          : 'bg-amber-100 text-amber-800'
+                      }`}>
+                        {mistakes} Mistakes
+                      </span>
+                      {parsed?.overall && (
+                        <span className="text-[10px] font-bold text-slate-500">
+                          Grade: {parsed.overall}
+                        </span>
+                      )}
+                    </div>
+
+                    {/* Expandable Report Details Accordion */}
+                    {isDetailsOpen && (
+                      <div className="mt-3 space-y-2 rounded-xl border border-slate-200 bg-white p-3 text-xs">
+                        {parsed ? (
+                          <>
+                            {sectionMeta.map(({ key, title, icon }) => {
+                              const sec = parsed.sections[key];
+                              const rangeLabel = getSectionLabelFromNotes(item.notes, key);
+                              return (
+                                <div key={key} className="border-b border-slate-100 pb-1.5 last:border-0 last:pb-0">
+                                  <p className="font-bold text-slate-800">{icon} {title}</p>
+                                  <p className="text-[11px] text-slate-500">
+                                    {rangeLabel} · {sec.kaifiyat || '-'} · T:{sec.tajweeditotal} H:{sec.hifztotal}
+                                  </p>
+                                </div>
+                              );
+                            })}
+                            {parsed.suggestion && (
+                              <div className="mt-1 rounded-lg bg-teal-50 p-2 text-[10px] font-semibold text-teal-900">
+                                {parsed.suggestion}
+                              </div>
+                            )}
+                          </>
+                        ) : (
+                          <p className="text-slate-400">No structured data.</p>
+                        )}
+                      </div>
+                    )}
                   </div>
 
-                  <div className="mt-3 inline-flex rounded-full bg-[#FFFBEB] px-3 py-1 text-xs font-black text-[#B45309]">
-                    Mistakes: {mistakes}
-                  </div>
-
-                  <div className="mt-3 flex flex-wrap gap-2">
+                  {/* Card Action Buttons */}
+                  <div className="mt-4 flex items-center gap-1.5 border-t border-slate-100 pt-3">
                     <button
                       type="button"
                       onClick={() => setOpenReportId((prev) => (prev === item.id ? null : item.id))}
-                      className="inline-flex items-center rounded-2xl bg-[#084750] px-4 py-2 text-xs font-black text-white shadow-[0_10px_20px_rgba(8,71,80,0.18)] transition-all active:scale-[0.98]"
+                      className="inline-flex flex-1 items-center justify-center gap-1 rounded-xl border border-slate-200 bg-white py-2 text-xs font-bold text-slate-700 transition hover:bg-slate-50 active:scale-95"
                     >
-                      View Details
+                      <Eye className="h-3.5 w-3.5" />
+                      <span>{isDetailsOpen ? 'Hide' : 'Details'}</span>
                     </button>
+
                     <button
                       type="button"
                       onClick={() => startEditReport(item)}
-                      className="inline-flex items-center rounded-2xl border border-[#B8DAD5] bg-white px-4 py-2 text-xs font-black text-[#084750] transition-all active:scale-[0.98]"
+                      className="inline-flex flex-1 items-center justify-center gap-1 rounded-xl border border-teal-200 bg-teal-50 py-2 text-xs font-bold text-teal-800 transition hover:bg-teal-100 active:scale-95"
                     >
-                      Edit
+                      <Edit3 className="h-3.5 w-3.5" />
+                      <span>Edit</span>
                     </button>
+
                     <button
                       type="button"
                       onClick={() => void deleteReport(item)}
                       disabled={deletingReportId === item.id}
-                      className="inline-flex items-center rounded-2xl border border-[#FCA5A5] bg-white px-4 py-2 text-xs font-black text-[#B91C1C] transition-all active:scale-[0.98] disabled:opacity-60"
+                      className="inline-flex items-center justify-center rounded-xl border border-rose-200 bg-rose-50 px-2.5 py-2 text-xs font-bold text-rose-700 transition hover:bg-rose-100 active:scale-95 disabled:opacity-50"
+                      title="Delete Report"
                     >
-                      {deletingReportId === item.id ? 'Deleting...' : 'Delete'}
+                      <Trash2 className="h-3.5 w-3.5" />
                     </button>
                   </div>
-
-                  {openReportId === item.id ? (
-                    <div className="mt-3 rounded-lg border border-[#E5E7EB] bg-white p-3 space-y-2 text-xs">
-                      {parsed ? (
-                        <>
-                          {sectionMeta.map(({ key, title, icon }) => {
-                            const sec = parsed.sections[key];
-                            const rangeLabel = getSectionLabelFromNotes(item.notes, key);
-                            return (
-                              <div key={key}>
-                                <p className="font-semibold text-[#374151]">{icon} {title}</p>
-                                <p className="text-[#6B7280]">{rangeLabel} · {sec.kaifiyat || '-'} · T:{sec.tajweeditotal} H:{sec.hifztotal}</p>
-                              </div>
-                            );
-                          })}
-                          <div className="pt-1 border-t border-[#E5E7EB] flex justify-between">
-                            <span className="text-[#6B7280]">Overall: <span className="font-semibold text-[#004649]">{parsed.overall}</span></span>
-                            <span className="text-[#6B7280]">Mistakes <span className="font-semibold text-[#be123c]">{parsed.totalMistakes}</span></span>
-                          </div>
-                        </>
-                      ) : (
-                        <p className="text-[#9CA3AF]">No structured data available.</p>
-                      )}
-                    </div>
-                  ) : null}
                 </div>
               );
             })}
@@ -1531,4 +1819,3 @@ export default function TeacherProgressPage() {
     </div>
   );
 }
-
