@@ -29,10 +29,12 @@ import {
   Share2,
   Shield,
   User,
+  UserCheck,
   UserCog,
   Users,
   X,
-  Loader2
+  Loader2,
+  ExternalLink
 } from 'lucide-react';
 
 const SESSION_EXPIRED_MESSAGE = 'Session expire ho gayi hai. Please admin login dubara karein.';
@@ -65,7 +67,6 @@ type StudentData = {
   class: { id: string; name: string; section: string } | null;
   user: { id: string; fullName: string; email: string; phone: string | null; isActive: boolean };
 };
-
 
 type ExamRecord = {
   id: string;
@@ -180,14 +181,13 @@ function phoneDigitsForWa(raw?: string | null) {
 }
 
 const ATT_DAY_TONE: Record<string, string> = {
-  PRESENT: 'bg-[#dcfce7] text-[#15803d]',
-  ABSENT: 'bg-[#fee2e2] text-[#b91c1c]',
-  LATE: 'bg-[#fef3c7] text-[#b45309]',
-  EXCUSED: 'bg-[#dbeafe] text-[#1d4ed8]'
+  PRESENT: 'bg-[#dcfce7] text-[#15803d] font-bold border border-[#bbf7d0]',
+  ABSENT: 'bg-[#fee2e2] text-[#b91c1c] font-bold border border-[#fecaca]',
+  LATE: 'bg-[#fef3c7] text-[#b45309] font-bold border border-[#fde68a]',
+  EXCUSED: 'bg-[#dbeafe] text-[#1d4ed8] font-bold border border-[#bfdbfe]'
 };
 
 // ─── Sub-components ───────────────────────────────────────────────────────────
-
 
 type InfoFieldProps = {
   icon: React.ElementType;
@@ -213,22 +213,22 @@ function InfoField({
   fullWidth = false
 }: InfoFieldProps) {
   return (
-    <div className={fullWidth ? 'col-span-full' : ''}>
+    <div className={`rounded-xl bg-[#f8fafc] border border-[#e2e8f0]/80 p-3.5 transition hover:border-[#cbd5e1] ${fullWidth ? 'col-span-full' : ''}`}>
       <div className="flex items-start gap-3">
-        <div className="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-lg bg-[#f8fafc]">
-          <Icon className="h-4 w-4 text-[#6b7280]" />
+        <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-white border border-[#e2e8f0] shadow-xs text-[#004649]">
+          <Icon className="h-4 w-4" />
         </div>
         <div className="min-w-0 flex-1">
-          <p className="text-[10px] font-semibold uppercase tracking-wider text-[#9ca3af]">{label}</p>
+          <p className="text-[10px] sm:text-[11px] font-bold uppercase tracking-wider text-[#64748b]">{label}</p>
           {!editMode ? (
-            <p className="mt-0.5 text-sm font-medium text-[#111827] leading-snug">
-              {value || <span className="text-[#d1d5db]">Not provided</span>}
+            <p className="mt-1 text-xs sm:text-sm font-semibold text-[#0f172a] leading-snug break-words">
+              {value || <span className="text-xs font-normal text-[#94a3b8] italic">Not provided</span>}
             </p>
           ) : options ? (
             <select
               value={editValue}
               onChange={(e) => onChange?.(e.target.value)}
-              className="mt-0.5 h-9 w-full rounded-xl bg-[#f3f4f5] border-none px-2.5 text-sm text-[#111827] outline-none focus:ring-2 focus:ring-[#16a34a]/30"
+              className="mt-1.5 h-10 w-full rounded-xl bg-white border border-[#cbd5e1] px-3 text-xs sm:text-sm text-[#0f172a] outline-none focus:ring-2 focus:ring-[#004649]/20 focus:border-[#004649]"
             >
               <option value="">— Select —</option>
               {options.map((o) => (
@@ -242,7 +242,7 @@ function InfoField({
               type={inputType}
               value={editValue}
               onChange={(e) => onChange?.(e.target.value)}
-              className="mt-0.5 h-9 w-full rounded-xl bg-[#f3f4f5] border-none px-3 text-sm text-[#111827] outline-none focus:ring-2 focus:ring-[#16a34a]/30"
+              className="mt-1.5 h-10 w-full rounded-xl bg-white border border-[#cbd5e1] px-3 text-xs sm:text-sm text-[#0f172a] outline-none focus:ring-2 focus:ring-[#004649]/20 focus:border-[#004649]"
             />
           )}
         </div>
@@ -253,7 +253,7 @@ function InfoField({
 
 // ─── Card wrapper ─────────────────────────────────────────────────────────────
 
-const CARD = 'rounded-2xl bg-white shadow-[0_2px_8px_rgba(0,0,0,0.06),0_8px_32px_rgba(0,0,0,0.04)]';
+const CARD = 'rounded-2xl bg-white border border-[#e2e8f0] shadow-[0_2px_8px_rgba(0,0,0,0.04)]';
 
 function CardHeader({
   title,
@@ -263,8 +263,8 @@ function CardHeader({
   trailing?: React.ReactNode;
 }) {
   return (
-    <div className="flex items-center justify-between border-b border-[#f1f5f9] px-5 py-4">
-      <h3 className="font-headline text-base font-bold text-[#111827]">{title}</h3>
+    <div className="flex items-center justify-between border-b border-[#f1f5f9] px-4 py-3.5 sm:px-6 sm:py-4">
+      <h3 className="font-headline text-sm sm:text-base font-bold text-[#0f172a]">{title}</h3>
       {trailing}
     </div>
   );
@@ -459,18 +459,19 @@ export default function StudentProfileClient({
         return;
       }
       if (!res.ok) {
-        setProfileMsg(data.error ?? 'Failed to save profile.');
-      } else {
-        setEditMode(false);
-        setProfileMsg('');
-        router.refresh();
+        setProfileMsg(data.error ?? 'Failed to update profile.');
+        return;
       }
+      setEditMode(false);
+      setProfileMsg('Profile updated successfully.');
+      router.refresh();
     } catch {
       setProfileMsg('Network error. Please try again.');
     } finally {
       setProfileSaving(false);
     }
   }
+
   async function saveClass() {
     setClassSaving(true);
     setClassMsg('');
@@ -488,7 +489,7 @@ export default function StudentProfileClient({
         return;
       }
       if (!res.ok) {
-        setClassMsg(data.error ?? 'Failed to save class.');
+        setClassMsg(data.error ?? 'Failed to update class.');
       } else {
         setClassMsg('Class updated successfully.');
         router.refresh();
@@ -563,37 +564,69 @@ export default function StudentProfileClient({
   // ─── Render ─────────────────────────────────────────────────────────────────
 
   return (
-    <div className="space-y-5">
+    <div className="space-y-4 sm:space-y-6 pb-12">
+
+      {/* ── TOP BACK NAVIGATION BAR ─────────────────────────────────────── */}
+      <div className="flex items-center justify-between">
+        <Link
+          href="/admin/students"
+          className="inline-flex items-center gap-2 rounded-xl bg-white border border-[#e2e8f0] px-3.5 py-2 text-xs sm:text-sm font-semibold text-[#0f172a] shadow-2xs hover:bg-[#f8fafc] active:scale-[0.98] transition"
+        >
+          <ArrowLeft className="h-4 w-4 text-[#004649]" />
+          <span>Back to Students</span>
+        </Link>
+        <span className="text-xs font-semibold text-[#64748b] hidden sm:inline">
+          Student ID: <span className="font-mono text-[#0f172a]">{student.admissionNo}</span>
+        </span>
+      </div>
 
       {/* ── HERO CARD ─────────────────────────────────────────────────────── */}
-      <div className={`${CARD} p-5 sm:p-6`}>
-        <div className="flex flex-wrap items-start justify-between gap-4">
-          {/* Left */}
-          <div className="flex items-center gap-4">
-            <div className="flex h-16 w-16 flex-shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-[#dcfce7] to-[#bbf7d0] text-xl font-bold text-[#15803d] ring-4 ring-[#f0fdf4]">
+      <div className={`${CARD} p-4 sm:p-6 overflow-hidden`}>
+        <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
+          
+          {/* Identity Left */}
+          <div className="flex items-start gap-3.5 sm:gap-4">
+            <div className="flex h-14 w-14 sm:h-16 sm:w-16 shrink-0 items-center justify-center rounded-2xl bg-gradient-to-br from-[#004649] to-[#1b5e62] text-lg sm:text-xl font-bold text-white shadow-sm ring-4 ring-[#e0eff0]">
               {initials(student.user.fullName)}
             </div>
-            <div>
+            <div className="min-w-0 flex-1">
               <div className="flex flex-wrap items-center gap-2">
-                <h2 className="font-headline text-xl font-bold text-[#111827]">{student.user.fullName}</h2>
+                <h1 className="font-headline text-lg sm:text-2xl font-bold text-[#0f172a] truncate">
+                  {student.user.fullName}
+                </h1>
                 {isActive ? (
-                  <span className="rounded-full bg-[#dcfce7] px-2 py-0.5 text-[10px] font-bold uppercase text-[#15803d]">Active</span>
+                  <span className="inline-flex items-center gap-1 rounded-full bg-[#dcfce7] border border-[#bbf7d0] px-2.5 py-0.5 text-[10px] sm:text-xs font-bold uppercase text-[#15803d]">
+                    <span className="h-1.5 w-1.5 rounded-full bg-[#16a34a]" />
+                    Active
+                  </span>
                 ) : (
-                  <span className="rounded-full bg-[#fee2e2] px-2 py-0.5 text-[10px] font-bold uppercase text-[#b91c1c]">Inactive</span>
+                  <span className="inline-flex items-center gap-1 rounded-full bg-[#fee2e2] border border-[#fecaca] px-2.5 py-0.5 text-[10px] sm:text-xs font-bold uppercase text-[#b91c1c]">
+                    <span className="h-1.5 w-1.5 rounded-full bg-[#dc2626]" />
+                    Inactive
+                  </span>
                 )}
               </div>
-              <p className="mt-0.5 text-sm text-[#6b7280]">{student.user.email}</p>
-              <p className="mt-0.5 text-xs text-[#9ca3af]">Admission No: <span className="font-semibold text-[#374151]">{student.admissionNo}</span></p>
+              <p className="mt-0.5 text-xs sm:text-sm text-[#64748b] truncate">{student.user.email}</p>
+              <div className="mt-1 flex flex-wrap items-center gap-2 text-xs text-[#64748b]">
+                <span className="rounded-md bg-[#f1f5f9] px-2 py-0.5 font-medium text-[#475569]">
+                  Adm: {student.admissionNo}
+                </span>
+                {student.rollNumber && (
+                  <span className="rounded-md bg-[#f1f5f9] px-2 py-0.5 font-medium text-[#475569]">
+                    Roll: {student.rollNumber}
+                  </span>
+                )}
+              </div>
             </div>
           </div>
 
-          {/* Right */}
-          <div className="flex w-full flex-wrap items-center gap-2 sm:w-auto sm:justify-end">
+          {/* Action Buttons Right */}
+          <div className="flex flex-wrap items-center gap-2 pt-1 sm:pt-0">
             <button
               type="button"
               onClick={toggleActive}
               disabled={activeSaving}
-              className={`flex flex-1 items-center justify-center gap-1.5 rounded-xl px-4 py-2 text-sm font-semibold transition sm:flex-none disabled:opacity-60 ${
+              className={`flex-1 sm:flex-none inline-flex h-10 items-center justify-center gap-1.5 rounded-xl px-3.5 sm:px-4 text-xs sm:text-sm font-semibold transition active:scale-[0.98] disabled:opacity-60 ${
                 isActive
                   ? 'border border-[#fecaca] bg-[#fef2f2] text-[#b91c1c] hover:bg-[#fee2e2]'
                   : 'border border-[#bbf7d0] bg-[#f0fdf4] text-[#15803d] hover:bg-[#dcfce7]'
@@ -604,110 +637,110 @@ export default function StudentProfileClient({
             </button>
             {!editMode ? (
               <button
+                type="button"
                 onClick={() => { setEditMode(true); setProfileMsg(''); }}
-                className="flex flex-1 items-center justify-center gap-1.5 bg-[#16a34a] text-white rounded-xl px-4 py-2 text-sm font-semibold shadow-[0_4px_12px_rgba(22,163,74,0.3)] hover:bg-[#15803d] transition sm:flex-none"
+                className="flex-1 sm:flex-none inline-flex h-10 items-center justify-center gap-1.5 bg-[#16a34a] text-white rounded-xl px-4 text-xs sm:text-sm font-semibold shadow-xs hover:bg-[#15803d] active:scale-[0.98] transition"
               >
                 <Pencil className="h-3.5 w-3.5" />
-                Edit Profile
+                <span>Edit Profile</span>
               </button>
             ) : (
               <button
+                type="button"
                 onClick={() => { setEditMode(false); setProfileMsg(''); }}
-                className="flex flex-1 items-center justify-center gap-1.5 border border-[#e5e7eb] rounded-xl px-4 py-2 text-sm font-semibold text-[#374151] hover:bg-[#f9fafb] transition sm:flex-none"
+                className="flex-1 sm:flex-none inline-flex h-10 items-center justify-center gap-1.5 border border-[#cbd5e1] bg-white text-[#334155] rounded-xl px-4 text-xs sm:text-sm font-semibold hover:bg-[#f8fafc] active:scale-[0.98] transition"
               >
                 <X className="h-3.5 w-3.5" />
-                Cancel
+                <span>Cancel</span>
               </button>
             )}
-            <Link
-              href="/admin/students"
-              className="flex flex-1 items-center justify-center gap-1.5 border border-[#e5e7eb] rounded-xl px-4 py-2 text-sm font-semibold text-[#374151] hover:bg-[#f9fafb] transition sm:flex-none"
-            >
-              <ArrowLeft className="h-3.5 w-3.5" />
-              Students
-            </Link>
           </div>
         </div>
 
-        {/* Class / fee summary card */}
-        <div className="mt-5 rounded-2xl border border-[#e8eef0] bg-[#f8fafb] p-4">
-          <div className="flex flex-wrap items-start justify-between gap-3">
-            <div>
-              <p className="text-[10px] font-semibold uppercase tracking-wider text-[#9ca3af]">Class / Batch</p>
-              <p className="mt-1 text-base font-bold text-[#111827]">{classLabel}</p>
-              <p className="mt-1 text-sm text-[#64748b]">
+        {/* Class & Stats Summary Banner */}
+        <div className="mt-4 sm:mt-5 rounded-2xl border border-[#e2e8f0] bg-gradient-to-br from-[#f8fafc] to-[#f1f5f9] p-3.5 sm:p-5">
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+            <div className="min-w-0">
+              <p className="text-[10px] font-bold uppercase tracking-wider text-[#64748b]">Class / Batch</p>
+              <p className="mt-0.5 text-sm sm:text-base font-bold text-[#0f172a] truncate">{classLabel}</p>
+              <p className="mt-0.5 text-xs text-[#64748b]">
                 Teacher: <span className="font-semibold text-[#0f172a]">{classTeacher || '—'}</span>
               </p>
             </div>
-            <div className="rounded-xl bg-white px-3 py-2 text-right shadow-sm">
-              <p className="text-[10px] font-semibold uppercase tracking-wider text-[#9ca3af]">Monthly Fee</p>
-              <p className="mt-0.5 text-lg font-bold text-[#004649]">{monthlyFee != null ? fmtCurrency(monthlyFee) : '—'}</p>
+            <div className="flex items-center justify-between sm:justify-end gap-3 rounded-xl bg-white border border-[#e2e8f0] px-3.5 py-2 shadow-2xs">
+              <span className="text-[10px] sm:text-xs font-semibold uppercase tracking-wider text-[#64748b]">Monthly Fee</span>
+              <span className="text-base sm:text-lg font-bold text-[#004649]">{monthlyFee != null ? fmtCurrency(monthlyFee) : '—'}</span>
             </div>
           </div>
-          <div className="mt-4 grid grid-cols-2 gap-3 sm:grid-cols-4">
-            <div>
-              <p className="text-[10px] font-semibold uppercase tracking-wider text-[#9ca3af]">Join Date</p>
-              <p className="mt-1 text-sm font-bold text-[#111827]">{fmtDate(student.joinDate)}</p>
+
+          <div className="mt-3.5 pt-3.5 border-t border-[#e2e8f0] grid grid-cols-2 gap-2.5 sm:grid-cols-4 sm:gap-4">
+            <div className="rounded-xl bg-white/70 border border-[#e2e8f0]/80 p-2.5 sm:p-3">
+              <p className="text-[10px] font-bold uppercase tracking-wider text-[#64748b]">Join Date</p>
+              <p className="mt-1 text-xs sm:text-sm font-bold text-[#0f172a] truncate">{fmtDate(student.joinDate)}</p>
             </div>
-            <div>
-              <p className="text-[10px] font-semibold uppercase tracking-wider text-[#9ca3af]">Attendance</p>
-              <p className="mt-1 text-sm font-bold text-[#111827]">{attPct}%</p>
-              <div className="mt-1 h-1.5 w-full overflow-hidden rounded-full bg-[#e2e8f0]">
-                <div className="h-full rounded-full" style={{ width: `${attPct}%`, backgroundColor: attBarColor }} />
+            <div className="rounded-xl bg-white/70 border border-[#e2e8f0]/80 p-2.5 sm:p-3">
+              <div className="flex items-center justify-between">
+                <p className="text-[10px] font-bold uppercase tracking-wider text-[#64748b]">Attendance</p>
+                <span className="text-xs sm:text-sm font-bold text-[#0f172a]">{attPct}%</span>
+              </div>
+              <div className="mt-2 h-1.5 w-full overflow-hidden rounded-full bg-[#e2e8f0]">
+                <div className="h-full rounded-full transition-all" style={{ width: `${attPct}%`, backgroundColor: attBarColor }} />
               </div>
             </div>
-            <div>
-              <p className="text-[10px] font-semibold uppercase tracking-wider text-[#9ca3af]">Collected</p>
-              <p className="mt-1 text-sm font-bold text-[#15803d]">{fmtCurrency(collectedFee)}</p>
+            <div className="rounded-xl bg-white/70 border border-[#e2e8f0]/80 p-2.5 sm:p-3">
+              <p className="text-[10px] font-bold uppercase tracking-wider text-[#64748b]">Collected</p>
+              <p className="mt-1 text-xs sm:text-sm font-bold text-[#16a34a] truncate">{fmtCurrency(collectedFee)}</p>
             </div>
-            <div>
-              <p className="text-[10px] font-semibold uppercase tracking-wider text-[#9ca3af]">Due</p>
-              <p className={`mt-1 text-sm font-bold ${dueFee > 0 ? 'text-[#b91c1c]' : 'text-[#111827]'}`}>{fmtCurrency(dueFee)}</p>
+            <div className="rounded-xl bg-white/70 border border-[#e2e8f0]/80 p-2.5 sm:p-3">
+              <p className="text-[10px] font-bold uppercase tracking-wider text-[#64748b]">Due Amount</p>
+              <p className={`mt-1 text-xs sm:text-sm font-bold truncate ${dueFee > 0 ? 'text-[#dc2626]' : 'text-[#0f172a]'}`}>
+                {fmtCurrency(dueFee)}
+              </p>
             </div>
           </div>
         </div>
 
-        {/* Quick contact actions */}
-        <div className="mt-4 flex flex-wrap gap-2">
+        {/* Quick Contact Action Bar */}
+        <div className="mt-3.5 sm:mt-4 grid grid-cols-3 gap-2 sm:flex sm:gap-3">
           <a
             href={callPhone ? `tel:${callPhone}` : undefined}
             aria-disabled={!callPhone}
-            className={`inline-flex h-11 flex-1 items-center justify-center gap-2 rounded-xl text-sm font-semibold transition sm:flex-none sm:px-4 ${
-              callPhone ? 'bg-[#004649] text-white hover:bg-[#1b5e62]' : 'cursor-not-allowed bg-[#f1f5f9] text-[#94a3b8]'
+            className={`inline-flex h-10 sm:h-11 flex-1 items-center justify-center gap-1.5 sm:gap-2 rounded-xl text-xs sm:text-sm font-semibold transition active:scale-[0.98] ${
+              callPhone ? 'bg-[#004649] text-white hover:bg-[#1b5e62] shadow-2xs' : 'cursor-not-allowed bg-[#f1f5f9] text-[#94a3b8]'
             }`}
             onClick={(e) => { if (!callPhone) e.preventDefault(); }}
           >
-            <Phone className="h-4 w-4" />
-            Call
+            <Phone className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
+            <span>Call</span>
           </a>
           <a
             href={waPhone ? `https://wa.me/${waPhone}` : undefined}
             target="_blank"
             rel="noreferrer"
             aria-disabled={!waPhone}
-            className={`inline-flex h-11 flex-1 items-center justify-center gap-2 rounded-xl text-sm font-semibold transition sm:flex-none sm:px-4 ${
-              waPhone ? 'bg-[#25d366] text-white hover:brightness-95' : 'cursor-not-allowed bg-[#f1f5f9] text-[#94a3b8]'
+            className={`inline-flex h-10 sm:h-11 flex-1 items-center justify-center gap-1.5 sm:gap-2 rounded-xl text-xs sm:text-sm font-semibold transition active:scale-[0.98] ${
+              waPhone ? 'bg-[#25d366] text-white hover:brightness-95 shadow-2xs' : 'cursor-not-allowed bg-[#f1f5f9] text-[#94a3b8]'
             }`}
             onClick={(e) => { if (!waPhone) e.preventDefault(); }}
           >
-            <MessageSquare className="h-4 w-4" />
-            WhatsApp
+            <MessageSquare className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
+            <span>WhatsApp</span>
           </a>
           <Link
             href={`/admin/messages?recipientId=${student.user.id}`}
-            className="inline-flex h-11 flex-1 items-center justify-center gap-2 rounded-xl bg-[#f0f2f5] text-sm font-semibold text-[#1a1c1c] transition hover:bg-[#e2e8e8] sm:flex-none sm:px-4"
+            className="inline-flex h-10 sm:h-11 flex-1 items-center justify-center gap-1.5 sm:gap-2 rounded-xl bg-white border border-[#e2e8f0] text-xs sm:text-sm font-semibold text-[#0f172a] shadow-2xs hover:bg-[#f8fafc] active:scale-[0.98] transition"
           >
-            <Mail className="h-4 w-4" />
-            Message
+            <Mail className="h-3.5 w-3.5 sm:h-4 sm:w-4 text-[#64748b]" />
+            <span>Message</span>
           </Link>
         </div>
       </div>
 
-      {/* ── TWO-COLUMN LAYOUT ─────────────────────────────────────────────── */}
-      <div className="grid gap-5 lg:grid-cols-[3fr_2fr]">
+      {/* ── TWO-COLUMN MAIN CONTENT ───────────────────────────────────────── */}
+      <div className="grid gap-4 sm:gap-6 lg:grid-cols-[3fr_2fr]">
 
         {/* ══ LEFT COLUMN ══════════════════════════════════════════════════ */}
-        <div className="space-y-5">
+        <div className="space-y-4 sm:space-y-6">
 
           {/* STUDENT DETAILS CARD */}
           <div className={CARD}>
@@ -716,18 +749,19 @@ export default function StudentProfileClient({
               trailing={
                 editMode ? (
                   <button
+                    type="button"
                     onClick={saveProfile}
                     disabled={profileSaving}
-                    className="flex items-center gap-1.5 bg-[#16a34a] text-white rounded-xl px-4 py-2 text-sm font-semibold shadow-[0_4px_12px_rgba(22,163,74,0.3)] hover:bg-[#15803d] transition disabled:opacity-60"
+                    className="inline-flex items-center gap-1.5 bg-[#16a34a] text-white rounded-xl px-3.5 py-1.5 text-xs sm:text-sm font-semibold shadow-xs hover:bg-[#15803d] active:scale-[0.98] transition disabled:opacity-60"
                   >
                     {profileSaving ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Save className="h-3.5 w-3.5" />}
-                    Save
+                    <span>Save Changes</span>
                   </button>
                 ) : null
               }
             />
-            <div className="p-5">
-              <div className="grid gap-x-6 gap-y-5 md:grid-cols-2">
+            <div className="p-4 sm:p-6">
+              <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 sm:gap-4">
                 <InfoField
                   icon={User}
                   label="Full Name"
@@ -738,7 +772,7 @@ export default function StudentProfileClient({
                 />
                 <InfoField
                   icon={Mail}
-                  label="Email"
+                  label="Email Address"
                   value={student.user.email}
                   editMode={editMode}
                   editValue={pf.email}
@@ -747,7 +781,7 @@ export default function StudentProfileClient({
                 />
                 <InfoField
                   icon={Phone}
-                  label="Phone"
+                  label="Personal Phone"
                   value={student.user.phone}
                   editMode={editMode}
                   editValue={pf.phone}
@@ -764,7 +798,7 @@ export default function StudentProfileClient({
                   inputType="tel"
                 />
                 <InfoField
-                  icon={User}
+                  icon={UserCheck}
                   label="Father's Name"
                   value={student.fatherName}
                   editMode={editMode}
@@ -801,7 +835,7 @@ export default function StudentProfileClient({
                 />
                 <InfoField
                   icon={CreditCard}
-                  label="Aadhar No"
+                  label="Aadhaar / ID No"
                   value={student.aadharNo}
                   editMode={editMode}
                   editValue={pf.aadharNo}
@@ -825,7 +859,7 @@ export default function StudentProfileClient({
                 />
                 <InfoField
                   icon={Calendar}
-                  label="Join Date"
+                  label="Enrollment Date"
                   value={fmtDate(student.joinDate)}
                   editMode={editMode}
                   editValue={pf.joinDate}
@@ -852,47 +886,59 @@ export default function StudentProfileClient({
                 />
               </div>
               {profileMsg && (
-                <p className={`mt-4 text-sm font-medium ${profileMsg.toLowerCase().includes('success') || profileMsg === '' ? 'text-[#15803d]' : 'text-[#b91c1c]'}`}>
+                <div className={`mt-4 rounded-xl p-3 text-xs sm:text-sm font-medium ${profileMsg.toLowerCase().includes('success') || profileMsg === '' ? 'bg-[#f0fdf4] border border-[#bbf7d0] text-[#15803d]' : 'bg-[#fef2f2] border border-[#fecaca] text-[#b91c1c]'}`}>
                   {profileMsg}
-                </p>
+                </div>
               )}
             </div>
           </div>
 
-          {/* ATTENDANCE MINI CALENDAR */}
+          {/* ATTENDANCE SUMMARY CALENDAR */}
           <div className={CARD}>
             <CardHeader
               title="Attendance Summary"
               trailing={
-                <Link href={`/admin/students/${student.id}/attendance`} className="text-xs font-semibold text-[#004649] hover:underline">
-                  Open full calendar
+                <Link
+                  href={`/admin/students/${student.id}/attendance`}
+                  className="inline-flex items-center gap-1 text-xs font-semibold text-[#004649] hover:underline"
+                >
+                  <span>Full calendar</span>
+                  <ExternalLink className="h-3 w-3" />
                 </Link>
               }
             />
-            <div className="p-5">
-              <div className="mb-4 flex items-center justify-between">
+            <div className="p-4 sm:p-6">
+              
+              {/* Month Navigator */}
+              <div className="mb-4 flex items-center justify-between rounded-xl bg-[#f8fafc] border border-[#e2e8f0] p-1.5 sm:p-2">
                 <button
                   type="button"
                   onClick={() => setCalMonth(new Date(calMonth.getFullYear(), calMonth.getMonth() - 1, 1))}
-                  className="flex h-10 w-10 items-center justify-center rounded-xl bg-[#f0f2f5] hover:bg-[#e2e8e8]"
+                  className="flex h-8 w-8 sm:h-9 sm:w-9 items-center justify-center rounded-lg bg-white border border-[#e2e8f0] text-[#0f172a] shadow-2xs hover:bg-[#f1f5f9] transition active:scale-95"
+                  aria-label="Previous month"
                 >
                   <ChevronLeft className="h-4 w-4" />
                 </button>
-                <p className="text-sm font-semibold text-[#111827]">{monthName}</p>
+                <p className="text-xs sm:text-sm font-bold text-[#0f172a]">{monthName}</p>
                 <button
                   type="button"
                   onClick={() => setCalMonth(new Date(calMonth.getFullYear(), calMonth.getMonth() + 1, 1))}
-                  className="flex h-10 w-10 items-center justify-center rounded-xl bg-[#f0f2f5] hover:bg-[#e2e8e8]"
+                  className="flex h-8 w-8 sm:h-9 sm:w-9 items-center justify-center rounded-lg bg-white border border-[#e2e8f0] text-[#0f172a] shadow-2xs hover:bg-[#f1f5f9] transition active:scale-95"
+                  aria-label="Next month"
                 >
                   <ChevronRight className="h-4 w-4" />
                 </button>
               </div>
-              <div className="mb-2 grid grid-cols-7 gap-1 text-center text-[10px] font-semibold text-[#94a3b8]">
+
+              {/* Weekday headers */}
+              <div className="mb-2 grid grid-cols-7 gap-1 text-center text-[10px] sm:text-xs font-bold text-[#64748b]">
                 {['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'].map((d) => (
-                  <div key={d}>{d}</div>
+                  <div key={d} className="py-1">{d}</div>
                 ))}
               </div>
-              <div className="grid grid-cols-7 gap-1">
+
+              {/* Day cells grid */}
+              <div className="grid grid-cols-7 gap-1 sm:gap-1.5">
                 {Array.from({ length: firstDow }).map((_, i) => (
                   <div key={`pad-${i}`} className="aspect-square" />
                 ))}
@@ -903,8 +949,8 @@ export default function StudentProfileClient({
                   return (
                     <div
                       key={dateStr}
-                      className={`aspect-square flex items-center justify-center rounded-lg text-xs font-semibold ${
-                        status ? ATT_DAY_TONE[status] : 'bg-[#f8fafc] text-[#94a3b8]'
+                      className={`aspect-square flex items-center justify-center rounded-lg sm:rounded-xl text-[11px] sm:text-xs font-semibold transition ${
+                        status ? ATT_DAY_TONE[status] : 'bg-[#f8fafc] text-[#94a3b8] hover:bg-[#f1f5f9]'
                       }`}
                     >
                       {day}
@@ -912,42 +958,46 @@ export default function StudentProfileClient({
                   );
                 })}
               </div>
-              <div className="mt-4 grid grid-cols-4 gap-2">
-                <div className="rounded-xl bg-[#f0fdf4] p-2 text-center">
-                  <p className="text-[10px] font-semibold text-[#9ca3af]">Present</p>
-                  <p className="text-sm font-bold text-[#15803d]">{monthStats.present}</p>
+
+              {/* Attendance count pills */}
+              <div className="mt-4 grid grid-cols-2 gap-2 sm:grid-cols-4">
+                <div className="rounded-xl bg-[#f0fdf4] border border-[#bbf7d0] p-2.5 text-center">
+                  <p className="text-[10px] font-bold uppercase tracking-wider text-[#15803d]">Present</p>
+                  <p className="mt-0.5 text-base sm:text-lg font-extrabold text-[#15803d]">{monthStats.present}</p>
                 </div>
-                <div className="rounded-xl bg-[#fef2f2] p-2 text-center">
-                  <p className="text-[10px] font-semibold text-[#9ca3af]">Absent</p>
-                  <p className="text-sm font-bold text-[#b91c1c]">{monthStats.absent}</p>
+                <div className="rounded-xl bg-[#fef2f2] border border-[#fecaca] p-2.5 text-center">
+                  <p className="text-[10px] font-bold uppercase tracking-wider text-[#b91c1c]">Absent</p>
+                  <p className="mt-0.5 text-base sm:text-lg font-extrabold text-[#b91c1c]">{monthStats.absent}</p>
                 </div>
-                <div className="rounded-xl bg-[#fffbeb] p-2 text-center">
-                  <p className="text-[10px] font-semibold text-[#9ca3af]">Late</p>
-                  <p className="text-sm font-bold text-[#b45309]">{monthStats.late}</p>
+                <div className="rounded-xl bg-[#fffbeb] border border-[#fde68a] p-2.5 text-center">
+                  <p className="text-[10px] font-bold uppercase tracking-wider text-[#b45309]">Late</p>
+                  <p className="mt-0.5 text-base sm:text-lg font-extrabold text-[#b45309]">{monthStats.late}</p>
                 </div>
-                <div className="rounded-xl bg-[#eff6ff] p-2 text-center">
-                  <p className="text-[10px] font-semibold text-[#9ca3af]">Leave</p>
-                  <p className="text-sm font-bold text-[#1d4ed8]">{monthStats.leave}</p>
+                <div className="rounded-xl bg-[#eff6ff] border border-[#bfdbfe] p-2.5 text-center">
+                  <p className="text-[10px] font-bold uppercase tracking-wider text-[#1d4ed8]">Leave</p>
+                  <p className="mt-0.5 text-base sm:text-lg font-extrabold text-[#1d4ed8]">{monthStats.leave}</p>
                 </div>
               </div>
-              <div className="mt-4 flex flex-col gap-2 sm:flex-row">
+
+              {/* Attendance action buttons */}
+              <div className="mt-4 flex flex-col sm:flex-row gap-2.5">
                 <button
                   type="button"
                   onClick={shareAttendanceReport}
                   disabled={!waPhone}
-                  className={`h-11 flex flex-1 items-center justify-center gap-2 rounded-xl text-sm font-semibold transition ${
-                    waPhone ? 'bg-[#25d366] text-white hover:brightness-95' : 'cursor-not-allowed bg-[#f1f5f9] text-[#94a3b8]'
+                  className={`h-10 sm:h-11 flex flex-1 items-center justify-center gap-2 rounded-xl text-xs sm:text-sm font-semibold transition active:scale-[0.98] ${
+                    waPhone ? 'bg-[#25d366] text-white hover:brightness-95 shadow-xs' : 'cursor-not-allowed bg-[#f1f5f9] text-[#94a3b8]'
                   }`}
                 >
                   <Share2 className="h-4 w-4" />
-                  Share Attendance Report
+                  <span>Share Attendance Report</span>
                 </button>
                 <Link
                   href={`/admin/students/${student.id}/fees`}
-                  className="h-11 flex flex-1 items-center justify-center gap-2 rounded-xl bg-[#004649] text-sm font-semibold text-white transition hover:bg-[#1b5e62]"
+                  className="h-10 sm:h-11 flex sm:flex-none items-center justify-center gap-2 rounded-xl bg-[#004649] px-5 text-xs sm:text-sm font-semibold text-white shadow-xs hover:bg-[#1b5e62] active:scale-[0.98] transition"
                 >
                   <Plus className="h-4 w-4" />
-                  Add Fee
+                  <span>Add Fee</span>
                 </Link>
               </div>
             </div>
@@ -956,27 +1006,36 @@ export default function StudentProfileClient({
           {/* QUICK LINKS CARD */}
           <div className={CARD}>
             <CardHeader title="Quick Access" />
-            <div className="p-5 flex flex-col sm:flex-row gap-3">
+            <div className="p-4 sm:p-6 grid grid-cols-1 sm:grid-cols-3 gap-2.5 sm:gap-3">
               <Link
                 href={`/admin/students/${student.id}/attendance`}
-                className="h-11 flex flex-1 items-center justify-center gap-2 rounded-xl bg-[#004649] text-white text-sm font-semibold hover:bg-[#1b5e62] transition"
+                className="group flex items-center justify-between sm:justify-center gap-2 rounded-xl bg-gradient-to-br from-[#004649] to-[#1b5e62] p-3.5 text-white shadow-xs hover:shadow-md active:scale-[0.98] transition"
               >
-                <Calendar className="h-4 w-4" />
-                View Attendance
+                <div className="flex items-center gap-2.5">
+                  <Calendar className="h-4 w-4 text-[#e0eff0]" />
+                  <span className="text-xs sm:text-sm font-bold">Attendance Records</span>
+                </div>
+                <ChevronRight className="h-4 w-4 sm:hidden opacity-70 group-hover:translate-x-0.5 transition-transform" />
               </Link>
               <Link
                 href={`/admin/students/${student.id}/fees`}
-                className="h-11 flex flex-1 items-center justify-center gap-2 rounded-xl bg-[#f0f2f5] text-[#1a1c1c] text-sm font-semibold hover:bg-[#e2e8e8] transition"
+                className="group flex items-center justify-between sm:justify-center gap-2 rounded-xl bg-white border border-[#e2e8f0] p-3.5 text-[#0f172a] shadow-xs hover:bg-[#f8fafc] active:scale-[0.98] transition"
               >
-                <DollarSign className="h-4 w-4" />
-                View Fees
+                <div className="flex items-center gap-2.5">
+                  <DollarSign className="h-4 w-4 text-[#16a34a]" />
+                  <span className="text-xs sm:text-sm font-bold">Fee History</span>
+                </div>
+                <ChevronRight className="h-4 w-4 sm:hidden text-[#94a3b8] group-hover:translate-x-0.5 transition-transform" />
               </Link>
               <Link
                 href={`/admin/reports/individual-complete?studentId=${student.id}`}
-                className="h-11 flex flex-1 items-center justify-center gap-2 rounded-xl bg-[#f0f2f5] text-[#1a1c1c] text-sm font-semibold hover:bg-[#e2e8e8] transition"
+                className="group flex items-center justify-between sm:justify-center gap-2 rounded-xl bg-white border border-[#e2e8f0] p-3.5 text-[#0f172a] shadow-xs hover:bg-[#f8fafc] active:scale-[0.98] transition"
               >
-                <BarChart3 className="h-4 w-4" />
-                View Progress
+                <div className="flex items-center gap-2.5">
+                  <BarChart3 className="h-4 w-4 text-[#0284c7]" />
+                  <span className="text-xs sm:text-sm font-bold">Progress Report</span>
+                </div>
+                <ChevronRight className="h-4 w-4 sm:hidden text-[#94a3b8] group-hover:translate-x-0.5 transition-transform" />
               </Link>
             </div>
           </div>
@@ -984,46 +1043,48 @@ export default function StudentProfileClient({
           {/* EXAM RECORDS CARD */}
           <div className={CARD}>
             <CardHeader title="Exam Records" />
-            <div className="p-5">
+            <div className="p-4 sm:p-6">
               {results.length === 0 ? (
-                <div className="flex flex-col items-center gap-3 py-8 text-center">
-                  <GraduationCap className="h-10 w-10 text-[#d1d5db]" />
-                  <p className="text-sm text-[#9ca3af]">No exam results found.</p>
+                <div className="flex flex-col items-center gap-2 py-8 text-center">
+                  <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-[#f1f5f9] text-[#94a3b8]">
+                    <GraduationCap className="h-6 w-6" />
+                  </div>
+                  <p className="text-xs sm:text-sm font-medium text-[#64748b]">No exam results found for this student.</p>
                 </div>
               ) : (
                 <>
                   {/* Desktop table */}
                   <div className="hidden overflow-x-auto md:block">
-                    <table className="w-full min-w-[680px]">
+                    <table className="w-full min-w-[640px]">
                       <thead>
-                        <tr className="bg-[#fafafa]">
-                          <th className="rounded-l-xl px-4 py-2.5 text-left text-[11px] font-bold uppercase tracking-[0.12em] text-[#9ca3af]">Exam</th>
-                          <th className="px-4 py-2.5 text-left text-[11px] font-bold uppercase tracking-[0.12em] text-[#9ca3af]">Type</th>
-                          <th className="px-4 py-2.5 text-left text-[11px] font-bold uppercase tracking-[0.12em] text-[#9ca3af]">Subject</th>
-                          <th className="px-4 py-2.5 text-left text-[11px] font-bold uppercase tracking-[0.12em] text-[#9ca3af]">Teacher</th>
-                          <th className="px-4 py-2.5 text-left text-[11px] font-bold uppercase tracking-[0.12em] text-[#9ca3af]">Marks</th>
-                          <th className="px-4 py-2.5 text-left text-[11px] font-bold uppercase tracking-[0.12em] text-[#9ca3af]">Grade</th>
-                          <th className="rounded-r-xl px-4 py-2.5 text-left text-[11px] font-bold uppercase tracking-[0.12em] text-[#9ca3af]">Date</th>
+                        <tr className="bg-[#f8fafc] border-b border-[#e2e8f0]">
+                          <th className="rounded-l-xl px-4 py-2.5 text-left text-[10px] font-bold uppercase tracking-wider text-[#64748b]">Exam</th>
+                          <th className="px-4 py-2.5 text-left text-[10px] font-bold uppercase tracking-wider text-[#64748b]">Type</th>
+                          <th className="px-4 py-2.5 text-left text-[10px] font-bold uppercase tracking-wider text-[#64748b]">Subject</th>
+                          <th className="px-4 py-2.5 text-left text-[10px] font-bold uppercase tracking-wider text-[#64748b]">Teacher</th>
+                          <th className="px-4 py-2.5 text-left text-[10px] font-bold uppercase tracking-wider text-[#64748b]">Marks</th>
+                          <th className="px-4 py-2.5 text-left text-[10px] font-bold uppercase tracking-wider text-[#64748b]">Grade</th>
+                          <th className="rounded-r-xl px-4 py-2.5 text-left text-[10px] font-bold uppercase tracking-wider text-[#64748b]">Date</th>
                         </tr>
                       </thead>
-                      <tbody className="divide-y divide-[#f8fafc]">
+                      <tbody className="divide-y divide-[#f1f5f9]">
                         {results.map((r) => {
                           const parsed = parseExamTitle(r.exam.title);
                           return (
-                            <tr key={r.id} className="hover:bg-[#fafafa]">
-                              <td className="px-4 py-3 text-sm font-medium text-[#111827]">{parsed.title}</td>
-                              <td className="px-4 py-3 text-sm text-[#6b7280]">{parsed.examType}</td>
-                              <td className="px-4 py-3 text-sm text-[#374151]">{r.subject.name}</td>
-                              <td className="px-4 py-3 text-sm text-[#374151]">{r.exam.createdBy?.user.fullName ?? '—'}</td>
-                              <td className="px-4 py-3 text-sm font-semibold text-[#111827]">
+                            <tr key={r.id} className="hover:bg-[#f8fafc] transition">
+                              <td className="px-4 py-3 text-xs sm:text-sm font-bold text-[#0f172a]">{parsed.title}</td>
+                              <td className="px-4 py-3 text-xs text-[#64748b]">{parsed.examType}</td>
+                              <td className="px-4 py-3 text-xs sm:text-sm font-medium text-[#334155]">{r.subject.name}</td>
+                              <td className="px-4 py-3 text-xs text-[#64748b]">{r.exam.createdBy?.user.fullName ?? '—'}</td>
+                              <td className="px-4 py-3 text-xs sm:text-sm font-bold text-[#0f172a]">
                                 {r.marksObtained}/{r.exam.totalMarks}
                               </td>
                               <td className="px-4 py-3">
-                                <span className="rounded-full bg-[#eff6ff] px-2.5 py-0.5 text-[11px] font-bold text-[#1d4ed8]">
+                                <span className="rounded-full bg-[#eff6ff] border border-[#bfdbfe] px-2.5 py-0.5 text-[10px] sm:text-[11px] font-bold text-[#1d4ed8]">
                                   {r.grade}
                                 </span>
                               </td>
-                              <td className="px-4 py-3 text-sm text-[#6b7280]">{fmtDate(r.exam.examDate)}</td>
+                              <td className="px-4 py-3 text-xs text-[#64748b]">{fmtDate(r.exam.examDate)}</td>
                             </tr>
                           );
                         })}
@@ -1032,30 +1093,24 @@ export default function StudentProfileClient({
                   </div>
 
                   {/* Mobile cards */}
-                  <div className="space-y-3 md:hidden">
+                  <div className="space-y-2.5 md:hidden">
                     {results.map((r) => {
                       const parsed = parseExamTitle(r.exam.title);
                       return (
-                        <div key={r.id} className="rounded-xl border border-[#f1f5f9] p-4">
+                        <div key={r.id} className="rounded-xl border border-[#e2e8f0] bg-[#f8fafc] p-3.5 space-y-2">
                           <div className="flex items-start justify-between gap-2">
-                            <div>
-                              <p className="text-sm font-semibold text-[#111827]">{parsed.title}</p>
-                              <p className="mt-0.5 text-xs text-[#6b7280]">{parsed.examType} · {r.subject.name}</p>
+                            <div className="min-w-0 flex-1">
+                              <p className="text-xs font-bold text-[#0f172a] truncate">{parsed.title}</p>
+                              <p className="mt-0.5 text-[11px] text-[#64748b]">{parsed.examType} · {r.subject.name}</p>
                             </div>
-                            <span className="rounded-full bg-[#eff6ff] px-2.5 py-0.5 text-[11px] font-bold text-[#1d4ed8]">
-                              {r.grade}
+                            <span className="rounded-full bg-[#eff6ff] border border-[#bfdbfe] px-2.5 py-0.5 text-[10px] font-bold text-[#1d4ed8]">
+                              Grade {r.grade}
                             </span>
                           </div>
-                          <div className="mt-2 flex items-center gap-4 text-xs text-[#6b7280]">
-                            <span>Marks: <strong className="text-[#111827]">{r.marksObtained}/{r.exam.totalMarks}</strong></span>
+                          <div className="flex items-center justify-between text-xs text-[#64748b] pt-1 border-t border-[#e2e8f0]/80">
+                            <span>Score: <strong className="font-bold text-[#0f172a]">{r.marksObtained}/{r.exam.totalMarks}</strong></span>
                             <span>{fmtDate(r.exam.examDate)}</span>
                           </div>
-                          {r.exam.createdBy && (
-                            <p className="mt-1 text-xs text-[#9ca3af]">Teacher: {r.exam.createdBy.user.fullName}</p>
-                          )}
-                          {r.remarks && (
-                            <p className="mt-2 text-xs text-[#6b7280]">{r.remarks}</p>
-                          )}
                         </div>
                       );
                     })}
@@ -1067,54 +1122,71 @@ export default function StudentProfileClient({
 
         </div>
 
-        {/* ══ RIGHT COLUMN ══════════════════════════════════════════════════ */}
+        {/* ══ RIGHT COLUMN (TABS CARD) ══════════════════════════════════════ */}
         <div>
-          {/* TABS CARD */}
-          <div className="overflow-hidden rounded-2xl bg-white shadow-[0_2px_8px_rgba(0,0,0,0.06),0_8px_32px_rgba(0,0,0,0.04)]">
-            {/* Tab nav */}
-            <div className="flex border-b border-[#f1f5f9]">
-              <button
-                onClick={() => setActiveTab('class')}
-                className={`flex flex-1 items-center justify-center gap-1.5 px-3 py-3.5 text-xs font-semibold transition ${activeTab === 'class' ? 'border-b-2 border-[#16a34a] text-[#16a34a] -mb-px' : 'border-b-2 border-transparent text-[#9ca3af] hover:text-[#374151]'}`}
-              >
-                <BookOpen className="h-3.5 w-3.5" />
-                Class
-              </button>
-              <button
-                onClick={() => setActiveTab('security')}
-                className={`flex flex-1 items-center justify-center gap-1.5 px-3 py-3.5 text-xs font-semibold transition ${activeTab === 'security' ? 'border-b-2 border-[#16a34a] text-[#16a34a] -mb-px' : 'border-b-2 border-transparent text-[#9ca3af] hover:text-[#374151]'}`}
-              >
-                <Shield className="h-3.5 w-3.5" />
-                Security
-              </button>
-              <button
-                onClick={() => setActiveTab('guardian')}
-                className={`flex flex-1 items-center justify-center gap-1.5 px-3 py-3.5 text-xs font-semibold transition ${activeTab === 'guardian' ? 'border-b-2 border-[#16a34a] text-[#16a34a] -mb-px' : 'border-b-2 border-transparent text-[#9ca3af] hover:text-[#374151]'}`}
-              >
-                <Users className="h-3.5 w-3.5" />
-                Guardian
-              </button>
+          <div className={`${CARD} overflow-hidden`}>
+            
+            {/* Tab nav Segmented Control */}
+            <div className="p-2 sm:p-2.5 bg-[#f8fafc] border-b border-[#e2e8f0]">
+              <div className="grid grid-cols-3 gap-1 rounded-xl bg-[#e2e8f0]/60 p-1">
+                <button
+                  type="button"
+                  onClick={() => setActiveTab('class')}
+                  className={`flex items-center justify-center gap-1.5 rounded-lg py-2 text-xs font-bold transition active:scale-[0.98] ${
+                    activeTab === 'class'
+                      ? 'bg-white text-[#004649] shadow-2xs'
+                      : 'text-[#64748b] hover:text-[#0f172a]'
+                  }`}
+                >
+                  <BookOpen className="h-3.5 w-3.5" />
+                  <span>Class</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setActiveTab('security')}
+                  className={`flex items-center justify-center gap-1.5 rounded-lg py-2 text-xs font-bold transition active:scale-[0.98] ${
+                    activeTab === 'security'
+                      ? 'bg-white text-[#004649] shadow-2xs'
+                      : 'text-[#64748b] hover:text-[#0f172a]'
+                  }`}
+                >
+                  <Shield className="h-3.5 w-3.5" />
+                  <span>Security</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setActiveTab('guardian')}
+                  className={`flex items-center justify-center gap-1.5 rounded-lg py-2 text-xs font-bold transition active:scale-[0.98] ${
+                    activeTab === 'guardian'
+                      ? 'bg-white text-[#004649] shadow-2xs'
+                      : 'text-[#64748b] hover:text-[#0f172a]'
+                  }`}
+                >
+                  <Users className="h-3.5 w-3.5" />
+                  <span>Guardian</span>
+                </button>
+              </div>
             </div>
 
             {/* ── Tab: Class Management ───────────────────────────────── */}
             {activeTab === 'class' && (
-              <div className="p-5 space-y-4">
+              <div className="p-4 sm:p-6 space-y-4">
                 <div>
-                  <p className="text-[10px] font-semibold uppercase tracking-wider text-[#9ca3af] mb-1">Current Class</p>
-                  <div className="rounded-xl bg-[#f0fdf4] border border-[#bbf7d0] px-4 py-3">
-                    <p className="text-sm font-bold text-[#15803d]">
+                  <p className="text-[10px] font-bold uppercase tracking-wider text-[#64748b] mb-1.5">Current Class</p>
+                  <div className="rounded-xl bg-[#f0fdf4] border border-[#bbf7d0] px-3.5 py-2.5">
+                    <p className="text-xs sm:text-sm font-bold text-[#15803d]">
                       {student.class ? `${student.class.name} – ${student.class.section}` : 'Not Assigned'}
                     </p>
                   </div>
                 </div>
                 <div>
-                  <label className="text-[10px] font-semibold uppercase tracking-wider text-[#9ca3af]">
+                  <label className="text-[10px] font-bold uppercase tracking-wider text-[#64748b]">
                     Assign New Class
                   </label>
                   <select
                     value={selectedClass}
                     onChange={(e) => setSelectedClass(e.target.value)}
-                    className="mt-1.5 h-10 w-full rounded-xl bg-[#f3f4f5] border-none px-3 text-sm text-[#111827] outline-none focus:ring-2 focus:ring-[#16a34a]/30"
+                    className="mt-1.5 h-10 w-full rounded-xl bg-white border border-[#cbd5e1] px-3 text-xs sm:text-sm text-[#0f172a] outline-none focus:ring-2 focus:ring-[#004649]/20 focus:border-[#004649]"
                   >
                     <option value="">— No Class —</option>
                     {classes.map((c) => (
@@ -1125,15 +1197,16 @@ export default function StudentProfileClient({
                   </select>
                 </div>
                 <button
+                  type="button"
                   onClick={saveClass}
                   disabled={classSaving}
-                  className="flex w-full items-center justify-center gap-1.5 bg-[#16a34a] text-white rounded-xl px-4 py-2.5 text-sm font-semibold shadow-[0_4px_12px_rgba(22,163,74,0.3)] hover:bg-[#15803d] transition disabled:opacity-60"
+                  className="flex w-full items-center justify-center gap-2 bg-[#16a34a] text-white rounded-xl h-10 text-xs sm:text-sm font-bold shadow-xs hover:bg-[#15803d] active:scale-[0.98] transition disabled:opacity-60"
                 >
-                  {classSaving ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <UserCog className="h-3.5 w-3.5" />}
-                  Save Class
+                  {classSaving ? <Loader2 className="h-4 w-4 animate-spin" /> : <UserCog className="h-4 w-4" />}
+                  <span>Save Class</span>
                 </button>
                 {classMsg && (
-                  <p className={`text-sm font-medium ${classMsg.toLowerCase().includes('success') ? 'text-[#15803d]' : 'text-[#b91c1c]'}`}>
+                  <p className={`text-xs sm:text-sm font-medium ${classMsg.toLowerCase().includes('success') ? 'text-[#15803d]' : 'text-[#b91c1c]'}`}>
                     {classMsg}
                   </p>
                 )}
@@ -1142,10 +1215,10 @@ export default function StudentProfileClient({
 
             {/* ── Tab: Security ──────────────────────────────────────── */}
             {activeTab === 'security' && (
-              <div className="p-5 space-y-4">
+              <div className="p-4 sm:p-6 space-y-4">
                 <div>
-                  <label className="text-[10px] font-semibold uppercase tracking-wider text-[#9ca3af]">
-                    New Password
+                  <label className="text-[10px] font-bold uppercase tracking-wider text-[#64748b]">
+                    Set New Password
                   </label>
                   <div className="relative mt-1.5">
                     <input
@@ -1153,18 +1226,19 @@ export default function StudentProfileClient({
                       value={newPassword}
                       onChange={(e) => setNewPassword(e.target.value)}
                       placeholder="Min. 6 characters"
-                      className="h-10 w-full rounded-xl bg-[#f3f4f5] border-none pl-3 pr-10 text-sm text-[#111827] outline-none focus:ring-2 focus:ring-[#16a34a]/30"
+                      className="h-10 w-full rounded-xl bg-white border border-[#cbd5e1] pl-3 pr-10 text-xs sm:text-sm text-[#0f172a] outline-none focus:ring-2 focus:ring-[#004649]/20 focus:border-[#004649]"
                     />
                     <button
                       type="button"
                       onClick={() => setShowPassword((v) => !v)}
-                      className="absolute right-3 top-1/2 -translate-y-1/2 text-[#9ca3af] hover:text-[#374151]"
+                      className="absolute right-3 top-1/2 -translate-y-1/2 text-[#94a3b8] hover:text-[#475569]"
                     >
                       {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
                     </button>
                   </div>
                 </div>
                 <button
+                  type="button"
                   onClick={() => {
                     if (newPassword.length < 6) {
                       setPwdMsg('Password must be at least 6 characters.');
@@ -1174,13 +1248,13 @@ export default function StudentProfileClient({
                     setShowPwdConfirm(true);
                   }}
                   disabled={pwdSaving}
-                  className="flex w-full items-center justify-center gap-1.5 bg-[#16a34a] text-white rounded-xl px-4 py-2.5 text-sm font-semibold shadow-[0_4px_12px_rgba(22,163,74,0.3)] hover:bg-[#15803d] transition disabled:opacity-60"
+                  className="flex w-full items-center justify-center gap-2 bg-[#16a34a] text-white rounded-xl h-10 text-xs sm:text-sm font-bold shadow-xs hover:bg-[#15803d] active:scale-[0.98] transition disabled:opacity-60"
                 >
-                  {pwdSaving ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Lock className="h-3.5 w-3.5" />}
-                  Update Password
+                  {pwdSaving ? <Loader2 className="h-4 w-4 animate-spin" /> : <Lock className="h-4 w-4" />}
+                  <span>Update Password</span>
                 </button>
                 {pwdMsg && (
-                  <p className={`text-sm font-medium ${pwdMsg.toLowerCase().includes('success') ? 'text-[#15803d]' : 'text-[#b91c1c]'}`}>
+                  <p className={`text-xs sm:text-sm font-medium ${pwdMsg.toLowerCase().includes('success') ? 'text-[#15803d]' : 'text-[#b91c1c]'}`}>
                     {pwdMsg}
                   </p>
                 )}
@@ -1189,47 +1263,48 @@ export default function StudentProfileClient({
 
             {/* ── Tab: Guardian ──────────────────────────────────────── */}
             {activeTab === 'guardian' && (
-              <div className="p-5 space-y-4">
+              <div className="p-4 sm:p-6 space-y-4">
                 <div>
-                  <label className="text-[10px] font-semibold uppercase tracking-wider text-[#9ca3af]">
-                    Guardian Phone
+                  <label className="text-[10px] font-bold uppercase tracking-wider text-[#64748b]">
+                    Guardian Phone Number
                   </label>
                   <div className="relative mt-1.5">
-                    <Phone className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-[#9ca3af]" />
+                    <Phone className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-[#94a3b8]" />
                     <input
                       type="tel"
                       value={guardianPhone}
                       onChange={(e) => setGuardianPhone(e.target.value)}
-                      placeholder="Guardian phone number"
-                      className="h-10 w-full rounded-xl bg-[#f3f4f5] border-none pl-9 pr-3 text-sm text-[#111827] outline-none focus:ring-2 focus:ring-[#16a34a]/30"
+                      placeholder="e.g. +92 300 1234567"
+                      className="h-10 w-full rounded-xl bg-white border border-[#cbd5e1] pl-9 pr-3 text-xs sm:text-sm text-[#0f172a] outline-none focus:ring-2 focus:ring-[#004649]/20 focus:border-[#004649]"
                     />
                   </div>
                 </div>
                 <div>
-                  <label className="text-[10px] font-semibold uppercase tracking-wider text-[#9ca3af]">
-                    Guardian Email
+                  <label className="text-[10px] font-bold uppercase tracking-wider text-[#64748b]">
+                    Guardian Email Address
                   </label>
                   <div className="relative mt-1.5">
-                    <Mail className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-[#9ca3af]" />
+                    <Mail className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-[#94a3b8]" />
                     <input
                       type="email"
                       value={guardianEmail}
                       onChange={(e) => setGuardianEmail(e.target.value)}
-                      placeholder="Guardian email address"
-                      className="h-10 w-full rounded-xl bg-[#f3f4f5] border-none pl-9 pr-3 text-sm text-[#111827] outline-none focus:ring-2 focus:ring-[#16a34a]/30"
+                      placeholder="guardian@example.com"
+                      className="h-10 w-full rounded-xl bg-white border border-[#cbd5e1] pl-9 pr-3 text-xs sm:text-sm text-[#0f172a] outline-none focus:ring-2 focus:ring-[#004649]/20 focus:border-[#004649]"
                     />
                   </div>
                 </div>
                 <button
+                  type="button"
                   onClick={saveGuardian}
                   disabled={guardianSaving}
-                  className="flex w-full items-center justify-center gap-1.5 bg-[#16a34a] text-white rounded-xl px-4 py-2.5 text-sm font-semibold shadow-[0_4px_12px_rgba(22,163,74,0.3)] hover:bg-[#15803d] transition disabled:opacity-60"
+                  className="flex w-full items-center justify-center gap-2 bg-[#16a34a] text-white rounded-xl h-10 text-xs sm:text-sm font-bold shadow-xs hover:bg-[#15803d] active:scale-[0.98] transition disabled:opacity-60"
                 >
-                  {guardianSaving ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Save className="h-3.5 w-3.5" />}
-                  Save Guardian Info
+                  {guardianSaving ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />}
+                  <span>Save Guardian Info</span>
                 </button>
                 {guardianMsg && (
-                  <p className={`text-sm font-medium ${guardianMsg.toLowerCase().includes('success') || guardianMsg.toLowerCase().includes('updated') ? 'text-[#15803d]' : 'text-[#b91c1c]'}`}>
+                  <p className={`text-xs sm:text-sm font-medium ${guardianMsg.toLowerCase().includes('success') || guardianMsg.toLowerCase().includes('updated') ? 'text-[#15803d]' : 'text-[#b91c1c]'}`}>
                     {guardianMsg}
                   </p>
                 )}
@@ -1241,30 +1316,32 @@ export default function StudentProfileClient({
 
       {/* ── PASSWORD CONFIRM MODAL ────────────────────────────────────────── */}
       {showPwdConfirm && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm p-4">
-          <div className="w-full max-w-sm rounded-2xl bg-white p-6 shadow-2xl">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-xs p-4">
+          <div className="w-full max-w-sm rounded-2xl bg-white p-5 sm:p-6 shadow-2xl border border-[#e2e8f0]">
             <div className="flex flex-col items-center text-center">
-              <div className="flex h-14 w-14 items-center justify-center rounded-full bg-[#fef3c7]">
+              <div className="flex h-12 w-12 sm:h-14 sm:w-14 items-center justify-center rounded-2xl bg-[#fef3c7] border border-[#fde68a]">
                 <Lock className="h-6 w-6 text-[#d97706]" />
               </div>
-              <h3 className="mt-4 text-lg font-bold text-[#111827]">Update Password?</h3>
-              <p className="mt-2 text-sm text-[#6b7280]">
-                You are about to update the password for <strong className="text-[#111827]">{student.user.fullName}</strong>. This action cannot be undone.
+              <h3 className="mt-3 text-base sm:text-lg font-bold text-[#0f172a]">Update Password?</h3>
+              <p className="mt-1.5 text-xs sm:text-sm text-[#64748b]">
+                You are about to update the login password for <strong className="text-[#0f172a]">{student.user.fullName}</strong>.
               </p>
             </div>
-            <div className="mt-6 flex gap-3">
+            <div className="mt-5 flex gap-2.5">
               <button
+                type="button"
                 onClick={() => setShowPwdConfirm(false)}
-                className="flex-1 border border-[#e5e7eb] rounded-xl px-4 py-2.5 text-sm font-semibold text-[#374151] hover:bg-[#f9fafb] transition"
+                className="flex-1 h-10 border border-[#cbd5e1] rounded-xl text-xs sm:text-sm font-semibold text-[#334155] hover:bg-[#f8fafc] active:scale-[0.98] transition"
               >
                 Cancel
               </button>
               <button
+                type="button"
                 onClick={doSavePassword}
-                className="flex-1 flex items-center justify-center gap-1.5 bg-[#16a34a] text-white rounded-xl px-4 py-2.5 text-sm font-semibold shadow-[0_4px_12px_rgba(22,163,74,0.3)] hover:bg-[#15803d] transition"
+                className="flex-1 h-10 flex items-center justify-center gap-1.5 bg-[#16a34a] text-white rounded-xl text-xs sm:text-sm font-semibold shadow-xs hover:bg-[#15803d] active:scale-[0.98] transition"
               >
                 <Lock className="h-3.5 w-3.5" />
-                Update Password
+                <span>Confirm</span>
               </button>
             </div>
           </div>
