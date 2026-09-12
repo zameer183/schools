@@ -1440,9 +1440,10 @@ export default function AdminStudentsPageClient({
                 return (
                   <div
                     key={student.id}
-                    className={`rounded-xl border border-[#e5e7eb] bg-white p-4 shadow-sm hover:shadow-md transition-shadow ${
+                    className={`rounded-xl border border-[#e5e7eb] bg-white p-4 shadow-sm hover:shadow-md transition-shadow cursor-pointer ${
                       selected.has(student.id) ? 'ring-2 ring-[#16a34a]' : ''
                     }`}
+                    onClick={() => router.push(`/admin/students/${student.id}`)}
                   >
                     <div className="flex items-start gap-3 mb-3">
                       <input
@@ -1452,19 +1453,17 @@ export default function AdminStudentsPageClient({
                         onClick={(e) => e.stopPropagation()}
                         className="h-4 w-4 rounded accent-[#16a34a] mt-1 cursor-pointer"
                       />
-                      <Link
-                        href={`/admin/students/${student.id}`}
+                      <div
                         className="flex h-10 w-10 items-center justify-center rounded-xl text-sm font-bold text-white shrink-0"
                         style={{ backgroundColor: bg }}
-                        onClick={(e) => e.stopPropagation()}
                       >
                         {initials(student.user.fullName)}
-                      </Link>
-                      <Link href={`/admin/students/${student.id}`} className="min-w-0 flex-1 group" onClick={(e) => e.stopPropagation()}>
-                        <p className="font-semibold text-[#1a1c1c] truncate group-hover:text-[#1B4D4B] group-hover:underline">{student.user.fullName}</p>
+                      </div>
+                      <div className="min-w-0 flex-1">
+                        <p className="font-semibold text-[#1a1c1c] truncate">{student.user.fullName}</p>
                         <p className="text-xs text-[#6b7280] truncate">{student.class?.name || 'No class'}</p>
-                      </Link>
-                      <div className="hidden md:block">
+                      </div>
+                      <div className="hidden md:block" onClick={(e) => e.stopPropagation()}>
                         <StudentActionMenu
                           student={student}
                           onEdit={() => openEdit(student)}
@@ -1479,14 +1478,14 @@ export default function AdminStudentsPageClient({
                       </div>
                       <button
                         type="button"
-                        onClick={() => setMobileActionStudent(student)}
+                        onClick={(e) => { e.stopPropagation(); setMobileActionStudent(student); }}
                         className="flex h-11 w-11 shrink-0 self-start items-center justify-center rounded-xl text-[#9ca3af] hover:bg-[#f3f4f6] md:hidden"
                         aria-label="Open student actions"
                       >
                         <MoreVertical className="h-4 w-4" />
                       </button>
                     </div>
-                    <div className="space-y-2 text-xs cursor-pointer" onClick={() => toggleSelect(student.id)}>
+                    <div className="space-y-2 text-xs">
                       <div className="flex justify-between">
                         <span className="text-[#6b7280]">Attendance</span>
                         <span className="font-semibold text-[#1a1c1c]">{student.attendancePercentage ?? 0}%</span>
