@@ -188,8 +188,7 @@ async function StudentListContent(props: { searchParams: Promise<{ [key: string]
 
 export default function AdminStudentsPage(props: { searchParams: Promise<{ [key: string]: string | string[] | undefined }> }) {
   return (
-    <div className="w-full space-y-6">
-      <PageHeader title="Student Directory" description="Manage enrolled students and fee records." />
+    <div className="w-full space-y-4">
       <React.Suspense fallback={<DashboardRouteLoading title="Loading Students..." hint="Fetching student directory from database..." />}>
         <StudentListContent searchParams={props.searchParams} />
       </React.Suspense>

@@ -1250,91 +1250,129 @@ export default function AdminStudentsPageClient({
   return (
     <div className="w-full min-w-0 space-y-5 overflow-x-hidden pb-20 sm:pb-5">
 
-      {/* ── HEADER ── */}
-      <section className="rounded-2xl bg-white p-4 shadow-[0_2px_8px_rgba(0,0,0,0.06),0_8px_32px_rgba(0,0,0,0.04)] sm:p-6">
-        <div className="flex flex-wrap items-start justify-between gap-4">
+      {/* ── UNIFIED HERO & STATS HEADER ── */}
+      <section className="rounded-2xl bg-white border border-[#e2e8f0] p-4 sm:p-6 shadow-[0_2px_8px_rgba(0,0,0,0.04)] space-y-4 sm:space-y-5">
+        
+        {/* Top Title & Enroll Action */}
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3.5">
           <div>
-            <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-[#6b7280]">Student Management</p>
-            <h1 className="font-headline mt-1 text-2xl font-bold text-[#111827] sm:text-3xl">Students Dashboard</h1>
-            <p className="mt-1 text-sm text-[#64748b]">Manage enrollment records, track attendance and fees, keep credentials organized.</p>
+            <span className="text-[10px] sm:text-[11px] font-bold uppercase tracking-wider text-[#64748b]">Student Management</span>
+            <h1 className="font-headline text-xl sm:text-2xl font-bold text-[#0f172a] mt-0.5">Students Dashboard</h1>
+            <p className="text-xs sm:text-sm text-[#64748b] mt-0.5">
+              Manage enrollments, track attendance & fees, and monitor student records.
+            </p>
           </div>
-          <Link
-            href="/admin/students/enroll"
-            className="h-11 px-4 text-sm font-medium bg-[#1F5A5C] text-white hover:bg-[#174548] active:scale-[0.98] rounded-lg transition-all inline-flex items-center justify-center gap-2 sm:h-10"
-          >
-            <UserPlus size={16} />
-            <span className="hidden sm:inline">Enroll</span>
-            <span className="sm:hidden">+</span>
-          </Link>
+          <div className="flex items-center gap-2">
+            <Link
+              href="/admin/students/enroll"
+              className="h-10 sm:h-11 px-4 sm:px-5 text-xs sm:text-sm font-bold bg-gradient-to-r from-[#004649] to-[#1b5e62] text-white hover:brightness-105 active:scale-[0.98] rounded-xl shadow-2xs transition-all inline-flex items-center justify-center gap-2 w-full sm:w-auto"
+            >
+              <UserPlus size={16} />
+              <span>+ Enroll Student</span>
+            </Link>
+          </div>
         </div>
 
-        {/* Stats — collapsible on mobile */}
-        <button
-          type="button"
-          onClick={() => setStatsSectionOpen(!statsSectionOpen)}
-          className="mt-4 flex min-h-11 w-full items-center justify-between rounded-lg px-3 py-2 transition hover:bg-[#f3f4f5] sm:hidden"
-        >
-          <span className="text-xs font-semibold text-[#6b7280]">STATS</span>
-          <ChevronDown className={`h-4 w-4 transition-transform ${statsSectionOpen ? 'rotate-180' : ''}`} />
-        </button>
-
-        {(statsSectionOpen || isDesktop) && (
-          <div className="mt-4 grid grid-cols-2 gap-3 lg:grid-cols-4">
-            <KpiCard variant="success" icon={<Users size={20} />} label="Total Students" value={stats.total} />
-            <KpiCard variant="primary" icon={<UserCheck size={20} />} label="Active" value={stats.active} />
-            <KpiCard variant="accent" icon={<AlertCircle size={20} />} label="Fees Pending" value={stats.pendingFees} />
-            <KpiCard variant="danger" icon={<TrendingUp size={20} />} label="New This Month" value={stats.newThisMonth} />
+        {/* 4 Stats KPI Cards (Always crisp and visible in 2x2 grid on mobile) */}
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-2.5 sm:gap-4 pt-1">
+          <div className="rounded-xl bg-[#f8fafc] border border-[#e2e8f0] p-3 sm:p-4 flex items-center gap-3">
+            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-[#e0eff0] text-[#004649]">
+              <Users size={20} />
+            </div>
+            <div className="min-w-0">
+              <p className="text-[10px] sm:text-xs font-bold uppercase tracking-wider text-[#64748b] truncate">Total Students</p>
+              <p className="text-base sm:text-xl font-extrabold text-[#0f172a]">{stats.total}</p>
+            </div>
           </div>
-        )}
+
+          <div className="rounded-xl bg-[#f0fdf4] border border-[#bbf7d0] p-3 sm:p-4 flex items-center gap-3">
+            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-[#dcfce7] text-[#15803d]">
+              <UserCheck size={20} />
+            </div>
+            <div className="min-w-0">
+              <p className="text-[10px] sm:text-xs font-bold uppercase tracking-wider text-[#15803d] truncate">Active</p>
+              <p className="text-base sm:text-xl font-extrabold text-[#15803d]">{stats.active}</p>
+            </div>
+          </div>
+
+          <div className="rounded-xl bg-[#fffbeb] border border-[#fde68a] p-3 sm:p-4 flex items-center gap-3">
+            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-[#fef3c7] text-[#b45309]">
+              <AlertCircle size={20} />
+            </div>
+            <div className="min-w-0">
+              <p className="text-[10px] sm:text-xs font-bold uppercase tracking-wider text-[#b45309] truncate">Fees Pending</p>
+              <p className="text-base sm:text-xl font-extrabold text-[#b45309]">{stats.pendingFees}</p>
+            </div>
+          </div>
+
+          <div className="rounded-xl bg-[#fef2f2] border border-[#fecaca] p-3 sm:p-4 flex items-center gap-3">
+            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-[#fee2e2] text-[#b91c1c]">
+              <TrendingUp size={20} />
+            </div>
+            <div className="min-w-0">
+              <p className="text-[10px] sm:text-xs font-bold uppercase tracking-wider text-[#b91c1c] truncate">New (Month)</p>
+              <p className="text-base sm:text-xl font-extrabold text-[#b91c1c]">{stats.newThisMonth}</p>
+            </div>
+          </div>
+        </div>
       </section>
 
-      {/* ── FILTER BAR ── */}
-      <section className="rounded-2xl bg-white p-4 shadow-[0_2px_8px_rgba(0,0,0,0.06),0_8px_32px_rgba(0,0,0,0.04)] space-y-3">
-        {/* Search — full width */}
-        <label className="flex h-11 items-center gap-2 rounded-xl bg-[#f3f4f5] px-3 transition focus-within:ring-2 focus-within:ring-[#16a34a]/30">
-          <Search className="h-4 w-4 shrink-0 text-[#9ca3af]" />
-          <input
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            placeholder="Search student by name…"
-            className="w-full bg-transparent text-sm text-[#111827] outline-none placeholder:text-[#9ca3af]"
-          />
-          {search ? (
-            <button
-              type="button"
-              onClick={() => setSearch('')}
-              className="flex h-11 w-11 shrink-0 items-center justify-center rounded-lg text-[#9ca3af] hover:bg-[#e5e7eb] hover:text-[#374151] sm:h-8 sm:w-8"
-              aria-label="Clear search"
+      {/* ── FILTER & SEARCH BAR ── */}
+      <section className="rounded-2xl bg-white border border-[#e2e8f0] p-4 sm:p-5 shadow-[0_2px_8px_rgba(0,0,0,0.04)] space-y-3.5">
+        
+        {/* Search Input */}
+        <div className="relative">
+          <label className="flex h-11 items-center gap-2.5 rounded-xl bg-[#f8fafc] border border-[#e2e8f0] px-3.5 transition focus-within:bg-white focus-within:ring-2 focus-within:ring-[#004649]/20 focus-within:border-[#004649]">
+            <Search className="h-4 w-4 shrink-0 text-[#94a3b8]" />
+            <input
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              placeholder="Search by student name, admission no, or phone…"
+              className="w-full bg-transparent text-xs sm:text-sm text-[#0f172a] outline-none placeholder:text-[#94a3b8]"
+            />
+            {search ? (
+              <button
+                type="button"
+                onClick={() => setSearch('')}
+                className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg text-[#94a3b8] hover:bg-[#e2e8f0] hover:text-[#0f172a] transition"
+                aria-label="Clear search"
+              >
+                <X className="h-3.5 w-3.5" />
+              </button>
+            ) : null}
+          </label>
+        </div>
+
+        {/* Filters Controls Row */}
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+          
+          <div className="flex flex-wrap items-center gap-2.5">
+            {/* Class Dropdown */}
+            <select
+              value={classFilter}
+              onChange={(e) => updateFilters({ classId: e.target.value, page: '1' })}
+              className="h-10 rounded-xl bg-[#f8fafc] border border-[#cbd5e1] px-3 text-xs sm:text-sm font-semibold text-[#0f172a] outline-none focus:ring-2 focus:ring-[#004649]/20 focus:border-[#004649] transition cursor-pointer"
+              aria-label="Filter by class"
             >
-              <X className="h-3.5 w-3.5" />
-            </button>
-          ) : null}
-        </label>
+              <option value="">All Classes & Sections</option>
+              {classes.map((c) => (
+                <option key={c.id} value={c.id}>
+                  {c.name} – {c.section}
+                </option>
+              ))}
+            </select>
 
-        {/* Class + Status on mobile, row on desktop */}
-        <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
-          <select
-            value={classFilter}
-            onChange={(e) => updateFilters({ classId: e.target.value, page: '1' })}
-            className="h-11 rounded-xl border-none bg-[#f3f4f5] px-3 text-sm text-[#374151] outline-none focus:ring-2 focus:ring-[#16a34a]/30 sm:h-10 sm:flex-none sm:w-auto"
-            aria-label="Filter by class"
-          >
-            <option value="">All Classes</option>
-            {classes.map((c) => <option key={c.id} value={c.id}>{c.name} – {c.section}</option>)}
-          </select>
-
-          {/* Status chips — horizontally scrollable on mobile */}
-          <div className="flex-1 overflow-x-auto -mx-4 px-4 sm:mx-0 sm:px-0">
-            <div className="flex gap-2 pb-1">
+            {/* Status Filter Chips */}
+            <div className="flex items-center gap-1.5 overflow-x-auto py-0.5">
               {STATUS_FILTERS.map((filter) => (
                 <button
                   key={filter.value}
                   type="button"
                   onClick={() => updateFilters({ status: filter.value, page: '1' })}
-                  className={`shrink-0 inline-flex h-11 items-center justify-center rounded-full px-3 text-xs font-semibold transition sm:h-10 ${
+                  className={`shrink-0 inline-flex h-9 items-center justify-center rounded-xl px-3 text-xs font-bold transition-all active:scale-95 ${
                     statusFilter === filter.value
-                      ? 'bg-gradient-to-br from-[#004649] to-[#1b5e62] text-white shadow-sm'
-                      : 'bg-[#f3f4f5] text-[#4b5563] hover:bg-[#e5e7eb]'
+                      ? 'bg-gradient-to-r from-[#004649] to-[#1b5e62] text-white shadow-2xs'
+                      : 'bg-[#f8fafc] border border-[#e2e8f0] text-[#64748b] hover:bg-[#f1f5f9] hover:text-[#0f172a]'
                   }`}
                 >
                   {filter.label}
@@ -1343,35 +1381,49 @@ export default function AdminStudentsPageClient({
             </div>
           </div>
 
-          {/* Reset + View toggle — desktop only */}
-          {hasActiveFilters && (
-            <button
-              type="button"
-              onClick={clearFilters}
-              className="h-10 inline-flex items-center justify-center gap-1.5 rounded-xl border border-[#e5e7eb] bg-white px-3 text-xs font-semibold text-[#374151] transition hover:bg-[#f9fafb] sm:flex hidden"
-            >
-              <SlidersHorizontal className="h-3.5 w-3.5 text-[#6b7280]" />
-              Reset
-            </button>
-          )}
+          {/* Right Tools (Reset & View Toggle) */}
+          <div className="flex items-center gap-2 ml-auto sm:ml-0">
+            {hasActiveFilters && (
+              <button
+                type="button"
+                onClick={clearFilters}
+                className="h-9 inline-flex items-center justify-center gap-1.5 rounded-xl border border-[#e2e8f0] bg-[#f8fafc] px-3 text-xs font-bold text-[#64748b] hover:text-[#0f172a] hover:bg-[#f1f5f9] transition active:scale-95"
+              >
+                <SlidersHorizontal className="h-3.5 w-3.5" />
+                <span>Reset</span>
+              </button>
+            )}
 
-          <div className="hidden sm:flex items-center gap-1 rounded-xl bg-[#edeeef] p-1 sm:ml-auto">
-            <button
-              onClick={() => updateFilters({ view: 'grid', page: '1' })}
-              className={`flex h-10 w-10 items-center justify-center rounded-lg transition-colors ${view === 'grid' ? 'bg-gradient-to-br from-[#004649] to-[#1b5e62] text-white shadow-sm' : 'text-[#6f7979] hover:text-[#1a1c1c]'}`}
-            >
-              <Grid3X3 size={15} />
-            </button>
-            <button
-              onClick={() => updateFilters({ view: 'list', page: '1' })}
-              className={`flex h-10 w-10 items-center justify-center rounded-lg transition-colors ${view === 'list' ? 'bg-gradient-to-br from-[#004649] to-[#1b5e62] text-white shadow-sm' : 'text-[#6f7979] hover:text-[#1a1c1c]'}`}
-            >
-              <List size={15} />
-            </button>
+            <div className="flex items-center gap-1 rounded-xl bg-[#f1f5f9] p-1 border border-[#e2e8f0]">
+              <button
+                type="button"
+                onClick={() => updateFilters({ view: 'grid', page: '1' })}
+                className={`flex h-8 w-8 items-center justify-center rounded-lg transition-all ${
+                  view === 'grid'
+                    ? 'bg-white text-[#004649] shadow-xs'
+                    : 'text-[#64748b] hover:text-[#0f172a]'
+                }`}
+                title="Grid View"
+              >
+                <Grid3X3 size={15} />
+              </button>
+              <button
+                type="button"
+                onClick={() => updateFilters({ view: 'list', page: '1' })}
+                className={`flex h-8 w-8 items-center justify-center rounded-lg transition-all ${
+                  view === 'list'
+                    ? 'bg-white text-[#004649] shadow-xs'
+                    : 'text-[#64748b] hover:text-[#0f172a]'
+                }`}
+                title="List View"
+              >
+                <List size={15} />
+              </button>
+            </div>
           </div>
         </div>
 
-        {message ? <p className="text-sm font-medium text-[#16a34a]">{message}</p> : null}
+        {message ? <p className="text-xs sm:text-sm font-semibold text-[#16a34a]">{message}</p> : null}
       </section>
 
 
