@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation';
 import { CalendarDays, X } from 'lucide-react';
 
 type TabKey = 'overview' | 'students' | 'teachers';
-type MarkStatus = 'PRESENT' | 'ABSENT' | 'LATE';
+type MarkStatus = 'PRESENT' | 'ABSENT' | 'LATE' | 'EXCUSED';
 
 type ClassOption = {
   id: string;
@@ -55,13 +55,15 @@ function statusTone(status: string | null) {
   if (status === 'PRESENT') return 'bg-[#e8f5e9] text-[#046c4e] border-[#b7dfbc]';
   if (status === 'ABSENT') return 'bg-[#fde8e8] text-[#b91c1c] border-[#fca5a5]';
   if (status === 'LATE') return 'bg-[#fff3e0] text-[#9a5a00] border-[#f5d0a9]';
+  if (status === 'EXCUSED') return 'bg-[#e0ecff] text-[#1e3a8a] border-[#bfd3ff]';
   return 'bg-[#edeeef] text-[#64748b] border-none';
 }
 
-function heatTone(present: number, absent: number, late: number) {
-  if (!present && !absent && !late) return 'bg-[#f1f5f9] text-[#94a3b8]';
+function heatTone(present: number, absent: number, late: number, excused: number) {
+  if (!present && !absent && !late && !excused) return 'bg-[#f1f5f9] text-[#94a3b8]';
   if (absent > 0) return 'bg-[#fee2e2] text-[#b91c1c]';
   if (late > 0) return 'bg-[#fef3c7] text-[#9a5a00]';
+  if (excused > 0) return 'bg-[#e0ecff] text-[#1e3a8a]';
   return 'bg-[#dcfce7] text-[#166534]';
 }
 
@@ -69,6 +71,7 @@ function modalTone(status: AttendanceDetailRow['status']) {
   if (status === 'PRESENT') return 'bg-[#ecfdf3] text-[#166534]';
   if (status === 'ABSENT') return 'bg-[#fef2f2] text-[#b91c1c]';
   if (status === 'LATE') return 'bg-[#fffbeb] text-[#9a5a00]';
+  if (status === 'EXCUSED') return 'bg-[#eff6ff] text-[#1e3a8a]';
   return 'bg-[#f1f5f9] text-[#64748b]';
 }
 
@@ -164,12 +167,13 @@ export default function AttendanceDashboardClient({
   );
 
   const monthMap = useMemo(() => {
-    const map = new Map<string, { present: number; absent: number; late: number }>();
+    const map = new Map<string, { present: number; absent: number; late: number; excused: number }>();
     for (const row of monthStatusByDay) {
-      const current = map.get(row.date) ?? { present: 0, absent: 0, late: 0 };
+      const current = map.get(row.date) ?? { present: 0, absent: 0, late: 0, excused: 0 };
       if (row.status === 'PRESENT') current.present += row.count;
       if (row.status === 'ABSENT') current.absent += row.count;
       if (row.status === 'LATE') current.late += row.count;
+      if (row.status === 'EXCUSED') current.excused += row.count;
       map.set(row.date, current);
     }
     return map;
@@ -467,20 +471,21 @@ export default function AttendanceDashboardClient({
               <div className="grid grid-cols-4 gap-2 sm:grid-cols-7 lg:grid-cols-10">
                 {Array.from({ length: daysInMonth }, (_, index) => index + 1).map((day) => {
                   const date = new Date(currentDate.getFullYear(), currentDate.getMonth(), day).toISOString().slice(0, 10);
-                  const stats = monthMap.get(date) ?? { present: 0, absent: 0, late: 0 };
+                  const stats = monthMap.get(date) ?? { present: 0, absent: 0, late: 0, excused: 0 };
                   const active = selectedDay === date;
                   return (
                     <button
                       key={date}
                       type="button"
                       onClick={() => setSelectedDay(date)}
-                      className={`rounded-xl border p-2 text-center text-xs transition-all hover:shadow-md focus:outline-none focus:ring-2 focus:ring-[#004649] ${heatTone(stats.present, stats.absent, stats.late)} ${active ? 'ring-2 ring-[#004649] ring-offset-1' : 'border-transparent'}`}
+                      className={`rounded-xl border p-2 text-center text-xs transition-all hover:shadow-md focus:outline-none focus:ring-2 focus:ring-[#004649] ${heatTone(stats.present, stats.absent, stats.late, stats.excused)} ${active ? 'ring-2 ring-[#004649] ring-offset-1' : 'border-transparent'}`}
                       aria-pressed={active}
                     >
                       <p className="font-bold">{day}</p>
                       <p className="mt-1 text-[10px]">P {stats.present}</p>
                       <p className="text-[10px]">A {stats.absent}</p>
                       <p className="text-[10px]">L {stats.late}</p>
+                      <p className="text-[10px]">E {stats.excused}</p>
                     </button>
                   );
                 })}
@@ -514,11 +519,12 @@ export default function AttendanceDashboardClient({
                       </span>
                     </div>
 
-                    <div className="grid grid-cols-3 gap-2">
+                    <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
                       {([
                         { key: 'PRESENT', label: 'Present', cls: 'border-[#86efac] text-[#166534] bg-[#ecfdf3]' },
                         { key: 'ABSENT', label: 'Absent', cls: 'border-[#fca5a5] text-[#b91c1c] bg-[#fef2f2]' },
-                        { key: 'LATE', label: 'Late', cls: 'border-[#fcd34d] text-[#9a5a00] bg-[#fffbeb]' }
+                        { key: 'LATE', label: 'Late', cls: 'border-[#fcd34d] text-[#9a5a00] bg-[#fffbeb]' },
+                        { key: 'EXCUSED', label: 'Leave (Rukhsat)', cls: 'border-[#bfd3ff] text-[#1e3a8a] bg-[#eff6ff]' }
                       ] as { key: MarkStatus; label: string; cls: string }[]).map((item) => (
                         <button
                           key={item.key}
@@ -563,7 +569,7 @@ export default function AttendanceDashboardClient({
             <div className="space-y-3">
               <div className="grid gap-3 xl:grid-cols-2">
                 {teachers.map((teacher) => {
-                  const summary = teacherMonthlySummaryMap.get(teacher.id) ?? { present: 0, absent: 0, late: 0, total: 0 };
+                  const summary = teacherMonthlySummaryMap.get(teacher.id) ?? { present: 0, absent: 0, late: 0, excused: 0, total: 0 };
                   return (
                     <div key={teacher.id} className="rounded-2xl border border-[#dbeafe] bg-[#f8fbff] p-4">
                       <div className="flex items-start justify-between gap-3">
@@ -575,21 +581,25 @@ export default function AttendanceDashboardClient({
                           {teacher.status ?? 'UNMARKED'}
                         </span>
                       </div>
-                      <div className="mt-4 grid grid-cols-4 gap-2">
-                        <div className="rounded-xl bg-[#ecfdf3] p-3 text-center">
+                      <div className="mt-4 grid grid-cols-5 gap-2">
+                        <div className="rounded-xl bg-[#ecfdf3] p-2 text-center">
                           <p className="text-[10px] font-semibold text-[#166534]">Present</p>
                           <p className="mt-1 text-lg font-bold text-[#0f172a]">{summary.present}</p>
                         </div>
-                        <div className="rounded-xl bg-[#fef2f2] p-3 text-center">
+                        <div className="rounded-xl bg-[#fef2f2] p-2 text-center">
                           <p className="text-[10px] font-semibold text-[#b91c1c]">Absent</p>
                           <p className="mt-1 text-lg font-bold text-[#0f172a]">{summary.absent}</p>
                         </div>
-                        <div className="rounded-xl bg-[#fffbeb] p-3 text-center">
+                        <div className="rounded-xl bg-[#fffbeb] p-2 text-center">
                           <p className="text-[10px] font-semibold text-[#9a5a00]">Late</p>
                           <p className="mt-1 text-lg font-bold text-[#0f172a]">{summary.late}</p>
                         </div>
-                        <div className="rounded-xl bg-[#eff6ff] p-3 text-center">
-                          <p className="text-[10px] font-semibold text-[#1d4ed8]">Total</p>
+                        <div className="rounded-xl bg-[#eff6ff] p-2 text-center">
+                          <p className="text-[10px] font-semibold text-[#1e3a8a]">Leave</p>
+                          <p className="mt-1 text-lg font-bold text-[#0f172a]">{summary.excused}</p>
+                        </div>
+                        <div className="rounded-xl bg-[#f8fafc] p-2 text-center border border-[#e2e8f0]">
+                          <p className="text-[10px] font-semibold text-[#475569]">Total</p>
                           <p className="mt-1 text-lg font-bold text-[#0f172a]">{summary.total}</p>
                         </div>
                       </div>
@@ -612,11 +622,12 @@ export default function AttendanceDashboardClient({
                       </span>
                     </div>
 
-                    <div className="grid grid-cols-3 gap-2">
+                    <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
                       {([
                         { key: 'PRESENT', label: 'Present', cls: 'border-[#86efac] text-[#166534] bg-[#ecfdf3]' },
                         { key: 'ABSENT', label: 'Absent', cls: 'border-[#fca5a5] text-[#b91c1c] bg-[#fef2f2]' },
-                        { key: 'LATE', label: 'Late', cls: 'border-[#fcd34d] text-[#9a5a00] bg-[#fffbeb]' }
+                        { key: 'LATE', label: 'Late', cls: 'border-[#fcd34d] text-[#9a5a00] bg-[#fffbeb]' },
+                        { key: 'EXCUSED', label: 'Leave (Rukhsat)', cls: 'border-[#bfd3ff] text-[#1e3a8a] bg-[#eff6ff]' }
                       ] as { key: MarkStatus; label: string; cls: string }[]).map((item) => (
                         <button
                           key={item.key}

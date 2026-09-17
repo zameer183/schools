@@ -155,7 +155,7 @@ export async function runFeeAutomation() {
 
   const students = await prisma.student.findMany({
     include: {
-      fees: { orderBy: { createdAt: 'desc' }, take: 1, select: { amount: true } }
+      fees: { orderBy: { createdAt: 'desc' }, take: 1 }
     }
   });
 
@@ -163,6 +163,12 @@ export async function runFeeAutomation() {
   let skipped = 0;
 
   for (const student of students) {
+    const latestFee = student.fees[0];
+    if (!latestFee || !latestFee.collectOnMonthStart) {
+      skipped++;
+      continue;
+    }
+
     const existing = await prisma.fee.findFirst({
       where: { studentId: student.id, dueDate: { gte: monthStart, lte: monthEnd } }
     });
@@ -173,8 +179,12 @@ export async function runFeeAutomation() {
         studentId: student.id,
         title: `Monthly Tuition Fee - ${monthLabel}`,
         dueDate: monthStart,
-        amount: student.fees[0]?.amount ?? 0,
-        discount: 0,
+        amount: latestFee.amount,
+        discount: latestFee.discount,
+        feeCategory: latestFee.feeCategory,
+        feeType: latestFee.feeType,
+        partialFeeSupported: latestFee.partialFeeSupported,
+        collectOnMonthStart: true,
         status: PaymentStatus.PENDING
       }
     });

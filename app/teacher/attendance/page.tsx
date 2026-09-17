@@ -45,7 +45,7 @@ const statusLabel: Record<AttendanceStatus, string> = {
   PRESENT: 'Present',
   ABSENT: 'Absent',
   LATE: 'Late',
-  EXCUSED: 'Excused'
+  EXCUSED: 'Leave (Rukhsat)'
 };
 
 const statusStyle: Record<AttendanceStatus, string> = {
@@ -58,7 +58,7 @@ const statusStyle: Record<AttendanceStatus, string> = {
 const quickStatusPills: Array<{ label: string; value: AttendanceStatus }> = [
   { label: 'Present', value: 'PRESENT' },
   { label: 'Absent', value: 'ABSENT' },
-  { label: 'Leave', value: 'EXCUSED' }
+  { label: 'Leave (Rukhsat)', value: 'EXCUSED' }
 ];
 
 const dayNames = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];

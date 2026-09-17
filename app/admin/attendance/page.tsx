@@ -467,12 +467,13 @@ async function AttendanceContent({ searchParams }: { searchParams?: Promise<Sear
 
   // studentDailyMap replaced by embedded relation
   const staffDailyMap = new Map(staffDailyRows.map((row) => [row.teacherId, row.status]));
-  const staffMonthlyMap = new Map<string, { present: number; absent: number; late: number }>();
+  const staffMonthlyMap = new Map<string, { present: number; absent: number; late: number; excused: number }>();
   for (const row of staffMonthlyRows) {
-    const current = staffMonthlyMap.get(row.teacherId) ?? { present: 0, absent: 0, late: 0 };
+    const current = staffMonthlyMap.get(row.teacherId) ?? { present: 0, absent: 0, late: 0, excused: 0 };
     if (row.status === AttendanceStatus.PRESENT) current.present += row.count;
     if (row.status === AttendanceStatus.ABSENT) current.absent += row.count;
     if (row.status === AttendanceStatus.LATE) current.late += row.count;
+    if (row.status === AttendanceStatus.EXCUSED) current.excused += row.count;
     staffMonthlyMap.set(row.teacherId, current);
   }
   const classById = new Map(classes.map((item) => [item.id, item]));

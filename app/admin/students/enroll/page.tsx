@@ -354,7 +354,6 @@ export default function EnrollStudentPage() {
     }
 
     if (step === 3) {
-      if (!form3.schoolName.trim()) errs.schoolName = 'School name is required';
       if (!form3.classId)           errs.classId    = 'Please select a class';
       if (!form3.joinDate)          errs.joinDate   = 'Join date is required';
     }
@@ -579,15 +578,18 @@ export default function EnrollStudentPage() {
               <div>
                 <label className={labelCls}>WhatsApp Number *</label>
                 <div className="flex gap-2">
-                  <select
+                  <input
+                    list="country-codes"
                     value={form2.whatsappCode}
                     onChange={e => setForm2(p => ({ ...p, whatsappCode: e.target.value }))}
-                    className="h-11 rounded-xl border-none bg-[#f1f5f9] px-2 text-sm text-[#0f172a] outline-none focus:ring-2 focus:ring-[#0F4F4A]/25 focus:bg-white"
-                  >
+                    className="h-11 w-24 rounded-xl border-none bg-[#f1f5f9] px-2 text-sm text-[#0f172a] outline-none focus:ring-2 focus:ring-[#0F4F4A]/25 focus:bg-white"
+                    placeholder="+92"
+                  />
+                  <datalist id="country-codes">
                     {COUNTRY_CODES.map(c => (
                       <option key={c.code} value={c.code}>{c.label}</option>
                     ))}
-                  </select>
+                  </datalist>
                   <div className="flex-1">
                     <input
                       value={form2.whatsappNumber}
@@ -638,8 +640,8 @@ export default function EnrollStudentPage() {
               </div>
 
               <div className="grid gap-4 sm:grid-cols-2">
-                <Field label="School / Institute Name *" error={errors.schoolName} icon={School} className="sm:col-span-2">
-                  <input {...inp3('schoolName')} placeholder="e.g. Al-Noor Institute" className={inputCls(errors.schoolName)} />
+                <Field label="School / Institute Name" error={errors.schoolName} icon={School} className="sm:col-span-2">
+                  <input {...inp3('schoolName')} placeholder="Previous school (optional)" className={inputCls(errors.schoolName)} />
                 </Field>
 
                 <Field label="Roll Number" icon={Hash}>

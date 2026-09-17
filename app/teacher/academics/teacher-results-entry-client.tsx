@@ -1,4 +1,4 @@
-﻿'use client';
+'use client';
 
 import { useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
@@ -325,6 +325,23 @@ export function TeacherResultsEntryClient({
 
   if (!activeExam) return null;
 
+  const { totalMarksEntered, studentsWithMarks } = useMemo(() => {
+    let total = 0;
+    let count = 0;
+    for (const student of students) {
+      const savedMarks = savedMap.get(student.id);
+      const currentValue = draftMarks[student.id] ?? (savedMarks !== undefined ? String(savedMarks) : '');
+      if (currentValue !== '') {
+        total += Number(currentValue) || 0;
+        count++;
+      }
+    }
+    return { totalMarksEntered: total, studentsWithMarks: count };
+  }, [students, savedMap, draftMarks]);
+
+  const classAverage = studentsWithMarks > 0 ? (totalMarksEntered / studentsWithMarks).toFixed(1) : '-';
+  const averagePercentage = studentsWithMarks > 0 ? ((totalMarksEntered / studentsWithMarks) / activeExam.totalMarks * 100).toFixed(1) : '-';
+
   return (
     <div className="grid gap-5 lg:grid-cols-12">
       <div className="space-y-3 lg:col-span-4">
@@ -467,7 +484,10 @@ export function TeacherResultsEntryClient({
 
         <section className="overflow-hidden rounded-lg border border-[#E6E8EA] bg-white shadow-[0_1px_3px_rgba(0,0,0,0.05),0_4px_6px_rgba(15,23,42,0.05)]">
           <div className="flex items-center justify-between border-b border-[#E0E3E5] p-5">
-            <h3 className="text-2xl font-semibold text-[#191C1E]">Student List</h3>
+            <div>
+              <h3 className="text-2xl font-semibold text-[#191C1E]">Student List</h3>
+              <p className="mt-1 text-sm text-[#40474F]">Class Average: <span className="font-bold text-[#084750]">{classAverage}</span> <span className="text-xs">({averagePercentage}%)</span></p>
+            </div>
             <button
               className="rounded-lg px-3 py-2 text-sm font-bold text-[#084750] transition hover:bg-[#E6F4F1] disabled:opacity-60"
               type="button"

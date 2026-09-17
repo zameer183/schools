@@ -181,7 +181,7 @@ export function FinanceClientBar({
               className="flex-1 sm:flex-none inline-flex h-9 items-center justify-center gap-1.5 rounded-xl border border-[#004649]/30 bg-[#e0eff0]/60 px-3.5 text-xs font-bold text-[#004649] hover:bg-[#e0eff0] active:scale-95 transition disabled:opacity-60"
             >
               <RefreshCw className={`h-3.5 w-3.5 ${autoRunPending ? 'animate-spin' : ''}`} />
-              <span>Auto Fees</span>
+              <span>Generate Monthly Fees</span>
             </button>
 
             <button
