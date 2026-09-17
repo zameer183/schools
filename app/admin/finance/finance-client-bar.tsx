@@ -232,6 +232,35 @@ export function FinanceClientBar({
             ))}
           </select>
 
+          <div className="flex items-center gap-1.5 rounded-xl border border-[#cbd5e1] bg-[#f8fafc] px-1.5">
+            <span className="text-[10px] font-bold uppercase tracking-widest text-[#64748b] pl-1">Range:</span>
+            <input
+              type="date"
+              value={fromDate}
+              onChange={e => {
+                const next = e.target.value;
+                setFromDate(next);
+                if (next) setMonth('');
+              }}
+              className="h-7 bg-transparent text-xs font-medium text-[#0f172a] outline-none"
+              aria-label="From Date"
+            />
+            <span className="text-[#94a3b8]">-</span>
+            <input
+              type="date"
+              value={toDate}
+              onChange={e => {
+                const next = e.target.value;
+                setToDate(next);
+                if (next) setMonth('');
+              }}
+              className="h-7 bg-transparent text-xs font-medium text-[#0f172a] outline-none"
+              aria-label="To Date"
+            />
+          </div>
+
+          <span className="text-xs text-[#94a3b8] font-bold">OR</span>
+
           <input
             type="month"
             value={month}

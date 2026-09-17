@@ -40,24 +40,27 @@ function toWaRecipient(phone: string | null | undefined) {
   return digits.length >= 10 ? digits : null;
 }
 
-function getWhatsAppUrl(fee: SerializedFeeItem): string | null {
+function getWhatsAppUrl(fee: SerializedFeeItem & { totalRemaining?: number; titleList?: string[] }): string | null {
   const recipient = toWaRecipient(fee.whatsApp ?? fee.guardianPhone);
   if (!recipient) return null;
 
-  const isPaid = fee.remaining <= 0 || fee.status === 'PAID';
+  const remaining = fee.totalRemaining ?? fee.remaining;
+  const isPaid = remaining <= 0 || fee.status === 'PAID';
+  const feeTitle = fee.titleList && fee.titleList.length > 1 ? fee.titleList.join(' & ') : fee.title;
+  
   const text = isPaid
     ? [
         'Assalamualaikum,',
         `Payment received for ${fee.studentName}.`,
-        `Fee: ${fee.title}`,
+        `Fee: ${feeTitle}`,
         `Amount: ${formatCurrency(Math.max(fee.amount - fee.discount, 0))}`,
         'Thank you.'
       ].join('\n')
     : [
         'Assalamualaikum,',
         `Fee reminder for ${fee.studentName}.`,
-        `Fee: ${fee.title}`,
-        `Remaining: ${formatCurrency(fee.remaining)}`,
+        `Fee: ${feeTitle}`,
+        `Remaining: ${formatCurrency(remaining)}`,
         `Due Date: ${fee.dueDate.slice(0, 10)}`,
         'Kindly make the payment at your earliest convenience.'
       ].join('\n');
@@ -94,9 +97,33 @@ export function FeeBulkList({
   const [toast, setToast] = useState<{ message: string; type: 'success' | 'error' } | null>(null);
   const selectAllRef = useRef<HTMLInputElement>(null);
 
-  const selectedRows = useMemo(
-    () => fees.filter((fee) => selected.has(fee.id)),
-    [fees, selected]
+  const groupedFees = useMemo(() => {
+    const map = new Map<string, SerializedFeeItem & { mergedIds: string[], totalRemaining: number, titleList: string[] }>();
+    for (const f of fees) {
+      const existing = map.get(f.studentId);
+      if (existing && f.status !== 'PAID' && existing.status !== 'PAID') {
+        existing.totalRemaining += f.remaining;
+        existing.amount += f.amount;
+        existing.paidAmount += f.paidAmount;
+        existing.discount += f.discount;
+        existing.mergedIds.push(f.id);
+        existing.titleList.push(f.title);
+        existing.dueMonthCount = Math.max(existing.dueMonthCount || 1, f.dueMonthCount || 1);
+        if (new Date(f.dueDate) < new Date(existing.dueDate)) existing.dueDate = f.dueDate;
+        existing.status = 'PENDING';
+      } else if (!existing) {
+        map.set(f.studentId, { ...f, mergedIds: [f.id], totalRemaining: f.remaining, titleList: [f.title] });
+      } else {
+        // If one is paid and another isn't, we just append a duplicate entry with a fake ID to avoid collision
+        map.set(f.id, { ...f, mergedIds: [f.id], totalRemaining: f.remaining, titleList: [f.title] });
+      }
+    }
+    return Array.from(map.values());
+  }, [fees]);
+
+  const selectedGroups = useMemo(
+    () => groupedFees.filter((g) => g.mergedIds.every(id => selected.has(id))),
+    [groupedFees, selected]
   );
   const allSelected = fees.length > 0 && selected.size === fees.length;
   const someSelected = selected.size > 0 && selected.size < fees.length;
@@ -115,11 +142,14 @@ export function FeeBulkList({
     selectedFeeStatus === 'unpaid' ? 'Due Fee Records' :
     'Fee Records';
 
-  const toggle = (id: string) => {
+  const toggleGroup = (mergedIds: string[]) => {
     setSelected((prev) => {
       const next = new Set(prev);
-      if (next.has(id)) next.delete(id);
-      else next.add(id);
+      const isAllSelected = mergedIds.every(id => next.has(id));
+      for (const id of mergedIds) {
+        if (isAllSelected) next.delete(id);
+        else next.add(id);
+      }
       return next;
     });
   };
@@ -178,13 +208,13 @@ export function FeeBulkList({
   };
 
   const exportCSV = () => {
-    const rows = selectedRows.length ? selectedRows : fees;
+    const rows = selectedGroups.length ? selectedGroups : groupedFees;
     const header = 'Student,Class,Fee,Due Date,Status,Amount,Paid,Remaining,WhatsApp';
     const csvRows = rows.map((fee) =>
       [
         fee.studentName,
         fee.classLabel ?? '',
-        fee.title,
+        fee.titleList ? fee.titleList.join(' & ') : fee.title,
         fee.dueDate.slice(0, 10),
         statusLabel(fee.status),
         fee.amount,
@@ -266,7 +296,7 @@ export function FeeBulkList({
                 </button>
                 <button
                   type="button"
-                  onClick={() => openWhatsAppForRows(selectedRows)}
+                  onClick={() => openWhatsAppForRows(selectedGroups)}
                   disabled={selected.size === 0}
                   className="inline-flex h-10 items-center gap-1.5 rounded-xl bg-[#25d366] px-3 text-xs font-bold text-white transition hover:bg-[#1fa456] disabled:cursor-not-allowed disabled:opacity-50"
                 >
@@ -299,18 +329,21 @@ export function FeeBulkList({
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-[#f1f5f9]">
-                  {fees.map((fee) => {
+                  {groupedFees.map((fee) => {
                     const waUrl = getWhatsAppUrl(fee);
-                    const isPaid = fee.remaining <= 0 || fee.status === 'PAID';
-                    const isLoading = loadingIds.has(fee.id);
+                    const remaining = fee.totalRemaining ?? fee.remaining;
+                    const isPaid = remaining <= 0 || fee.status === 'PAID';
+                    const isGroupSelected = fee.mergedIds.every(id => selected.has(id));
+                    const isLoading = fee.mergedIds.some(id => loadingIds.has(id));
+                    const feeTitle = fee.titleList && fee.titleList.length > 1 ? fee.titleList.join(' + ') : fee.title;
                     return (
-                      <tr key={fee.id} className={selected.has(fee.id) ? 'bg-[#f0f9f9]' : 'hover:bg-[#fafafa]'}>
+                      <tr key={fee.id} className={isGroupSelected ? 'bg-[#f0f9f9]' : 'hover:bg-[#fafafa]'}>
                         <td className="px-3 py-3">
                           <label className="inline-flex items-start gap-2">
                             <input
                               type="checkbox"
-                              checked={selected.has(fee.id)}
-                              onChange={() => toggle(fee.id)}
+                              checked={isGroupSelected}
+                              onChange={() => toggleGroup(fee.mergedIds)}
                               className="mt-1 h-3.5 w-3.5 accent-[#004649]"
                             />
                             <span>
@@ -320,26 +353,35 @@ export function FeeBulkList({
                                 <span className="mt-0.5 block text-xs font-semibold text-[#b45309]">{fee.dueMonthCount} months due</span>
                               ) : null}
                               {fee.advanceMonthCount && fee.advanceMonthCount > 0 ? (
-                                <span className="mt-0.5 block text-xs font-semibold text-[#15803d]">{fee.advanceMonthCount} month(s) advance paid</span>
+                                <span className="mt-0.5 block text-xs font-semibold text-[#16a34a]">{fee.advanceMonthCount} months advance</span>
                               ) : null}
                             </span>
                           </label>
                         </td>
-                        <td className="px-3 py-3 text-[#374151]">{fee.title}</td>
+                        <td className="px-3 py-3 font-medium text-[#111827]">
+                          <div className="max-w-[150px] truncate" title={feeTitle}>{feeTitle}</div>
+                        </td>
                         <td className="px-3 py-3">
-                          <span className={`rounded-full px-2.5 py-1 text-[10px] font-bold ${statusBadge(fee.status)}`}>
+                          <span className={`inline-block rounded-full px-2 py-0.5 text-[10px] font-bold ${statusBadge(fee.status)}`}>
                             {statusLabel(fee.status)}
                           </span>
                         </td>
-                        <td className="px-3 py-3 text-[#374151]">
-                          {formatCurrency(Math.max(fee.amount - fee.discount, 0))}
-                          <span className="block text-xs text-[#64748b]">Paid {formatCurrency(fee.paidAmount)}</span>
+                        <td className="px-3 py-3">
+                          <div className="text-sm font-semibold text-[#111827]">{formatCurrency(fee.amount)}</div>
+                          <div className="text-xs text-[#64748b]">Paid: {formatCurrency(fee.paidAmount)}</div>
                         </td>
-                        <td className={`px-3 py-3 font-bold ${fee.remaining > 0 ? 'text-[#dc2626]' : 'text-[#16a34a]'}`}>
-                          {formatCurrency(fee.remaining)}
-                        </td>
+                        <td className="px-3 py-3 font-bold text-[#111827]">{formatCurrency(remaining)}</td>
                         <td className="px-3 py-3 text-[#64748b]">{fee.dueDate.slice(0, 10)}</td>
-                        <td className="px-3 py-3 text-[#64748b]">{fee.whatsApp ?? fee.guardianPhone ?? 'No number'}</td>
+                        <td className="px-3 py-3">
+                          {fee.whatsApp || fee.guardianPhone ? (
+                            <div className="text-xs">
+                              <span className="block text-[#111827]">{fee.whatsApp || fee.guardianPhone}</span>
+                              <span className="block text-[10px] text-[#64748b]">WhatsApp / Phone</span>
+                            </div>
+                          ) : (
+                            <span className="text-xs text-[#9ca3af]">-</span>
+                          )}
+                        </td>
                         <td className="px-3 py-3 text-right">
                           <div className="inline-flex items-center gap-2">
                             {isPaid ? (
@@ -380,28 +422,31 @@ export function FeeBulkList({
             </div>
 
             <div className="space-y-3 lg:hidden">
-              {fees.map((fee) => {
+              {groupedFees.map((fee) => {
                 const waUrl = getWhatsAppUrl(fee);
-                const isPaid = fee.remaining <= 0 || fee.status === 'PAID';
-                const isLoading = loadingIds.has(fee.id);
+                const remaining = fee.totalRemaining ?? fee.remaining;
+                const isPaid = remaining <= 0 || fee.status === 'PAID';
+                const isGroupSelected = fee.mergedIds.every(id => selected.has(id));
+                const isLoading = fee.mergedIds.some(id => loadingIds.has(id));
+                const feeTitle = fee.titleList && fee.titleList.length > 1 ? fee.titleList.join(' + ') : fee.title;
                 return (
-                  <div key={fee.id} className={`rounded-xl border border-[#edf0f2] p-3 ${selected.has(fee.id) ? 'bg-[#f0f9f9]' : 'bg-white'}`}>
+                  <div key={fee.id} className={`rounded-xl border border-[#edf0f2] p-3 ${isGroupSelected ? 'bg-[#f0f9f9]' : 'bg-white'}`}>
                     <div className="flex items-start justify-between gap-2">
                       <label className="flex min-w-0 items-start gap-2">
                         <input
                           type="checkbox"
-                          checked={selected.has(fee.id)}
-                          onChange={() => toggle(fee.id)}
+                          checked={isGroupSelected}
+                          onChange={() => toggleGroup(fee.mergedIds)}
                           className="mt-1 h-4 w-4 accent-[#004649]"
                         />
                         <span className="min-w-0">
                           <span className="block truncate text-sm font-semibold text-[#111827]">{fee.studentName}</span>
-                          <span className="block text-xs text-[#64748b]">{fee.classLabel ?? fee.title}</span>
+                          <span className="block text-xs text-[#64748b] truncate">{fee.classLabel ?? feeTitle}</span>
                           {fee.dueMonthCount && fee.dueMonthCount > 1 ? (
                             <span className="mt-0.5 block text-xs font-semibold text-[#b45309]">{fee.dueMonthCount} months due</span>
                           ) : null}
                           {fee.advanceMonthCount && fee.advanceMonthCount > 0 ? (
-                            <span className="mt-0.5 block text-xs font-semibold text-[#15803d]">{fee.advanceMonthCount} month(s) advance paid</span>
+                            <span className="mt-0.5 block text-xs font-semibold text-[#16a34a]">{fee.advanceMonthCount} months advance</span>
                           ) : null}
                         </span>
                       </label>
@@ -411,17 +456,17 @@ export function FeeBulkList({
                     </div>
 
                     <div className="mt-3 grid grid-cols-2 gap-2 text-xs text-[#4b5563]">
-                      <p>Fee: <span className="font-semibold text-[#111827]">{formatCurrency(Math.max(fee.amount - fee.discount, 0))}</span></p>
+                      <p>Fee: <span className="font-semibold text-[#111827]">{formatCurrency(fee.amount)}</span></p>
                       <p>Paid: <span className="font-semibold text-[#111827]">{formatCurrency(fee.paidAmount)}</span></p>
                       <p>Due: <span className="font-semibold text-[#111827]">{fee.dueDate.slice(0, 10)}</span></p>
-                      <p>Remaining: <span className={fee.remaining > 0 ? 'font-semibold text-[#dc2626]' : 'font-semibold text-[#16a34a]'}>{formatCurrency(fee.remaining)}</span></p>
+                      <p>Remaining: <span className={remaining > 0 ? 'font-semibold text-[#dc2626]' : 'font-semibold text-[#16a34a]'}>{formatCurrency(remaining)}</span></p>
                     </div>
 
                     <div className="mt-3 grid grid-cols-2 gap-2">
                       <button
                         type="button"
-                        onClick={() => updateOne(fee.id, isPaid ? 'PENDING' : 'PAID')}
-                        disabled={isLoading}
+                        onClick={() => bulkUpdate(isPaid ? 'PENDING' : 'PAID')}
+                        disabled={isLoading || !isGroupSelected}
                         className={`h-11 rounded-xl px-3 text-xs font-bold transition disabled:opacity-50 ${
                           isPaid
                             ? 'bg-[#fff7ed] text-[#b45309] ring-1 ring-[#fed7aa] hover:bg-[#ffedd5]'
