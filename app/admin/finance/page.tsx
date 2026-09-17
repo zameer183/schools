@@ -248,7 +248,7 @@ export default async function AdminFinancePage({ searchParams }: AdminFinancePag
   
   let defaultPeriod = 'all';
   if (!params.period && !params.month && !params.from && !params.to) {
-      defaultPeriod = 'mtd_full';
+      defaultPeriod = 'all';
   }
   const selectedPeriod =
     ['all', 'mtd_1_8', 'mtd_1_15', 'mtd_full'].includes(params.period as string)
