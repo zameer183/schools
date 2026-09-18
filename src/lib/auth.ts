@@ -8,7 +8,7 @@ import { prisma } from '@/lib/prisma';
 import type { SessionPayload, SessionUser } from '@/types/auth';
 
 const COOKIE_NAME = 'hms_session';
-const TTL_SECONDS = 60 * 60 * 8;
+const TTL_SECONDS = 60 * 60 * 24 * 30; // 30 days
 
 function getSecret() {
   const secret = process.env.JWT_SECRET;
