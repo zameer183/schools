@@ -26,6 +26,12 @@ import {
   RotateCcw
 } from 'lucide-react';
 
+type ClassItem = {
+  id: string;
+  name: string;
+  section: string;
+};
+
 type StudentItem = {
   id: string;
   admissionNo: string;
@@ -726,6 +732,8 @@ export default function TeacherProgressPage() {
   const validateForm = () => {
     if (!form.date || !form.classId || !form.studentId) return 'Date, class, and student are required.';
 
+    let hasAnyValidSection = false;
+
     for (const { key, title } of sectionMeta) {
       const section = form.sections[key];
       const hasAnyRangeData = (section.ranges || []).some(
@@ -733,10 +741,9 @@ export default function TeacherProgressPage() {
       );
       const hasAnyMetaData = Boolean(section.kaifiyat || section.tajweeditotal || section.hifztotal);
       const hasAnyData = hasAnyRangeData || hasAnyMetaData;
-      const isOptionalSection = key === 'sabqi' || key === 'manzil';
 
-      // Sabqi/Manzil remain optional unless teacher has entered any data in that section.
-      if (isOptionalSection && !hasAnyData) {
+      // Skip empty sections (any section is optional, but at least one must be filled)
+      if (!hasAnyData) {
         continue;
       }
 
@@ -756,17 +763,24 @@ export default function TeacherProgressPage() {
         }
       }
 
-      // Must have Kaifiyat and mistake counts
+      // Must have Kaifiyat
       if (!section.kaifiyat) {
         return `${title}: select Kaifiyat (performance).`;
       }
-      if (section.tajweeditotal === '' || Number(section.tajweeditotal) < 0 || Number(section.tajweeditotal) > 99) {
+      if (section.tajweeditotal !== '' && (Number(section.tajweeditotal) < 0 || Number(section.tajweeditotal) > 99)) {
         return `${title}: Tajweedi mistakes must be 0-99.`;
       }
-      if (section.hifztotal === '' || Number(section.hifztotal) < 0 || Number(section.hifztotal) > 99) {
+      if (section.hifztotal !== '' && (Number(section.hifztotal) < 0 || Number(section.hifztotal) > 99)) {
         return `${title}: Hifz mistakes must be 0-99.`;
       }
+
+      hasAnyValidSection = true;
     }
+
+    if (!hasAnyValidSection) {
+      return 'Please complete at least one section (Sabaq, Sabqi, or Manzil).';
+    }
+
     return null;
   };
 
@@ -787,13 +801,13 @@ export default function TeacherProgressPage() {
       });
 
       lines.push(`Kaifiyat:${section.kaifiyat}`);
-      lines.push(`TajweeditTotal:${section.tajweeditotal}`);
-      lines.push(`HifzTotal:${section.hifztotal}`);
+      lines.push(`TajweeditTotal:${section.tajweeditotal || '0'}`);
+      lines.push(`HifzTotal:${section.hifztotal || '0'}`);
     });
 
     lines.push('[SUMMARY]');
     lines.push(`OverallPerformance:${summary.overallPerformance}`);
-    lines.push(`TotalMistakes${summary.totalMistakes}`);
+    lines.push(`TotalMistakes:${summary.totalMistakes}`);
     lines.push(`Suggestion:${summary.suggestion}`);
     return lines.join('\n');
   };
@@ -873,6 +887,20 @@ export default function TeacherProgressPage() {
           }));
       });
 
+      // Find first section with ranges for legacy fields
+      const activeSectionWithRanges = sectionMeta.find(({ key }) => (surahRangesData[key] || []).length > 0);
+      const activeRanges = activeSectionWithRanges ? surahRangesData[activeSectionWithRanges.key] : [];
+      const firstRange = activeRanges[0];
+      const lastRange = activeRanges[activeRanges.length - 1];
+
+      const fromA = Number(firstRange?.fromAyah || 1);
+      const toA = Number(lastRange?.toAyah || fromA);
+      const safeFromA = Math.min(fromA, toA);
+      const safeToA = Math.max(fromA, toA);
+
+      const rawTajweedi = form.sections.sabaq.tajweeditotal !== '' ? Number(form.sections.sabaq.tajweeditotal) : 0;
+      const rawHifz = form.sections.sabaq.hifztotal !== '' ? Number(form.sections.sabaq.hifztotal) : 0;
+
       const response = await fetch('/api/progress', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -881,20 +909,19 @@ export default function TeacherProgressPage() {
           classId: form.classId,
           studentId: form.studentId,
           lessonType: 'SURAH',
-          lessonNumber: Number(form.sections.sabaq.ranges[0]?.fromAyah || 1),
-          ayahFrom: Number(form.sections.sabaq.ranges[0]?.fromAyah || 1),
-          ayahTo: Number(form.sections.sabaq.ranges[form.sections.sabaq.ranges.length - 1]?.toAyah || 1),
-          tajweeditotal: Number(form.sections.sabaq.tajweeditotal),
-          hifzTotal: Number(form.sections.sabaq.hifztotal),
+          lessonNumber: safeFromA,
+          ayahFrom: safeFromA,
+          ayahTo: safeToA,
+          tajweeditotal: Number.isFinite(rawTajweedi) ? rawTajweedi : 0,
+          hifzTotal: Number.isFinite(rawHifz) ? rawHifz : 0,
           surahRanges: surahRangesData,
           notes: buildStructuredNotes()
         })
       });
 
-      const json = await response.json();
+      const json = await response.json().catch(() => null);
       if (!response.ok) {
         addNotice('error', typeof json?.error === 'string' ? json.error : 'Unable to save report.');
-        if (response.status === 403) setFeatureDisabled(true);
         return;
       }
 

@@ -1,4 +1,4 @@
-﻿import { z } from 'zod';
+import { z } from 'zod';
 
 export const loginSchema = z.object({
   email: z.string().trim().toLowerCase().email(),
@@ -57,8 +57,8 @@ export const progressCreateSchema = z.object({
   lessonNumber: z.number().int().min(1),
   ayahFrom: z.preprocess((value) => (value === '' || value == null ? undefined : Number(value)), z.number().int().min(1).optional()),
   ayahTo: z.preprocess((value) => (value === '' || value == null ? undefined : Number(value)), z.number().int().min(1).optional()),
-  tajweeditotal: z.number().int().min(0).max(99).optional(),
-  hifzTotal: z.number().int().min(0).max(99).optional(),
+  tajweeditotal: z.preprocess((value) => (value === '' || value == null ? undefined : Number(value)), z.number().int().min(0).max(99).optional()),
+  hifzTotal: z.preprocess((value) => (value === '' || value == null ? undefined : Number(value)), z.number().int().min(0).max(99).optional()),
   surahRanges: z.record(
     z.array(
       z.object({
@@ -71,7 +71,12 @@ export const progressCreateSchema = z.object({
   notes: z.string().trim().optional()
 }).superRefine((value, ctx) => {
   if (value.lessonType === 'SURAH') {
-    if (!value.ayahFrom) {
+    const hasRanges = Boolean(
+      value.surahRanges &&
+      Object.values(value.surahRanges).some((arr) => Array.isArray(arr) && arr.length > 0)
+    );
+
+    if (!value.ayahFrom && !hasRanges) {
       ctx.addIssue({
         code: z.ZodIssueCode.custom,
         path: ['ayahFrom'],
@@ -79,7 +84,7 @@ export const progressCreateSchema = z.object({
       });
     }
 
-    if (!value.ayahTo) {
+    if (!value.ayahTo && !hasRanges) {
       ctx.addIssue({
         code: z.ZodIssueCode.custom,
         path: ['ayahTo'],
@@ -87,7 +92,7 @@ export const progressCreateSchema = z.object({
       });
     }
 
-    if (value.ayahFrom && value.ayahTo && value.ayahFrom > value.ayahTo) {
+    if (value.ayahFrom && value.ayahTo && value.ayahFrom > value.ayahTo && !hasRanges) {
       ctx.addIssue({
         code: z.ZodIssueCode.custom,
         path: ['ayahTo'],

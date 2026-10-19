@@ -413,39 +413,63 @@ export async function POST(request: Request) {
 
   let teacherId = '';
 
-  if (auth.session.role === UserRole.TEACHER) {
-    const scope = await getTeacherScope(auth.session.id);
-    if (!scope) return jsonNoStore({ error: 'Teacher profile missing' }, { status: 400 });
+  try {
+    if (auth.session.role === UserRole.TEACHER) {
+      const scope = await getTeacherScope(auth.session.id);
+      if (!scope) return jsonNoStore({ error: 'Teacher profile missing' }, { status: 400 });
 
-    if (!scope.classIds.includes(parsed.data.classId)) {
-      return jsonNoStore({ error: 'You can only add progress for your assigned classes.' }, { status: 403 });
-    }
-
-    teacherId = scope.teacherId;
-  } else {
-    const classTeacher = await prisma.teacherClass.findFirst({
-      where: { classId: parsed.data.classId },
-      select: { teacherId: true }
-    });
-    if (!classTeacher) {
-      return jsonNoStore({ error: 'No teacher is assigned to the selected class.' }, { status: 400 });
-    }
-    teacherId = classTeacher.teacherId;
-  }
-
-  const student = await prisma.student.findUnique({ where: { id: parsed.data.studentId }, select: { classId: true } });
-  if (!student || student.classId !== parsed.data.classId) {
-    return jsonNoStore({ error: 'Student does not belong to selected class.' }, { status: 400 });
-  }
-
-  const progress = await prisma.studentProgress.upsert({
-    where: {
-      studentId_date: {
-        studentId: parsed.data.studentId,
-        date: new Date(parsed.data.date)
+      if (!scope.classIds.includes(parsed.data.classId)) {
+        return jsonNoStore({ error: 'You can only add progress for your assigned classes.' }, { status: 403 });
       }
-    },
-    update: {
+
+      teacherId = scope.teacherId;
+    } else {
+      const classTeacher = await prisma.teacherClass.findFirst({
+        where: { classId: parsed.data.classId },
+        select: { teacherId: true }
+      });
+      if (classTeacher) {
+        teacherId = classTeacher.teacherId;
+      } else {
+        const anyTeacher = await prisma.teacher.findFirst({ select: { id: true } });
+        if (!anyTeacher) {
+          return jsonNoStore({ error: 'No teacher profile found in system.' }, { status: 400 });
+        }
+        teacherId = anyTeacher.id;
+      }
+    }
+
+    const student = await prisma.student.findUnique({
+      where: { id: parsed.data.studentId },
+      select: { classId: true, userId: true }
+    });
+    if (!student) {
+      return jsonNoStore({ error: 'Student not found.' }, { status: 400 });
+    }
+    if (student.classId && student.classId !== parsed.data.classId) {
+      return jsonNoStore({ error: 'Student does not belong to selected class.' }, { status: 400 });
+    }
+
+    // Normalize date to UTC midnight for consistent daily tracking
+    const rawDate = new Date(parsed.data.date);
+    const normalizedDate = new Date(
+      Date.UTC(rawDate.getUTCFullYear(), rawDate.getUTCMonth(), rawDate.getUTCDate(), 0, 0, 0, 0)
+    );
+    const startOfDay = new Date(normalizedDate);
+    const endOfDay = new Date(normalizedDate);
+    endOfDay.setUTCDate(endOfDay.getUTCDate() + 1);
+
+    const existing = await prisma.studentProgress.findFirst({
+      where: {
+        studentId: parsed.data.studentId,
+        date: {
+          gte: startOfDay,
+          lt: endOfDay
+        }
+      }
+    });
+
+    const progressData = {
       classId: parsed.data.classId,
       teacherId,
       lessonType: parsed.data.lessonType,
@@ -453,41 +477,101 @@ export async function POST(request: Request) {
       lessonNumber: parsed.data.lessonNumber,
       ayahFrom: parsed.data.ayahFrom ?? null,
       ayahTo: parsed.data.ayahTo ?? null,
+      tajweeditotal: parsed.data.tajweeditotal ?? null,
+      hifzTotal: parsed.data.hifzTotal ?? null,
       notes: parsed.data.notes || null
-    },
-    create: {
-      classId: parsed.data.classId,
-      studentId: parsed.data.studentId,
-      teacherId,
-      date: new Date(parsed.data.date),
-      lessonType: parsed.data.lessonType,
-      juzzNumber: parsed.data.juzzNumber ?? null,
-      lessonNumber: parsed.data.lessonNumber,
-      ayahFrom: parsed.data.ayahFrom ?? null,
-      ayahTo: parsed.data.ayahTo ?? null,
-      notes: parsed.data.notes || null
-    },
-    include: {
-      student: { include: { user: true } },
-      class: true,
-      teacher: { include: { user: true } }
+    };
+
+    const progress = existing
+      ? await prisma.studentProgress.update({
+          where: { id: existing.id },
+          data: {
+            ...progressData,
+            date: normalizedDate
+          },
+          include: {
+            student: { include: { user: true } },
+            class: true,
+            teacher: { include: { user: true } }
+          }
+        })
+      : await prisma.studentProgress.create({
+          data: {
+            ...progressData,
+            studentId: parsed.data.studentId,
+            date: normalizedDate
+          },
+          include: {
+            student: { include: { user: true } },
+            class: true,
+            teacher: { include: { user: true } }
+          }
+        });
+
+    // Sync individual surah ranges if provided
+    if (parsed.data.surahRanges) {
+      try {
+        await prisma.surahRange.deleteMany({ where: { progressId: progress.id } });
+        const rangeRows: Array<{
+          progressId: string;
+          sectionKey: string;
+          surahId: number;
+          fromAyah: number;
+          toAyah: number;
+        }> = [];
+
+        for (const [sectionKey, ranges] of Object.entries(parsed.data.surahRanges)) {
+          if (Array.isArray(ranges)) {
+            for (const r of ranges) {
+              if (r.surahId && r.fromAyah && r.toAyah) {
+                rangeRows.push({
+                  progressId: progress.id,
+                  sectionKey,
+                  surahId: r.surahId,
+                  fromAyah: r.fromAyah,
+                  toAyah: r.toAyah
+                });
+              }
+            }
+          }
+        }
+
+        if (rangeRows.length > 0) {
+          await prisma.surahRange.createMany({ data: rangeRows });
+        }
+      } catch (rangeErr) {
+        console.warn('[api/progress][surahRanges] optional sync error:', rangeErr);
+      }
     }
-  });
 
-  // Push the progress update to the target student as an in-app notification.
-  await prisma.notification.create({
-    data: {
-      userId: progress.student.userId,
-      title: 'Daily Progress Report Updated',
-      body: `A new progress report has been submitted for ${parsed.data.date}.`,
-      type: 'ACADEMIC'
+    // Push in-app notification safely
+    try {
+      await prisma.notification.create({
+        data: {
+          userId: progress.student.userId,
+          title: 'Daily Progress Report Updated',
+          body: `A new progress report has been submitted for ${parsed.data.date}.`,
+          type: 'ACADEMIC'
+        }
+      });
+    } catch (notifErr) {
+      console.warn('[api/progress][notification] failed to create notification:', notifErr);
     }
-  });
 
-  revalidatePath('/student');
-  revalidatePath('/student/notifications');
+    try {
+      revalidatePath('/student');
+      revalidatePath('/student/notifications');
+      revalidatePath('/teacher/progress');
+    } catch {}
 
-  return jsonNoStore(progress, { status: 201 });
+    return jsonNoStore(progress, { status: 201 });
+  } catch (error) {
+    console.error('[api/progress][POST] database error:', error);
+    return jsonNoStore(
+      { error: error instanceof Error ? error.message : 'Unable to save report.' },
+      { status: 500 }
+    );
+  }
 }
 
 export async function DELETE(request: Request) {
