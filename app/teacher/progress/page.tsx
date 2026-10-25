@@ -16,6 +16,7 @@ import {
   CheckCircle2,
   AlertCircle,
   Plus,
+  Minus,
   BookOpen,
   GraduationCap,
   Users,
@@ -23,7 +24,10 @@ import {
   AlertTriangle,
   Flame,
   Check,
-  RotateCcw
+  RotateCcw,
+  ArrowRight,
+  Clock,
+  UserCheck
 } from 'lucide-react';
 
 type ClassItem = {
@@ -63,8 +67,8 @@ type SurahRangeForm = {
 type SectionForm = {
   ranges: SurahRangeForm[];
   kaifiyat: KaifiyatValue;
-  tajweeditotal: string; // exact count 0-99
-  hifztotal: string;     // exact count 0-99
+  tajweeditotal: string; // 0-99
+  hifztotal: string;     // 0-99
 };
 
 type ParsedSurahRange = {
@@ -213,10 +217,17 @@ const SURAH_LIST: Surah[] = [
   { id: 114, name: 'An-Nas', ayahs: 6 }
 ];
 
-const sectionMeta: { key: SectionKey; title: string; icon: string }[] = [
-  { key: 'sabaq', title: 'Sabaq', icon: '📘' },
-  { key: 'sabqi', title: 'Sabqi', icon: '📗' },
-  { key: 'manzil', title: 'Manzil', icon: '📙' }
+const sectionMeta: { key: SectionKey; title: string; titleUrdu: string; icon: string; subtitle: string }[] = [
+  { key: 'sabaq', title: 'Sabaq', titleUrdu: 'سبق (نیا سبق)', icon: '📘', subtitle: 'New daily lesson tracking and recitation fluency' },
+  { key: 'sabqi', title: 'Sabqi', titleUrdu: 'سبقی (حالیہ دہرائی)', icon: '📗', subtitle: 'Recent lessons revision assessment (Optional)' },
+  { key: 'manzil', title: 'Manzil', titleUrdu: 'منزل (پچھلی دہرائی)', icon: '📙', subtitle: 'Long-term revision and consolidation (Optional)' }
+];
+
+const kaifiyatOptions: { label: KaifiyatValue; shortLabel: string; stars: number; color: string; bg: string; border: string }[] = [
+  { label: 'Excellent ⭐⭐⭐⭐⭐', shortLabel: 'Excellent', stars: 5, color: 'text-emerald-700', bg: 'bg-emerald-50 hover:bg-emerald-100/80', border: 'border-emerald-300' },
+  { label: 'Good ⭐⭐⭐⭐', shortLabel: 'Good', stars: 4, color: 'text-teal-700', bg: 'bg-teal-50 hover:bg-teal-100/80', border: 'border-teal-300' },
+  { label: 'Average ⭐⭐⭐', shortLabel: 'Average', stars: 3, color: 'text-amber-700', bg: 'bg-amber-50 hover:bg-amber-100/80', border: 'border-amber-300' },
+  { label: 'Weak ⭐⭐', shortLabel: 'Weak / Needs Revision', stars: 2, color: 'text-rose-700', bg: 'bg-rose-50 hover:bg-rose-100/80', border: 'border-rose-300' }
 ];
 
 const kaifiyatScores: Record<Exclude<KaifiyatValue, ''>, number> = {
@@ -239,8 +250,8 @@ function emptySection(): SectionForm {
   return {
     ranges: [emptyRange()],
     kaifiyat: '',
-    tajweeditotal: '',
-    hifztotal: ''
+    tajweeditotal: '0',
+    hifztotal: '0'
   };
 }
 
@@ -318,35 +329,44 @@ function parseStructuredNotes(notes: string | null): ParsedReport | null {
 
     if (line.startsWith('OverallPerformance:')) {
       parsed.overall = line.replace('OverallPerformance:', '').trim();
-      continue;
     }
-    if (line.startsWith('TotalMistakes')) {
-      const count = Number.parseInt(line.replace('TotalMistakes', '').trim(), 10);
-      parsed.totalMistakes = Number.isNaN(count) ? 0 : count;
-      continue;
+    if (line.startsWith('TotalMistakes:')) {
+      parsed.totalMistakes = Number(line.replace('TotalMistakes:', '').trim()) || 0;
     }
     if (line.startsWith('Suggestion:')) {
       parsed.suggestion = line.replace('Suggestion:', '').trim();
-      continue;
     }
 
     if (!currentSection) continue;
 
-    // Parse new multi-range format
     if (line.startsWith('Range:')) {
-      // Range:1, Range:2, etc - marks start of new range
-      continue;
-    } else if (line.startsWith('Kaifiyat:')) {
-      parsed.sections[currentSection].kaifiyat = line.replace('Kaifiyat:', '').trim() as ParsedSection['kaifiyat'];
-    } else if (line.startsWith('TajweeditTotal:')) {
-      const value = Number.parseInt(line.replace('TajweeditTotal:', '').trim(), 10);
-      parsed.sections[currentSection].tajweeditotal = Number.isNaN(value) ? 0 : value;
-    } else if (line.startsWith('HifzTotal:')) {
-      const value = Number.parseInt(line.replace('HifzTotal:', '').trim(), 10);
-      parsed.sections[currentSection].hifztotal = Number.isNaN(value) ? 0 : value;
+      parsed.sections[currentSection].ranges.push({
+        surahId: 0,
+        surahName: '-',
+        fromAyah: 1,
+        toAyah: 1
+      });
     }
-    // Skip old single-surah format fields (SurahId, FromAyah, ToAyah, etc)
-    // They will be loaded from SurahRange table instead
+
+    const currentRanges = parsed.sections[currentSection].ranges;
+    const lastRange = currentRanges[currentRanges.length - 1];
+
+    if (lastRange) {
+      if (line.startsWith('SurahId:')) lastRange.surahId = Number(line.replace('SurahId:', '').trim()) || 0;
+      if (line.startsWith('SurahName:')) lastRange.surahName = line.replace('SurahName:', '').trim();
+      if (line.startsWith('FromAyah:')) lastRange.fromAyah = Number(line.replace('FromAyah:', '').trim()) || 1;
+      if (line.startsWith('ToAyah:')) lastRange.toAyah = Number(line.replace('ToAyah:', '').trim()) || 1;
+    }
+
+    if (line.startsWith('Kaifiyat:')) {
+      parsed.sections[currentSection].kaifiyat = (line.replace('Kaifiyat:', '').trim() || '') as Exclude<KaifiyatValue, ''> | '';
+    }
+    if (line.startsWith('TajweeditTotal:')) {
+      parsed.sections[currentSection].tajweeditotal = Number(line.replace('TajweeditTotal:', '').trim()) || 0;
+    }
+    if (line.startsWith('HifzTotal:')) {
+      parsed.sections[currentSection].hifztotal = Number(line.replace('HifzTotal:', '').trim()) || 0;
+    }
   }
 
   return parsed;
@@ -422,8 +442,8 @@ function parseSectionFormFromNotes(notes: string | null, sectionKey: SectionKey)
   return {
     ranges: ranges.length ? ranges : [emptyRange()],
     kaifiyat: (block.match(/Kaifiyat:([^\n\r]+)/)?.[1]?.trim() ?? '') as KaifiyatValue,
-    tajweeditotal: block.match(/TajweeditTotal:(\d+)/)?.[1] ?? '',
-    hifztotal: block.match(/HifzTotal:(\d+)/)?.[1] ?? ''
+    tajweeditotal: block.match(/TajweeditTotal:(\d+)/)?.[1] ?? '0',
+    hifztotal: block.match(/HifzTotal:(\d+)/)?.[1] ?? '0'
   };
 }
 
@@ -464,49 +484,91 @@ export default function TeacherProgressPage() {
     setNotifications((prev) => [{ id, type, text }, ...prev].slice(0, 4));
     setTimeout(() => {
       setNotifications((prev) => prev.filter((item) => item.id !== id));
-    }, 3000);
+    }, 3500);
   }, []);
 
-  const selectedStudents = useMemo(
-    () => students
-      .filter((student) => student.class && student.class.id === form.classId)
+  const selectedStudents = useMemo(() => {
+    return students
+      .filter((student) => !form.classId || (student.class && student.class.id === form.classId))
       .filter((student) => {
-        const query = studentSearch.toLowerCase();
-        return !query || student.user.fullName.toLowerCase().includes(query) || student.admissionNo.toLowerCase().includes(query);
-      }),
-    [students, form.classId, studentSearch]
-  );
+        const query = studentSearch.trim().toLowerCase();
+        if (!query) return true;
+        return (
+          student.user.fullName.toLowerCase().includes(query) ||
+          (student.admissionNo && student.admissionNo.toLowerCase().includes(query))
+        );
+      });
+  }, [students, form.classId, studentSearch]);
 
-  const filteredReports = useMemo(
-    () => progress.filter((item) => {
+  const selectedClass = classes.find((item) => item.id === form.classId);
+  const selectedStudent = students.find((item) => item.id === form.studentId);
+
+  // Filter saved reports
+  const filteredReports = useMemo(() => {
+    return progress.filter((item) => {
       const dateMatch = !reportDate || formatDateYMD(item.date) === reportDate;
       const nameMatch = !reportQuery || item.student.user.fullName.toLowerCase().includes(reportQuery.toLowerCase());
       return dateMatch && nameMatch;
-    }),
-    [progress, reportDate, reportQuery]
-  );
+    });
+  }, [progress, reportDate, reportQuery]);
+
+  // Previous Sabaq from history
+  const previousReport = useMemo(() => {
+    if (!progress.length) return null;
+    return progress[0];
+  }, [progress]);
+
+  const previousSabaqLabel = useMemo(() => {
+    if (!previousReport) return null;
+    return getSectionLabelFromNotes(previousReport.notes, 'sabaq');
+  }, [previousReport]);
+
+  // Suggested Next Sabaq calculation
+  const suggestedNextSabaq = useMemo(() => {
+    if (!previousReport) return null;
+    const parsed = parseStructuredNotes(previousReport.notes);
+    if (!parsed) return null;
+
+    const sabaq = parsed.sections.sabaq;
+    if (!sabaq.ranges || sabaq.ranges.length === 0) return null;
+    const lastRange = sabaq.ranges[sabaq.ranges.length - 1];
+    if (!lastRange.surahId || !lastRange.toAyah) return null;
+
+    const currentSurah = getSurahById(lastRange.surahId);
+    if (!currentSurah) return null;
+
+    if (lastRange.toAyah < currentSurah.ayahs) {
+      const nextFrom = lastRange.toAyah + 1;
+      const nextTo = Math.min(nextFrom + 4, currentSurah.ayahs);
+      return { surahId: currentSurah.id, fromAyah: nextFrom, toAyah: nextTo, label: `${currentSurah.name} (${nextFrom}-${nextTo})` };
+    }
+
+    const nextSurah = getSurahById(currentSurah.id + 1);
+    if (!nextSurah) return null;
+    return { surahId: nextSurah.id, fromAyah: 1, toAyah: Math.min(5, nextSurah.ayahs), label: `${nextSurah.name} (1-${Math.min(5, nextSurah.ayahs)})` };
+  }, [previousReport]);
 
   const sectionBadges = useMemo(() => {
-    const badges: Record<SectionKey, { rangeCount: number; mistakeCount: number }> = {
-      sabaq: { rangeCount: 0, mistakeCount: 0 },
-      sabqi: { rangeCount: 0, mistakeCount: 0 },
-      manzil: { rangeCount: 0, mistakeCount: 0 }
+    const badges: Record<SectionKey, { rangeCount: number; mistakeCount: number; isFilled: boolean }> = {
+      sabaq: { rangeCount: 0, mistakeCount: 0, isFilled: false },
+      sabqi: { rangeCount: 0, mistakeCount: 0, isFilled: false },
+      manzil: { rangeCount: 0, mistakeCount: 0, isFilled: false }
     };
 
     sectionMeta.forEach(({ key }) => {
       const section = form.sections[key];
-      const filledRanges = section.ranges.filter(r => r.surahId && r.fromAyah && r.toAyah).length;
+      const filledRanges = section.ranges.filter((r) => r.surahId && r.fromAyah && r.toAyah).length;
       const taj = Number(section.tajweeditotal) || 0;
       const hifz = Number(section.hifztotal) || 0;
       badges[key] = {
         rangeCount: filledRanges,
-        mistakeCount: taj + hifz
+        mistakeCount: taj + hifz,
+        isFilled: filledRanges > 0 && Boolean(section.kaifiyat)
       };
     });
 
     return badges;
   }, [form.sections]);
-
 
   const summary = useMemo(() => {
     const ratings = sectionMeta
@@ -523,20 +585,20 @@ export default function TeacherProgressPage() {
     }, 0);
 
     let overallPerformance = 'Pending';
-    let suggestion = 'Complete all sections to get auto suggestion.';
+    let suggestion = 'Select rating and record recitation details.';
 
     if (avg >= 4.5 && totalMistakes <= 2) {
-      overallPerformance = 'Excellent';
-      suggestion = 'Strong progress. Continue with same tajweed discipline.';
-    } else if (avg >= 3.5 && totalMistakes <= 5) {
-      overallPerformance = 'Good';
-      suggestion = 'Good momentum. Focus 10 minutes on weak tajweed points.';
-    } else if (avg >= 2.8) {
-      overallPerformance = 'Average';
-      suggestion = 'Needs improvement in Tajweed. Keep shorter ayaat with revision.';
+      overallPerformance = 'Excellent (ممتاز)';
+      suggestion = 'Strong progress & clear fluency. Continue forward lesson pace.';
+    } else if (avg >= 3.5 && totalMistakes <= 4) {
+      overallPerformance = 'Good (بہتر)';
+      suggestion = 'Good recitation. Spend 5-10 minutes revising minor tajweed rules.';
+    } else if (avg >= 2.5) {
+      overallPerformance = 'Average (مناسب)';
+      suggestion = 'Needs improvement in Tajweed & Hifz. Keep shorter ayaat for revision.';
     } else if (avg > 0) {
-      overallPerformance = 'Weak';
-      suggestion = 'Needs improvement in Tajweed and Hifz consistency.';
+      overallPerformance = 'Needs Revision (محتاجِ اعادہ)';
+      suggestion = 'Pause lesson forward progress. Consolidate current verses thoroughly.';
     }
 
     return {
@@ -546,31 +608,6 @@ export default function TeacherProgressPage() {
       avgStars: Math.round(avg)
     };
   }, [form.sections]);
-
-  const suggestedNextSabaq = useMemo(() => {
-    if (!progress.length) return null;
-    const latest = progress[0];
-    const parsed = parseStructuredNotes(latest.notes);
-    if (!parsed) return null;
-
-    const sabaq = parsed.sections.sabaq;
-    if (!sabaq.ranges || sabaq.ranges.length === 0) return null;
-    const lastRange = sabaq.ranges[sabaq.ranges.length - 1];
-    if (!lastRange.surahId || !lastRange.toAyah) return null;
-
-    const currentSurah = getSurahById(lastRange.surahId);
-    if (!currentSurah) return null;
-
-    if (lastRange.toAyah < currentSurah.ayahs) {
-      const nextFrom = lastRange.toAyah + 1;
-      const nextTo = Math.min(nextFrom + 4, currentSurah.ayahs);
-      return { surahId: currentSurah.id, fromAyah: nextFrom, toAyah: nextTo, label: `${currentSurah.name} ${nextFrom}-${nextTo}` };
-    }
-
-    const nextSurah = getSurahById(currentSurah.id + 1);
-    if (!nextSurah) return null;
-    return { surahId: nextSurah.id, fromAyah: 1, toAyah: Math.min(5, nextSurah.ayahs), label: `${nextSurah.name} 1-${Math.min(5, nextSurah.ayahs)}` };
-  }, [progress]);
 
   const loadBaseData = useCallback(async () => {
     setLoading(true);
@@ -597,34 +634,30 @@ export default function TeacherProgressPage() {
       const studentList = Array.isArray(studentsJson) ? studentsJson : [];
       setClasses(classList);
       setStudents(studentList);
-      setFeatureDisabled(false);
 
-      if (classList[0]?.id) {
-        setForm((prev) => ({ ...prev, classId: prev.classId || classList[0].id }));
+      // Auto-select first class if none selected
+      if (!form.classId && classList.length > 0) {
+        setForm((prev) => ({ ...prev, classId: classList[0].id }));
       }
+      setFeatureDisabled(false);
     } catch {
-      addNotice('error', 'Failed to load progress data.');
+      addNotice('error', 'Network error loading classes and students.');
     } finally {
       setLoading(false);
     }
-  }, [addNotice]);
+  }, [addNotice, form.classId]);
 
   const loadProgressData = useCallback(async () => {
-    if (!form.classId) {
-      setProgress([]);
-      return;
-    }
+    if (!form.classId && !form.studentId) return;
+
     try {
-      const query = new URLSearchParams({ classId: form.classId });
-      if (form.studentId) query.set('studentId', form.studentId);
-      query.set('_t', Date.now().toString());
-      const response = await fetch(`/api/progress?${query.toString()}`, { cache: 'no-store' });
+      const params = new URLSearchParams();
+      if (form.classId) params.set('classId', form.classId);
+      if (form.studentId) params.set('studentId', form.studentId);
+
+      const response = await fetch(`/api/progress?${params.toString()}`, { cache: 'no-store' });
       if (!response.ok) {
-        const errorJson = await response.json().catch(() => null);
-        const errorMessage = typeof errorJson?.error === 'string' ? errorJson.error : 'Failed to load progress data.';
-        addNotice('error', errorMessage);
         if (response.status === 403) setFeatureDisabled(true);
-        setProgress([]);
         return;
       }
 
@@ -632,7 +665,7 @@ export default function TeacherProgressPage() {
       setProgress(Array.isArray(json) ? json : []);
       setFeatureDisabled(false);
     } catch {
-      addNotice('error', 'Failed to load progress data.');
+      addNotice('error', 'Failed to load progress records.');
     }
   }, [form.classId, form.studentId, addNotice]);
 
@@ -644,11 +677,15 @@ export default function TeacherProgressPage() {
     void loadProgressData();
   }, [loadProgressData]);
 
+  // When class changes, ensure student belongs to class
   useEffect(() => {
-    if (!form.studentId && selectedStudents[0]?.id) {
-      setForm((prev) => ({ ...prev, studentId: selectedStudents[0].id }));
+    if (form.classId && selectedStudents.length > 0) {
+      const currentValid = selectedStudents.some((s) => s.id === form.studentId);
+      if (!currentValid) {
+        setForm((prev) => ({ ...prev, studentId: selectedStudents[0].id }));
+      }
     }
-  }, [selectedStudents, form.studentId]);
+  }, [form.classId, selectedStudents, form.studentId]);
 
   const setSectionValue = (sectionKey: SectionKey, updates: Partial<SectionForm>) => {
     setForm((prev) => ({
@@ -663,6 +700,7 @@ export default function TeacherProgressPage() {
     }));
   };
 
+  // Surah selector handler: auto-populates sensible default ayah ranges
   const handleSurahInput = (sectionKey: SectionKey, rangeIndex: number, value: string) => {
     const resolved = resolveSurah(value);
     const current = form.sections[sectionKey];
@@ -672,22 +710,107 @@ export default function TeacherProgressPage() {
       updatedRanges[rangeIndex] = {
         ...updatedRanges[rangeIndex],
         surahInput: value,
-        surahId: null,
-        ...(value.trim() ? {} : { fromAyah: '', toAyah: '' })
+        surahId: null
       };
     } else {
-      const from = updatedRanges[rangeIndex].fromAyah ? Math.min(Number(updatedRanges[rangeIndex].fromAyah), resolved.ayahs) : '';
-      const to = updatedRanges[rangeIndex].toAyah ? Math.min(Number(updatedRanges[rangeIndex].toAyah), resolved.ayahs) : '';
+      const existingFrom = updatedRanges[rangeIndex].fromAyah;
+      const existingTo = updatedRanges[rangeIndex].toAyah;
+
+      const from = existingFrom ? Math.min(Number(existingFrom), resolved.ayahs) : 1;
+      const to = existingTo ? Math.min(Number(existingTo), resolved.ayahs) : Math.min(from + 4, resolved.ayahs);
+
       updatedRanges[rangeIndex] = {
         ...updatedRanges[rangeIndex],
-        surahInput: value,
+        surahInput: `${resolved.id}. ${resolved.name}`,
         surahId: resolved.id,
-        fromAyah: from ? String(from) : '',
-        toAyah: to ? String(to) : ''
+        fromAyah: String(from),
+        toAyah: String(to)
       };
     }
 
-    setForm(prev => ({ ...prev, sections: { ...prev.sections, [sectionKey]: { ...current, ranges: updatedRanges } } }));
+    setForm((prev) => ({
+      ...prev,
+      sections: {
+        ...prev.sections,
+        [sectionKey]: { ...current, ranges: updatedRanges }
+      }
+    }));
+  };
+
+  // Ayah number change without keystroke locking
+  const handleAyahChange = (sectionKey: SectionKey, rangeIndex: number, field: 'fromAyah' | 'toAyah', value: string) => {
+    // Only accept numeric digits
+    const digitsOnly = value.replace(/[^0-9]/g, '');
+    const current = form.sections[sectionKey];
+    const updatedRanges = [...current.ranges];
+
+    updatedRanges[rangeIndex] = {
+      ...updatedRanges[rangeIndex],
+      [field]: digitsOnly
+    };
+
+    setForm((prev) => ({
+      ...prev,
+      sections: {
+        ...prev.sections,
+        [sectionKey]: { ...current, ranges: updatedRanges }
+      }
+    }));
+  };
+
+  // Clamp on blur so users can type numbers like 15, 25, 286 freely
+  const handleAyahBlur = (sectionKey: SectionKey, rangeIndex: number, field: 'fromAyah' | 'toAyah') => {
+    const current = form.sections[sectionKey];
+    const range = current.ranges[rangeIndex];
+    const surah = getSurahById(range.surahId);
+    if (!surah) return;
+
+    const raw = range[field];
+    if (!raw) return;
+
+    let num = Number(raw);
+    if (!Number.isFinite(num) || num < 1) num = 1;
+    if (num > surah.ayahs) num = surah.ayahs;
+
+    if (String(num) !== raw) {
+      handleAyahChange(sectionKey, rangeIndex, field, String(num));
+    }
+  };
+
+  // Quick ayah helper chips
+  const applyAyahChip = (sectionKey: SectionKey, rangeIndex: number, type: '+5' | '+10' | 'ALL') => {
+    const current = form.sections[sectionKey];
+    const range = current.ranges[rangeIndex];
+    const surah = getSurahById(range.surahId);
+    if (!surah) return;
+
+    const from = Number(range.fromAyah) || 1;
+    let newTo = from;
+
+    if (type === '+5') newTo = Math.min(surah.ayahs, from + 4);
+    if (type === '+10') newTo = Math.min(surah.ayahs, from + 9);
+    if (type === 'ALL') {
+      const updatedRanges = [...current.ranges];
+      updatedRanges[rangeIndex] = { ...range, fromAyah: '1', toAyah: String(surah.ayahs) };
+      setForm((prev) => ({ ...prev, sections: { ...prev.sections, [sectionKey]: { ...current, ranges: updatedRanges } } }));
+      return;
+    }
+
+    const updatedRanges = [...current.ranges];
+    updatedRanges[rangeIndex] = { ...range, toAyah: String(newTo) };
+    setForm((prev) => ({ ...prev, sections: { ...prev.sections, [sectionKey]: { ...current, ranges: updatedRanges } } }));
+  };
+
+  // Add & Remove Surah Ranges
+  const handleAddRange = (sectionKey: SectionKey) => {
+    const current = form.sections[sectionKey];
+    setForm((prev) => ({
+      ...prev,
+      sections: {
+        ...prev.sections,
+        [sectionKey]: { ...current, ranges: [...current.ranges, emptyRange()] }
+      }
+    }));
   };
 
   const handleRemoveRange = (sectionKey: SectionKey, rangeIndex: number) => {
@@ -696,89 +819,90 @@ export default function TeacherProgressPage() {
     if (updatedRanges.length === 0) {
       updatedRanges.push(emptyRange());
     }
-    setForm(prev => ({ ...prev, sections: { ...prev.sections, [sectionKey]: { ...current, ranges: updatedRanges } } }));
+    setForm((prev) => ({
+      ...prev,
+      sections: {
+        ...prev.sections,
+        [sectionKey]: { ...current, ranges: updatedRanges }
+      }
+    }));
   };
 
-  const handleAddRange = (sectionKey: SectionKey) => {
-    const current = form.sections[sectionKey];
-    setForm(prev => ({ ...prev, sections: { ...prev.sections, [sectionKey]: { ...current, ranges: [...current.ranges, emptyRange()] } } }));
+  // Mistake Stepper & Presets
+  const adjustMistake = (sectionKey: SectionKey, field: 'tajweeditotal' | 'hifztotal', delta: number) => {
+    const currentVal = Number(form.sections[sectionKey][field]) || 0;
+    const newVal = Math.max(0, Math.min(99, currentVal + delta));
+    setSectionValue(sectionKey, { [field]: String(newVal) });
   };
 
+  const setMistakeCount = (sectionKey: SectionKey, field: 'tajweeditotal' | 'hifztotal', count: number) => {
+    setSectionValue(sectionKey, { [field]: String(count) });
+  };
+
+  // Apply Auto Suggestion for Next Sabaq
   const applyAutoSuggestion = () => {
     if (!suggestedNextSabaq) return;
     const surah = getSurahById(suggestedNextSabaq.surahId);
     if (!surah) return;
-    const sabaqRanges = [{
-      id: undefined,
-      surahInput: `${surah.id}. ${surah.name}`,
-      surahId: surah.id,
-      fromAyah: String(suggestedNextSabaq.fromAyah),
-      toAyah: String(suggestedNextSabaq.toAyah)
-    }];
-    setForm(prev => ({ ...prev, sections: { ...prev.sections, sabaq: { ...prev.sections.sabaq, ranges: sabaqRanges } } }));
-    addNotice('info', `Auto-filled next Sabaq: ${suggestedNextSabaq.label}`);
+
+    const sabaqRanges = [
+      {
+        id: undefined,
+        surahInput: `${surah.id}. ${surah.name}`,
+        surahId: surah.id,
+        fromAyah: String(suggestedNextSabaq.fromAyah),
+        toAyah: String(suggestedNextSabaq.toAyah)
+      }
+    ];
+
+    setForm((prev) => ({
+      ...prev,
+      sections: {
+        ...prev.sections,
+        sabaq: { ...prev.sections.sabaq, ranges: sabaqRanges }
+      }
+    }));
+    setActiveTab('sabaq');
+    addNotice('info', `Auto-loaded next lesson: ${suggestedNextSabaq.label}`);
   };
 
-  const applyQuickPerformanceToTab = (value: Exclude<KaifiyatValue, ''>) => {
-    setSectionValue(activeTab, { kaifiyat: value });
-    addNotice('info', `${activeTab.charAt(0).toUpperCase() + activeTab.slice(1)}: ${value}`);
-  };
-
-  const applyQuickMistakesToTab = (value: '0' | '1-2' | '3+') => {
-    const mistakeCount = value === '0' ? 0 : value === '1-2' ? 1 : 3;
-    setSectionValue(activeTab, { tajweeditotal: String(mistakeCount), hifztotal: String(mistakeCount) });
-  };
-
+  // Form Validation
   const validateForm = () => {
-    if (!form.date || !form.classId || !form.studentId) return 'Date, class, and student are required.';
+    if (!form.date) return 'Please select an assessment date.';
+    if (!form.classId) return 'Please select a class.';
+    if (!form.studentId) return 'Please select a student.';
 
-    let hasAnyValidSection = false;
+    // Check sabaq (daily lesson is primary)
+    const sabaq = form.sections.sabaq;
+    const sabaqValidRanges = sabaq.ranges.filter((r) => r.surahId && r.fromAyah && r.toAyah);
 
+    // Filter out completely blank ranges from validation
     for (const { key, title } of sectionMeta) {
       const section = form.sections[key];
-      const hasAnyRangeData = (section.ranges || []).some(
-        (range) => range.surahId || range.fromAyah || range.toAyah || range.surahInput.trim()
-      );
-      const hasAnyMetaData = Boolean(section.kaifiyat || section.tajweeditotal || section.hifztotal);
-      const hasAnyData = hasAnyRangeData || hasAnyMetaData;
+      const validRanges = section.ranges.filter((r) => r.surahId || r.fromAyah || r.toAyah || r.surahInput.trim());
 
-      // Skip empty sections (any section is optional, but at least one must be filled)
-      if (!hasAnyData) {
-        continue;
-      }
-
-      // Must have at least 1 range
-      if (!section.ranges || section.ranges.length === 0) {
-        return `${title}: add at least one Surah range.`;
-      }
-
-      // Validate each range
-      for (let i = 0; i < section.ranges.length; i++) {
-        const range = section.ranges[i];
-        if (!range.surahId || !range.fromAyah || !range.toAyah) {
-          return `${title} Range ${i + 1}: complete all fields.`;
-        }
-        if (Number(range.fromAyah) > Number(range.toAyah)) {
-          return `${title} Range ${i + 1}: From Ayah cannot be greater than To Ayah.`;
+      for (let i = 0; i < validRanges.length; i++) {
+        const r = validRanges[i];
+        if (!r.surahId) return `${title} Range ${i + 1}: Please select a Surah.`;
+        if (!r.fromAyah || !r.toAyah) return `${title} Range ${i + 1}: Enter both From and To Ayah numbers.`;
+        if (Number(r.fromAyah) > Number(r.toAyah)) {
+          return `${title} Range ${i + 1}: From Ayah (${r.fromAyah}) cannot be greater than To Ayah (${r.toAyah}).`;
         }
       }
 
-      // Must have Kaifiyat
-      if (!section.kaifiyat) {
-        return `${title}: select Kaifiyat (performance).`;
+      if (validRanges.length > 0 && !section.kaifiyat) {
+        return `${title}: Please select Kaifiyat (Performance Rating).`;
       }
-      if (section.tajweeditotal !== '' && (Number(section.tajweeditotal) < 0 || Number(section.tajweeditotal) > 99)) {
-        return `${title}: Tajweedi mistakes must be 0-99.`;
-      }
-      if (section.hifztotal !== '' && (Number(section.hifztotal) < 0 || Number(section.hifztotal) > 99)) {
-        return `${title}: Hifz mistakes must be 0-99.`;
-      }
-
-      hasAnyValidSection = true;
     }
 
-    if (!hasAnyValidSection) {
-      return 'Please complete at least one section (Sabaq, Sabqi, or Manzil).';
+    // Ensure at least one section has valid ranges
+    const anyFilled = sectionMeta.some((meta) => {
+      const sec = form.sections[meta.key];
+      return sec.ranges.some((r) => r.surahId && r.fromAyah && r.toAyah) && Boolean(sec.kaifiyat);
+    });
+
+    if (!anyFilled) {
+      return 'Please complete at least Sabaq (Surah, Ayahs, and Rating).';
     }
 
     return null;
@@ -792,6 +916,7 @@ export default function TeacherProgressPage() {
       lines.push(`[${title.toUpperCase()}]`);
 
       section.ranges.forEach((range, idx) => {
+        if (!range.surahId && !range.fromAyah && !range.toAyah) return;
         const surah = getSurahById(range.surahId);
         lines.push(`Range:${idx + 1}`);
         lines.push(`SurahId:${surah?.id ?? ''}`);
@@ -800,7 +925,7 @@ export default function TeacherProgressPage() {
         lines.push(`ToAyah:${range.toAyah}`);
       });
 
-      lines.push(`Kaifiyat:${section.kaifiyat}`);
+      lines.push(`Kaifiyat:${section.kaifiyat || '-'}`);
       lines.push(`TajweeditTotal:${section.tajweeditotal || '0'}`);
       lines.push(`HifzTotal:${section.hifztotal || '0'}`);
     });
@@ -874,7 +999,6 @@ export default function TeacherProgressPage() {
 
     setSaving(true);
     try {
-      // Build surah ranges for each section
       const surahRangesData: Record<string, Array<{ surahId: number; fromAyah: number; toAyah: number }>> = {};
 
       sectionMeta.forEach(({ key }) => {
@@ -887,7 +1011,6 @@ export default function TeacherProgressPage() {
           }));
       });
 
-      // Find first section with ranges for legacy fields
       const activeSectionWithRanges = sectionMeta.find(({ key }) => (surahRangesData[key] || []).length > 0);
       const activeRanges = activeSectionWithRanges ? surahRangesData[activeSectionWithRanges.key] : [];
       const firstRange = activeRanges[0];
@@ -925,12 +1048,15 @@ export default function TeacherProgressPage() {
         return;
       }
 
-      addNotice('success', editingReportId ? 'Quran progress report updated successfully.' : 'Quran progress report saved successfully.');
+      addNotice('success', editingReportId ? 'Quran progress report updated successfully!' : 'Quran progress report saved successfully!');
       setEditingReportId(null);
 
+      // Handle Save & Move to Next Student
       if (saveAndMoveNext) {
         setSaveAndMoveNext(false);
-        const nextStudent = selectedStudents.find((s) => s.id > form.studentId);
+        const currentIndex = selectedStudents.findIndex((s) => s.id === form.studentId);
+        const nextStudent = currentIndex !== -1 && currentIndex < selectedStudents.length - 1 ? selectedStudents[currentIndex + 1] : null;
+
         if (nextStudent) {
           setForm((prev) => ({
             ...prev,
@@ -941,7 +1067,8 @@ export default function TeacherProgressPage() {
               manzil: emptySection()
             }
           }));
-          addNotice('info', `Moved to ${nextStudent.user.fullName}`);
+          setActiveTab('sabaq');
+          addNotice('info', `Moved to next student: ${nextStudent.user.fullName}`);
         } else {
           setForm((prev) => ({
             ...prev,
@@ -951,9 +1078,10 @@ export default function TeacherProgressPage() {
               manzil: emptySection()
             }
           }));
-          addNotice('info', 'No more students in this class.');
+          addNotice('info', 'All students in this class evaluated! 🎉');
         }
       } else {
+        // Reset inputs for same student or next entry
         setForm((prev) => ({
           ...prev,
           sections: {
@@ -966,90 +1094,62 @@ export default function TeacherProgressPage() {
 
       await loadProgressData();
     } catch {
-      addNotice('error', 'Request failed. Please try again.');
+      addNotice('error', 'Request failed. Please check network connection.');
     } finally {
       setSaving(false);
     }
   };
 
-  const selectedClass = classes.find((item) => item.id === form.classId);
-  const selectedStudent = selectedStudents.find((item) => item.id === form.studentId);
+  const nextStudentInClass = useMemo(() => {
+    if (!selectedStudents.length || !form.studentId) return null;
+    const currentIndex = selectedStudents.findIndex((s) => s.id === form.studentId);
+    return currentIndex !== -1 && currentIndex < selectedStudents.length - 1 ? selectedStudents[currentIndex + 1] : null;
+  }, [selectedStudents, form.studentId]);
 
   return (
-    <div className="w-full space-y-6 pb-32 text-slate-800">
-      {/* Top Hero Banner */}
-      <div className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-teal-900 via-teal-800 to-emerald-950 p-6 text-white shadow-xl shadow-teal-950/10 sm:p-8">
-        <div className="pointer-events-none absolute -right-16 -top-16 h-64 w-64 rounded-full bg-teal-500/10 blur-3xl" />
-        <div className="pointer-events-none absolute -bottom-16 left-1/3 h-64 w-64 rounded-full bg-emerald-500/10 blur-3xl" />
+    <div className="w-full space-y-6 pb-36 text-slate-800">
+      {/* ─── Hero Header ─── */}
+      <div className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-teal-900 via-teal-800 to-emerald-950 p-6 text-white shadow-xl shadow-teal-950/15 sm:p-7">
+        <div className="pointer-events-none absolute -right-12 -top-12 h-64 w-64 rounded-full bg-teal-400/10 blur-3xl" />
+        <div className="pointer-events-none absolute -bottom-12 left-1/4 h-64 w-64 rounded-full bg-emerald-400/10 blur-3xl" />
 
         <div className="relative flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-          <div className="space-y-1.5">
+          <div className="space-y-1">
             <div className="inline-flex items-center gap-2 rounded-full bg-teal-400/15 px-3 py-1 text-xs font-semibold text-teal-200 backdrop-blur-sm">
               <BookOpenCheck className="h-3.5 w-3.5" />
-              <span>Daily Quran Assessment</span>
+              <span>Daily Quran Progress Report · روزانہ تعلیمی رپورٹ</span>
             </div>
             <h1 className="text-2xl font-black tracking-tight text-white sm:text-3xl">
-              Daily Progress Report
+              Quran Recitation & Hifz Assessment
             </h1>
-            <p className="text-sm font-medium text-teal-100/80">
-              Track Sabaq, Sabqi, and Manzil assessments with instant feedback.
+            <p className="text-xs font-medium text-teal-100/80 sm:text-sm">
+              Clean, effortless tracking for Sabaq, Sabqi, and Manzil revisions.
             </p>
           </div>
 
           <div className="flex items-center gap-3">
+            <div className="hidden rounded-2xl border border-white/10 bg-white/10 px-4 py-2.5 backdrop-blur-md sm:block">
+              <p className="text-[10px] font-bold uppercase tracking-wider text-teal-200">Date</p>
+              <p className="text-sm font-black text-white">{form.date || todayDateYMD()}</p>
+            </div>
             <div className="grid h-12 w-12 place-items-center rounded-2xl bg-white/10 backdrop-blur-md shadow-inner text-teal-200">
               <Sparkles className="h-6 w-6" />
             </div>
           </div>
         </div>
 
-        {/* Live Stat Badges Bar */}
-        <div className="relative mt-6 grid grid-cols-3 gap-2.5 sm:gap-4">
-          <div className="rounded-2xl border border-white/10 bg-white/10 p-3 backdrop-blur-md">
-            <p className="text-[10px] font-bold uppercase tracking-wider text-teal-200/80">Active Class</p>
-            <p className="mt-1 truncate text-xs font-black text-white sm:text-sm">
-              {selectedClass ? `${selectedClass.name} - ${selectedClass.section}` : 'Select Class'}
-            </p>
-          </div>
-
-          <div className="rounded-2xl border border-white/10 bg-white/10 p-3 backdrop-blur-md">
-            <p className="text-[10px] font-bold uppercase tracking-wider text-teal-200/80">Active Student</p>
-            <p className="mt-1 truncate text-xs font-black text-white sm:text-sm">
-              {selectedStudent ? selectedStudent.user.fullName : 'Select Student'}
-            </p>
-          </div>
-
-          <div className="rounded-2xl border border-white/10 bg-white/10 p-3 backdrop-blur-md">
-            <p className="text-[10px] font-bold uppercase tracking-wider text-teal-200/80">Total Mistakes</p>
-            <div className="mt-1 flex items-center gap-1.5">
-              <span className={`inline-flex items-center rounded-full px-2 py-0.5 text-xs font-black ${
-                summary.totalMistakes === 0 
-                  ? 'bg-emerald-400/20 text-emerald-300' 
-                  : summary.totalMistakes <= 3 
-                    ? 'bg-amber-400/20 text-amber-300' 
-                    : 'bg-rose-400/20 text-rose-300'
-              }`}>
-                {summary.totalMistakes}
-              </span>
-              <span className="hidden text-[11px] font-semibold text-teal-100/70 sm:inline">
-                ({summary.overallPerformance})
-              </span>
-            </div>
-          </div>
-        </div>
-
-        {/* Notifications */}
+        {/* Notifications Bar */}
         {notifications.length > 0 && (
           <div className="relative mt-4 grid gap-2 sm:grid-cols-2">
             {notifications.map((notice) => (
               <div
                 key={notice.id}
-                className={`flex items-center gap-2 rounded-2xl px-4 py-2.5 text-xs font-bold shadow-lg backdrop-blur-md ${
+                className={`flex items-center gap-2.5 rounded-2xl px-4 py-2.5 text-xs font-bold shadow-lg backdrop-blur-md transition-all ${
                   notice.type === 'success'
-                    ? 'border border-emerald-400/30 bg-emerald-500/20 text-emerald-100'
+                    ? 'border border-emerald-400/30 bg-emerald-500/25 text-emerald-100'
                     : notice.type === 'error'
-                      ? 'border border-rose-400/30 bg-rose-500/20 text-rose-100'
-                      : 'border border-teal-400/30 bg-teal-500/20 text-teal-100'
+                      ? 'border border-rose-400/30 bg-rose-500/25 text-rose-100'
+                      : 'border border-teal-400/30 bg-teal-500/25 text-teal-100'
                 }`}
               >
                 {notice.type === 'success' && <CheckCircle2 className="h-4 w-4 shrink-0 text-emerald-300" />}
@@ -1062,12 +1162,12 @@ export default function TeacherProgressPage() {
         )}
       </div>
 
-      {/* Main Form & Performance Layout */}
+      {/* ─── Main Two-Column Layout ─── */}
       <div className="grid grid-cols-1 gap-6 xl:grid-cols-12">
         {/* Left Assessment Column */}
         <div className="space-y-6 xl:col-span-8">
           <form onSubmit={submit} className="space-y-6">
-            {/* Card 1: Session & Student Selector */}
+            {/* 1. Unified Session & Student Selection Card */}
             <div className="rounded-3xl border border-slate-200/80 bg-white p-5 shadow-sm sm:p-6">
               <div className="mb-4 flex items-center justify-between border-b border-slate-100 pb-3">
                 <div className="flex items-center gap-2.5">
@@ -1075,13 +1175,19 @@ export default function TeacherProgressPage() {
                     <CalendarDays className="h-5 w-5" />
                   </div>
                   <div>
-                    <h2 className="text-base font-bold text-slate-900">Session & Student Selection</h2>
-                    <p className="text-xs font-medium text-slate-500">Choose date, target class, and student</p>
+                    <h2 className="text-base font-bold text-slate-900">Student & Class Selection</h2>
+                    <p className="text-xs font-medium text-slate-500">Select date, class, and the student being assessed</p>
                   </div>
                 </div>
+                {selectedStudents.length > 0 && (
+                  <span className="rounded-full bg-slate-100 px-3 py-1 text-xs font-bold text-slate-600">
+                    {selectedStudents.length} Students
+                  </span>
+                )}
               </div>
 
               <div className="grid grid-cols-1 gap-3.5 sm:grid-cols-3">
+                {/* Date */}
                 <div>
                   <label className="mb-1.5 block text-xs font-bold uppercase tracking-wider text-slate-500">
                     Assessment Date
@@ -1090,11 +1196,12 @@ export default function TeacherProgressPage() {
                     type="date"
                     value={form.date}
                     onChange={(e) => setForm((prev) => ({ ...prev, date: e.target.value }))}
-                    className="h-11 w-full rounded-2xl border border-slate-200 bg-slate-50/50 px-3.5 text-sm font-semibold text-slate-800 outline-none transition focus:border-teal-600 focus:bg-white focus:ring-4 focus:ring-teal-500/10"
+                    className="h-11 w-full rounded-2xl border border-slate-200 bg-slate-50/60 px-3.5 text-sm font-semibold text-slate-800 outline-none transition focus:border-teal-600 focus:bg-white focus:ring-4 focus:ring-teal-500/10"
                     required
                   />
                 </div>
 
+                {/* Class */}
                 <div>
                   <label className="mb-1.5 block text-xs font-bold uppercase tracking-wider text-slate-500">
                     Class & Section
@@ -1102,7 +1209,7 @@ export default function TeacherProgressPage() {
                   <select
                     value={form.classId}
                     onChange={(e) => setForm((prev) => ({ ...prev, classId: e.target.value, studentId: '' }))}
-                    className="h-11 w-full rounded-2xl border border-slate-200 bg-slate-50/50 px-3.5 text-sm font-semibold text-slate-800 outline-none transition focus:border-teal-600 focus:bg-white focus:ring-4 focus:ring-teal-500/10"
+                    className="h-11 w-full rounded-2xl border border-slate-200 bg-slate-50/60 px-3.5 text-sm font-semibold text-slate-800 outline-none transition focus:border-teal-600 focus:bg-white focus:ring-4 focus:ring-teal-500/10"
                     required
                   >
                     <option value="">Select Class</option>
@@ -1114,6 +1221,7 @@ export default function TeacherProgressPage() {
                   </select>
                 </div>
 
+                {/* Student Filter */}
                 <div>
                   <label className="mb-1.5 block text-xs font-bold uppercase tracking-wider text-slate-500">
                     Search Student
@@ -1123,18 +1231,19 @@ export default function TeacherProgressPage() {
                     <input
                       value={studentSearch}
                       onChange={(e) => setStudentSearch(e.target.value)}
-                      placeholder="Filter by name..."
-                      className="h-11 w-full rounded-2xl border border-slate-200 bg-slate-50/50 pl-10 pr-3 text-sm font-semibold text-slate-800 placeholder:text-slate-400 outline-none transition focus:border-teal-600 focus:bg-white focus:ring-4 focus:ring-teal-500/10"
+                      placeholder="Search name or ID..."
+                      className="h-11 w-full rounded-2xl border border-slate-200 bg-slate-50/60 pl-10 pr-3 text-sm font-semibold text-slate-800 placeholder:text-slate-400 outline-none transition focus:border-teal-600 focus:bg-white focus:ring-4 focus:ring-teal-500/10"
                     />
                   </div>
                 </div>
               </div>
 
+              {/* Student Dropdown */}
               <div className="mt-3.5">
                 <label className="mb-1.5 flex items-center justify-between text-xs font-bold uppercase tracking-wider text-slate-500">
-                  <span>Student Target ({selectedStudents.length} available)</span>
+                  <span>Student Target</span>
                   {selectedStudent && (
-                    <span className="text-[11px] font-semibold text-teal-700">
+                    <span className="font-semibold text-teal-700">
                       Admission #{selectedStudent.admissionNo || 'N/A'}
                     </span>
                   )}
@@ -1142,7 +1251,7 @@ export default function TeacherProgressPage() {
                 <select
                   value={form.studentId}
                   onChange={(e) => setForm((prev) => ({ ...prev, studentId: e.target.value }))}
-                  className="h-11 w-full rounded-2xl border border-slate-200 bg-slate-50/50 px-3.5 text-sm font-semibold text-slate-800 outline-none transition focus:border-teal-600 focus:bg-white focus:ring-4 focus:ring-teal-500/10"
+                  className="h-11 w-full rounded-2xl border border-slate-200 bg-slate-50/60 px-3.5 text-sm font-semibold text-slate-800 outline-none transition focus:border-teal-600 focus:bg-white focus:ring-4 focus:ring-teal-500/10"
                   required
                 >
                   <option value="">Select Student</option>
@@ -1153,9 +1262,49 @@ export default function TeacherProgressPage() {
                   ))}
                 </select>
               </div>
+
+              {/* Student Context & Previous Lesson Ribbon */}
+              {selectedStudent && (
+                <div className="mt-4 flex flex-col gap-3 rounded-2xl border border-teal-100 bg-teal-50/50 p-3.5 sm:flex-row sm:items-center sm:justify-between">
+                  <div className="flex items-center gap-3">
+                    <div className="grid h-10 w-10 place-items-center rounded-xl bg-teal-600 font-black text-white shadow-sm">
+                      {selectedStudent.user.fullName.charAt(0).toUpperCase()}
+                    </div>
+                    <div>
+                      <div className="flex items-center gap-2">
+                        <span className="text-sm font-black text-slate-900">{selectedStudent.user.fullName}</span>
+                        <span className="rounded-md bg-teal-100 px-2 py-0.5 text-[10px] font-bold text-teal-800">
+                          {selectedClass ? `${selectedClass.name} - ${selectedClass.section}` : 'Student'}
+                        </span>
+                      </div>
+                      <p className="text-xs font-semibold text-slate-600">
+                        {previousSabaqLabel ? (
+                          <span>
+                            Last Sabaq: <strong className="text-teal-900">{previousSabaqLabel}</strong>
+                          </span>
+                        ) : (
+                          <span className="text-slate-400">No previous progress record found.</span>
+                        )}
+                      </p>
+                    </div>
+                  </div>
+
+                  {/* 1-Click Auto Next Lesson Button */}
+                  {suggestedNextSabaq && (
+                    <button
+                      type="button"
+                      onClick={applyAutoSuggestion}
+                      className="inline-flex items-center justify-center gap-1.5 rounded-xl bg-teal-700 px-3.5 py-2 text-xs font-bold text-white shadow-sm transition hover:bg-teal-800 active:scale-95"
+                    >
+                      <Sparkles className="h-3.5 w-3.5 text-teal-200" />
+                      <span>Next: {suggestedNextSabaq.label}</span>
+                    </button>
+                  )}
+                </div>
+              )}
             </div>
 
-            {/* Assessment Tabs Segmented Control */}
+            {/* 2. Modern Segmented Tab Bar (Sabaq, Sabqi, Manzil) */}
             <div className="grid grid-cols-3 gap-2 rounded-2xl bg-slate-200/70 p-1.5">
               {sectionMeta.map((section) => {
                 const badge = sectionBadges[section.key];
@@ -1167,7 +1316,7 @@ export default function TeacherProgressPage() {
                     onClick={() => setActiveTab(section.key)}
                     className={`group relative flex flex-col items-center justify-center rounded-xl py-2.5 transition-all active:scale-[0.98] sm:py-3 ${
                       isActive
-                        ? 'bg-white text-teal-900 shadow-md shadow-slate-950/5 ring-1 ring-black/5'
+                        ? 'bg-white text-teal-950 shadow-md shadow-slate-900/5 ring-1 ring-black/5'
                         : 'text-slate-600 hover:text-slate-900'
                     }`}
                   >
@@ -1175,19 +1324,23 @@ export default function TeacherProgressPage() {
                       <span className="text-base">{section.icon}</span>
                       <span className="text-xs font-black sm:text-sm">{section.title}</span>
                     </div>
+
                     <div className="mt-1 flex items-center gap-1">
-                      <span className={`rounded-md px-1.5 py-0.5 text-[10px] font-bold ${
-                        isActive ? 'bg-teal-50 text-teal-800' : 'bg-slate-300/60 text-slate-700'
-                      }`}>
-                        {badge.rangeCount} R
-                      </span>
-                      {badge.mistakeCount > 0 ? (
-                        <span className="rounded-md bg-amber-100 px-1.5 py-0.5 text-[10px] font-extrabold text-amber-800">
-                          {badge.mistakeCount} ✗
+                      {badge.isFilled ? (
+                        <span className="rounded-md bg-emerald-100 px-1.5 py-0.5 text-[10px] font-extrabold text-emerald-800">
+                          ✓ Ready
                         </span>
                       ) : (
-                        <span className="rounded-md bg-emerald-100 px-1.5 py-0.5 text-[10px] font-extrabold text-emerald-800">
-                          0 ✗
+                        <span className={`rounded-md px-1.5 py-0.5 text-[10px] font-bold ${
+                          isActive ? 'bg-teal-50 text-teal-800' : 'bg-slate-300/60 text-slate-700'
+                        }`}>
+                          {section.key === 'sabaq' ? 'Required' : 'Optional'}
+                        </span>
+                      )}
+
+                      {badge.mistakeCount > 0 && (
+                        <span className="rounded-md bg-rose-100 px-1.5 py-0.5 text-[10px] font-extrabold text-rose-800">
+                          {badge.mistakeCount} ✗
                         </span>
                       )}
                     </div>
@@ -1196,115 +1349,46 @@ export default function TeacherProgressPage() {
               })}
             </div>
 
-            {/* Active Tab Content Card */}
+            {/* 3. Active Section Assessment Card */}
             {sectionMeta.map((section) => {
               if (activeTab !== section.key) return null;
               const formSection = form.sections[section.key];
 
               return (
-                <div key={section.key} className="space-y-5 rounded-3xl border border-slate-200/80 bg-white p-5 shadow-sm sm:p-6">
-                  {/* Section Title Bar */}
+                <div key={section.key} className="space-y-6 rounded-3xl border border-slate-200/80 bg-white p-5 shadow-sm sm:p-6">
+                  {/* Section Title Header */}
                   <div className="flex flex-col gap-2 border-b border-slate-100 pb-4 sm:flex-row sm:items-center sm:justify-between">
                     <div>
                       <div className="flex items-center gap-2">
                         <span className="text-xl">{section.icon}</span>
-                        <h3 className="text-lg font-black text-slate-900">{section.title} Assessment</h3>
+                        <h3 className="text-lg font-black text-slate-900">{section.titleUrdu}</h3>
                         {section.key !== 'sabaq' && (
-                          <span className="rounded-full bg-slate-100 px-2 py-0.5 text-[10px] font-bold text-slate-500">
-                            Optional
+                          <span className="rounded-full bg-slate-100 px-2.5 py-0.5 text-[10px] font-bold text-slate-500">
+                            Optional Section
                           </span>
                         )}
                       </div>
-                      <p className="mt-0.5 text-xs font-medium text-slate-500">
-                        {section.key === 'sabaq' && 'New daily lesson tracking and recitation quality.'}
-                        {section.key === 'sabqi' && 'Recent Surahs revision assessment.'}
-                        {section.key === 'manzil' && 'Long-term Quran revision and consolidation.'}
-                      </p>
+                      <p className="mt-0.5 text-xs font-medium text-slate-500">{section.subtitle}</p>
                     </div>
 
                     {formSection.kaifiyat && (
-                      <div className="inline-flex items-center gap-1.5 rounded-2xl bg-teal-50 px-3 py-1.5 text-xs font-black text-teal-800">
+                      <div className="inline-flex items-center gap-1.5 rounded-2xl bg-teal-50 px-3.5 py-1.5 text-xs font-black text-teal-900 border border-teal-200">
                         <Star className="h-3.5 w-3.5 fill-amber-400 text-amber-500" />
                         <span>{formSection.kaifiyat}</span>
                       </div>
                     )}
                   </div>
 
-                  {/* Quick Rating & Mistakes Shortcuts Bar */}
-                  <div className="rounded-2xl border border-slate-100 bg-slate-50/80 p-3.5">
-                    <p className="mb-2.5 text-[11px] font-bold uppercase tracking-wider text-slate-500">
-                      Quick Grade & Mistakes Presets
-                    </p>
-                    <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-                      {/* Rating Presets */}
-                      <div className="flex flex-wrap items-center gap-1.5">
-                        <span className="mr-1 text-[11px] font-bold text-slate-400">Rating:</span>
-                        {(
-                          [
-                            { label: 'Ex', val: 'Excellent ⭐⭐⭐⭐⭐' },
-                            { label: 'Good', val: 'Good ⭐⭐⭐⭐' },
-                            { label: 'Avg', val: 'Average ⭐⭐⭐' },
-                            { label: 'Weak', val: 'Weak ⭐⭐' }
-                          ] as const
-                        ).map((item) => (
-                          <button
-                            key={item.label}
-                            type="button"
-                            onClick={() => applyQuickPerformanceToTab(item.val)}
-                            className={`rounded-xl px-3 py-1.5 text-xs font-bold transition active:scale-95 ${
-                              formSection.kaifiyat === item.val
-                                ? 'bg-teal-700 text-white shadow-sm'
-                                : 'bg-white text-slate-700 hover:bg-teal-50 hover:text-teal-900 border border-slate-200'
-                            }`}
-                          >
-                            {item.label}
-                          </button>
-                        ))}
-                      </div>
-
-                      {/* Mistakes Presets */}
-                      <div className="flex flex-wrap items-center gap-1.5">
-                        <span className="mr-1 text-[11px] font-bold text-slate-400">Mistakes:</span>
-                        {(['0', '1-2', '3+'] as const).map((m) => (
-                          <button
-                            key={m}
-                            type="button"
-                            onClick={() => applyQuickMistakesToTab(m)}
-                            className="rounded-xl border border-slate-200 bg-white px-2.5 py-1.5 text-xs font-bold text-slate-700 transition hover:bg-amber-50 hover:text-amber-900 active:scale-95"
-                          >
-                            {m}
-                          </button>
-                        ))}
-                      </div>
+                  {/* ── Surah Ranges Section (Smooth Number Inputs) ── */}
+                  <div className="space-y-3.5">
+                    <div className="flex items-center justify-between">
+                      <label className="text-xs font-bold uppercase tracking-wider text-slate-600">
+                        Surah & Ayah Ranges ({formSection.ranges.length})
+                      </label>
+                      <span className="text-[11px] font-medium text-slate-400">
+                        Type numbers freely or click chips
+                      </span>
                     </div>
-                  </div>
-
-                  {/* Auto Suggestion Banner (Sabaq Only) */}
-                  {section.key === 'sabaq' && suggestedNextSabaq && (
-                    <div className="flex flex-col gap-2.5 rounded-2xl border border-teal-200 bg-teal-50/70 p-3.5 sm:flex-row sm:items-center sm:justify-between">
-                      <div className="flex items-center gap-2 text-xs font-bold text-teal-900">
-                        <Sparkles className="h-4 w-4 shrink-0 text-teal-600" />
-                        <span>Suggested Next Lesson:</span>
-                        <span className="rounded-lg bg-teal-100 px-2 py-0.5 font-extrabold text-teal-800">
-                          {suggestedNextSabaq.label}
-                        </span>
-                      </div>
-                      <button
-                        type="button"
-                        onClick={applyAutoSuggestion}
-                        className="inline-flex items-center justify-center gap-1.5 rounded-xl bg-teal-700 px-3.5 py-1.5 text-xs font-black text-white shadow-sm transition hover:bg-teal-800 active:scale-95 sm:w-auto"
-                      >
-                        <Plus className="h-3.5 w-3.5" />
-                        <span>Apply Suggestion</span>
-                      </button>
-                    </div>
-                  )}
-
-                  {/* Surah Ranges List */}
-                  <div className="space-y-3">
-                    <p className="text-xs font-bold uppercase tracking-wider text-slate-500">
-                      Surah Ranges ({formSection.ranges.length})
-                    </p>
 
                     {formSection.ranges.map((range, rangeIdx) => {
                       const selectedSurah = getSurahById(range.surahId || 0);
@@ -1313,16 +1397,18 @@ export default function TeacherProgressPage() {
                       return (
                         <div
                           key={rangeIdx}
-                          className="rounded-2xl border border-slate-200/80 bg-slate-50/60 p-4 transition focus-within:border-teal-400 focus-within:bg-white"
+                          className="rounded-2xl border border-slate-200 bg-slate-50/70 p-4 transition focus-within:border-teal-500 focus-within:bg-white focus-within:shadow-sm"
                         >
                           <div className="mb-3 flex items-center justify-between">
                             <div className="flex items-center gap-2">
-                              <span className="grid h-6 w-6 place-items-center rounded-full bg-teal-100 text-xs font-black text-teal-800">
+                              <span className="grid h-6 w-6 place-items-center rounded-full bg-teal-700 text-xs font-black text-white">
                                 {rangeIdx + 1}
                               </span>
-                              <span className="text-xs font-bold text-slate-700">Range #{rangeIdx + 1}</span>
+                              <span className="text-xs font-bold text-slate-800">
+                                Range #{rangeIdx + 1} {rangeIdx > 0 && <span className="text-teal-700 font-semibold">(دوسرا نمبر رینج)</span>}
+                              </span>
                               {selectedSurah && (
-                                <span className="rounded-full bg-slate-200/70 px-2 py-0.5 text-[10px] font-bold text-slate-600">
+                                <span className="rounded-full bg-slate-200/80 px-2 py-0.5 text-[10px] font-bold text-slate-700">
                                   {ayahCount} Total Ayahs
                                 </span>
                               )}
@@ -1334,23 +1420,23 @@ export default function TeacherProgressPage() {
                               className="inline-flex items-center gap-1 rounded-xl px-2.5 py-1 text-xs font-bold text-rose-600 transition hover:bg-rose-50"
                             >
                               <Trash2 className="h-3.5 w-3.5" />
-                              <span>{formSection.ranges.length > 1 ? 'Remove' : 'Clear'}</span>
+                              <span>{formSection.ranges.length > 1 ? 'Remove Range' : 'Clear'}</span>
                             </button>
                           </div>
 
                           <div className="grid grid-cols-1 gap-3 sm:grid-cols-12">
-                            {/* Surah selector */}
+                            {/* Surah dropdown */}
                             <div className="sm:col-span-6">
                               <label className="mb-1 block text-[11px] font-bold uppercase tracking-wider text-slate-500">
-                                Surah
+                                Select Surah (سورت)
                               </label>
                               <select
                                 value={selectedSurah ? `${selectedSurah.id}. ${selectedSurah.name}` : ''}
                                 onChange={(e) => handleSurahInput(section.key, rangeIdx, e.target.value)}
-                                className="h-10 w-full rounded-xl border border-slate-200 bg-white px-3 text-xs font-semibold text-slate-800 outline-none transition focus:border-teal-600 focus:ring-4 focus:ring-teal-500/10"
+                                className="h-11 w-full rounded-xl border border-slate-200 bg-white px-3 text-xs font-semibold text-slate-800 outline-none transition focus:border-teal-600 focus:ring-4 focus:ring-teal-500/10"
                                 required={section.key === 'sabaq'}
                               >
-                                <option value="">Select Surah</option>
+                                <option value="">Select Surah...</option>
                                 {SURAH_LIST.map((surah) => (
                                   <option key={surah.id} value={`${surah.id}. ${surah.name}`}>
                                     {surah.id}. {surah.name} ({surah.ayahs} Ayahs)
@@ -1362,180 +1448,232 @@ export default function TeacherProgressPage() {
                             {/* From Ayah */}
                             <div className="sm:col-span-3">
                               <label className="mb-1 block text-[11px] font-bold uppercase tracking-wider text-slate-500">
-                                From Ayah
+                                From Ayah (آیت سے)
                               </label>
                               <input
-                                type="number"
-                                min={1}
-                                max={ayahCount || 1}
+                                type="text"
+                                inputMode="numeric"
+                                pattern="[0-9]*"
                                 value={range.fromAyah}
-                                onChange={(e) => {
-                                  const value = e.target.value;
-                                  const updatedRanges = [...formSection.ranges];
-                                  if (value === '') {
-                                    updatedRanges[rangeIdx] = { ...updatedRanges[rangeIdx], fromAyah: '' };
-                                  } else {
-                                    const numeric = Number(value);
-                                    const safeValue =
-                                      selectedSurah && Number.isFinite(numeric)
-                                        ? String(Math.max(1, Math.min(numeric, selectedSurah.ayahs)))
-                                        : value;
-                                    updatedRanges[rangeIdx] = { ...updatedRanges[rangeIdx], fromAyah: safeValue };
-                                  }
-                                  setForm((prev) => ({
-                                    ...prev,
-                                    sections: {
-                                      ...prev.sections,
-                                      [section.key]: { ...formSection, ranges: updatedRanges }
-                                    }
-                                  }));
-                                }}
-                                className="h-10 w-full rounded-xl border border-slate-200 bg-white px-3 text-xs font-semibold text-slate-800 outline-none transition focus:border-teal-600 focus:ring-4 focus:ring-teal-500/10 disabled:bg-slate-100 disabled:text-slate-400"
+                                onChange={(e) => handleAyahChange(section.key, rangeIdx, 'fromAyah', e.target.value)}
+                                onBlur={() => handleAyahBlur(section.key, rangeIdx, 'fromAyah')}
                                 disabled={!selectedSurah}
                                 placeholder="1"
+                                className="h-11 w-full rounded-xl border border-slate-200 bg-white px-3 text-sm font-bold text-slate-800 outline-none transition focus:border-teal-600 focus:ring-4 focus:ring-teal-500/10 disabled:bg-slate-100 disabled:text-slate-400"
                               />
                             </div>
 
-                            {/* To Ayah */}
+                            {/* To Ayah (Doosra Number) */}
                             <div className="sm:col-span-3">
-                              <label className="mb-1 block text-[11px] font-bold uppercase tracking-wider text-slate-500">
-                                To Ayah
-                              </label>
+                              <div className="mb-1 flex items-center justify-between">
+                                <label className="text-[11px] font-bold uppercase tracking-wider text-slate-500">
+                                  To Ayah (آیت تک)
+                                </label>
+                              </div>
                               <input
-                                type="number"
-                                min={range.fromAyah ? Number(range.fromAyah) : 1}
-                                max={ayahCount || 1}
+                                type="text"
+                                inputMode="numeric"
+                                pattern="[0-9]*"
                                 value={range.toAyah}
-                                onChange={(e) => {
-                                  const value = e.target.value;
-                                  const updatedRanges = [...formSection.ranges];
-                                  if (value === '') {
-                                    updatedRanges[rangeIdx] = { ...updatedRanges[rangeIdx], toAyah: '' };
-                                  } else {
-                                    const numeric = Number(value);
-                                    const minAllowed = Number(range.fromAyah || 1);
-                                    const maxAllowed = selectedSurah ? selectedSurah.ayahs : 1;
-                                    const safeValue = Number.isFinite(numeric)
-                                      ? String(Math.max(minAllowed, Math.min(numeric, maxAllowed)))
-                                      : value;
-                                    updatedRanges[rangeIdx] = { ...updatedRanges[rangeIdx], toAyah: safeValue };
-                                  }
-                                  setForm((prev) => ({
-                                    ...prev,
-                                    sections: {
-                                      ...prev.sections,
-                                      [section.key]: { ...formSection, ranges: updatedRanges }
-                                    }
-                                  }));
-                                }}
-                                className="h-10 w-full rounded-xl border border-slate-200 bg-white px-3 text-xs font-semibold text-slate-800 outline-none transition focus:border-teal-600 focus:ring-4 focus:ring-teal-500/10 disabled:bg-slate-100 disabled:text-slate-400"
+                                onChange={(e) => handleAyahChange(section.key, rangeIdx, 'toAyah', e.target.value)}
+                                onBlur={() => handleAyahBlur(section.key, rangeIdx, 'toAyah')}
                                 disabled={!selectedSurah}
                                 placeholder={selectedSurah ? String(Math.min(5, ayahCount)) : 'To'}
+                                className="h-11 w-full rounded-xl border border-slate-200 bg-white px-3 text-sm font-bold text-slate-800 outline-none transition focus:border-teal-600 focus:ring-4 focus:ring-teal-500/10 disabled:bg-slate-100 disabled:text-slate-400"
                               />
                             </div>
                           </div>
+
+                          {/* Quick Ayah Increment Helpers */}
+                          {selectedSurah && (
+                            <div className="mt-2.5 flex flex-wrap items-center gap-1.5 pt-1">
+                              <span className="text-[10px] font-bold text-slate-400">Quick Range:</span>
+                              <button
+                                type="button"
+                                onClick={() => applyAyahChip(section.key, rangeIdx, '+5')}
+                                className="rounded-lg border border-slate-200 bg-white px-2 py-1 text-[11px] font-bold text-slate-700 transition hover:border-teal-400 hover:bg-teal-50"
+                              >
+                                +5 Ayahs
+                              </button>
+                              <button
+                                type="button"
+                                onClick={() => applyAyahChip(section.key, rangeIdx, '+10')}
+                                className="rounded-lg border border-slate-200 bg-white px-2 py-1 text-[11px] font-bold text-slate-700 transition hover:border-teal-400 hover:bg-teal-50"
+                              >
+                                +10 Ayahs
+                              </button>
+                              <button
+                                type="button"
+                                onClick={() => applyAyahChip(section.key, rangeIdx, 'ALL')}
+                                className="rounded-lg border border-teal-200 bg-teal-50 px-2.5 py-1 text-[11px] font-bold text-teal-800 transition hover:bg-teal-100"
+                              >
+                                Whole Surah ({ayahCount} Ayahs)
+                              </button>
+                            </div>
+                          )}
                         </div>
                       );
                     })}
 
+                    {/* Add Another Surah Range Button */}
                     <button
                       type="button"
                       onClick={() => handleAddRange(section.key)}
-                      className="inline-flex w-full items-center justify-center gap-2 rounded-2xl border-2 border-dashed border-slate-200 bg-white py-3 text-xs font-bold text-teal-800 transition hover:border-teal-400 hover:bg-teal-50/50"
+                      className="inline-flex w-full items-center justify-center gap-2 rounded-2xl border-2 border-dashed border-teal-200 bg-teal-50/30 py-3 text-xs font-bold text-teal-800 transition hover:border-teal-400 hover:bg-teal-50"
                     >
                       <Plus className="h-4 w-4" />
-                      <span>Add Another Surah Range</span>
+                      <span>+ Add Another Surah Range (دوسرا سورت رینج شامل کریں)</span>
                     </button>
                   </div>
 
-                  {/* Kaifiyat & Mistakes Grid */}
-                  <div className="grid grid-cols-1 gap-4 pt-2 sm:grid-cols-3">
-                    {/* Kaifiyat Selection */}
-                    <div>
-                      <label className="mb-1.5 block text-xs font-bold uppercase tracking-wider text-slate-500">
-                        Kaifiyat (Rating)
-                      </label>
-                      <select
-                        value={formSection.kaifiyat}
-                        onChange={(e) =>
-                          setSectionValue(section.key, { kaifiyat: e.target.value as KaifiyatValue })
-                        }
-                        className="h-11 w-full rounded-2xl border border-slate-200 bg-slate-50/50 px-3 text-xs font-bold text-slate-800 outline-none transition focus:border-teal-600 focus:bg-white focus:ring-4 focus:ring-teal-500/10"
-                        required={section.key === 'sabaq'}
-                      >
-                        <option value="">Select Rating</option>
-                        <option value="Excellent ⭐⭐⭐⭐⭐">Excellent ⭐⭐⭐⭐⭐</option>
-                        <option value="Good ⭐⭐⭐⭐">Good ⭐⭐⭐⭐</option>
-                        <option value="Average ⭐⭐⭐">Average ⭐⭐⭐</option>
-                        <option value="Weak ⭐⭐">Weak ⭐⭐</option>
-                      </select>
-                    </div>
+                  {/* ── Kaifiyat (Rating Cards) ── */}
+                  <div className="space-y-2.5 pt-2">
+                    <label className="block text-xs font-bold uppercase tracking-wider text-slate-600">
+                      Kaifiyat / Recitation Quality (کارکردگی / معیار) *
+                    </label>
 
+                    <div className="grid grid-cols-2 gap-2.5 sm:grid-cols-4">
+                      {kaifiyatOptions.map((opt) => {
+                        const isSelected = formSection.kaifiyat === opt.label;
+                        return (
+                          <button
+                            key={opt.label}
+                            type="button"
+                            onClick={() => setSectionValue(section.key, { kaifiyat: opt.label })}
+                            className={`flex flex-col items-center justify-center rounded-2xl border-2 p-3 text-center transition active:scale-95 ${
+                              isSelected
+                                ? `${opt.border} ${opt.bg} ring-2 ring-teal-500/20 shadow-sm font-black`
+                                : 'border-slate-200 bg-white hover:bg-slate-50 font-bold'
+                            }`}
+                          >
+                            <div className="flex items-center gap-1">
+                              {Array.from({ length: opt.stars }).map((_, i) => (
+                                <Star key={i} className="h-3 w-3 fill-amber-400 text-amber-500" />
+                              ))}
+                            </div>
+                            <span className={`mt-1 text-xs ${opt.color}`}>{opt.shortLabel}</span>
+                            {isSelected && (
+                              <span className="mt-1 inline-flex items-center gap-0.5 rounded-full bg-teal-700 px-2 py-0.5 text-[9px] font-extrabold text-white">
+                                <Check className="h-2.5 w-2.5" /> Selected
+                              </span>
+                            )}
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </div>
+
+                  {/* ── Mistakes Stepper & Quick Pills ── */}
+                  <div className="grid grid-cols-1 gap-4 pt-2 sm:grid-cols-2">
                     {/* Tajweedi Mistakes */}
-                    <div>
-                      <label className="mb-1.5 block text-xs font-bold uppercase tracking-wider text-slate-500">
-                        Tajweedi Mistakes
-                      </label>
-                      <div className="space-y-1.5">
+                    <div className="rounded-2xl border border-slate-200 bg-slate-50/60 p-4">
+                      <div className="mb-2 flex items-center justify-between">
+                        <label className="text-xs font-bold uppercase tracking-wider text-slate-700">
+                          Tajweedi Mistakes (تجویدی غلطیاں)
+                        </label>
+                        <span className="text-xs font-black text-teal-800">
+                          {formSection.tajweeditotal || '0'}
+                        </span>
+                      </div>
+
+                      <div className="flex items-center gap-2">
+                        <button
+                          type="button"
+                          onClick={() => adjustMistake(section.key, 'tajweeditotal', -1)}
+                          className="grid h-11 w-11 place-items-center rounded-xl border border-slate-200 bg-white text-slate-700 shadow-sm transition hover:bg-slate-100 active:scale-90"
+                        >
+                          <Minus className="h-4 w-4" />
+                        </button>
+
                         <input
-                          type="number"
-                          min={0}
-                          max={99}
+                          type="text"
+                          inputMode="numeric"
                           value={formSection.tajweeditotal}
-                          onChange={(e) => setSectionValue(section.key, { tajweeditotal: e.target.value })}
-                          placeholder="0"
-                          className="h-11 w-full rounded-2xl border border-amber-200 bg-amber-50/40 px-3 text-sm font-black text-amber-900 outline-none transition focus:border-amber-400 focus:bg-white focus:ring-4 focus:ring-amber-400/10"
+                          onChange={(e) => setSectionValue(section.key, { tajweeditotal: e.target.value.replace(/\D/g, '') })}
+                          className="h-11 flex-1 rounded-xl border border-slate-200 bg-white text-center text-base font-black text-slate-900 outline-none transition focus:border-teal-600 focus:ring-4 focus:ring-teal-500/10"
                         />
-                        <div className="flex flex-wrap gap-1">
-                          {[0, 1, 2, 3, 5, 10].map((val) => (
-                            <button
-                              key={val}
-                              type="button"
-                              onClick={() => setSectionValue(section.key, { tajweeditotal: String(val) })}
-                              className={`rounded-lg border px-2 py-0.5 text-[11px] font-bold transition ${
-                                formSection.tajweeditotal === String(val)
-                                  ? 'border-amber-500 bg-amber-200 text-amber-900'
-                                  : 'border-slate-200 bg-white text-slate-600 hover:bg-amber-50'
-                              }`}
-                            >
-                              {val}
-                            </button>
-                          ))}
-                        </div>
+
+                        <button
+                          type="button"
+                          onClick={() => adjustMistake(section.key, 'tajweeditotal', 1)}
+                          className="grid h-11 w-11 place-items-center rounded-xl border border-slate-200 bg-white text-slate-700 shadow-sm transition hover:bg-slate-100 active:scale-90"
+                        >
+                          <Plus className="h-4 w-4" />
+                        </button>
+                      </div>
+
+                      {/* Quick Chips */}
+                      <div className="mt-2.5 flex flex-wrap gap-1.5">
+                        {[0, 1, 2, 3, 5].map((val) => (
+                          <button
+                            key={val}
+                            type="button"
+                            onClick={() => setMistakeCount(section.key, 'tajweeditotal', val)}
+                            className={`rounded-lg border px-2.5 py-1 text-xs font-bold transition ${
+                              formSection.tajweeditotal === String(val)
+                                ? 'border-teal-600 bg-teal-600 text-white'
+                                : 'border-slate-200 bg-white text-slate-600 hover:bg-teal-50'
+                            }`}
+                          >
+                            {val === 0 ? '0 (Clean ✓)' : val}
+                          </button>
+                        ))}
                       </div>
                     </div>
 
                     {/* Hifz Mistakes */}
-                    <div>
-                      <label className="mb-1.5 block text-xs font-bold uppercase tracking-wider text-slate-500">
-                        Hifz Mistakes
-                      </label>
-                      <div className="space-y-1.5">
+                    <div className="rounded-2xl border border-slate-200 bg-slate-50/60 p-4">
+                      <div className="mb-2 flex items-center justify-between">
+                        <label className="text-xs font-bold uppercase tracking-wider text-slate-700">
+                          Hifz Mistakes (حفظ کی غلطیاں)
+                        </label>
+                        <span className="text-xs font-black text-amber-800">
+                          {formSection.hifztotal || '0'}
+                        </span>
+                      </div>
+
+                      <div className="flex items-center gap-2">
+                        <button
+                          type="button"
+                          onClick={() => adjustMistake(section.key, 'hifztotal', -1)}
+                          className="grid h-11 w-11 place-items-center rounded-xl border border-slate-200 bg-white text-slate-700 shadow-sm transition hover:bg-slate-100 active:scale-90"
+                        >
+                          <Minus className="h-4 w-4" />
+                        </button>
+
                         <input
-                          type="number"
-                          min={0}
-                          max={99}
+                          type="text"
+                          inputMode="numeric"
                           value={formSection.hifztotal}
-                          onChange={(e) => setSectionValue(section.key, { hifztotal: e.target.value })}
-                          placeholder="0"
-                          className="h-11 w-full rounded-2xl border border-amber-200 bg-amber-50/40 px-3 text-sm font-black text-amber-900 outline-none transition focus:border-amber-400 focus:bg-white focus:ring-4 focus:ring-amber-400/10"
+                          onChange={(e) => setSectionValue(section.key, { hifztotal: e.target.value.replace(/\D/g, '') })}
+                          className="h-11 flex-1 rounded-xl border border-slate-200 bg-white text-center text-base font-black text-slate-900 outline-none transition focus:border-teal-600 focus:ring-4 focus:ring-teal-500/10"
                         />
-                        <div className="flex flex-wrap gap-1">
-                          {[0, 1, 2, 3, 5, 10].map((val) => (
-                            <button
-                              key={val}
-                              type="button"
-                              onClick={() => setSectionValue(section.key, { hifztotal: String(val) })}
-                              className={`rounded-lg border px-2 py-0.5 text-[11px] font-bold transition ${
-                                formSection.hifztotal === String(val)
-                                  ? 'border-amber-500 bg-amber-200 text-amber-900'
-                                  : 'border-slate-200 bg-white text-slate-600 hover:bg-amber-50'
-                              }`}
-                            >
-                              {val}
-                            </button>
-                          ))}
-                        </div>
+
+                        <button
+                          type="button"
+                          onClick={() => adjustMistake(section.key, 'hifztotal', 1)}
+                          className="grid h-11 w-11 place-items-center rounded-xl border border-slate-200 bg-white text-slate-700 shadow-sm transition hover:bg-slate-100 active:scale-90"
+                        >
+                          <Plus className="h-4 w-4" />
+                        </button>
+                      </div>
+
+                      {/* Quick Chips */}
+                      <div className="mt-2.5 flex flex-wrap gap-1.5">
+                        {[0, 1, 2, 3, 5].map((val) => (
+                          <button
+                            key={val}
+                            type="button"
+                            onClick={() => setMistakeCount(section.key, 'hifztotal', val)}
+                            className={`rounded-lg border px-2.5 py-1 text-xs font-bold transition ${
+                              formSection.hifztotal === String(val)
+                                ? 'border-amber-600 bg-amber-600 text-white'
+                                : 'border-slate-200 bg-white text-slate-600 hover:bg-amber-50'
+                            }`}
+                          >
+                            {val === 0 ? '0 (Clean ✓)' : val}
+                          </button>
+                        ))}
                       </div>
                     </div>
                   </div>
@@ -1545,35 +1683,45 @@ export default function TeacherProgressPage() {
           </form>
         </div>
 
-        {/* Right Insights Column (Desktop Sidebar / Mobile Accordion) */}
+        {/* ─── Right Live Feedback & Insights Column ─── */}
         <div className="space-y-6 xl:col-span-4">
-          {/* Performance Card */}
+          {/* Live Performance Card */}
           <div className="rounded-3xl border border-slate-200/80 bg-white p-5 shadow-sm sm:p-6">
             <div className="mb-4 flex items-center gap-2.5 border-b border-slate-100 pb-3">
               <div className="grid h-9 w-9 place-items-center rounded-xl bg-teal-50 text-teal-700">
                 <Sparkles className="h-5 w-5" />
               </div>
-              <h3 className="text-base font-bold text-slate-900">Performance Summary</h3>
+              <div>
+                <h3 className="text-base font-bold text-slate-900">Performance Summary</h3>
+                <p className="text-[11px] font-medium text-slate-400">Calculated in real-time</p>
+              </div>
             </div>
 
             <div className="space-y-3">
-              <div className="flex items-center justify-between rounded-2xl bg-slate-50 p-3">
-                <span className="text-xs font-bold text-slate-500">Overall Rating</span>
+              <div className="flex items-center justify-between rounded-2xl bg-slate-50 p-3.5">
+                <span className="text-xs font-bold text-slate-500">Overall Grade</span>
                 <span className="text-sm font-black text-teal-900">{summary.overallPerformance}</span>
               </div>
 
-              <div className="flex items-center justify-between rounded-2xl bg-slate-50 p-3">
+              <div className="flex items-center justify-between rounded-2xl bg-slate-50 p-3.5">
                 <span className="text-xs font-bold text-slate-500">Total Mistakes</span>
-                <span className={`text-sm font-black ${
-                  summary.totalMistakes === 0 ? 'text-emerald-700' : 'text-amber-700'
-                }`}>
-                  {summary.totalMistakes} mistakes
+                <span
+                  className={`text-sm font-black ${
+                    summary.totalMistakes === 0
+                      ? 'text-emerald-700'
+                      : summary.totalMistakes <= 3
+                        ? 'text-amber-700'
+                        : 'text-rose-700'
+                  }`}
+                >
+                  {summary.totalMistakes} {summary.totalMistakes === 1 ? 'mistake' : 'mistakes'}
                 </span>
               </div>
 
-              <div className="rounded-2xl border border-teal-100 bg-teal-50/50 p-3.5">
+              {/* Dynamic Pedagogical Suggestion */}
+              <div className="rounded-2xl border border-teal-100 bg-teal-50/60 p-4">
                 <p className="mb-1 text-[10px] font-bold uppercase tracking-wider text-teal-800">
-                  Pedagogical Suggestion
+                  Pedagogical Recommendation
                 </p>
                 <p className="text-xs font-medium leading-relaxed text-teal-950">{summary.suggestion}</p>
               </div>
@@ -1591,35 +1739,35 @@ export default function TeacherProgressPage() {
             </div>
           </div>
 
-          {/* Teacher Guidance Card */}
+          {/* Quick Guidelines Card */}
           <div className="rounded-3xl border border-slate-200/80 bg-gradient-to-br from-slate-50 to-white p-5 shadow-sm sm:p-6">
             <div className="mb-3 flex items-center gap-2 text-slate-800">
               <TrendingUp className="h-4 w-4 text-teal-700" />
-              <h3 className="text-sm font-bold">Assessment Guidelines</h3>
+              <h3 className="text-sm font-bold">Teacher Quick Tips</h3>
             </div>
             <ul className="space-y-2 text-xs leading-relaxed text-slate-600">
               <li className="flex items-start gap-2">
                 <span className="mt-1 h-1.5 w-1.5 rounded-full bg-teal-600 shrink-0" />
-                <span>Keep new Sabaq length manageable based on recitation fluency.</span>
+                <span><strong>No typing lock:</strong> You can enter any Ayah number (e.g. 15, 25, 114) directly without constraint.</span>
               </li>
               <li className="flex items-start gap-2">
                 <span className="mt-1 h-1.5 w-1.5 rounded-full bg-teal-600 shrink-0" />
-                <span>If total mistakes exceed 3, pause lesson forward progress for revision.</span>
+                <span>Use <strong>&quot;Save &amp; Next Student&quot;</strong> to evaluate the whole class consecutively.</span>
               </li>
               <li className="flex items-start gap-2">
                 <span className="mt-1 h-1.5 w-1.5 rounded-full bg-teal-600 shrink-0" />
-                <span>Use &quot;Save &amp; Next Student&quot; for rapid class evaluations.</span>
+                <span>Sabqi and Manzil sections are optional; Sabaq is primary.</span>
               </li>
             </ul>
           </div>
         </div>
       </div>
 
-      {/* Floating Action Bar */}
-      <div className="sticky bottom-4 z-30 rounded-3xl border border-slate-200/80 bg-white/95 p-3.5 shadow-2xl backdrop-blur-xl">
+      {/* ─── Floating Sticky Action Bar ─── */}
+      <div className="sticky bottom-4 z-30 rounded-3xl border border-slate-200/90 bg-white/95 p-4 shadow-2xl backdrop-blur-xl">
         {editingReportId && (
           <div className="mb-3 flex items-center justify-between rounded-2xl border border-amber-200 bg-amber-50 px-4 py-2 text-xs font-bold text-amber-900">
-            <span>You are currently editing a saved report.</span>
+            <span>You are currently updating an existing progress report.</span>
             <button
               type="button"
               onClick={cancelEditReport}
@@ -1630,12 +1778,17 @@ export default function TeacherProgressPage() {
           </div>
         )}
 
-        <div className="flex flex-col gap-2.5 sm:flex-row sm:items-center sm:justify-between">
-          <div className="hidden items-center gap-2 text-xs font-medium text-slate-500 sm:flex">
-            <span>Target:</span>
-            <span className="font-bold text-slate-900">
-              {selectedStudent ? selectedStudent.user.fullName : 'No student selected'}
-            </span>
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+          <div className="flex items-center gap-2.5">
+            <div className="grid h-9 w-9 place-items-center rounded-xl bg-teal-50 text-teal-700">
+              <UserCheck className="h-5 w-5" />
+            </div>
+            <div>
+              <p className="text-[10px] font-bold uppercase tracking-wider text-slate-400">Target Student</p>
+              <p className="text-sm font-black text-slate-900">
+                {selectedStudent ? selectedStudent.user.fullName : 'No student selected'}
+              </p>
+            </div>
           </div>
 
           <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
@@ -1644,12 +1797,13 @@ export default function TeacherProgressPage() {
                 type="button"
                 onClick={cancelEditReport}
                 disabled={saving}
-                className="h-11 w-full rounded-2xl border border-slate-200 bg-white px-5 text-xs font-bold text-slate-700 transition hover:bg-slate-50 active:scale-98 sm:w-auto"
+                className="h-11 w-full rounded-2xl border border-slate-200 bg-white px-5 text-xs font-bold text-slate-700 transition hover:bg-slate-50 active:scale-95 sm:w-auto"
               >
                 Cancel
               </button>
             )}
 
+            {/* Save Report (Primary) */}
             <button
               type="button"
               onClick={async () => {
@@ -1657,12 +1811,13 @@ export default function TeacherProgressPage() {
                 await submit({ preventDefault: () => {} } as React.FormEvent);
               }}
               disabled={saving || loading || featureDisabled}
-              className="inline-flex h-11 w-full items-center justify-center gap-2 rounded-2xl bg-teal-700 px-6 text-xs font-black text-white shadow-lg shadow-teal-700/20 transition hover:bg-teal-800 active:scale-98 disabled:opacity-50 sm:w-auto"
+              className="inline-flex h-12 w-full items-center justify-center gap-2 rounded-2xl bg-teal-700 px-7 text-xs font-black text-white shadow-lg shadow-teal-700/20 transition hover:bg-teal-800 active:scale-95 disabled:opacity-50 sm:w-auto"
             >
-              <Check className="h-4 w-4" />
-              <span>{saving ? 'Saving...' : editingReportId ? 'Update Report' : 'Save Report'}</span>
+              <Check className="h-4 w-4 stroke-[3]" />
+              <span>{saving ? 'Saving...' : editingReportId ? 'Update Report' : 'Save Report (محفوظ کریں)'}</span>
             </button>
 
+            {/* Save & Move Next */}
             <button
               type="button"
               onClick={async () => {
@@ -1674,9 +1829,9 @@ export default function TeacherProgressPage() {
                 loading ||
                 featureDisabled ||
                 Boolean(editingReportId) ||
-                !selectedStudents.some((s) => s.id > form.studentId)
+                !nextStudentInClass
               }
-              className="inline-flex h-11 w-full items-center justify-center gap-2 rounded-2xl border border-teal-200 bg-teal-50 px-6 text-xs font-black text-teal-800 transition hover:bg-teal-100 active:scale-98 disabled:opacity-30 sm:w-auto"
+              className="inline-flex h-12 w-full items-center justify-center gap-2 rounded-2xl border border-teal-300 bg-teal-50 px-6 text-xs font-black text-teal-800 transition hover:bg-teal-100 active:scale-95 disabled:opacity-40 sm:w-auto"
             >
               <span>{saving ? 'Saving...' : 'Save & Next Student →'}</span>
             </button>
@@ -1684,13 +1839,13 @@ export default function TeacherProgressPage() {
         </div>
       </div>
 
-      {/* Saved Reports Section */}
+      {/* ─── Saved Daily Reports Log Section ─── */}
       <div className="rounded-3xl border border-slate-200/80 bg-white p-5 shadow-sm sm:p-6">
         <div className="mb-5 flex flex-col gap-3 border-b border-slate-100 pb-4 sm:flex-row sm:items-center sm:justify-between">
           <div>
-            <h3 className="text-lg font-black text-slate-900">Saved Daily Reports</h3>
+            <h3 className="text-lg font-black text-slate-900">Saved Daily Progress Reports</h3>
             <p className="text-xs font-medium text-slate-500">
-              {filteredReports.length} reports logged for selected filters
+              {filteredReports.length} reports recorded for the selected filters
             </p>
           </div>
 
@@ -1706,7 +1861,7 @@ export default function TeacherProgressPage() {
               <input
                 value={reportQuery}
                 onChange={(e) => setReportQuery(e.target.value)}
-                placeholder="Filter saved reports..."
+                placeholder="Filter reports by student..."
                 className="h-10 w-full rounded-2xl border border-slate-200 bg-slate-50 pl-9 pr-3 text-xs font-semibold text-slate-800 placeholder:text-slate-400 outline-none transition focus:border-teal-600 focus:bg-white"
               />
             </div>
@@ -1763,12 +1918,12 @@ export default function TeacherProgressPage() {
                     </div>
 
                     <div className="mt-2.5 flex items-center gap-2">
-                      <span className={`inline-flex rounded-md px-2 py-0.5 text-[10px] font-black ${
-                        mistakes === 0 
-                          ? 'bg-emerald-100 text-emerald-800' 
-                          : 'bg-amber-100 text-amber-800'
-                      }`}>
-                        {mistakes} Mistakes
+                      <span
+                        className={`inline-flex rounded-md px-2 py-0.5 text-[10px] font-black ${
+                          mistakes === 0 ? 'bg-emerald-100 text-emerald-800' : 'bg-amber-100 text-amber-800'
+                        }`}
+                      >
+                        {mistakes} {mistakes === 1 ? 'Mistake' : 'Mistakes'}
                       </span>
                       {parsed?.overall && (
                         <span className="text-[10px] font-bold text-slate-500">
@@ -1787,7 +1942,9 @@ export default function TeacherProgressPage() {
                               const rangeLabel = getSectionLabelFromNotes(item.notes, key);
                               return (
                                 <div key={key} className="border-b border-slate-100 pb-1.5 last:border-0 last:pb-0">
-                                  <p className="font-bold text-slate-800">{icon} {title}</p>
+                                  <p className="font-bold text-slate-800">
+                                    {icon} {title}
+                                  </p>
                                   <p className="text-[11px] text-slate-500">
                                     {rangeLabel} · {sec.kaifiyat || '-'} · T:{sec.tajweeditotal} H:{sec.hifztotal}
                                   </p>

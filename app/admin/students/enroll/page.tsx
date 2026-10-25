@@ -347,8 +347,11 @@ export default function EnrollStudentPage() {
     }
 
     if (step === 2) {
-      if (!form2.whatsappNumber.trim()) errs.whatsappNumber = 'WhatsApp number is required';
-      if (!form2.mobileNumber.trim())   errs.mobileNumber   = 'Mobile number is required';
+      const cleanWa = form2.whatsappNumber.replace(/\D/g, '');
+      const cleanMob = form2.mobileNumber.replace(/\D/g, '');
+      if (!cleanWa && !cleanMob) {
+        errs.whatsappNumber = 'At least one contact number (WhatsApp or Mobile) is required';
+      }
       if (form2.email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form2.email))
         errs.email = 'Enter a valid email address';
     }
@@ -376,6 +379,10 @@ export default function EnrollStudentPage() {
     setLoading(true);
     setApiError('');
     try {
+      const cleanWaDigits = form2.whatsappNumber.replace(/\D/g, '').replace(/^0+/, '');
+      const formattedWa = cleanWaDigits ? (form2.whatsappCode || '+92') + cleanWaDigits : '';
+      const formattedPhone = form2.mobileNumber.trim() || formattedWa;
+
       const res = await fetch('/api/admin/enroll', {
         method: 'POST',
         credentials: 'same-origin',
@@ -386,8 +393,8 @@ export default function EnrollStudentPage() {
           dateOfBirth: form1.dateOfBirth || null,
           aadharNo:    form1.aadharNo || null,
           gender:      form1.gender || null,
-          whatsApp:    form2.whatsappCode + form2.whatsappNumber,
-          phone:       form2.mobileNumber,
+          whatsApp:    formattedWa || formattedPhone,
+          phone:       formattedPhone,
           email:       form2.email || null,
           currentAddress: form2.address || null,
           schoolName:  form3.schoolName,
@@ -604,9 +611,33 @@ export default function EnrollStudentPage() {
               </div>
 
               <div className="grid gap-4 sm:grid-cols-2">
-                <Field label="Mobile Number *" error={errors.mobileNumber} icon={Phone}>
-                  <input {...inp2('mobileNumber')} type="tel" placeholder="+92 3xx xxxxxxx" className={inputCls(errors.mobileNumber)} />
-                </Field>
+                <div>
+                  <div className="mb-1.5 flex items-center justify-between">
+                    <label className={labelCls}>Mobile / Secondary Number</label>
+                    {form2.whatsappNumber.trim() && (
+                      <button
+                        type="button"
+                        onClick={() => {
+                          const clean = form2.whatsappNumber.replace(/\D/g, '').replace(/^0+/, '');
+                          setForm2(p => ({ ...p, mobileNumber: `${p.whatsappCode || '+92'} ${clean}` }));
+                        }}
+                        className="text-[11px] font-semibold text-[#0F4F4A] hover:underline"
+                      >
+                        Same as WhatsApp
+                      </button>
+                    )}
+                  </div>
+                  <div className="relative">
+                    <Phone className="pointer-events-none absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-[#94a3b8]" />
+                    <input
+                      {...inp2('mobileNumber')}
+                      type="tel"
+                      placeholder="Optional (or +92 3xx...)"
+                      className={inputCls(errors.mobileNumber)}
+                    />
+                  </div>
+                  {errors.mobileNumber && <p className="mt-1.5 flex items-center gap-1 text-xs text-[#ef4444]"><span>⚠</span>{errors.mobileNumber}</p>}
+                </div>
 
                 <Field label="Email Address" error={errors.email} icon={BadgeCheck}>
                   <input
