@@ -179,16 +179,16 @@ export function FeeBulkList({
       const data = await res.json();
       if (res.ok) {
         setToast({
-          message: `${payTarget.studentName} کے لیے ${formatCurrency(Number(payAmount))} فیس وصولی کامیابی سے درج ہو گئی!`,
+          message: `Payment of ${formatCurrency(Number(payAmount))} recorded successfully for ${payTarget.studentName}!`,
           type: 'success'
         });
         setPayTarget(null);
         router.refresh();
       } else {
-        setToast({ message: data.error || 'ادائیگی محفوظ نہ ہو سکی۔', type: 'error' });
+        setToast({ message: data.error || 'Failed to record payment.', type: 'error' });
       }
     } catch {
-      setToast({ message: 'نیٹ ورک خرابی۔ دوبارہ کوشش کریں۔', type: 'error' });
+      setToast({ message: 'Network error. Please try again.', type: 'error' });
     } finally {
       setPaySubmitting(false);
     }
@@ -358,7 +358,7 @@ export function FeeBulkList({
           <div>
             <h3 className="font-headline text-lg font-bold text-[#1a1c1c]">{title}</h3>
             <p className="mt-1 text-xs text-[#6f7979]">
-              ماہانہ اور بقایا فیس کی وصولی، جزوی ادائیگیاں (Partial Fees) اور تفصیلات ایک ہی جگہ۔
+              Manage monthly tuition, outstanding dues, partial collections, and payment history in one place.
             </p>
           </div>
           <span className="rounded-full bg-[#f3f4f5] px-3 py-1 text-xs font-semibold text-[#374151]">
@@ -371,7 +371,7 @@ export function FeeBulkList({
             <div className="flex items-center gap-2">
               <AlertCircle className="h-5 w-5 text-[#b45309]" />
               <p className="text-sm font-semibold text-[#b45309]">
-                {overdueCount} طالب علموں کی فیس واجب الادا ہے (Due/Overdue)
+                {overdueCount} students have outstanding fees pending collection.
               </p>
             </div>
             <button
@@ -491,7 +491,7 @@ export function FeeBulkList({
                                     className="mt-1 flex items-center gap-1 text-[11px] font-semibold text-[#004649] hover:underline"
                                   >
                                     {isExpanded ? <ChevronUp className="h-3 w-3" /> : <ChevronDown className="h-3 w-3" />}
-                                    <span>{isExpanded ? 'تفصیل چھپائیں' : `${fee.unpaidMonths!.length} ماہ کی تفصیل`}</span>
+                                    <span>{isExpanded ? 'Hide Details' : `${fee.unpaidMonths!.length} Months Breakdown`}</span>
                                   </button>
                                 ) : null}
                               </div>
@@ -553,7 +553,7 @@ export function FeeBulkList({
                                   type="button"
                                   onClick={() => openPayModal(fee)}
                                   className="inline-flex h-8 items-center gap-1 rounded-lg bg-[#004649] px-2.5 text-xs font-bold text-white transition hover:bg-[#003638] shadow-xs active:scale-95"
-                                  title="فیس وصول کریں (کم یا مکمل رقم)"
+                                  title="Collect Fee Payment"
                                 >
                                   <Coins className="h-3.5 w-3.5" />
                                   <span>Collect</span>
@@ -575,7 +575,7 @@ export function FeeBulkList({
                                   onClick={() => updateOne(fee.id, 'PAID')}
                                   disabled={isLoading}
                                   className="h-8 rounded-lg bg-[#16a34a] px-2 text-xs font-semibold text-white transition hover:bg-[#15803d] disabled:opacity-50"
-                                  title="مکمل فیس ادا شدہ مارک کریں"
+                                  title="Mark Full Fee Paid"
                                 >
                                   Full Paid
                                 </button>
@@ -602,10 +602,10 @@ export function FeeBulkList({
                                 <div className="flex items-center justify-between mb-2">
                                   <p className="text-xs font-bold text-[#0f172a] flex items-center gap-1.5">
                                     <Layers className="h-3.5 w-3.5 text-[#004649]" />
-                                    ماہانہ واجب الادا فیس کی تفصیلات ({fee.studentName})
+                                    Monthly Fee Breakdown ({fee.studentName})
                                   </p>
                                   <span className="text-xs font-bold text-rose-700">
-                                    کل واجب الادا: {formatCurrency(remaining)}
+                                    Total Balance Due: {formatCurrency(remaining)}
                                   </span>
                                 </div>
                                 <div className="divide-y divide-[#f1f5f9]">
@@ -619,9 +619,9 @@ export function FeeBulkList({
                                         <span className="text-[10px] text-[#64748b]">Due: {m.dueDate.slice(0, 10)}</span>
                                       </div>
                                       <div className="flex items-center gap-4 text-right">
-                                        <span className="text-[#64748b]">کل: {formatCurrency(m.amount)}</span>
-                                        <span className="text-emerald-700 font-medium">ادا شدہ: {formatCurrency(m.paidAmount)}</span>
-                                        <span className="text-rose-600 font-bold">باقی: {formatCurrency(m.remaining)}</span>
+                                        <span className="text-[#64748b]">Fee: {formatCurrency(m.amount)}</span>
+                                        <span className="text-emerald-700 font-medium">Paid: {formatCurrency(m.paidAmount)}</span>
+                                        <span className="text-rose-600 font-bold">Due: {formatCurrency(m.remaining)}</span>
                                       </div>
                                     </div>
                                   ))}
@@ -696,7 +696,7 @@ export function FeeBulkList({
                           className="flex items-center gap-1 text-xs font-semibold text-[#004649] hover:underline"
                         >
                           {isExpanded ? <ChevronUp className="h-3.5 w-3.5" /> : <ChevronDown className="h-3.5 w-3.5" />}
-                          <span>{isExpanded ? 'تفصیل چھپائیں' : `${fee.unpaidMonths!.length} ماہ کی الگ تفصیل دیکھیں`}</span>
+                          <span>{isExpanded ? 'Hide Details' : `${fee.unpaidMonths!.length} Months Breakdown`}</span>
                         </button>
                         {isExpanded && (
                           <div className="mt-2 rounded-lg border border-[#e2e8f0] bg-[#fafafa] p-2 text-xs space-y-1.5">
@@ -707,8 +707,8 @@ export function FeeBulkList({
                                   <p className="text-[10px] text-[#64748b]">Due: {m.dueDate.slice(0, 10)}</p>
                                 </div>
                                 <div className="text-right">
-                                  <p className="font-bold text-rose-600">باقی: {formatCurrency(m.remaining)}</p>
-                                  <p className="text-[10px] text-[#64748b]">ادا: {formatCurrency(m.paidAmount)}</p>
+                                  <p className="font-bold text-rose-600">Due: {formatCurrency(m.remaining)}</p>
+                                  <p className="text-[10px] text-[#64748b]">Paid: {formatCurrency(m.paidAmount)}</p>
                                 </div>
                               </div>
                             ))}
@@ -799,51 +799,69 @@ export function FeeBulkList({
         )}
       </section>
 
-      {/* Collect Fee Modal */}
+      {/* ── COLLECT FEE MODAL ────────────────────────────────────────── */}
       {payTarget && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4 backdrop-blur-xs">
-          <div className="w-full max-w-md rounded-2xl bg-white shadow-2xl border border-slate-200 overflow-hidden animate-in fade-in zoom-in-95 duration-150">
-            {/* Modal Header */}
-            <div className="flex items-center justify-between border-b border-[#f1f5f9] bg-[#004649] px-5 py-4 text-white">
-              <div className="flex items-center gap-2">
-                <Coins className="h-5 w-5 text-emerald-300" />
-                <h3 className="font-bold text-base">فیس وصولی (Collect Fee)</h3>
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-5 bg-black/60 backdrop-blur-xs overflow-y-auto">
+          <div className="relative w-full max-w-lg rounded-2xl bg-white shadow-2xl border border-slate-200 overflow-hidden flex flex-col my-auto max-h-[92vh] animate-in fade-in zoom-in-95 duration-150">
+            {/* Modal Header (Sticky) */}
+            <div className="flex items-center justify-between px-5 sm:px-6 py-4 bg-gradient-to-r from-[#004649] to-[#1b5e62] text-white shrink-0">
+              <div className="flex items-center gap-2.5">
+                <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-white/10 backdrop-blur-xs text-emerald-300 border border-white/15">
+                  <Coins className="h-5 w-5" />
+                </div>
+                <div>
+                  <h3 className="font-headline font-bold text-base sm:text-lg text-white leading-tight">Collect Fee Payment</h3>
+                  <p className="text-xs text-emerald-200/90">Record partial or full payment into ledger</p>
+                </div>
               </div>
               <button
                 type="button"
                 onClick={() => setPayTarget(null)}
-                className="rounded-lg p-1 text-white/80 hover:bg-white/10 hover:text-white transition"
+                className="rounded-xl p-1.5 text-white/80 hover:bg-white/15 hover:text-white transition active:scale-95"
+                aria-label="Close"
               >
                 <X className="h-5 w-5" />
               </button>
             </div>
 
-            <form onSubmit={handleRecordPayment} className="p-5 space-y-4">
-              {/* Student Info Card */}
-              <div className="rounded-xl bg-[#f0f9f9] border border-[#cceded] p-3">
-                <div className="flex justify-between items-start">
-                  <div>
-                    <h4 className="font-bold text-sm text-[#004649]">{payTarget.studentName}</h4>
-                    <p className="text-xs text-[#64748b]">{payTarget.classLabel ?? 'Unassigned Class'}</p>
+            {/* Modal Body (Scrollable) */}
+            <form onSubmit={handleRecordPayment} className="overflow-y-auto p-5 sm:p-6 space-y-4 flex-1">
+              {/* Student Summary Card */}
+              <div className="rounded-2xl border border-[#cceded] bg-gradient-to-br from-[#f0f9f9] to-[#e6f4f4]/60 p-4 shadow-xs">
+                <div className="flex justify-between items-start gap-3">
+                  <div className="min-w-0">
+                    <span className="text-[10px] font-bold uppercase tracking-wider text-[#004649]/80 block">Student</span>
+                    <h4 className="font-headline font-bold text-base text-[#0f172a] truncate">{payTarget.studentName}</h4>
+                    <span className="inline-flex items-center gap-1 mt-1 text-xs font-semibold text-[#004649] bg-white px-2.5 py-0.5 rounded-lg border border-[#cceded]">
+                      {payTarget.classLabel ?? 'Unassigned Class'}
+                    </span>
                   </div>
-                  <div className="text-right">
-                    <span className="text-[10px] uppercase font-bold text-[#64748b] block">Total Due</span>
-                    <span className="text-base font-extrabold text-rose-600">
+                  <div className="text-right shrink-0">
+                    <span className="text-[10px] uppercase font-bold text-[#64748b] tracking-wider block">Total Balance Due</span>
+                    <span className="text-lg sm:text-xl font-extrabold text-rose-600">
                       {formatCurrency(payTarget.totalStudentDue ?? payTarget.totalRemaining ?? payTarget.remaining)}
                     </span>
                   </div>
                 </div>
 
                 {payTarget.unpaidMonths && payTarget.unpaidMonths.length > 1 && (
-                  <div className="mt-2.5 pt-2 border-t border-[#bce4e4] text-xs">
-                    <p className="text-[11px] font-bold text-[#004649] mb-1">
-                      واجب الادا مہینوں کی تفصیل ({payTarget.unpaidMonths.length} ماہ):
-                    </p>
-                    <div className="space-y-1 max-h-24 overflow-y-auto">
+                  <div className="mt-3.5 pt-3 border-t border-[#bce4e4]/80">
+                    <div className="flex items-center justify-between mb-2">
+                      <p className="text-xs font-bold text-[#004649] flex items-center gap-1.5">
+                        <Layers className="h-3.5 w-3.5 text-[#004649]" />
+                        <span>Outstanding Breakdown ({payTarget.unpaidMonths.length} Months)</span>
+                      </p>
+                    </div>
+                    <div className="space-y-1.5 max-h-32 overflow-y-auto pr-1">
                       {payTarget.unpaidMonths.map((m) => (
-                        <div key={m.id} className="flex justify-between text-[11px] text-[#334155]">
-                          <span>• {m.title}</span>
-                          <span className="font-semibold text-rose-600">باقی: {formatCurrency(m.remaining)}</span>
+                        <div key={m.id} className="flex items-center justify-between text-xs rounded-lg bg-white/80 border border-[#bce4e4]/60 px-3 py-1.5">
+                          <div className="min-w-0 truncate">
+                            <span className="font-medium text-[#1e293b]">{m.title}</span>
+                            <span className="text-[10px] text-[#64748b] ml-1.5">Due: {m.dueDate.slice(0, 10)}</span>
+                          </div>
+                          <span className="font-bold text-rose-600 shrink-0 text-xs bg-rose-50 px-2 py-0.5 rounded border border-rose-200/60">
+                            Due: {formatCurrency(m.remaining)}
+                          </span>
                         </div>
                       ))}
                     </div>
@@ -852,14 +870,17 @@ export function FeeBulkList({
               </div>
 
               {/* Amount to Pay */}
-              <div className="space-y-1.5">
+              <div className="space-y-2">
                 <div className="flex items-center justify-between">
-                  <label className="text-xs font-bold text-[#1e293b]">
-                    وصول کی جانے والی رقم (Amount Received):
+                  <label className="text-xs font-bold uppercase tracking-wider text-[#334155]">
+                    Amount Received (PKR) <span className="text-rose-500">*</span>
                   </label>
-                  <span className="text-[11px] text-[#64748b]">روپے</span>
+                  <span className="text-[11px] font-semibold text-[#004649]">Direct Ledger Credit</span>
                 </div>
                 <div className="relative">
+                  <div className="pointer-events-none absolute left-3.5 top-1/2 -translate-y-1/2 flex items-center gap-1 text-xs font-extrabold text-[#64748b]">
+                    Rs.
+                  </div>
                   <input
                     type="number"
                     min={1}
@@ -867,85 +888,94 @@ export function FeeBulkList({
                     value={payAmount}
                     onChange={(e) => setPayAmount(e.target.value)}
                     required
-                    placeholder="رقم درج کریں..."
-                    className="h-11 w-full rounded-xl border border-[#cbd5e1] px-3.5 text-base font-bold text-[#0f172a] outline-none focus:border-[#004649] focus:ring-2 focus:ring-[#004649]/20"
+                    placeholder="Enter amount..."
+                    className="h-12 w-full rounded-xl border border-[#cbd5e1] pl-11 pr-4 text-base sm:text-lg font-bold text-[#0f172a] shadow-xs outline-none focus:border-[#004649] focus:ring-2 focus:ring-[#004649]/20 transition"
                   />
                 </div>
 
                 {/* Quick Amount Preset Buttons */}
-                <div className="flex flex-wrap gap-1.5 pt-1">
+                <div className="flex flex-wrap items-center gap-1.5 pt-1">
+                  <span className="text-[10px] font-bold text-[#64748b] uppercase tracking-wider mr-1">Quick Fill:</span>
                   <button
                     type="button"
                     onClick={() => {
                       const total = payTarget.totalStudentDue ?? payTarget.totalRemaining ?? payTarget.remaining;
                       setPayAmount(String(total));
                     }}
-                    className="rounded-lg bg-[#e2e8f0] px-2.5 py-1 text-[11px] font-semibold text-[#1e293b] hover:bg-[#cbd5e1]"
+                    className="rounded-lg bg-[#004649] text-white px-2.5 py-1 text-[11px] font-semibold hover:bg-[#003638] shadow-2xs active:scale-95 transition"
                   >
-                    مکمل رقم ({formatCurrency(payTarget.totalStudentDue ?? payTarget.totalRemaining ?? payTarget.remaining)})
+                    Full Balance ({formatCurrency(payTarget.totalStudentDue ?? payTarget.totalRemaining ?? payTarget.remaining)})
                   </button>
                   {payTarget.unpaidMonths && payTarget.unpaidMonths.length > 1 && (
-                    payTarget.unpaidMonths.slice(0, 3).map((m) => (
+                    payTarget.unpaidMonths.slice(0, 4).map((m) => (
                       <button
                         key={m.id}
                         type="button"
                         onClick={() => setPayAmount(String(m.remaining))}
-                        className="rounded-lg bg-[#f1f5f9] border border-[#e2e8f0] px-2 py-1 text-[11px] text-[#334155] hover:bg-[#e2e8f0]"
+                        className="rounded-lg bg-[#f1f5f9] border border-[#cbd5e1] px-2.5 py-1 text-[11px] font-semibold text-[#334155] hover:bg-[#e2e8f0] active:scale-95 transition"
                       >
-                        {m.title.replace('Monthly Tuition Fee - ', '')}: {formatCurrency(m.remaining)}
+                        {m.title.replace('Monthly Tuition Fee - ', '').replace('Monthly Tuition Fee', 'Single Month')}: {formatCurrency(m.remaining)}
                       </button>
                     ))
                   )}
                 </div>
-                <p className="text-[11px] text-[#64748b]">
-                  💡 اگر طالب علم کم فیس ادا کرے (مثلاً 3,000 میں سے 2,000)، تو 2,000 درج کریں۔ باقی 1,000 خود بخود کھاتے میں بقایا رہے گی۔
-                </p>
+
+                <div className="rounded-xl bg-amber-50/70 border border-amber-200/80 p-2.5 text-[11px] text-amber-900 leading-relaxed flex items-start gap-2">
+                  <span className="shrink-0 text-sm">💡</span>
+                  <span>
+                    <strong>Partial payment supported:</strong> If student pays less than total (e.g. Rs 2,000 out of Rs 3,000), enter 2,000. The remaining Rs 1,000 will automatically stay in their account ledger.
+                  </span>
+                </div>
               </div>
 
               {/* Payment Method */}
               <div className="space-y-1.5">
-                <label className="text-xs font-bold text-[#1e293b]">طریقہ ادائیگی (Payment Method):</label>
+                <label className="text-xs font-bold uppercase tracking-wider text-[#334155]">
+                  Payment Method
+                </label>
                 <select
                   value={payMethod}
                   onChange={(e) => setPayMethod(e.target.value)}
-                  className="h-10 w-full rounded-xl border border-[#cbd5e1] bg-white px-3 text-xs font-semibold text-[#0f172a] outline-none focus:border-[#004649] focus:ring-2 focus:ring-[#004649]/20"
+                  className="h-11 w-full rounded-xl border border-[#cbd5e1] bg-white px-3.5 text-xs sm:text-sm font-semibold text-[#0f172a] shadow-xs outline-none focus:border-[#004649] focus:ring-2 focus:ring-[#004649]/20"
                 >
-                  <option value="CASH">Cash (نقد کیش)</option>
+                  <option value="CASH">Cash in Hand (نقد کیش)</option>
                   <option value="BANK_TRANSFER">Bank Transfer (بینک ٹرانسفر)</option>
-                  <option value="ONLINE">EasyPaisa / JazzCash / Online</option>
+                  <option value="ONLINE">EasyPaisa / JazzCash / Mobile Wallet</option>
                   <option value="CARD">Debit / Credit Card</option>
                 </select>
               </div>
 
               {/* Receipt / Reference */}
               <div className="space-y-1.5">
-                <label className="text-xs font-bold text-[#1e293b]">رسید نمبر / حوالہ (اختیاری):</label>
+                <label className="text-xs font-bold uppercase tracking-wider text-[#334155]">
+                  Receipt # / Reference (Optional)
+                </label>
                 <input
                   type="text"
                   value={payRef}
                   onChange={(e) => setPayRef(e.target.value)}
-                  placeholder="Receipt # / Note"
-                  className="h-10 w-full rounded-xl border border-[#cbd5e1] px-3 text-xs text-[#0f172a] outline-none focus:border-[#004649] focus:ring-2 focus:ring-[#004649]/20"
+                  placeholder="e.g. REC-1048 or Bank Transaction ID"
+                  className="h-11 w-full rounded-xl border border-[#cbd5e1] px-3.5 text-xs sm:text-sm text-[#0f172a] shadow-xs outline-none focus:border-[#004649] focus:ring-2 focus:ring-[#004649]/20"
                 />
               </div>
 
-              {/* Submit Buttons */}
-              <div className="flex items-center justify-end gap-2 pt-2 border-t border-[#f1f5f9]">
+              {/* Modal Footer (Sticky) */}
+              <div className="sticky bottom-0 bg-[#f8fafc] -mx-5 sm:-mx-6 -mb-5 sm:-mb-6 p-4 sm:p-5 border-t border-[#e2e8f0] flex items-center justify-end gap-2.5">
                 <button
                   type="button"
                   onClick={() => setPayTarget(null)}
                   disabled={paySubmitting}
-                  className="h-10 rounded-xl px-4 text-xs font-semibold text-[#64748b] hover:bg-[#f1f5f9] transition"
+                  className="h-11 rounded-xl px-4 text-xs sm:text-sm font-semibold text-[#475569] border border-[#cbd5e1] bg-white hover:bg-[#f1f5f9] transition active:scale-95"
                 >
-                  منسوخ کریں (Cancel)
+                  Cancel
                 </button>
                 <button
                   type="submit"
                   disabled={paySubmitting || !payAmount || Number(payAmount) <= 0}
-                  className="inline-flex h-10 items-center justify-center gap-1.5 rounded-xl bg-gradient-to-r from-[#004649] to-[#1b5e62] px-5 text-xs font-bold text-white shadow-sm hover:brightness-105 active:scale-95 transition disabled:opacity-50"
+                  className="inline-flex h-11 items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-[#004649] to-[#1b5e62] px-6 text-xs sm:text-sm font-bold text-white shadow-sm hover:brightness-105 active:scale-95 transition disabled:opacity-50"
                 >
                   {paySubmitting ? <Loader2 className="h-4 w-4 animate-spin" /> : <Coins className="h-4 w-4" />}
-                  <span>ادائیگی محفوظ کریں (Confirm Payment)</span>
+                  <span>Confirm Payment</span>
                 </button>
               </div>
             </form>

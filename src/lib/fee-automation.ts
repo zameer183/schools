@@ -148,7 +148,7 @@ export async function getFeeReminderCandidates(asOfDate = new Date()): Promise<F
 }
 
 export async function runFeeAutomation(targetDate = new Date(), filterStudentId?: string) {
-  const currentMonthStart = new Date(targetDate.getFullYear(), targetDate.getMonth(), 1, 0, 0, 0, 0);
+  const currentMonthStart = new Date(Date.UTC(targetDate.getUTCFullYear(), targetDate.getUTCMonth(), 1, 0, 0, 0, 0));
 
   const students = await prisma.student.findMany({
     where: filterStudentId ? { id: filterStudentId } : undefined,
@@ -162,7 +162,7 @@ export async function runFeeAutomation(targetDate = new Date(), filterStudentId?
   let skipped = 0;
 
   // Maximum lookback: up to 24 months before current month to prevent runaway loops
-  const minAllowedDate = new Date(targetDate.getFullYear() - 2, targetDate.getMonth(), 1, 0, 0, 0, 0);
+  const minAllowedDate = new Date(Date.UTC(targetDate.getUTCFullYear() - 2, targetDate.getUTCMonth(), 1, 0, 0, 0, 0));
 
   for (const student of students) {
     if (student.user && student.user.isActive === false) {
@@ -176,7 +176,7 @@ export async function runFeeAutomation(targetDate = new Date(), filterStudentId?
     const rawStartDate = isReopened && student.rejoinDate
       ? student.rejoinDate
       : (student.joinDate || student.createdAt || targetDate);
-    let studentStartMonth = new Date(rawStartDate.getFullYear(), rawStartDate.getMonth(), 1, 0, 0, 0, 0);
+    let studentStartMonth = new Date(Date.UTC(rawStartDate.getUTCFullYear(), rawStartDate.getUTCMonth(), 1, 0, 0, 0, 0));
 
     if (studentStartMonth < minAllowedDate) {
       studentStartMonth = minAllowedDate;
