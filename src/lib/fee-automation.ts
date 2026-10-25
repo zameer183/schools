@@ -170,7 +170,12 @@ export async function runFeeAutomation(targetDate = new Date(), filterStudentId?
       continue;
     }
 
-    const rawStartDate = student.joinDate || student.createdAt || targetDate;
+    // If student was closed and later re-opened on a new date,
+    // start generating fees from the new re-join date forward!
+    const isReopened = Boolean(student.rejoinDate && (!student.leaveDate || student.rejoinDate >= student.leaveDate));
+    const rawStartDate = isReopened && student.rejoinDate
+      ? student.rejoinDate
+      : (student.joinDate || student.createdAt || targetDate);
     let studentStartMonth = new Date(rawStartDate.getFullYear(), rawStartDate.getMonth(), 1, 0, 0, 0, 0);
 
     if (studentStartMonth < minAllowedDate) {

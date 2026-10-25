@@ -14,6 +14,10 @@ type ViewModel = {
     admissionNo: string;
     dateOfBirth: string | null;
     joinDate: string | null;
+    leaveDate?: string | null;
+    leaveReason?: string | null;
+    rejoinDate?: string | null;
+    statusRemarks?: string | null;
     currentAddress: string | null;
     emergencyContact: string | null;
     guardianPhone: string | null;
@@ -130,8 +134,12 @@ async function loadProfileViaRest(id: string): Promise<ViewModel | null> {
     whatsApp: string | null;
     schoolName: string | null;
     classId: string | null;
+    leaveDate?: string | null;
+    leaveReason?: string | null;
+    rejoinDate?: string | null;
+    statusRemarks?: string | null;
   }>('Student', {
-    select: 'id,userId,admissionNo,dateOfBirth,joinDate,currentAddress,emergencyContact,guardianPhone,guardianEmail,fatherName,gender,aadharNo,rollNumber,whatsApp,schoolName,classId',
+    select: 'id,userId,admissionNo,dateOfBirth,joinDate,leaveDate,leaveReason,rejoinDate,statusRemarks,currentAddress,emergencyContact,guardianPhone,guardianEmail,fatherName,gender,aadharNo,rollNumber,whatsApp,schoolName,classId',
     id: `eq.${id}`,
     limit: '1'
   });
@@ -281,6 +289,10 @@ async function loadProfileViaRest(id: string): Promise<ViewModel | null> {
       admissionNo: student.admissionNo,
       dateOfBirth: toIso(student.dateOfBirth),
       joinDate: toIso(student.joinDate),
+      leaveDate: toIso(student.leaveDate),
+      leaveReason: student.leaveReason ?? null,
+      rejoinDate: toIso(student.rejoinDate),
+      statusRemarks: student.statusRemarks ?? null,
       currentAddress: student.currentAddress,
       emergencyContact: student.emergencyContact,
       guardianPhone: student.guardianPhone,
@@ -511,7 +523,11 @@ async function loadProfileViaPrisma(id: string): Promise<ViewModel | null> {
     student: {
       ...student,
       dateOfBirth: toIso(student.dateOfBirth),
-      joinDate: toIso(student.joinDate)
+      joinDate: toIso(student.joinDate),
+      leaveDate: toIso(student.leaveDate),
+      leaveReason: student.leaveReason ?? null,
+      rejoinDate: toIso(student.rejoinDate),
+      statusRemarks: student.statusRemarks ?? null
     },
     classes,
     attendance: attendanceRows.map((attendance) => {

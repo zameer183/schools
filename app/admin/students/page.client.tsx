@@ -36,6 +36,10 @@ export type StudentItem = {
   feeStatus?: 'PAID' | 'UNPAID' | 'PARTIAL' | 'OVERDUE';
   lastActivityAt?: string | Date | null;
   attendance?: Array<{ status: 'PRESENT' | 'ABSENT' | 'LATE' | 'EXCUSED'; date: string | Date }>;
+  leaveDate?: string | Date | null;
+  leaveReason?: string | null;
+  rejoinDate?: string | Date | null;
+  statusRemarks?: string | null;
   user: { id: string; fullName: string; email: string; phone?: string | null; isActive?: boolean };
   class?: { id: string; name: string; section: string } | null;
   fees?: Array<{
@@ -130,7 +134,7 @@ const FEE_TYPES = ['Tuition Fee','Transport Fee','Exam Fee','Activity Fee','Libr
 const STATUS_FILTERS: Array<{ value: StatusFilter; label: string }> = [
   { value: 'all', label: 'All' },
   { value: 'active', label: 'Active' },
-  { value: 'inactive', label: 'Inactive' },
+  { value: 'inactive', label: 'Closed / Inactive' },
   { value: 'pending', label: 'Fee Pending' },
 ];
 
@@ -1538,6 +1542,14 @@ export default function AdminStudentsPageClient({
                       </button>
                     </div>
                     <div className="space-y-2 text-xs">
+                      <div className="flex justify-between items-center">
+                        <span className="text-[#6b7280]">Status</span>
+                        <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold ${
+                          student.user.isActive ? 'bg-[#dcfce7] text-[#15803d]' : 'bg-[#fee2e2] text-[#b91c1c]'
+                        }`}>
+                          {student.user.isActive ? '● Active' : '● Closed'}
+                        </span>
+                      </div>
                       <div className="flex justify-between">
                         <span className="text-[#6b7280]">Attendance</span>
                         <span className="font-semibold text-[#1a1c1c]">{student.attendancePercentage ?? 0}%</span>
@@ -1610,10 +1622,18 @@ export default function AdminStudentsPageClient({
                   </Link>
                   <p className="mt-0.5 min-w-0 truncate text-xs text-[#9ca3af]" title={student.user.email}>{student.user.email}</p>
                   <div className="mt-1.5 flex flex-wrap gap-1.5">
-                    <span className={`inline-flex rounded-full px-2 py-0.5 text-[10px] font-bold ${
+                    <span className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[10px] font-bold ${
                       student.user.isActive ? 'bg-[#dcfce7] text-[#15803d]' : 'bg-[#fee2e2] text-[#b91c1c]'
                     }`}>
-                      {student.user.isActive ? '● Active' : '● Inactive'}
+                      {student.user.isActive ? (
+                        student.rejoinDate ? (
+                          <>● Active <span className="font-normal opacity-75">(Rejoined {new Date(student.rejoinDate).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })})</span></>
+                        ) : '● Active'
+                      ) : (
+                        student.leaveDate ? (
+                          <>● Closed <span className="font-normal opacity-75">({new Date(student.leaveDate).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })})</span></>
+                        ) : '● Closed'
+                      )}
                     </span>
                     {student.guardianPhone ? (
                       <span className="text-[11px] text-[#9ca3af]">{student.guardianPhone}</span>
@@ -1692,11 +1712,16 @@ export default function AdminStudentsPageClient({
                   />
                   <Link
                     href={`/admin/students/${student.id}`}
-                    className="flex-1 min-w-0 flex items-baseline gap-2"
+                    className="flex-1 min-w-0 flex items-baseline gap-2 flex-wrap"
                   >
                     <span className="truncate text-sm font-semibold text-[#111827]">
                       {student.user.fullName}
                     </span>
+                    {!student.user.isActive && (
+                      <span className="shrink-0 rounded-full px-2 py-0.5 text-[10px] font-bold bg-[#fee2e2] text-[#b91c1c]">
+                        Closed
+                      </span>
+                    )}
                     <span className={`shrink-0 rounded-full px-2 py-0.5 text-[10px] font-bold ${feeBadgeClass(feeStatus)}`}>
                       {feeStatus}
                     </span>

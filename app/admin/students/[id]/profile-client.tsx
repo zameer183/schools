@@ -30,11 +30,14 @@ import {
   Shield,
   User,
   UserCheck,
+  UserX,
   UserCog,
   Users,
   X,
   Loader2,
-  ExternalLink
+  ExternalLink,
+  Clock,
+  CheckCircle2
 } from 'lucide-react';
 import { formatCurrency } from '@/lib/utils';
 
@@ -54,6 +57,10 @@ type StudentData = {
   admissionNo: string;
   dateOfBirth: string | null;
   joinDate: string | null;
+  leaveDate?: string | null;
+  leaveReason?: string | null;
+  rejoinDate?: string | null;
+  statusRemarks?: string | null;
   currentAddress: string | null;
   emergencyContact: string | null;
   guardianPhone: string | null;
@@ -293,6 +300,31 @@ export default function StudentProfileClient({
   const [activeSaving, setActiveSaving] = useState(false);
   const [calMonth, setCalMonth] = useState(() => new Date(new Date().getFullYear(), new Date().getMonth(), 1));
 
+  // Lifecycle meta
+  const [studentMeta, setStudentMeta] = useState({
+    leaveDate: student.leaveDate ?? null,
+    leaveReason: student.leaveReason ?? null,
+    rejoinDate: student.rejoinDate ?? null,
+    statusRemarks: student.statusRemarks ?? null,
+  });
+
+  // Close Student Modal State
+  const [showCloseModal, setShowCloseModal] = useState(false);
+  const [closeDate, setCloseDate] = useState(() => toLocalDateStr(new Date()));
+  const [closeReason, setCloseReason] = useState('Completed Course / Graduated');
+  const [closeRemarks, setCloseRemarks] = useState('');
+  const [closeSaving, setCloseSaving] = useState(false);
+  const [closeErr, setCloseErr] = useState('');
+
+  // Re-open Student Modal State
+  const [showReopenModal, setShowReopenModal] = useState(false);
+  const [reopenDate, setReopenDate] = useState(() => toLocalDateStr(new Date()));
+  const [reopenClassId, setReopenClassId] = useState(student.classId ?? '');
+  const [reopenFeeAmount, setReopenFeeAmount] = useState(monthlyFee ? String(monthlyFee) : '2500');
+  const [reopenRemarks, setReopenRemarks] = useState('');
+  const [reopenSaving, setReopenSaving] = useState(false);
+  const [reopenErr, setReopenErr] = useState('');
+
   const [pf, setPf] = useState({
     fullName: student.user.fullName,
     email: student.user.email,
@@ -357,35 +389,116 @@ export default function StudentProfileClient({
     leave: [...monthAttMap.values()].filter((s) => s === 'EXCUSED').length
   };
 
-  // ─── API Handlers ───────────────────────────────────────────────────────────
+  // ─── Lifecycle Handlers (Close / Re-open Student) ───────────────────────
 
-  async function toggleActive() {
-    setActiveSaving(true);
-    setProfileMsg('');
-    const next = !isActive;
+  async function handleCloseStudent() {
+    if (!closeDate) {
+      setCloseErr('Please select the close / leaving date.');
+      return;
+    }
+    setCloseSaving(true);
+    setCloseErr('');
     try {
       const res = await fetch('/api/students', {
         method: 'PATCH',
         credentials: 'same-origin',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ id: student.id, isActive: next })
+        body: JSON.stringify({
+          id: student.id,
+          isActive: false,
+          leaveDate: closeDate,
+          leaveReason: closeReason,
+          statusRemarks: closeRemarks
+        })
       });
       const data = await res.json().catch(() => ({}));
       if (res.status === 401) {
-        setProfileMsg(SESSION_EXPIRED_MESSAGE);
+        setCloseErr(SESSION_EXPIRED_MESSAGE);
         redirectToAdminLogin();
         return;
       }
       if (!res.ok) {
-        setProfileMsg(data.error ?? 'Failed to update active status.');
+        setCloseErr(data.error ?? 'Failed to close student.');
         return;
       }
-      setIsActive(next);
+      setIsActive(false);
+      setStudentMeta(prev => ({
+        ...prev,
+        leaveDate: closeDate,
+        leaveReason: closeReason,
+        statusRemarks: closeRemarks
+      }));
+      setShowCloseModal(false);
       router.refresh();
     } catch {
-      setProfileMsg('Network error. Please try again.');
+      setCloseErr('Network error. Please try again.');
     } finally {
-      setActiveSaving(false);
+      setCloseSaving(false);
+    }
+  }
+
+  async function handleReopenStudent() {
+    if (!reopenDate) {
+      setReopenErr('Please select the new re-opening date.');
+      return;
+    }
+    setReopenSaving(true);
+    setReopenErr('');
+    try {
+      const res = await fetch('/api/students', {
+        method: 'PATCH',
+        credentials: 'same-origin',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          id: student.id,
+          isActive: true,
+          rejoinDate: reopenDate,
+          joinDate: reopenDate,
+          classId: reopenClassId || undefined,
+          statusRemarks: reopenRemarks,
+          feeAmount: reopenFeeAmount ? Number(reopenFeeAmount) : undefined,
+          feeDueDate: `${reopenDate.slice(0, 7)}-01`
+        })
+      });
+      const data = await res.json().catch(() => ({}));
+      if (res.status === 401) {
+        setReopenErr(SESSION_EXPIRED_MESSAGE);
+        redirectToAdminLogin();
+        return;
+      }
+      if (!res.ok) {
+        setReopenErr(data.error ?? 'Failed to re-open student.');
+        return;
+      }
+      setIsActive(true);
+      setStudentMeta(prev => ({
+        ...prev,
+        rejoinDate: reopenDate,
+        statusRemarks: reopenRemarks
+      }));
+      setShowReopenModal(false);
+      router.refresh();
+    } catch {
+      setReopenErr('Network error. Please try again.');
+    } finally {
+      setReopenSaving(false);
+    }
+  }
+
+  async function toggleActive() {
+    if (isActive) {
+      setCloseDate(toLocalDateStr(new Date()));
+      setCloseReason('Completed Course / Graduated');
+      setCloseRemarks('');
+      setCloseErr('');
+      setShowCloseModal(true);
+    } else {
+      setReopenDate(toLocalDateStr(new Date()));
+      setReopenClassId(student.classId || (classes[0]?.id ?? ''));
+      setReopenFeeAmount(monthlyFee ? String(monthlyFee) : '2500');
+      setReopenRemarks('');
+      setReopenErr('');
+      setShowReopenModal(true);
     }
   }
 
@@ -596,15 +709,32 @@ export default function StudentProfileClient({
                   {student.user.fullName}
                 </h1>
                 {isActive ? (
-                  <span className="inline-flex items-center gap-1 rounded-full bg-[#dcfce7] border border-[#bbf7d0] px-2.5 py-0.5 text-[10px] sm:text-xs font-bold uppercase text-[#15803d]">
-                    <span className="h-1.5 w-1.5 rounded-full bg-[#16a34a]" />
-                    Active
+                  <span className="inline-flex items-center gap-1.5 rounded-full bg-[#dcfce7] border border-[#bbf7d0] px-3 py-1 text-xs font-bold text-[#15803d]">
+                    <span className="h-2 w-2 rounded-full bg-[#16a34a] animate-pulse" />
+                    <span>Active Student</span>
+                    {studentMeta.rejoinDate && (
+                      <span className="text-[10px] text-[#166534] font-medium border-l border-[#86efac] pl-1.5 ml-1">
+                        Re-opened: {fmtDate(studentMeta.rejoinDate)}
+                      </span>
+                    )}
                   </span>
                 ) : (
-                  <span className="inline-flex items-center gap-1 rounded-full bg-[#fee2e2] border border-[#fecaca] px-2.5 py-0.5 text-[10px] sm:text-xs font-bold uppercase text-[#b91c1c]">
-                    <span className="h-1.5 w-1.5 rounded-full bg-[#dc2626]" />
-                    Inactive
-                  </span>
+                  <div className="flex flex-wrap items-center gap-1.5">
+                    <span className="inline-flex items-center gap-1.5 rounded-full bg-[#fee2e2] border border-[#fecaca] px-3 py-1 text-xs font-bold text-[#b91c1c]">
+                      <span className="h-2 w-2 rounded-full bg-[#dc2626]" />
+                      <span>Closed / Inactive</span>
+                      {studentMeta.leaveDate && (
+                        <span className="text-[10px] text-[#991b1b] font-medium border-l border-[#fca5a5] pl-1.5 ml-1">
+                          Since: {fmtDate(studentMeta.leaveDate)}
+                        </span>
+                      )}
+                    </span>
+                    {studentMeta.leaveReason && (
+                      <span className="text-[11px] font-medium text-[#475569] bg-[#f1f5f9] px-2 py-0.5 rounded-md border border-[#e2e8f0]">
+                        {studentMeta.leaveReason}
+                      </span>
+                    )}
+                  </div>
                 )}
               </div>
               <p className="mt-0.5 text-xs sm:text-sm text-[#64748b] truncate">{student.user.email}</p>
@@ -623,19 +753,38 @@ export default function StudentProfileClient({
 
           {/* Action Buttons Right */}
           <div className="flex flex-wrap items-center gap-2 pt-1 sm:pt-0">
-            <button
-              type="button"
-              onClick={toggleActive}
-              disabled={activeSaving}
-              className={`flex-1 sm:flex-none inline-flex h-10 items-center justify-center gap-1.5 rounded-xl px-3.5 sm:px-4 text-xs sm:text-sm font-semibold transition active:scale-[0.98] disabled:opacity-60 ${
-                isActive
-                  ? 'border border-[#fecaca] bg-[#fef2f2] text-[#b91c1c] hover:bg-[#fee2e2]'
-                  : 'border border-[#bbf7d0] bg-[#f0fdf4] text-[#15803d] hover:bg-[#dcfce7]'
-              }`}
-            >
-              {activeSaving ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : null}
-              {isActive ? 'Mark Inactive' : 'Mark Active'}
-            </button>
+            {isActive ? (
+              <button
+                type="button"
+                onClick={() => {
+                  setCloseDate(toLocalDateStr(new Date()));
+                  setCloseReason('Completed Course / Graduated');
+                  setCloseRemarks('');
+                  setCloseErr('');
+                  setShowCloseModal(true);
+                }}
+                className="flex-1 sm:flex-none inline-flex h-10 items-center justify-center gap-1.5 rounded-xl border border-rose-300 bg-rose-50 px-3.5 sm:px-4 text-xs sm:text-sm font-semibold text-rose-700 hover:bg-rose-100 transition active:scale-[0.98]"
+              >
+                <UserX className="h-4 w-4 text-rose-600" />
+                <span>Close Student</span>
+              </button>
+            ) : (
+              <button
+                type="button"
+                onClick={() => {
+                  setReopenDate(toLocalDateStr(new Date()));
+                  setReopenClassId(student.classId || (classes[0]?.id ?? ''));
+                  setReopenFeeAmount(monthlyFee ? String(monthlyFee) : '2500');
+                  setReopenRemarks('');
+                  setReopenErr('');
+                  setShowReopenModal(true);
+                }}
+                className="flex-1 sm:flex-none inline-flex h-10 items-center justify-center gap-1.5 rounded-xl border border-emerald-300 bg-emerald-50 px-3.5 sm:px-4 text-xs sm:text-sm font-semibold text-emerald-800 hover:bg-emerald-100 transition active:scale-[0.98]"
+              >
+                <UserCheck className="h-4 w-4 text-emerald-600" />
+                <span>Re-open / Activate</span>
+              </button>
+            )}
             {!editMode ? (
               <button
                 type="button"
@@ -657,6 +806,48 @@ export default function StudentProfileClient({
             )}
           </div>
         </div>
+
+        {/* Status Lifecycle Info Banner if Closed or Re-opened */}
+        {(!isActive || studentMeta.leaveDate || studentMeta.rejoinDate) && (
+          <div className={`mt-3.5 rounded-xl border p-3 sm:p-3.5 text-xs ${
+            !isActive
+              ? 'border-rose-200 bg-rose-50/70 text-rose-950'
+              : 'border-teal-200 bg-teal-50/60 text-teal-950'
+          }`}>
+            <div className="flex items-start gap-2.5">
+              <Clock className={`h-4 w-4 mt-0.5 shrink-0 ${!isActive ? 'text-rose-700' : 'text-teal-700'}`} />
+              <div className="space-y-1 flex-1 min-w-0">
+                <div className="flex flex-wrap items-center justify-between gap-1">
+                  <p className="font-bold text-xs sm:text-sm">
+                    {!isActive ? 'Student is Currently Closed / Inactive' : 'Student Re-activation & Status Record'}
+                  </p>
+                  <span className="text-[10px] uppercase font-bold tracking-wider px-2 py-0.5 rounded-md bg-white/80 border border-current/20">
+                    Past Records Preserved
+                  </span>
+                </div>
+                <div className="flex flex-wrap gap-x-4 gap-y-1 text-xs">
+                  {student.joinDate && (
+                    <span>Initial Admission: <strong>{fmtDate(student.joinDate)}</strong></span>
+                  )}
+                  {studentMeta.leaveDate && (
+                    <span>Closed Date: <strong>{fmtDate(studentMeta.leaveDate)}</strong></span>
+                  )}
+                  {studentMeta.leaveReason && (
+                    <span>Reason: <strong className="font-semibold">{studentMeta.leaveReason}</strong></span>
+                  )}
+                  {studentMeta.rejoinDate && (
+                    <span>Re-opened on: <strong>{fmtDate(studentMeta.rejoinDate)}</strong></span>
+                  )}
+                </div>
+                {studentMeta.statusRemarks && (
+                  <p className="text-[11px] text-[#475569] italic pt-0.5">
+                    Remarks: &ldquo;{studentMeta.statusRemarks}&rdquo;
+                  </p>
+                )}
+              </div>
+            </div>
+          </div>
+        )}
 
         {/* Class & Stats Summary Banner */}
         <div className="mt-4 sm:mt-5 rounded-2xl border border-[#e2e8f0] bg-gradient-to-br from-[#f8fafc] to-[#f1f5f9] p-3.5 sm:p-5">
@@ -1368,6 +1559,225 @@ export default function StudentProfileClient({
               >
                 <Lock className="h-3.5 w-3.5" />
                 <span>Confirm</span>
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ── CLOSE STUDENT MODAL ───────────────────────────────────────────── */}
+      {showCloseModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-xs p-4">
+          <div className="w-full max-w-md rounded-2xl bg-white p-5 sm:p-6 shadow-2xl border border-[#e2e8f0]">
+            <div className="flex items-start justify-between pb-3 border-b border-[#f1f5f9]">
+              <div className="flex items-center gap-2.5">
+                <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-amber-50 border border-amber-200 text-amber-700">
+                  <UserX className="h-5 w-5" />
+                </div>
+                <div>
+                  <h3 className="text-base font-bold text-[#0f172a]">Close Student Admission</h3>
+                  <p className="text-xs text-[#64748b]">طالب علم کو کلوز / موقوف کریں</p>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => setShowCloseModal(false)}
+                className="p-1 rounded-lg text-[#94a3b8] hover:text-[#0f172a] hover:bg-[#f1f5f9]"
+              >
+                <X className="h-5 w-5" />
+              </button>
+            </div>
+
+            <div className="mt-4 space-y-4">
+              <div className="rounded-xl bg-amber-50/70 border border-amber-200/80 p-3 text-xs text-amber-900 leading-relaxed">
+                <strong>Record Preservation:</strong> Student will be marked closed/inactive. All past records (fee receipts, payment logs, attendance history, exam results) are 100% saved and preserved. Automated monthly fees will not be generated while closed.
+              </div>
+
+              <div>
+                <label className="text-[11px] font-bold uppercase tracking-wider text-[#475569]">
+                  Closing / Leaving Date <span className="text-red-500">*</span>
+                </label>
+                <input
+                  type="date"
+                  value={closeDate}
+                  onChange={(e) => setCloseDate(e.target.value)}
+                  className="mt-1 h-10 w-full rounded-xl bg-white border border-[#cbd5e1] px-3 text-xs sm:text-sm text-[#0f172a] outline-none focus:ring-2 focus:ring-amber-500/20 focus:border-amber-500"
+                />
+              </div>
+
+              <div>
+                <label className="text-[11px] font-bold uppercase tracking-wider text-[#475569]">
+                  Reason for Leaving / Closing
+                </label>
+                <select
+                  value={closeReason}
+                  onChange={(e) => setCloseReason(e.target.value)}
+                  className="mt-1 h-10 w-full rounded-xl bg-white border border-[#cbd5e1] px-3 text-xs sm:text-sm text-[#0f172a] outline-none focus:ring-2 focus:ring-amber-500/20 focus:border-amber-500"
+                >
+                  <option value="Completed Course / Graduated">Completed Course / Graduated (کورس مکمل)</option>
+                  <option value="Relocated / Moved">Relocated / Moved to Another City (رہائش کی تبدیلی)</option>
+                  <option value="Financial Constraints">Financial Constraints (مالی وجوہات)</option>
+                  <option value="Temporary Gap / Leave">Temporary Gap / Leave (عارضی چھٹی)</option>
+                  <option value="Personal / Family Reasons">Personal / Family Reasons (ذاتی وجوہات)</option>
+                  <option value="Disciplinary / Withdrawn">Disciplinary / Withdrawn (دیگر)</option>
+                </select>
+              </div>
+
+              <div>
+                <label className="text-[11px] font-bold uppercase tracking-wider text-[#475569]">
+                  Remarks / Notes (Optional)
+                </label>
+                <textarea
+                  rows={2}
+                  value={closeRemarks}
+                  onChange={(e) => setCloseRemarks(e.target.value)}
+                  placeholder="e.g. Completed 15 Paras, leaving due to relocation..."
+                  className="mt-1 w-full rounded-xl bg-white border border-[#cbd5e1] p-2.5 text-xs sm:text-sm text-[#0f172a] outline-none focus:ring-2 focus:ring-amber-500/20 focus:border-amber-500"
+                />
+              </div>
+
+              {closeErr && (
+                <div className="flex items-center gap-2 rounded-xl bg-red-50 border border-red-200 p-2.5 text-xs text-red-700">
+                  <AlertCircle className="h-4 w-4 shrink-0" />
+                  <span>{closeErr}</span>
+                </div>
+              )}
+            </div>
+
+            <div className="mt-5 flex gap-2.5 pt-3 border-t border-[#f1f5f9]">
+              <button
+                type="button"
+                onClick={() => setShowCloseModal(false)}
+                disabled={closeSaving}
+                className="flex-1 h-10 border border-[#cbd5e1] rounded-xl text-xs sm:text-sm font-semibold text-[#334155] hover:bg-[#f8fafc] transition"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                onClick={handleCloseStudent}
+                disabled={closeSaving}
+                className="flex-1 h-10 flex items-center justify-center gap-1.5 bg-amber-600 text-white rounded-xl text-xs sm:text-sm font-semibold shadow-xs hover:bg-amber-700 active:scale-[0.98] transition disabled:opacity-60"
+              >
+                {closeSaving ? <Loader2 className="h-4 w-4 animate-spin" /> : <UserX className="h-4 w-4" />}
+                <span>Confirm & Close</span>
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ── RE-OPEN STUDENT MODAL ─────────────────────────────────────────── */}
+      {showReopenModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-xs p-4">
+          <div className="w-full max-w-md rounded-2xl bg-white p-5 sm:p-6 shadow-2xl border border-[#e2e8f0]">
+            <div className="flex items-start justify-between pb-3 border-b border-[#f1f5f9]">
+              <div className="flex items-center gap-2.5">
+                <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-emerald-50 border border-emerald-200 text-emerald-700">
+                  <UserCheck className="h-5 w-5" />
+                </div>
+                <div>
+                  <h3 className="text-base font-bold text-[#0f172a]">Re-open / Activate Student</h3>
+                  <p className="text-xs text-[#64748b]">طالب علم کو نئی تاریخ سے دوبارہ فعال کریں</p>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => setShowReopenModal(false)}
+                className="p-1 rounded-lg text-[#94a3b8] hover:text-[#0f172a] hover:bg-[#f1f5f9]"
+              >
+                <X className="h-5 w-5" />
+              </button>
+            </div>
+
+            <div className="mt-4 space-y-4">
+              <div className="rounded-xl bg-emerald-50/70 border border-emerald-200/80 p-3 text-xs text-emerald-900 leading-relaxed">
+                <strong>New Cycle Starts:</strong> Activating the student will resume their active cycle from the selected new date. All historical fees and attendance remain completely intact!
+              </div>
+
+              <div>
+                <label className="text-[11px] font-bold uppercase tracking-wider text-[#475569]">
+                  New Re-opening / Rejoin Date <span className="text-red-500">*</span>
+                </label>
+                <input
+                  type="date"
+                  value={reopenDate}
+                  onChange={(e) => setReopenDate(e.target.value)}
+                  className="mt-1 h-10 w-full rounded-xl bg-white border border-[#cbd5e1] px-3 text-xs sm:text-sm text-[#0f172a] outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500"
+                />
+              </div>
+
+              <div>
+                <label className="text-[11px] font-bold uppercase tracking-wider text-[#475569]">
+                  Assign Class
+                </label>
+                <select
+                  value={reopenClassId}
+                  onChange={(e) => setReopenClassId(e.target.value)}
+                  className="mt-1 h-10 w-full rounded-xl bg-white border border-[#cbd5e1] px-3 text-xs sm:text-sm text-[#0f172a] outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500"
+                >
+                  <option value="">— Unassigned —</option>
+                  {classes.map((c) => (
+                    <option key={c.id} value={c.id}>
+                      {c.name} {c.section ? `(${c.section})` : ''}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              <div>
+                <label className="text-[11px] font-bold uppercase tracking-wider text-[#475569]">
+                  Monthly Tuition Fee
+                </label>
+                <input
+                  type="number"
+                  min="0"
+                  step="50"
+                  value={reopenFeeAmount}
+                  onChange={(e) => setReopenFeeAmount(e.target.value)}
+                  placeholder="e.g. 2500"
+                  className="mt-1 h-10 w-full rounded-xl bg-white border border-[#cbd5e1] px-3 text-xs sm:text-sm text-[#0f172a] outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500"
+                />
+              </div>
+
+              <div>
+                <label className="text-[11px] font-bold uppercase tracking-wider text-[#475569]">
+                  Remarks / Notes (Optional)
+                </label>
+                <input
+                  type="text"
+                  value={reopenRemarks}
+                  onChange={(e) => setReopenRemarks(e.target.value)}
+                  placeholder="e.g. Rejoined after 2 months gap"
+                  className="mt-1 h-10 w-full rounded-xl bg-white border border-[#cbd5e1] px-3 text-xs sm:text-sm text-[#0f172a] outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500"
+                />
+              </div>
+
+              {reopenErr && (
+                <div className="flex items-center gap-2 rounded-xl bg-red-50 border border-red-200 p-2.5 text-xs text-red-700">
+                  <AlertCircle className="h-4 w-4 shrink-0" />
+                  <span>{reopenErr}</span>
+                </div>
+              )}
+            </div>
+
+            <div className="mt-5 flex gap-2.5 pt-3 border-t border-[#f1f5f9]">
+              <button
+                type="button"
+                onClick={() => setShowReopenModal(false)}
+                disabled={reopenSaving}
+                className="flex-1 h-10 border border-[#cbd5e1] rounded-xl text-xs sm:text-sm font-semibold text-[#334155] hover:bg-[#f8fafc] transition"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                onClick={handleReopenStudent}
+                disabled={reopenSaving}
+                className="flex-1 h-10 flex items-center justify-center gap-1.5 bg-[#004649] text-white rounded-xl text-xs sm:text-sm font-semibold shadow-xs hover:bg-[#1b5e62] active:scale-[0.98] transition disabled:opacity-60"
+              >
+                {reopenSaving ? <Loader2 className="h-4 w-4 animate-spin" /> : <UserCheck className="h-4 w-4" />}
+                <span>Activate Student</span>
               </button>
             </div>
           </div>

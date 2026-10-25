@@ -1,4 +1,4 @@
-﻿import { hash } from 'bcryptjs';
+import { hash } from 'bcryptjs';
 import { Prisma, UserRole } from '@prisma/client';
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
@@ -649,6 +649,10 @@ export async function PATCH(request: Request) {
       schoolName,
       dateOfBirth,
       joinDate,
+      leaveDate,
+      leaveReason,
+      rejoinDate,
+      statusRemarks,
       fullName,
       email,
       phone,
@@ -787,6 +791,24 @@ export async function PATCH(request: Request) {
     }
     if (joinDate !== undefined) {
       studentUpdate.joinDate = joinDate ? new Date(joinDate) : null;
+    }
+    if (leaveDate !== undefined) {
+      studentUpdate.leaveDate = leaveDate ? new Date(leaveDate) : null;
+    }
+    if (leaveReason !== undefined) {
+      studentUpdate.leaveReason = leaveReason || null;
+    }
+    if (rejoinDate !== undefined) {
+      studentUpdate.rejoinDate = rejoinDate ? new Date(rejoinDate) : null;
+      if (rejoinDate && isActive !== false) {
+        studentUpdate.joinDate = new Date(rejoinDate);
+      }
+    }
+    if (statusRemarks !== undefined) {
+      studentUpdate.statusRemarks = statusRemarks || null;
+    }
+    if (isActive === false && leaveDate === undefined && !student.leaveDate) {
+      studentUpdate.leaveDate = new Date();
     }
 
     // eslint-disable-next-line @typescript-eslint/no-explicit-any

@@ -140,6 +140,10 @@ model Student {
   whatsApp         String?
   schoolName       String?
   joinDate         DateTime?
+  leaveDate        DateTime?
+  leaveReason      String?
+  rejoinDate       DateTime?
+  statusRemarks    String?
   createdAt        DateTime             @default(now())
   updatedAt        DateTime             @updatedAt
 
