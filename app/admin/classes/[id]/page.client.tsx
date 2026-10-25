@@ -64,7 +64,7 @@ type StudentItem = {
   createdAt: Date | string;
   user: { id: string; fullName: string; email: string; phone?: string | null };
   attendance: Array<{ status: AttendanceStatus; date?: Date | string }>;
-  results: Array<{ grade: string; marks?: number; totalMarks?: number }>;
+  results: Array<{ grade: string; marksObtained?: number | null; createdAt?: Date | string }>;
   fees: FeeItem[];
   progressLogs?: ProgressLogItem[];
 };

@@ -48,7 +48,7 @@ export default async function ClassDetailsPage({ params }: ClassDetailsPageProps
         include: {
           user: { select: { id: true, fullName: true, email: true, phone: true } },
           attendance: { select: { status: true, date: true }, orderBy: { date: 'desc' }, take: 30 },
-          results: { select: { grade: true, marks: true, totalMarks: true, createdAt: true }, orderBy: { createdAt: 'desc' }, take: 3 },
+          results: { select: { grade: true, marksObtained: true, createdAt: true }, orderBy: { createdAt: 'desc' }, take: 3 },
           fees: { select: { id: true, title: true, status: true, amount: true, dueDate: true }, orderBy: { dueDate: 'desc' }, take: 8 },
           progressLogs: { select: { date: true, ayahFrom: true, ayahTo: true, notes: true }, orderBy: { date: 'desc' }, take: 1 }
         },
@@ -76,7 +76,7 @@ export default async function ClassDetailsPage({ params }: ClassDetailsPageProps
       include: {
         user: { select: { id: true, fullName: true, email: true, phone: true } },
         attendance: { select: { status: true, date: true }, orderBy: { date: 'desc' }, take: 30 },
-        results: { select: { grade: true, marks: true, totalMarks: true, createdAt: true }, orderBy: { createdAt: 'desc' }, take: 3 },
+        results: { select: { grade: true, marksObtained: true, createdAt: true }, orderBy: { createdAt: 'desc' }, take: 3 },
         fees: { select: { id: true, title: true, status: true, amount: true, dueDate: true }, orderBy: { dueDate: 'desc' }, take: 8 },
         progressLogs: { select: { date: true, ayahFrom: true, ayahTo: true, notes: true }, orderBy: { date: 'desc' }, take: 1 }
       }
