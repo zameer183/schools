@@ -48,6 +48,8 @@ export const notificationCreateSchema = z.object({
   type: z.enum(['SYSTEM', 'ACADEMIC', 'FINANCIAL', 'ATTENDANCE', 'MESSAGE']).default('SYSTEM')
 });
 
+import { getSurahById } from './quran';
+
 export const progressCreateSchema = z.object({
   classId: z.string().min(1),
   studentId: z.string().min(1),
@@ -70,6 +72,62 @@ export const progressCreateSchema = z.object({
   ).optional(),
   notes: z.string().trim().optional()
 }).superRefine((value, ctx) => {
+  // Validate individual surah ranges
+  if (value.surahRanges) {
+    for (const [secKey, ranges] of Object.entries(value.surahRanges)) {
+      if (Array.isArray(ranges)) {
+        for (let i = 0; i < ranges.length; i++) {
+          const r = ranges[i];
+          const surah = getSurahById(r.surahId);
+          if (!surah) {
+            ctx.addIssue({
+              code: z.ZodIssueCode.custom,
+              path: ['surahRanges', secKey, i, 'surahId'],
+              message: `Invalid surah ID: ${r.surahId}`
+            });
+            continue;
+          }
+
+          if (r.fromAyah < 1) {
+            ctx.addIssue({
+              code: z.ZodIssueCode.custom,
+              path: ['surahRanges', secKey, i, 'fromAyah'],
+              message: `${secKey} Range ${i + 1}: From Ayah must be at least 1.`
+            });
+          } else if (r.fromAyah > surah.ayahs) {
+            ctx.addIssue({
+              code: z.ZodIssueCode.custom,
+              path: ['surahRanges', secKey, i, 'fromAyah'],
+              message: `سورت ${surah.name} میں کل ${surah.ayahs} آیات ہیں۔ آپ ${surah.ayahs} سے زیادہ آیت نمبر (${r.fromAyah}) درج نہیں کر سکتے۔ (You can't add more than extreme value ${surah.ayahs})`
+            });
+          }
+
+          if (r.toAyah < 1) {
+            ctx.addIssue({
+              code: z.ZodIssueCode.custom,
+              path: ['surahRanges', secKey, i, 'toAyah'],
+              message: `${secKey} Range ${i + 1}: To Ayah must be at least 1.`
+            });
+          } else if (r.toAyah > surah.ayahs) {
+            ctx.addIssue({
+              code: z.ZodIssueCode.custom,
+              path: ['surahRanges', secKey, i, 'toAyah'],
+              message: `سورت ${surah.name} میں کل ${surah.ayahs} آیات ہیں۔ آپ ${surah.ayahs} سے زیادہ آیت نمبر (${r.toAyah}) درج نہیں کر سکتے۔ (You can't add more than extreme value ${surah.ayahs})`
+            });
+          }
+
+          if (r.fromAyah > r.toAyah) {
+            ctx.addIssue({
+              code: z.ZodIssueCode.custom,
+              path: ['surahRanges', secKey, i, 'toAyah'],
+              message: `${secKey} Range ${i + 1}: From Ayah (${r.fromAyah}) cannot be greater than To Ayah (${r.toAyah}).`
+            });
+          }
+        }
+      }
+    }
+  }
+
   if (value.lessonType === 'SURAH') {
     const hasRanges = Boolean(
       value.surahRanges &&

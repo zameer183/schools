@@ -29,6 +29,7 @@ import {
   Clock,
   UserCheck
 } from 'lucide-react';
+import { SURAH_LIST, getSurahById, resolveSurah, type Surah } from '@/lib/quran';
 
 type ClassItem = {
   id: string;
@@ -98,124 +99,7 @@ type NotificationItem = {
   text: string;
 };
 
-type Surah = { id: number; name: string; ayahs: number };
 
-const SURAH_LIST: Surah[] = [
-  { id: 1, name: 'Al-Fatihah', ayahs: 7 },
-  { id: 2, name: 'Al-Baqarah', ayahs: 286 },
-  { id: 3, name: 'Aal-E-Imran', ayahs: 200 },
-  { id: 4, name: 'An-Nisa', ayahs: 176 },
-  { id: 5, name: 'Al-Maidah', ayahs: 120 },
-  { id: 6, name: 'Al-Anam', ayahs: 165 },
-  { id: 7, name: 'Al-Araf', ayahs: 206 },
-  { id: 8, name: 'Al-Anfal', ayahs: 75 },
-  { id: 9, name: 'At-Tawbah', ayahs: 129 },
-  { id: 10, name: 'Yunus', ayahs: 109 },
-  { id: 11, name: 'Hud', ayahs: 123 },
-  { id: 12, name: 'Yusuf', ayahs: 111 },
-  { id: 13, name: 'Ar-Rad', ayahs: 43 },
-  { id: 14, name: 'Ibrahim', ayahs: 52 },
-  { id: 15, name: 'Al-Hijr', ayahs: 99 },
-  { id: 16, name: 'An-Nahl', ayahs: 128 },
-  { id: 17, name: 'Al-Isra', ayahs: 111 },
-  { id: 18, name: 'Al-Kahf', ayahs: 110 },
-  { id: 19, name: 'Maryam', ayahs: 98 },
-  { id: 20, name: 'Ta-Ha', ayahs: 135 },
-  { id: 21, name: 'Al-Anbiya', ayahs: 112 },
-  { id: 22, name: 'Al-Hajj', ayahs: 78 },
-  { id: 23, name: 'Al-Muminun', ayahs: 118 },
-  { id: 24, name: 'An-Nur', ayahs: 64 },
-  { id: 25, name: 'Al-Furqan', ayahs: 77 },
-  { id: 26, name: 'Ash-Shuara', ayahs: 227 },
-  { id: 27, name: 'An-Naml', ayahs: 93 },
-  { id: 28, name: 'Al-Qasas', ayahs: 88 },
-  { id: 29, name: 'Al-Ankabut', ayahs: 69 },
-  { id: 30, name: 'Ar-Rum', ayahs: 60 },
-  { id: 31, name: 'Luqman', ayahs: 34 },
-  { id: 32, name: 'As-Sajdah', ayahs: 30 },
-  { id: 33, name: 'Al-Ahzab', ayahs: 73 },
-  { id: 34, name: 'Saba', ayahs: 54 },
-  { id: 35, name: 'Fatir', ayahs: 45 },
-  { id: 36, name: 'Ya-Sin', ayahs: 83 },
-  { id: 37, name: 'As-Saffat', ayahs: 182 },
-  { id: 38, name: 'Sad', ayahs: 88 },
-  { id: 39, name: 'Az-Zumar', ayahs: 75 },
-  { id: 40, name: 'Ghafir', ayahs: 85 },
-  { id: 41, name: 'Fussilat', ayahs: 54 },
-  { id: 42, name: 'Ash-Shura', ayahs: 53 },
-  { id: 43, name: 'Az-Zukhruf', ayahs: 89 },
-  { id: 44, name: 'Ad-Dukhan', ayahs: 59 },
-  { id: 45, name: 'Al-Jathiyah', ayahs: 37 },
-  { id: 46, name: 'Al-Ahqaf', ayahs: 35 },
-  { id: 47, name: 'Muhammad', ayahs: 38 },
-  { id: 48, name: 'Al-Fath', ayahs: 29 },
-  { id: 49, name: 'Al-Hujurat', ayahs: 18 },
-  { id: 50, name: 'Qaf', ayahs: 45 },
-  { id: 51, name: 'Adh-Dhariyat', ayahs: 60 },
-  { id: 52, name: 'At-Tur', ayahs: 49 },
-  { id: 53, name: 'An-Najm', ayahs: 62 },
-  { id: 54, name: 'Al-Qamar', ayahs: 55 },
-  { id: 55, name: 'Ar-Rahman', ayahs: 78 },
-  { id: 56, name: 'Al-Waqiah', ayahs: 96 },
-  { id: 57, name: 'Al-Hadid', ayahs: 29 },
-  { id: 58, name: 'Al-Mujadila', ayahs: 22 },
-  { id: 59, name: 'Al-Hashr', ayahs: 24 },
-  { id: 60, name: 'Al-Mumtahanah', ayahs: 13 },
-  { id: 61, name: 'As-Saff', ayahs: 14 },
-  { id: 62, name: 'Al-Jumuah', ayahs: 11 },
-  { id: 63, name: 'Al-Munafiqun', ayahs: 11 },
-  { id: 64, name: 'At-Taghabun', ayahs: 18 },
-  { id: 65, name: 'At-Talaq', ayahs: 12 },
-  { id: 66, name: 'At-Tahrim', ayahs: 12 },
-  { id: 67, name: 'Al-Mulk', ayahs: 30 },
-  { id: 68, name: 'Al-Qalam', ayahs: 52 },
-  { id: 69, name: 'Al-Haqqah', ayahs: 52 },
-  { id: 70, name: 'Al-Maarij', ayahs: 44 },
-  { id: 71, name: 'Nuh', ayahs: 28 },
-  { id: 72, name: 'Al-Jinn', ayahs: 28 },
-  { id: 73, name: 'Al-Muzzammil', ayahs: 20 },
-  { id: 74, name: 'Al-Muddaththir', ayahs: 56 },
-  { id: 75, name: 'Al-Qiyamah', ayahs: 40 },
-  { id: 76, name: 'Al-Insan', ayahs: 31 },
-  { id: 77, name: 'Al-Mursalat', ayahs: 50 },
-  { id: 78, name: 'An-Naba', ayahs: 40 },
-  { id: 79, name: 'An-Naziat', ayahs: 46 },
-  { id: 80, name: 'Abasa', ayahs: 42 },
-  { id: 81, name: 'At-Takwir', ayahs: 29 },
-  { id: 82, name: 'Al-Infitar', ayahs: 19 },
-  { id: 83, name: 'Al-Mutaffifin', ayahs: 36 },
-  { id: 84, name: 'Al-Inshiqaq', ayahs: 25 },
-  { id: 85, name: 'Al-Buruj', ayahs: 22 },
-  { id: 86, name: 'At-Tariq', ayahs: 17 },
-  { id: 87, name: 'Al-Ala', ayahs: 19 },
-  { id: 88, name: 'Al-Ghashiyah', ayahs: 26 },
-  { id: 89, name: 'Al-Fajr', ayahs: 30 },
-  { id: 90, name: 'Al-Balad', ayahs: 20 },
-  { id: 91, name: 'Ash-Shams', ayahs: 15 },
-  { id: 92, name: 'Al-Layl', ayahs: 21 },
-  { id: 93, name: 'Ad-Duha', ayahs: 11 },
-  { id: 94, name: 'Ash-Sharh', ayahs: 8 },
-  { id: 95, name: 'At-Tin', ayahs: 8 },
-  { id: 96, name: 'Al-Alaq', ayahs: 19 },
-  { id: 97, name: 'Al-Qadr', ayahs: 5 },
-  { id: 98, name: 'Al-Bayyinah', ayahs: 8 },
-  { id: 99, name: 'Az-Zalzalah', ayahs: 8 },
-  { id: 100, name: 'Al-Adiyat', ayahs: 11 },
-  { id: 101, name: 'Al-Qariah', ayahs: 11 },
-  { id: 102, name: 'At-Takathur', ayahs: 8 },
-  { id: 103, name: 'Al-Asr', ayahs: 3 },
-  { id: 104, name: 'Al-Humazah', ayahs: 9 },
-  { id: 105, name: 'Al-Fil', ayahs: 5 },
-  { id: 106, name: 'Quraysh', ayahs: 4 },
-  { id: 107, name: 'Al-Maun', ayahs: 7 },
-  { id: 108, name: 'Al-Kawthar', ayahs: 3 },
-  { id: 109, name: 'Al-Kafirun', ayahs: 6 },
-  { id: 110, name: 'An-Nasr', ayahs: 3 },
-  { id: 111, name: 'Al-Masad', ayahs: 5 },
-  { id: 112, name: 'Al-Ikhlas', ayahs: 4 },
-  { id: 113, name: 'Al-Falaq', ayahs: 5 },
-  { id: 114, name: 'An-Nas', ayahs: 6 }
-];
 
 const sectionMeta: { key: SectionKey; title: string; titleUrdu: string; icon: string; subtitle: string }[] = [
   { key: 'sabaq', title: 'Sabaq', titleUrdu: 'سبق (نیا سبق)', icon: '📘', subtitle: 'New daily lesson tracking and recitation fluency' },
@@ -276,25 +160,7 @@ function todayDateYMD() {
   return `${today.getFullYear()}-${padDatePart(today.getMonth() + 1)}-${padDatePart(today.getDate())}`;
 }
 
-function getSurahById(id: number | null): Surah | undefined {
-  if (!id) return undefined;
-  return SURAH_LIST.find((item) => item.id === id);
-}
 
-function resolveSurah(input: string): Surah | undefined {
-  const trimmed = input.trim();
-  if (!trimmed) return undefined;
-
-  const idMatch = trimmed.match(/^(\d{1,3})\s*\.?\s*(.*)$/);
-  if (idMatch) {
-    const id = Number(idMatch[1]);
-    const byId = SURAH_LIST.find((item) => item.id === id);
-    if (byId) return byId;
-  }
-
-  const normalized = trimmed.toLowerCase();
-  return SURAH_LIST.find((item) => item.name.toLowerCase() === normalized);
-}
 
 function createEmptyParsedSection(): ParsedSection {
   return {
@@ -758,7 +624,7 @@ export default function TeacherProgressPage() {
     }));
   };
 
-  // Clamp on blur so users can type numbers like 15, 25, 286 freely
+  // Validate on blur: DO NOT clamp! Alert teacher if number exceeds extreme value
   const handleAyahBlur = (sectionKey: SectionKey, rangeIndex: number, field: 'fromAyah' | 'toAyah') => {
     const current = form.sections[sectionKey];
     const range = current.ranges[rangeIndex];
@@ -768,12 +634,16 @@ export default function TeacherProgressPage() {
     const raw = range[field];
     if (!raw) return;
 
-    let num = Number(raw);
-    if (!Number.isFinite(num) || num < 1) num = 1;
-    if (num > surah.ayahs) num = surah.ayahs;
+    const num = Number(raw);
+    if (!Number.isFinite(num)) return;
 
-    if (String(num) !== raw) {
-      handleAyahChange(sectionKey, rangeIndex, field, String(num));
+    if (num > surah.ayahs) {
+      addNotice(
+        'error',
+        `⚠️ سورت ${surah.name} میں کل ${surah.ayahs} آیات ہیں۔ آپ ${surah.ayahs} سے زیادہ آیت نمبر درج نہیں کر سکتے۔ (You can't add more than extreme value: ${surah.ayahs})`
+      );
+    } else if (num < 1) {
+      addNotice('error', '⚠️ آیت نمبر کم از کم 1 ہونا چاہیے۔');
     }
   };
 
@@ -884,9 +754,29 @@ export default function TeacherProgressPage() {
       for (let i = 0; i < validRanges.length; i++) {
         const r = validRanges[i];
         if (!r.surahId) return `${title} Range ${i + 1}: Please select a Surah.`;
+        const surah = getSurahById(r.surahId);
+        if (!surah) return `${title} Range ${i + 1}: Please select a valid Surah.`;
         if (!r.fromAyah || !r.toAyah) return `${title} Range ${i + 1}: Enter both From and To Ayah numbers.`;
-        if (Number(r.fromAyah) > Number(r.toAyah)) {
-          return `${title} Range ${i + 1}: From Ayah (${r.fromAyah}) cannot be greater than To Ayah (${r.toAyah}).`;
+
+        const fromNum = Number(r.fromAyah);
+        const toNum = Number(r.toAyah);
+
+        if (!Number.isFinite(fromNum) || fromNum < 1) {
+          return `${title} Range ${i + 1}: From Ayah must be at least 1.`;
+        }
+        if (fromNum > surah.ayahs) {
+          return `${title} Range ${i + 1}: سورت ${surah.name} میں کل ${surah.ayahs} آیات ہیں۔ آپ ${surah.ayahs} سے زیادہ آیت نمبر (${fromNum}) درج نہیں کر سکتے۔ (You can't add more than extreme value: ${surah.ayahs})`;
+        }
+
+        if (!Number.isFinite(toNum) || toNum < 1) {
+          return `${title} Range ${i + 1}: To Ayah must be at least 1.`;
+        }
+        if (toNum > surah.ayahs) {
+          return `${title} Range ${i + 1}: سورت ${surah.name} میں کل ${surah.ayahs} آیات ہیں۔ آپ ${surah.ayahs} سے زیادہ آیت نمبر (${toNum}) درج نہیں کر سکتے۔ (You can't add more than extreme value: ${surah.ayahs})`;
+        }
+
+        if (fromNum > toNum) {
+          return `${title} Range ${i + 1}: From Ayah (${fromNum}) cannot be greater than To Ayah (${toNum}).`;
         }
       }
 
@@ -1394,10 +1284,33 @@ export default function TeacherProgressPage() {
                       const selectedSurah = getSurahById(range.surahId || 0);
                       const ayahCount = selectedSurah?.ayahs ?? 0;
 
+                      const fromNum = range.fromAyah ? Number(range.fromAyah) : null;
+                      const toNum = range.toAyah ? Number(range.toAyah) : null;
+
+                      const fromError = selectedSurah && fromNum !== null && Number.isFinite(fromNum) && (fromNum < 1 || fromNum > ayahCount)
+                        ? fromNum > ayahCount
+                          ? `سورت ${selectedSurah.name} میں کل ${ayahCount} آیات ہیں۔ آپ ${ayahCount} سے زیادہ آیت نمبر (${fromNum}) درج نہیں کر سکتے۔ (You can't add more than extreme value: ${ayahCount})`
+                          : 'آیت نمبر کم از کم 1 ہونا چاہیے۔'
+                        : null;
+
+                      const toError = selectedSurah && toNum !== null && Number.isFinite(toNum) && (toNum < 1 || toNum > ayahCount)
+                        ? toNum > ayahCount
+                          ? `سورت ${selectedSurah.name} میں کل ${ayahCount} آیات ہیں۔ آپ ${ayahCount} سے زیادہ آیت نمبر (${toNum}) درج نہیں کر سکتے۔ (You can't add more than extreme value: ${ayahCount})`
+                          : 'آیت نمبر کم از کم 1 ہونا چاہیے۔'
+                        : null;
+
+                      const orderError = fromNum !== null && toNum !== null && Number.isFinite(fromNum) && Number.isFinite(toNum) && fromNum > toNum && !fromError && !toError
+                        ? `شروع کی آیت (${fromNum}) آخری آیت (${toNum}) سے بڑی نہیں ہو سکتی۔`
+                        : null;
+
                       return (
                         <div
                           key={rangeIdx}
-                          className="rounded-2xl border border-slate-200 bg-slate-50/70 p-4 transition focus-within:border-teal-500 focus-within:bg-white focus-within:shadow-sm"
+                          className={`rounded-2xl border p-4 transition ${
+                            fromError || toError || orderError
+                              ? 'border-rose-300 bg-rose-50/30'
+                              : 'border-slate-200 bg-slate-50/70 focus-within:border-teal-500 focus-within:bg-white focus-within:shadow-sm'
+                          }`}
                         >
                           <div className="mb-3 flex items-center justify-between">
                             <div className="flex items-center gap-2">
@@ -1447,9 +1360,14 @@ export default function TeacherProgressPage() {
 
                             {/* From Ayah */}
                             <div className="sm:col-span-3">
-                              <label className="mb-1 block text-[11px] font-bold uppercase tracking-wider text-slate-500">
-                                From Ayah (آیت سے)
-                              </label>
+                              <div className="mb-1 flex items-center justify-between">
+                                <label className="text-[11px] font-bold uppercase tracking-wider text-slate-500">
+                                  From Ayah (آیت سے)
+                                </label>
+                                {selectedSurah && (
+                                  <span className="text-[10px] font-bold text-slate-400">1 - {ayahCount}</span>
+                                )}
+                              </div>
                               <input
                                 type="text"
                                 inputMode="numeric"
@@ -1459,8 +1377,18 @@ export default function TeacherProgressPage() {
                                 onBlur={() => handleAyahBlur(section.key, rangeIdx, 'fromAyah')}
                                 disabled={!selectedSurah}
                                 placeholder="1"
-                                className="h-11 w-full rounded-xl border border-slate-200 bg-white px-3 text-sm font-bold text-slate-800 outline-none transition focus:border-teal-600 focus:ring-4 focus:ring-teal-500/10 disabled:bg-slate-100 disabled:text-slate-400"
+                                className={`h-11 w-full rounded-xl border px-3 text-sm font-bold outline-none transition disabled:bg-slate-100 disabled:text-slate-400 ${
+                                  fromError
+                                    ? 'border-rose-500 bg-rose-50/50 text-rose-900 ring-2 ring-rose-200 focus:border-rose-600'
+                                    : 'border-slate-200 bg-white text-slate-800 focus:border-teal-600 focus:ring-4 focus:ring-teal-500/10'
+                                }`}
                               />
+                              {fromError && (
+                                <p className="mt-1 flex items-start gap-1 text-[11px] font-bold text-rose-600 leading-tight">
+                                  <AlertCircle className="h-3.5 w-3.5 shrink-0 mt-0.5 text-rose-600" />
+                                  <span>{fromError}</span>
+                                </p>
+                              )}
                             </div>
 
                             {/* To Ayah (Doosra Number) */}
@@ -1469,6 +1397,9 @@ export default function TeacherProgressPage() {
                                 <label className="text-[11px] font-bold uppercase tracking-wider text-slate-500">
                                   To Ayah (آیت تک)
                                 </label>
+                                {selectedSurah && (
+                                  <span className="text-[10px] font-bold text-slate-400">Max: {ayahCount}</span>
+                                )}
                               </div>
                               <input
                                 type="text"
@@ -1479,9 +1410,26 @@ export default function TeacherProgressPage() {
                                 onBlur={() => handleAyahBlur(section.key, rangeIdx, 'toAyah')}
                                 disabled={!selectedSurah}
                                 placeholder={selectedSurah ? String(Math.min(5, ayahCount)) : 'To'}
-                                className="h-11 w-full rounded-xl border border-slate-200 bg-white px-3 text-sm font-bold text-slate-800 outline-none transition focus:border-teal-600 focus:ring-4 focus:ring-teal-500/10 disabled:bg-slate-100 disabled:text-slate-400"
+                                className={`h-11 w-full rounded-xl border px-3 text-sm font-bold outline-none transition disabled:bg-slate-100 disabled:text-slate-400 ${
+                                  toError
+                                    ? 'border-rose-500 bg-rose-50/50 text-rose-900 ring-2 ring-rose-200 focus:border-rose-600'
+                                    : 'border-slate-200 bg-white text-slate-800 focus:border-teal-600 focus:ring-4 focus:ring-teal-500/10'
+                                }`}
                               />
+                              {toError && (
+                                <p className="mt-1 flex items-start gap-1 text-[11px] font-bold text-rose-600 leading-tight">
+                                  <AlertCircle className="h-3.5 w-3.5 shrink-0 mt-0.5 text-rose-600" />
+                                  <span>{toError}</span>
+                                </p>
+                              )}
                             </div>
+
+                            {orderError && (
+                              <div className="col-span-full flex items-start gap-1.5 rounded-lg border border-amber-200 bg-amber-50 p-2 text-xs font-bold text-amber-800">
+                                <AlertCircle className="h-4 w-4 shrink-0 text-amber-600" />
+                                <span>{orderError}</span>
+                              </div>
+                            )}
                           </div>
 
                           {/* Quick Ayah Increment Helpers */}
