@@ -227,7 +227,28 @@ const getCachedFinanceData = unstable_cache(
       feePaidRows.map((row) => [row.feeId, Number(row._sum.amountPaid ?? 0)])
     );
 
-    return { classes, feeAgg, paidAgg, recentPayments, totalDuesCount, dues, feePaidById };
+        const studentIds = Array.from(new Set(dues.map((fee) => fee.student.id)));
+    const allStudentUnpaidFees = studentIds.length
+      ? await prisma.fee.findMany({
+          where: {
+            studentId: { in: studentIds },
+            status: { in: [PaymentStatus.PENDING, PaymentStatus.PARTIAL, PaymentStatus.OVERDUE] }
+          },
+          select: {
+            id: true,
+            studentId: true,
+            title: true,
+            dueDate: true,
+            amount: true,
+            discount: true,
+            status: true,
+            payments: { select: { amountPaid: true } }
+          },
+          orderBy: { dueDate: 'asc' }
+        })
+      : [];
+
+    return { classes, feeAgg, paidAgg, recentPayments, totalDuesCount, dues, feePaidById, allStudentUnpaidFees };
   },
   ['admin-finance-page'],
   { revalidate: 30 }
@@ -276,11 +297,48 @@ export default async function AdminFinancePage({ searchParams }: AdminFinancePag
     );
   }
 
-  const { classes, feeAgg, paidAgg, recentPayments, totalDuesCount, dues, feePaidById } = data;
+  const { classes, feeAgg, paidAgg, recentPayments, totalDuesCount, dues, feePaidById, allStudentUnpaidFees = [] } = data;
   const feePaidTotals = new Map<string, number>(Object.entries(feePaidById ?? {}));
   const totalBilled = Number(feeAgg._sum.amount ?? 0) - Number(feeAgg._sum.discount ?? 0);
   const totalPaid = Number(paidAgg._sum.amountPaid ?? 0);
+  const totalDueKpi = Math.max(totalBilled - totalPaid, 0);
   const collectionRate = totalBilled > 0 ? Math.round((totalPaid / totalBilled) * 100) : 0;
+
+  const studentUnpaidSummary: Record<string, {
+    totalDue: number;
+    monthCount: number;
+    unpaidMonths: Array<{
+      id: string;
+      title: string;
+      dueDate: string;
+      amount: number;
+      paidAmount: number;
+      remaining: number;
+      status: string;
+    }>;
+  }> = {};
+
+  for (const uf of (allStudentUnpaidFees || [])) {
+    const net = Math.max(Number(uf.amount) - Number(uf.discount), 0);
+    const paid = uf.payments.reduce((sum: number, p: { amountPaid: any }) => sum + Number(p.amountPaid), 0);
+    const rem = Math.max(net - paid, 0);
+    if (rem > 0) {
+      if (!studentUnpaidSummary[uf.studentId]) {
+        studentUnpaidSummary[uf.studentId] = { totalDue: 0, monthCount: 0, unpaidMonths: [] };
+      }
+      studentUnpaidSummary[uf.studentId].totalDue += rem;
+      studentUnpaidSummary[uf.studentId].monthCount += 1;
+      studentUnpaidSummary[uf.studentId].unpaidMonths.push({
+        id: uf.id,
+        title: uf.title,
+        dueDate: toIsoDateString(uf.dueDate),
+        amount: Number(uf.amount),
+        paidAmount: paid,
+        remaining: rem,
+        status: uf.status
+      });
+    }
+  }
 
   // Serialize dues and calculate outstanding + overdue amounts
   let outstandingAmount = 0;
@@ -298,8 +356,10 @@ export default async function AdminFinancePage({ searchParams }: AdminFinancePag
 
     if (computedStatus !== PaymentStatus.PAID) {
       outstandingAmount += remaining;
+      dueAmount += remaining;
     }
-    if (computedStatus !== PaymentStatus.PAID) dueAmount += remaining;
+
+    const summary = studentUnpaidSummary[fee.student.id];
 
     return {
       id: fee.id,
@@ -313,6 +373,9 @@ export default async function AdminFinancePage({ searchParams }: AdminFinancePag
       discount: Number(fee.discount),
       paidAmount,
       remaining,
+      totalStudentDue: summary ? summary.totalDue : remaining,
+      studentDueMonthCount: summary ? summary.monthCount : (remaining > 0 ? 1 : 0),
+      unpaidMonths: summary ? summary.unpaidMonths : [],
       whatsApp: fee.student.user.phone ?? null,
       guardianPhone: fee.student.emergencyContact ?? null
     };
@@ -330,7 +393,7 @@ export default async function AdminFinancePage({ searchParams }: AdminFinancePag
   const kpis = [
     { label: 'Total Billed',     value: formatCurrency(totalBilled) },
     { label: 'Total Collected',  value: formatCurrency(totalPaid) },
-    { label: 'Due',              value: formatCurrency(dueAmount) },
+    { label: 'Due',              value: formatCurrency(totalDueKpi) },
     { label: 'Due Records',      value: String(dueCount) },
     { label: 'Collection Rate',  value: `${collectionRate}%` }
   ];

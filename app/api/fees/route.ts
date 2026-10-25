@@ -1,4 +1,4 @@
-﻿import { PaymentStatus, TransactionType, UserRole } from '@prisma/client';
+import { PaymentStatus, TransactionType, UserRole } from '@prisma/client';
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { ensureApiRole } from '@/lib/rbac';
@@ -134,7 +134,7 @@ export async function PUT(request: Request) {
   }
 
   // Add payment
-  const { feeId, amountPaid, method, transactionRef, parentId } = body;
+  const { feeId, studentId, amountPaid, method, transactionRef, parentId, allocateToOldest = true } = body;
   if (!Object.values(TransactionType).includes(method)) {
     return NextResponse.json({ error: 'Invalid transaction method' }, { status: 400 });
   }
@@ -145,89 +145,177 @@ export async function PUT(request: Request) {
   }
 
   const payments = await prisma.$transaction(async (tx) => {
-    const sourceFee = await tx.fee.findUnique({
-      where: { id: feeId },
-      select: {
-        id: true,
-        studentId: true,
-        title: true,
-        dueDate: true,
-        amount: true,
-        discount: true,
-        payments: { select: { amountPaid: true } }
-      }
-    });
-    if (!sourceFee) throw new Error('Fee not found');
+    let targetStudentId = studentId as string | undefined;
+    let sourceFee = null;
 
-    const createdPayments = [];
-    const monthlyAmount = Number(sourceFee.amount);
-    const monthlyDiscount = Number(sourceFee.discount);
-    let remainingPayment = amountToAllocate;
-
-    for (let monthOffset = 0; remainingPayment > 0.0001 && monthOffset < 36; monthOffset += 1) {
-      const targetMonth = addMonths(sourceFee.dueDate, monthOffset);
-      let targetFee = monthOffset === 0
-        ? sourceFee
-        : await tx.fee.findFirst({
-            where: {
-              studentId: sourceFee.studentId,
-              dueDate: { gte: monthStart(targetMonth), lte: monthEnd(targetMonth) }
-            },
-            select: {
-              id: true,
-              studentId: true,
-              title: true,
-              dueDate: true,
-              amount: true,
-              discount: true,
-              payments: { select: { amountPaid: true } }
-            }
-          });
-
-      if (!targetFee) {
-        targetFee = await tx.fee.create({
-          data: {
-            studentId: sourceFee.studentId,
-            title: monthlyFeeTitle(targetMonth),
-            dueDate: monthStart(targetMonth),
-            amount: monthlyAmount,
-            discount: monthlyDiscount,
-            status: PaymentStatus.PENDING
-          },
-          select: {
-            id: true,
-            studentId: true,
-            title: true,
-            dueDate: true,
-            amount: true,
-            discount: true,
-            payments: { select: { amountPaid: true } }
-          }
-        });
-      }
-
-      const net = Math.max(Number(targetFee.amount) - Number(targetFee.discount), 0);
-      const alreadyPaid = targetFee.payments.reduce((sum, payment) => sum + Number(payment.amountPaid), 0);
-      const feeRemaining = Math.max(net - alreadyPaid, 0);
-      if (feeRemaining <= 0) continue;
-
-      const appliedAmount = Math.min(remainingPayment, feeRemaining);
-      const payment = await tx.payment.create({
-        data: {
-          feeId: targetFee.id,
-          amountPaid: appliedAmount,
-          method,
-          transactionRef: transactionRef || (monthOffset > 0 ? 'ADVANCE_PAYMENT' : null),
-          parentId
+    if (feeId) {
+      sourceFee = await tx.fee.findUnique({
+        where: { id: feeId },
+        select: {
+          id: true,
+          studentId: true,
+          title: true,
+          dueDate: true,
+          amount: true,
+          discount: true,
+          payments: { select: { amountPaid: true } }
         }
       });
-      createdPayments.push(payment);
-      remainingPayment -= appliedAmount;
+      if (!sourceFee && !targetStudentId) throw new Error('Fee not found');
+      if (sourceFee) targetStudentId = sourceFee.studentId;
+    }
 
-      await tx.fee.update({
-        where: { id: targetFee.id },
-        data: { status: deriveStatus(net, alreadyPaid + appliedAmount) }
+    if (!targetStudentId) {
+      throw new Error('studentId or feeId is required');
+    }
+
+    const createdPayments = [];
+    let remainingPayment = amountToAllocate;
+
+    if (allocateToOldest) {
+      // Find all unpaid or partial fees for this student in chronological order (oldest first)
+      const unpaidFees = await tx.fee.findMany({
+        where: {
+          studentId: targetStudentId,
+          status: { in: [PaymentStatus.PENDING, PaymentStatus.PARTIAL, PaymentStatus.OVERDUE] }
+        },
+        select: {
+          id: true,
+          studentId: true,
+          title: true,
+          dueDate: true,
+          amount: true,
+          discount: true,
+          payments: { select: { amountPaid: true } }
+        },
+        orderBy: { dueDate: 'asc' }
       });
+
+      for (const targetFee of unpaidFees) {
+        if (remainingPayment <= 0.0001) break;
+
+        const net = Math.max(Number(targetFee.amount) - Number(targetFee.discount), 0);
+        const alreadyPaid = targetFee.payments.reduce((sum, payment) => sum + Number(payment.amountPaid), 0);
+        const feeRemaining = Math.max(net - alreadyPaid, 0);
+        if (feeRemaining <= 0) continue;
+
+        const appliedAmount = Math.min(remainingPayment, feeRemaining);
+        const payment = await tx.payment.create({
+          data: {
+            feeId: targetFee.id,
+            amountPaid: appliedAmount,
+            method,
+            transactionRef: transactionRef || null,
+            parentId
+          }
+        });
+        createdPayments.push(payment);
+        remainingPayment -= appliedAmount;
+
+        const totalPaidAfter = alreadyPaid + appliedAmount;
+        const newStatus = totalPaidAfter >= net && net > 0
+          ? PaymentStatus.PAID
+          : (totalPaidAfter > 0 ? PaymentStatus.PARTIAL : PaymentStatus.PENDING);
+
+        await tx.fee.update({
+          where: { id: targetFee.id },
+          data: { status: newStatus }
+        });
+      }
+    } else if (sourceFee) {
+      // Apply specifically to sourceFee only
+      const net = Math.max(Number(sourceFee.amount) - Number(sourceFee.discount), 0);
+      const alreadyPaid = sourceFee.payments.reduce((sum, payment) => sum + Number(payment.amountPaid), 0);
+      const feeRemaining = Math.max(net - alreadyPaid, 0);
+      const appliedAmount = Math.min(remainingPayment, feeRemaining);
+
+      if (appliedAmount > 0) {
+        const payment = await tx.payment.create({
+          data: {
+            feeId: sourceFee.id,
+            amountPaid: appliedAmount,
+            method,
+            transactionRef: transactionRef || null,
+            parentId
+          }
+        });
+        createdPayments.push(payment);
+        remainingPayment -= appliedAmount;
+
+        const totalPaidAfter = alreadyPaid + appliedAmount;
+        const newStatus = totalPaidAfter >= net && net > 0
+          ? PaymentStatus.PAID
+          : (totalPaidAfter > 0 ? PaymentStatus.PARTIAL : PaymentStatus.PENDING);
+
+        await tx.fee.update({
+          where: { id: sourceFee.id },
+          data: { status: newStatus }
+        });
+      }
+    }
+
+    // If remainingPayment > 0.0001 (Advance payment)
+    if (remainingPayment > 0.0001) {
+      const latestFee = await tx.fee.findFirst({
+        where: { studentId: targetStudentId },
+        orderBy: { dueDate: 'desc' }
+      });
+      const baseDueDate = latestFee?.dueDate || new Date();
+      const monthlyAmount = latestFee ? Number(latestFee.amount) : 2500;
+      const monthlyDiscount = latestFee ? Number(latestFee.discount) : 0;
+
+      for (let monthOffset = 1; remainingPayment > 0.0001 && monthOffset < 36; monthOffset += 1) {
+        const targetMonth = addMonths(baseDueDate, monthOffset);
+        let targetFee = await tx.fee.findFirst({
+          where: {
+            studentId: targetStudentId,
+            dueDate: { gte: monthStart(targetMonth), lte: monthEnd(targetMonth) }
+          },
+          include: { payments: { select: { amountPaid: true } } }
+        });
+
+        if (!targetFee) {
+          targetFee = await tx.fee.create({
+            data: {
+              studentId: targetStudentId,
+              title: monthlyFeeTitle(targetMonth),
+              dueDate: monthStart(targetMonth),
+              amount: monthlyAmount,
+              discount: monthlyDiscount,
+              status: PaymentStatus.PENDING
+            },
+            include: { payments: { select: { amountPaid: true } } }
+          });
+        }
+
+        const net = Math.max(Number(targetFee.amount) - Number(targetFee.discount), 0);
+        const alreadyPaid = targetFee.payments.reduce((sum, p) => sum + Number(p.amountPaid), 0);
+        const feeRemaining = Math.max(net - alreadyPaid, 0);
+        if (feeRemaining <= 0) continue;
+
+        const appliedAmount = Math.min(remainingPayment, feeRemaining);
+        const payment = await tx.payment.create({
+          data: {
+            feeId: targetFee.id,
+            amountPaid: appliedAmount,
+            method,
+            transactionRef: transactionRef || 'ADVANCE_PAYMENT',
+            parentId
+          }
+        });
+        createdPayments.push(payment);
+        remainingPayment -= appliedAmount;
+
+        const totalPaidAfter = alreadyPaid + appliedAmount;
+        const newStatus = totalPaidAfter >= net && net > 0
+          ? PaymentStatus.PAID
+          : (totalPaidAfter > 0 ? PaymentStatus.PARTIAL : PaymentStatus.PENDING);
+
+        await tx.fee.update({
+          where: { id: targetFee.id },
+          data: { status: newStatus }
+        });
+      }
     }
 
     return createdPayments;

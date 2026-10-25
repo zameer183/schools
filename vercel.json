@@ -1,4 +1,10 @@
 {
   "regions": ["sin1"],
-  "buildCommand": "next build --no-lint"
+  "buildCommand": "next build --no-lint",
+  "crons": [
+    {
+      "path": "/api/cron/auto-fees",
+      "schedule": "0 0 1 * *"
+    }
+  ]
 }
