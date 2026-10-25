@@ -269,9 +269,11 @@ async function loadProfileViaRest(id: string): Promise<ViewModel | null> {
     0
   );
   const currentFee = mappedFees[0] ?? null;
-  const dueFee = currentFee
-    ? Math.max(currentFee.amount - currentFee.discount - currentFee.payments.reduce((sum, payment) => sum + Number(payment.amountPaid), 0), 0)
-    : 0;
+  const dueFee = mappedFees.reduce((sum, fee) => {
+    const net = fee.amount - fee.discount;
+    const paid = fee.payments.reduce((pSum, p) => pSum + p.amountPaid, 0);
+    return sum + Math.max(net - paid, 0);
+  }, 0);
 
   return {
     student: {
@@ -497,14 +499,11 @@ async function loadProfileViaPrisma(id: string): Promise<ViewModel | null> {
     0
   );
   const currentFee = fees[0] ?? null;
-  const dueFee = currentFee
-    ? Math.max(
-        Number(currentFee.amount) -
-          Number(currentFee.discount) -
-          currentFee.payments.reduce((sum, payment) => sum + Number(payment.amountPaid), 0),
-        0
-      )
-    : 0;
+  const dueFee = fees.reduce((sum, fee) => {
+    const net = Number(fee.amount) - Number(fee.discount);
+    const paid = fee.payments.reduce((sumPayment, payment) => sumPayment + Number(payment.amountPaid), 0);
+    return sum + Math.max(net - paid, 0);
+  }, 0);
 
   const classTeacher = await loadClassTeacherName(student.classId);
 

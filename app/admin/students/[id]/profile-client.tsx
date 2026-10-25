@@ -36,6 +36,7 @@ import {
   Loader2,
   ExternalLink
 } from 'lucide-react';
+import { formatCurrency } from '@/lib/utils';
 
 const SESSION_EXPIRED_MESSAGE = 'Session expire ho gayi hai. Please admin login dubara karein.';
 
@@ -122,7 +123,7 @@ function fmtDate(v: string | null | undefined): string {
 }
 
 function fmtCurrency(v: number): string {
-  return new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(v);
+  return formatCurrency(v);
 }
 
 function initials(name: string): string {
