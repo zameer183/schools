@@ -1,7 +1,7 @@
 'use client';
 
 import Link from 'next/link';
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { PrintButton } from '@/components/reports/print-button';
 import { formatCurrency } from '@/lib/utils';
@@ -20,8 +20,11 @@ import {
   ChevronUp,
   AlertCircle,
   CheckCircle2,
-  Wallet,
-  Receipt
+  Receipt,
+  RefreshCw,
+  ArrowUpDown,
+  Calendar,
+  Sparkles
 } from 'lucide-react';
 
 type Payment = {
@@ -47,6 +50,8 @@ type StudentData = {
   admissionNo: string;
   whatsApp: string | null;
   guardianPhone: string | null;
+  joinDate?: string | null;
+  createdAt?: string | null;
   user: { fullName: string; isActive: boolean };
   class: { name: string; section: string } | null;
 };
@@ -60,26 +65,41 @@ type Props = {
   totalOverdue: number;
 };
 
-// ─── Helpers ──────────────────────────────────────────────────────────────────
+// ─── Helpers & Constants ──────────────────────────────────────────────────────
 
 function initials(name: string): string {
   return name.trim().split(/\s+/).slice(0, 2).map((w) => w[0]?.toUpperCase() ?? '').join('');
 }
 
-function fmtDate(v: string): string {
+function fmtDate(v?: string | null): string {
+  if (!v) return '—';
   try {
     return new Date(v).toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' });
   } catch { return '—'; }
 }
 
 const STATUS_STYLE: Record<string, { badge: string; bar: string; label: string }> = {
-  PAID:    { badge: 'bg-[#dcfce7] text-[#15803d] border border-[#bbf7d0]', bar: 'bg-[#22c55e]', label: 'PAID (ادا شدہ)' },
-  PENDING: { badge: 'bg-[#fef3c7] text-[#b45309] border border-[#fde68a]', bar: 'bg-[#f59e0b]', label: 'PENDING (غیر ادا)' },
-  PARTIAL: { badge: 'bg-[#eff6ff] text-[#1d4ed8] border border-[#bfdbfe]', bar: 'bg-[#3b82f6]', label: 'PARTIAL (جزوی ادا)' },
-  OVERDUE: { badge: 'bg-[#fee2e2] text-[#b91c1c] border border-[#fecaca]', bar: 'bg-[#ef4444]', label: 'OVERDUE (واجب الادا)' },
+  PAID:    { badge: 'bg-[#dcfce7] text-[#15803d] border border-[#bbf7d0]', bar: 'bg-[#22c55e]', label: 'PAID' },
+  PENDING: { badge: 'bg-[#fef3c7] text-[#b45309] border border-[#fde68a]', bar: 'bg-[#f59e0b]', label: 'PENDING' },
+  PARTIAL: { badge: 'bg-[#eff6ff] text-[#1d4ed8] border border-[#bfdbfe]', bar: 'bg-[#3b82f6]', label: 'PARTIAL' },
+  OVERDUE: { badge: 'bg-[#fee2e2] text-[#b91c1c] border border-[#fecaca]', bar: 'bg-[#ef4444]', label: 'OVERDUE' },
 };
 
 const METHODS = ['CASH', 'BANK_TRANSFER', 'CARD', 'ONLINE'];
+
+const MONTH_NAMES = [
+  'January', 'February', 'March', 'April', 'May', 'June',
+  'July', 'August', 'September', 'October', 'November', 'December'
+];
+
+const FEE_CATEGORIES = [
+  { id: 'TUITION', label: 'Monthly Tuition Fee' },
+  { id: 'ADMISSION', label: 'Admission Fee' },
+  { id: 'ANNUAL', label: 'Annual / Registration Charges' },
+  { id: 'EXAM', label: 'Exam Fee' },
+  { id: 'BOOKS', label: 'Books & Uniform' },
+  { id: 'CUSTOM', label: 'Custom / Other Fee' },
+] as const;
 
 // ─── Modal wrapper ─────────────────────────────────────────────────────────────
 
@@ -119,6 +139,13 @@ export default function StudentFeesClient({
   const router = useRouter();
   const [fees, setFees] = useState<FeeRecord[]>(initialFees);
 
+  // Sorting: oldest first by default (June -> July -> August -> Sep -> Oct)
+  const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('asc');
+
+  // Sync state
+  const [syncing, setSyncing] = useState(false);
+  const [syncMessage, setSyncMessage] = useState<string | null>(null);
+
   // Derived totals from live state
   const totalAssigned = fees.reduce((s, f) => s + (f.amount - f.discount), 0);
   const totalPaid = fees.reduce((s, f) => s + f.payments.reduce((a, p) => a + p.amountPaid, 0), 0);
@@ -141,6 +168,15 @@ export default function StudentFeesClient({
   const classInfo = student.class ? `${student.class.name} ${student.class.section || ''}` : 'N/A';
   const waPhone = (student.whatsApp || student.guardianPhone || '').replace(/[^0-9+]/g, '');
 
+  // Sorted fees list
+  const sortedFees = useMemo(() => {
+    return [...fees].sort((a, b) => {
+      const tA = new Date(a.dueDate).getTime();
+      const tB = new Date(b.dueDate).getTime();
+      return sortOrder === 'asc' ? tA - tB : tB - tA;
+    });
+  }, [fees, sortOrder]);
+
   // Expanded payments
   const [expanded, setExpanded] = useState<Set<string>>(new Set());
 
@@ -152,11 +188,67 @@ export default function StudentFeesClient({
   const [studentPaySaving, setStudentPaySaving] = useState(false);
   const [studentPayErr, setStudentPayErr] = useState('');
 
-  // Add fee modal
+  // Add Fee Modal state
   const [showAdd, setShowAdd] = useState(false);
-  const [addForm, setAddForm] = useState({ title: '', amount: '', discount: '0', dueDate: '' });
+  const [addCategory, setAddCategory] = useState<'TUITION' | 'ADMISSION' | 'ANNUAL' | 'EXAM' | 'BOOKS' | 'CUSTOM'>('TUITION');
+  const [selectedMonth, setSelectedMonth] = useState<number>(new Date().getMonth());
+  const [selectedYear, setSelectedYear] = useState<number>(new Date().getFullYear());
+  const [customTitle, setCustomTitle] = useState('');
+  const [addAmount, setAddAmount] = useState('');
+  const [addDiscount, setAddDiscount] = useState('0');
+  const [addDueDate, setAddDueDate] = useState('');
   const [addSaving, setAddSaving] = useState(false);
   const [addErr, setAddErr] = useState('');
+
+  // Typical student tuition fee (used for prefill)
+  const typicalTuitionAmount = useMemo(() => {
+    const tuitionFee = fees.find(f => f.title.toLowerCase().includes('tuition') || f.title.toLowerCase().includes('monthly'));
+    return tuitionFee ? String(tuitionFee.amount) : '1500';
+  }, [fees]);
+
+  // Initialize or re-calculate Add Fee Form when category, month, or year changes
+  useEffect(() => {
+    if (addCategory === 'TUITION') {
+      const monthStr = String(selectedMonth + 1).padStart(2, '0');
+      setAddDueDate(`${selectedYear}-${monthStr}-01`);
+      if (!addAmount) setAddAmount(typicalTuitionAmount);
+    } else if (addCategory === 'ADMISSION') {
+      const today = new Date().toISOString().slice(0, 10);
+      setAddDueDate(today);
+      if (!addAmount) setAddAmount('5000');
+    } else if (addCategory === 'ANNUAL') {
+      setAddDueDate(`${selectedYear}-01-01`);
+      if (!addAmount) setAddAmount('3000');
+    } else if (addCategory === 'EXAM') {
+      const today = new Date().toISOString().slice(0, 10);
+      setAddDueDate(today);
+      if (!addAmount) setAddAmount('1000');
+    } else if (addCategory === 'BOOKS') {
+      const today = new Date().toISOString().slice(0, 10);
+      setAddDueDate(today);
+      if (!addAmount) setAddAmount('2000');
+    }
+  }, [addCategory, selectedMonth, selectedYear, typicalTuitionAmount]);
+
+  // Computed title for Add Fee
+  const computedAddTitle = useMemo(() => {
+    if (addCategory === 'TUITION') {
+      return `Monthly Tuition Fee - ${MONTH_NAMES[selectedMonth]} ${selectedYear}`;
+    }
+    if (addCategory === 'ADMISSION') {
+      return `Admission Fee - ${student.user.fullName}`;
+    }
+    if (addCategory === 'ANNUAL') {
+      return `Annual Charges - ${selectedYear}`;
+    }
+    if (addCategory === 'EXAM') {
+      return `Exam Fee - ${MONTH_NAMES[selectedMonth]} ${selectedYear}`;
+    }
+    if (addCategory === 'BOOKS') {
+      return 'Books & Uniform Fee';
+    }
+    return customTitle.trim();
+  }, [addCategory, selectedMonth, selectedYear, student.user.fullName, customTitle]);
 
   // Edit fee modal
   const [editTarget, setEditTarget] = useState<FeeRecord | null>(null);
@@ -205,10 +297,46 @@ export default function StudentFeesClient({
 
   // ─── Handlers ──────────────────────────────────────────────────────────────
 
+  async function handleSyncFees() {
+    setSyncing(true);
+    setSyncMessage(null);
+    try {
+      const res = await fetch('/api/fees', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action: 'sync', studentId: student.id })
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        alert(data.error || 'Failed to sync missing fees.');
+        return;
+      }
+
+      // Reload updated fees
+      const refreshed = await fetch(`/api/fees?studentId=${student.id}`).then(r => r.json()).catch(() => null);
+      if (Array.isArray(refreshed)) {
+        setFees(refreshed.map((f: any) => ({
+          ...f,
+          amount: Number(f.amount),
+          discount: Number(f.discount),
+          payments: (f.payments || []).map((p: any) => ({ ...p, amountPaid: Number(p.amountPaid) }))
+        })));
+      }
+      router.refresh();
+      const count = data.feesCreated ?? 0;
+      setSyncMessage(count > 0 ? `Synced successfully! Created ${count} missing fee voucher(s).` : 'All monthly fee vouchers are already up to date!');
+      setTimeout(() => setSyncMessage(null), 5000);
+    } catch {
+      alert('Network error while syncing fees. Please try again.');
+    } finally {
+      setSyncing(false);
+    }
+  }
+
   async function handleStudentPayment() {
     const amt = Number(studentPayAmount);
     if (!amt || amt <= 0) {
-      setStudentPayErr('براہ کرم درست رقم درج کریں۔');
+      setStudentPayErr('Please enter a valid payment amount.');
       return;
     }
     setStudentPaySaving(true);
@@ -227,7 +355,7 @@ export default function StudentFeesClient({
       });
       const data = await res.json();
       if (!res.ok) {
-        setStudentPayErr(data.error ?? 'فیس وصولی ریکارڈ کرنے میں خرابی پیش آئی۔');
+        setStudentPayErr(data.error ?? 'Failed to record student payment.');
         return;
       }
       setShowStudentPay(false);
@@ -246,38 +374,70 @@ export default function StudentFeesClient({
         })));
       }
     } catch {
-      setStudentPayErr('نیٹ ورک میں مسئلہ ہے۔ براہ کرم دوبارہ کوشش کریں۔');
+      setStudentPayErr('Network error. Please try again.');
     } finally {
       setStudentPaySaving(false);
     }
   }
 
+  function openAddModal() {
+    setAddCategory('TUITION');
+    setSelectedMonth(new Date().getMonth());
+    setSelectedYear(new Date().getFullYear());
+    setCustomTitle('');
+    setAddAmount(typicalTuitionAmount);
+    setAddDiscount('0');
+    const monthStr = String(new Date().getMonth() + 1).padStart(2, '0');
+    setAddDueDate(`${new Date().getFullYear()}-${monthStr}-01`);
+    setAddErr('');
+    setShowAdd(true);
+  }
+
   async function handleAddFee() {
-    if (!addForm.title || !addForm.amount || !addForm.dueDate) {
-      setAddErr('عنوان، رقم اور آخری تاریخ لازمی ہیں۔');
+    const finalTitle = computedAddTitle;
+    if (!finalTitle || !addAmount || !addDueDate) {
+      setAddErr('Title, amount, and due date are required.');
       return;
     }
-    setAddSaving(true); setAddErr('');
+    setAddSaving(true);
+    setAddErr('');
     try {
       const res = await fetch('/api/fees', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           studentId: student.id,
-          title: addForm.title,
-          amount: Number(addForm.amount),
-          discount: Number(addForm.discount || 0),
-          dueDate: addForm.dueDate
+          title: finalTitle,
+          amount: Number(addAmount),
+          discount: Number(addDiscount || 0),
+          dueDate: addDueDate,
+          feeCategory: addCategory,
+          feeType: addCategory === 'TUITION' ? 'MONTHLY' : 'ONE_TIME'
         })
       });
       const data = await res.json();
-      if (!res.ok) { setAddErr(data.error ?? 'فیس شامل نہ ہو سکی۔'); return; }
+      if (!res.ok) {
+        setAddErr(data.error ?? 'Failed to create fee voucher.');
+        return;
+      }
       setShowAdd(false);
-      setAddForm({ title: '', amount: '', discount: '0', dueDate: '' });
       router.refresh();
-      setFees(prev => [...prev, { ...data, amount: Number(data.amount), discount: Number(data.discount), payments: [] }]);
-    } catch { setAddErr('نیٹ ورک کا مسئلہ ہے۔'); }
-    finally { setAddSaving(false); }
+
+      // Refresh fees
+      const refreshed = await fetch(`/api/fees?studentId=${student.id}`).then(r => r.json()).catch(() => null);
+      if (Array.isArray(refreshed)) {
+        setFees(refreshed.map((f: any) => ({
+          ...f,
+          amount: Number(f.amount),
+          discount: Number(f.discount),
+          payments: (f.payments || []).map((p: any) => ({ ...p, amountPaid: Number(p.amountPaid) }))
+        })));
+      }
+    } catch {
+      setAddErr('Network error. Please try again.');
+    } finally {
+      setAddSaving(false);
+    }
   }
 
   function openEdit(f: FeeRecord) {
@@ -293,7 +453,8 @@ export default function StudentFeesClient({
 
   async function handleEditFee() {
     if (!editTarget) return;
-    setEditSaving(true); setEditErr('');
+    setEditSaving(true);
+    setEditErr('');
     try {
       const res = await fetch('/api/fees', {
         method: 'PUT',
@@ -308,15 +469,21 @@ export default function StudentFeesClient({
         })
       });
       const data = await res.json();
-      if (!res.ok) { setEditErr(data.error ?? 'تبدیلی محفوظ نہ ہو سکی۔'); return; }
+      if (!res.ok) {
+        setEditErr(data.error ?? 'Failed to update fee.');
+        return;
+      }
       setEditTarget(null);
       setFees(prev => prev.map(f => f.id === editTarget.id
         ? { ...f, title: editForm.title, amount: Number(editForm.amount), discount: Number(editForm.discount), dueDate: new Date(editForm.dueDate).toISOString() }
         : f
       ));
       router.refresh();
-    } catch { setEditErr('نیٹ ورک کا مسئلہ ہے۔'); }
-    finally { setEditSaving(false); }
+    } catch {
+      setEditErr('Network error. Please try again.');
+    } finally {
+      setEditSaving(false);
+    }
   }
 
   async function handleDeleteFee() {
@@ -329,12 +496,18 @@ export default function StudentFeesClient({
         setFees(prev => prev.filter(f => f.id !== deleteTarget.id));
         router.refresh();
       }
-    } finally { setDeleting(false); }
+    } finally {
+      setDeleting(false);
+    }
   }
 
   async function handleAddPayment() {
-    if (!payTarget || !payForm.amount) { setPayErr('رقم درج کریں۔'); return; }
-    setPaySaving(true); setPayErr('');
+    if (!payTarget || !payForm.amount) {
+      setPayErr('Please enter the payment amount.');
+      return;
+    }
+    setPaySaving(true);
+    setPayErr('');
     try {
       const res = await fetch('/api/fees', {
         method: 'PUT',
@@ -343,24 +516,34 @@ export default function StudentFeesClient({
           feeId: payTarget.id,
           amountPaid: Number(payForm.amount),
           method: payForm.method,
-          transactionRef: payForm.ref || null
+          transactionRef: payForm.ref || null,
+          allocateToOldest: false
         })
       });
       const data = await res.json();
-      if (!res.ok) { setPayErr(data.error ?? 'فیس وصولی درج نہ ہو سکی۔'); return; }
+      if (!res.ok) {
+        setPayErr(data.error ?? 'Failed to record payment.');
+        return;
+      }
       setPayTarget(null);
       setPayForm({ amount: '', method: 'CASH', ref: '' });
       router.refresh();
-      setFees(prev => prev.map(f => {
-        if (f.id !== payTarget.id) return f;
-        const newPayments = [...f.payments, { id: data.id, amountPaid: Number(payForm.amount), method: payForm.method, paidAt: new Date().toISOString(), transactionRef: payForm.ref || null }];
-        const net = f.amount - f.discount;
-        const paid = newPayments.reduce((s, p) => s + p.amountPaid, 0);
-        const status = paid >= net ? 'PAID' : paid > 0 ? 'PARTIAL' : 'PENDING';
-        return { ...f, payments: newPayments, status };
-      }));
-    } catch { setPayErr('نیٹ ورک کا مسئلہ ہے۔'); }
-    finally { setPaySaving(false); }
+
+      // Refresh fees
+      const refreshed = await fetch(`/api/fees?studentId=${student.id}`).then(r => r.json()).catch(() => null);
+      if (Array.isArray(refreshed)) {
+        setFees(refreshed.map((f: any) => ({
+          ...f,
+          amount: Number(f.amount),
+          discount: Number(f.discount),
+          payments: (f.payments || []).map((p: any) => ({ ...p, amountPaid: Number(p.amountPaid) }))
+        })));
+      }
+    } catch {
+      setPayErr('Network error. Please try again.');
+    } finally {
+      setPaySaving(false);
+    }
   }
 
   async function handleDeletePayment(feeId: string, paymentId: string) {
@@ -385,13 +568,13 @@ export default function StudentFeesClient({
       `Class: ${classInfo}`,
       `Total Assigned: ${formatCurrency(totalAssigned)}`,
       `Total Paid: ${formatCurrency(totalPaid)}`,
-      `Total Due / Remaining: ${formatCurrency(totalRemaining)}`,
-      `Due Months Count: ${unpaidMonthsCount}`,
+      `Total Remaining / Due: ${formatCurrency(totalRemaining)}`,
+      `Unpaid Months Count: ${unpaidMonthsCount}`,
       ''
     ].join('\n');
     const rows = [
       ['Title', 'Due Date', 'Status', 'Net Amount (PKR)', 'Paid (PKR)', 'Remaining (PKR)'],
-      ...fees.map((f) => {
+      ...sortedFees.map((f) => {
         const net = f.amount - f.discount;
         const paid = f.payments.reduce((s, p) => s + p.amountPaid, 0);
         return [f.title, fmtDate(f.dueDate), f.status, net.toFixed(0), paid.toFixed(0), Math.max(net - paid, 0).toFixed(0)];
@@ -409,18 +592,19 @@ export default function StudentFeesClient({
 
   const handleShareSummary = () => {
     if (!waPhone) return;
-    const unpaidList = unpaidFees.map(f => `• ${f.title}: ${formatCurrency(f.remaining)} باقی`).join('\n');
+    const unpaidList = unpaidFees.map(f => `• ${f.title}: ${formatCurrency(f.remaining)} remaining`).join('\n');
     const msg = [
-      `محترم والدین! طالب علم ${student.user.fullName} (${student.admissionNo}) کی فیس کی سمری:`,
+      `Fee Statement for: ${student.user.fullName} (${student.admissionNo})`,
+      `Class: ${classInfo}`,
       '',
-      `📌 کل لاگو شدہ فیس: ${formatCurrency(totalAssigned)}`,
-      `📌 وصول شدہ فیس: ${formatCurrency(totalPaid)}`,
-      `📌 کل واجب الادا رقم: ${formatCurrency(totalRemaining)}`,
-      unpaidMonthsCount > 0 ? `📌 واجب الادا مہینے: ${unpaidMonthsCount} ماہ` : '📌 تمام واجبات ادا ہیں',
+      `📌 Total Assigned: ${formatCurrency(totalAssigned)}`,
+      `📌 Total Paid: ${formatCurrency(totalPaid)}`,
+      `📌 Outstanding Balance: ${formatCurrency(totalRemaining)}`,
+      unpaidMonthsCount > 0 ? `📌 Unpaid Months: ${unpaidMonthsCount} month(s)` : '📌 Status: All dues cleared',
       '',
-      unpaidFees.length > 0 ? `تفصیل واجبات:\n${unpaidList}\n` : '',
-      'برائے مہربانی بقایا فیس بر وقت جمع کروائیں۔ شکریہ!',
-      '— الحفظ اکیڈمی / ادارہ'
+      unpaidFees.length > 0 ? `Pending Breakdown:\n${unpaidList}\n` : '',
+      'Please submit the pending fee at your earliest convenience. Thank you!',
+      '— Administration'
     ].filter(Boolean).join('\n');
 
     window.open(`https://wa.me/${waPhone}?text=${encodeURIComponent(msg)}`, '_blank');
@@ -439,10 +623,10 @@ export default function StudentFeesClient({
             className="inline-flex items-center gap-1.5 text-xs sm:text-sm font-semibold text-[#004649] hover:text-[#1b5e62] transition"
           >
             <ChevronLeft className="h-4 w-4" />
-            <span>طالب علم پروفائل پر واپس جائیں (Back to Profile)</span>
+            <span>Back to Profile</span>
           </Link>
           <span className="text-xs text-[#64748b]">
-            Adm: <strong className="font-mono text-[#0f172a]">{student.admissionNo}</strong>
+            Admission No: <strong className="font-mono text-[#0f172a]">{student.admissionNo}</strong>
           </span>
         </div>
 
@@ -466,13 +650,31 @@ export default function StudentFeesClient({
                 )}
               </div>
               <p className="mt-0.5 text-xs sm:text-sm text-[#64748b] truncate">
-                {classInfo} • داخلہ نمبر: <span className="font-semibold text-[#0f172a]">{student.admissionNo}</span>
+                {classInfo} • Admission: <span className="font-semibold text-[#0f172a]">{student.admissionNo}</span>
+                {student.joinDate && (
+                  <span className="ml-2 pl-2 border-l border-[#cbd5e1] text-[#004649] font-medium">
+                    Joined: {fmtDate(student.joinDate)}
+                  </span>
+                )}
               </p>
             </div>
           </div>
         </div>
 
-        {/* ══ GRAND TOTAL DUE BANNER (PROMINENT SUMMARY) ══════════════════════ */}
+        {/* Sync message alert if any */}
+        {syncMessage && (
+          <div className="rounded-xl border border-emerald-300 bg-emerald-50 px-4 py-3 flex items-center justify-between text-xs text-emerald-800 animate-in fade-in duration-200">
+            <div className="flex items-center gap-2">
+              <CheckCircle2 className="h-4 w-4 text-emerald-600 shrink-0" />
+              <span className="font-semibold">{syncMessage}</span>
+            </div>
+            <button onClick={() => setSyncMessage(null)} className="text-emerald-700 hover:text-emerald-900">
+              <X className="h-3.5 w-3.5" />
+            </button>
+          </div>
+        )}
+
+        {/* ══ GRAND TOTAL DUE BANNER ══════════════════════════════════════════ */}
         <div className={`rounded-2xl border p-4 sm:p-6 shadow-sm transition-all ${
           totalRemaining > 0
             ? 'border-amber-300 bg-gradient-to-br from-amber-50/90 via-orange-50/40 to-white'
@@ -489,12 +691,12 @@ export default function StudentFeesClient({
                   {totalRemaining > 0 ? (
                     <>
                       <AlertCircle className="h-3.5 w-3.5 text-amber-700" />
-                      <span>{unpaidMonthsCount} ماہ کی فیس واجب الادا ہے ({unpaidMonthsCount} Months Due)</span>
+                      <span>{unpaidMonthsCount} Month{unpaidMonthsCount === 1 ? '' : 's'} Due</span>
                     </>
                   ) : (
                     <>
                       <CheckCircle2 className="h-3.5 w-3.5 text-emerald-700" />
-                      <span>تمام فیسیں ادا شدہ ہیں (No Dues)</span>
+                      <span>All Fees Paid (No Dues)</span>
                     </>
                   )}
                 </span>
@@ -502,7 +704,7 @@ export default function StudentFeesClient({
 
               <div>
                 <p className="text-[11px] font-bold uppercase tracking-wider text-[#64748b]">
-                  کل واجب الادا رقم (Total Outstanding Balance)
+                  Total Outstanding Balance
                 </p>
                 <p className={`text-2xl sm:text-4xl font-black tracking-tight mt-0.5 ${
                   totalRemaining > 0 ? 'text-[#b45309]' : 'text-[#15803d]'
@@ -513,7 +715,7 @@ export default function StudentFeesClient({
 
               {unpaidFees.length > 0 && (
                 <div className="pt-2">
-                  <p className="text-[11px] font-semibold text-[#64748b] mb-1.5">واجب الادا مہینوں کی تفصیل:</p>
+                  <p className="text-[11px] font-semibold text-[#64748b] mb-1.5">Outstanding Vouchers Breakdown:</p>
                   <div className="flex flex-wrap gap-1.5">
                     {unpaidFees.map(f => (
                       <span key={f.id} className="inline-flex items-center gap-1.5 rounded-lg bg-white border border-amber-200 px-2.5 py-1 text-xs font-medium text-amber-900 shadow-2xs">
@@ -527,7 +729,7 @@ export default function StudentFeesClient({
             </div>
 
             {/* Direct Fee Collection CTA */}
-            <div className="flex sm:flex-col gap-2 shrink-0">
+            <div className="flex flex-col sm:flex-col gap-2 shrink-0">
               <button
                 onClick={() => {
                   setStudentPayErr('');
@@ -535,18 +737,30 @@ export default function StudentFeesClient({
                   setShowStudentPay(true);
                 }}
                 disabled={totalRemaining <= 0}
-                className="flex-1 sm:flex-none inline-flex items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-[#004649] to-[#1b5e62] px-5 py-3 text-xs sm:text-sm font-bold text-white shadow-sm hover:brightness-110 active:scale-[0.98] transition disabled:opacity-50 disabled:cursor-not-allowed"
+                className="inline-flex items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-[#004649] to-[#1b5e62] px-5 py-3 text-xs sm:text-sm font-bold text-white shadow-sm hover:brightness-110 active:scale-[0.98] transition disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 <CreditCard className="h-4 w-4" />
-                <span>فیس وصول کریں (Collect Fee)</span>
+                <span>Collect Fee</span>
               </button>
-              <button
-                onClick={() => { setShowAdd(true); setAddErr(''); }}
-                className="inline-flex items-center justify-center gap-1.5 rounded-xl border border-[#cbd5e1] bg-white px-3.5 py-2 text-xs font-semibold text-[#334155] hover:bg-[#f8fafc] active:scale-[0.98] transition"
-              >
-                <Plus className="h-3.5 w-3.5" />
-                <span>نئی فیس شامل کریں (Add Fee)</span>
-              </button>
+
+              <div className="flex gap-2">
+                <button
+                  onClick={openAddModal}
+                  className="flex-1 inline-flex items-center justify-center gap-1.5 rounded-xl border border-[#cbd5e1] bg-white px-3 py-2 text-xs font-semibold text-[#334155] hover:bg-[#f8fafc] active:scale-[0.98] transition"
+                >
+                  <Plus className="h-3.5 w-3.5" />
+                  <span>Add Fee</span>
+                </button>
+                <button
+                  onClick={handleSyncFees}
+                  disabled={syncing}
+                  title="Auto-generate any missing monthly fee vouchers starting from student's join date up to today"
+                  className="inline-flex items-center justify-center gap-1.5 rounded-xl border border-teal-200 bg-teal-50/70 px-3 py-2 text-xs font-semibold text-teal-800 hover:bg-teal-100 active:scale-[0.98] transition disabled:opacity-60"
+                >
+                  <RefreshCw className={`h-3.5 w-3.5 ${syncing ? 'animate-spin' : ''}`} />
+                  <span className="hidden xs:inline">Sync Missing Months</span>
+                </button>
+              </div>
             </div>
           </div>
         </div>
@@ -554,54 +768,86 @@ export default function StudentFeesClient({
         {/* ══ 4 STAT SUMMARY CARDS ══════════════════════════════════════════ */}
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5 sm:gap-3">
           <div className="rounded-xl bg-white border border-[#e2e8f0] p-3.5 sm:p-4 shadow-2xs">
-            <p className="text-[10px] font-bold uppercase tracking-wider text-[#64748b]">Total Assigned (کل فیس)</p>
+            <p className="text-[10px] font-bold uppercase tracking-wider text-[#64748b]">Total Assigned</p>
             <p className="mt-1 text-lg sm:text-2xl font-bold text-[#0f172a]">{formatCurrency(totalAssigned)}</p>
           </div>
           <div className="rounded-xl bg-emerald-50/70 border border-emerald-100 p-3.5 sm:p-4 shadow-2xs">
-            <p className="text-[10px] font-bold uppercase tracking-wider text-[#15803d]">Paid (وصول شدہ)</p>
+            <p className="text-[10px] font-bold uppercase tracking-wider text-[#15803d]">Paid</p>
             <p className="mt-1 text-lg sm:text-2xl font-bold text-[#15803d]">{formatCurrency(totalPaid)}</p>
           </div>
           <div className="rounded-xl bg-amber-50/70 border border-amber-100 p-3.5 sm:p-4 shadow-2xs">
-            <p className="text-[10px] font-bold uppercase tracking-wider text-[#b45309]">Remaining (بقایا رقم)</p>
+            <p className="text-[10px] font-bold uppercase tracking-wider text-[#b45309]">Remaining</p>
             <p className="mt-1 text-lg sm:text-2xl font-bold text-[#b45309]">{formatCurrency(totalRemaining)}</p>
           </div>
           <div className="rounded-xl bg-red-50/70 border border-red-100 p-3.5 sm:p-4 shadow-2xs">
-            <p className="text-[10px] font-bold uppercase tracking-wider text-[#b91c1c]">Total Due (واجب الادا)</p>
+            <p className="text-[10px] font-bold uppercase tracking-wider text-[#b91c1c]">Total Due</p>
             <p className="mt-1 text-lg sm:text-2xl font-bold text-[#b91c1c]">{formatCurrency(totalOverdue)}</p>
           </div>
         </div>
 
         {/* ══ FEE LEDGER / MONTHLY VOUCHERS ══════════════════════════════════ */}
         <div className="rounded-2xl bg-white border border-[#e2e8f0] shadow-sm overflow-hidden">
-          <div className="border-b border-[#e2e8f0] px-4 sm:px-5 py-3.5 flex items-center justify-between bg-[#f8fafc]">
+          <div className="border-b border-[#e2e8f0] px-4 sm:px-5 py-3.5 flex flex-wrap items-center justify-between gap-2 bg-[#f8fafc]">
             <div>
-              <h2 className="font-bold text-[#0f172a] text-sm sm:text-base">Fee Ledger (فیس ریکارڈ و کھاتہ)</h2>
-              <p className="text-xs text-[#64748b]">ماہانہ فیس واؤچرز اور ادائیگی کی تفصیل</p>
+              <h2 className="font-bold text-[#0f172a] text-sm sm:text-base">Fee Ledger</h2>
+              <p className="text-xs text-[#64748b]">Monthly fee vouchers and payment records</p>
             </div>
-            <button
-              onClick={() => { setShowAdd(true); setAddErr(''); }}
-              className="flex items-center gap-1.5 rounded-xl bg-[#004649] px-3 py-2 text-xs font-semibold text-white hover:bg-[#1b5e62] transition shadow-2xs"
-            >
-              <Plus className="h-3.5 w-3.5" />
-              <span>Add Fee</span>
-            </button>
+            <div className="flex items-center gap-2">
+              <button
+                onClick={() => setSortOrder(prev => prev === 'asc' ? 'desc' : 'asc')}
+                className="flex items-center gap-1.5 rounded-xl border border-[#cbd5e1] bg-white px-2.5 py-1.5 text-xs font-semibold text-[#475569] hover:bg-[#f1f5f9] transition"
+                title="Toggle Chronological Sorting"
+              >
+                <ArrowUpDown className="h-3.5 w-3.5 text-[#64748b]" />
+                <span>{sortOrder === 'asc' ? 'Oldest First' : 'Newest First'}</span>
+              </button>
+              <button
+                onClick={handleSyncFees}
+                disabled={syncing}
+                className="flex items-center gap-1.5 rounded-xl border border-[#004649]/20 bg-teal-50 px-2.5 py-1.5 text-xs font-semibold text-[#004649] hover:bg-teal-100 transition"
+                title="Auto-sync all missing monthly fee vouchers from student's join date"
+              >
+                <RefreshCw className={`h-3.5 w-3.5 ${syncing ? 'animate-spin' : ''}`} />
+                <span className="hidden sm:inline">Sync Missing</span>
+              </button>
+              <button
+                onClick={openAddModal}
+                className="flex items-center gap-1.5 rounded-xl bg-[#004649] px-3 py-1.5 text-xs font-semibold text-white hover:bg-[#1b5e62] transition shadow-2xs"
+              >
+                <Plus className="h-3.5 w-3.5" />
+                <span>Add Fee</span>
+              </button>
+            </div>
           </div>
 
           {fees.length === 0 ? (
             <div className="flex flex-col items-center gap-3 py-12 text-center">
               <Receipt className="h-10 w-10 text-[#cbd5e1]" />
-              <p className="text-sm font-semibold text-[#64748b]">کوئی فیس واؤچر موجود نہیں ہے۔</p>
-              <button onClick={() => setShowAdd(true)} className="text-xs font-bold text-[#004649] hover:underline">
-                + پہلی فیس شامل کریں
-              </button>
+              <p className="text-sm font-semibold text-[#64748b]">No fee vouchers found for this student.</p>
+              <div className="flex gap-2">
+                <button
+                  onClick={handleSyncFees}
+                  disabled={syncing}
+                  className="rounded-xl bg-teal-50 border border-teal-200 px-3 py-1.5 text-xs font-bold text-teal-800 hover:bg-teal-100 transition"
+                >
+                  {syncing ? 'Syncing...' : 'Sync All Missing Months'}
+                </button>
+                <button
+                  onClick={openAddModal}
+                  className="rounded-xl bg-[#004649] px-3 py-1.5 text-xs font-bold text-white hover:bg-[#1b5e62] transition"
+                >
+                  + Add First Fee
+                </button>
+              </div>
             </div>
           ) : (
             <div className="divide-y divide-[#f1f5f9]">
-              {fees.map((f) => {
+              {sortedFees.map((f) => {
                 const net = f.amount - f.discount;
                 const paid = f.payments.reduce((s, p) => s + p.amountPaid, 0);
                 const remaining = Math.max(net - paid, 0);
                 const paidPct = net > 0 ? Math.min(Math.round((paid / net) * 100), 100) : 100;
+                const isPaid = remaining <= 0 || f.status === 'PAID';
                 const style = STATUS_STYLE[f.status.toUpperCase()] ?? { badge: 'bg-[#f1f5f9] text-[#64748b] border border-[#e2e8f0]', bar: 'bg-[#94a3b8]', label: f.status };
                 const isExpanded = expanded.has(f.id);
 
@@ -617,7 +863,7 @@ export default function StudentFeesClient({
                             {style.label}
                           </span>
                         </div>
-                        <p className="mt-0.5 text-xs text-[#64748b]">آخری تاریخ (Due Date): {fmtDate(f.dueDate)}</p>
+                        <p className="mt-0.5 text-xs text-[#64748b]">Due Date: {fmtDate(f.dueDate)}</p>
                       </div>
 
                       <div className="flex items-center gap-1.5 shrink-0">
@@ -641,9 +887,9 @@ export default function StudentFeesClient({
                     {/* Progress Bar */}
                     <div className="space-y-1">
                       <div className="flex justify-between text-[11px] text-[#64748b]">
-                        <span>ادائیگی کی شرح: {paidPct}%</span>
+                        <span>Payment Progress: {paidPct}%</span>
                         {remaining > 0 && paid > 0 && (
-                          <span className="text-[#3b82f6] font-semibold">جزوی ادا شدہ ({formatCurrency(paid)} ادا / {formatCurrency(remaining)} باقی)</span>
+                          <span className="text-[#3b82f6] font-semibold">Partially Paid ({formatCurrency(paid)} paid / {formatCurrency(remaining)} remaining)</span>
                         )}
                       </div>
                       <div className="h-2 w-full rounded-full bg-[#f1f5f9] overflow-hidden border border-[#e2e8f0]/80">
@@ -654,34 +900,41 @@ export default function StudentFeesClient({
                     {/* Amounts Breakdown Grid */}
                     <div className="grid grid-cols-3 gap-2 rounded-xl bg-[#f8fafc] border border-[#e2e8f0] p-2.5 text-xs">
                       <div>
-                        <p className="text-[#64748b] text-[10px] uppercase font-bold">کل رقم (Net)</p>
+                        <p className="text-[#64748b] text-[10px] uppercase font-bold">Net Amount</p>
                         <p className="font-bold text-[#0f172a] text-xs sm:text-sm mt-0.5">{formatCurrency(net)}</p>
                       </div>
                       <div>
-                        <p className="text-[#15803d] text-[10px] uppercase font-bold">وصول شدہ (Paid)</p>
+                        <p className="text-[#15803d] text-[10px] uppercase font-bold">Paid</p>
                         <p className="font-bold text-[#15803d] text-xs sm:text-sm mt-0.5">{formatCurrency(paid)}</p>
                       </div>
                       <div>
-                        <p className="text-[#b45309] text-[10px] uppercase font-bold">بقایا (Remaining)</p>
+                        <p className="text-[#b45309] text-[10px] uppercase font-bold">Remaining</p>
                         <p className={`font-bold text-xs sm:text-sm mt-0.5 ${remaining > 0 ? 'text-[#b45309]' : 'text-[#64748b]'}`}>
                           {formatCurrency(remaining)}
                         </p>
                       </div>
                     </div>
 
-                    {/* Action Row */}
+                    {/* Action Row - Record Payment ONLY shown if not fully paid */}
                     <div className="flex gap-2 pt-1">
-                      <button
-                        onClick={() => {
-                          setPayTarget(f);
-                          setPayErr('');
-                          setPayForm({ amount: String(remaining > 0 ? remaining : ''), method: 'CASH', ref: '' });
-                        }}
-                        className="h-9 flex flex-1 items-center justify-center gap-1.5 rounded-xl bg-[#004649] text-white text-xs font-semibold hover:bg-[#1b5e62] transition shadow-2xs"
-                      >
-                        <CreditCard className="h-3.5 w-3.5" />
-                        <span>Record Payment (ادائیگی درج کریں)</span>
-                      </button>
+                      {!isPaid && remaining > 0 ? (
+                        <button
+                          onClick={() => {
+                            setPayTarget(f);
+                            setPayErr('');
+                            setPayForm({ amount: String(remaining), method: 'CASH', ref: '' });
+                          }}
+                          className="h-9 flex flex-1 items-center justify-center gap-1.5 rounded-xl bg-[#004649] text-white text-xs font-semibold hover:bg-[#1b5e62] transition shadow-2xs"
+                        >
+                          <CreditCard className="h-3.5 w-3.5" />
+                          <span>Record Payment</span>
+                        </button>
+                      ) : (
+                        <div className="h-9 flex flex-1 items-center justify-center gap-1.5 rounded-xl bg-emerald-50 border border-emerald-200 text-emerald-700 text-xs font-bold">
+                          <CheckCircle2 className="h-4 w-4 text-emerald-600" />
+                          <span>Paid in Full</span>
+                        </div>
+                      )}
 
                       {f.payments.length > 0 && (
                         <button
@@ -699,7 +952,7 @@ export default function StudentFeesClient({
                           className="h-9 px-3 flex items-center gap-1.5 rounded-xl bg-[#f1f5f9] border border-[#cbd5e1] text-[#334155] text-xs font-semibold hover:bg-[#e2e8f0] transition"
                         >
                           <Receipt className="h-3.5 w-3.5 text-[#64748b]" />
-                          <span>{f.payments.length} اقساط</span>
+                          <span>{f.payments.length} {f.payments.length === 1 ? 'Payment' : 'Payments'}</span>
                           {isExpanded ? <ChevronUp className="h-3.5 w-3.5" /> : <ChevronDown className="h-3.5 w-3.5" />}
                         </button>
                       )}
@@ -709,7 +962,7 @@ export default function StudentFeesClient({
                     {isExpanded && f.payments.length > 0 && (
                       <div className="rounded-xl bg-[#f8fafc] border border-[#e2e8f0] divide-y divide-[#e2e8f0] mt-2">
                         <div className="px-3 py-2 text-[11px] font-bold text-[#64748b] bg-[#f1f5f9]/60">
-                          ادائیگیوں کی تاریخ (Payment History)
+                          Payment History
                         </div>
                         {f.payments.map((p) => (
                           <div key={p.id} className="flex items-center justify-between px-3 py-2.5 gap-2">
@@ -740,13 +993,13 @@ export default function StudentFeesClient({
 
         {/* ══ BOTTOM ACTION BAR ══════════════════════════════════════════════ */}
         <div className="flex flex-col sm:flex-row gap-2.5 print:hidden">
-          <PrintButton label="Print / PDF واؤچر" orientation="portrait" />
+          <PrintButton label="Print / PDF Voucher" orientation="portrait" />
           <button
             onClick={handleDownload}
             className="h-11 flex flex-1 items-center justify-center gap-2 rounded-xl bg-[#004649] text-white font-semibold text-xs sm:text-sm hover:bg-[#1b5e62] transition shadow-xs"
           >
             <Download className="h-4 w-4" />
-            <span>Download CSV (ایکسل فائل)</span>
+            <span>Download CSV</span>
           </button>
           <button
             onClick={handleShareSummary}
@@ -758,41 +1011,41 @@ export default function StudentFeesClient({
             }`}
           >
             <Share2 className="h-4 w-4" />
-            <span>WhatsApp فیس سمری</span>
+            <span>WhatsApp Statement</span>
           </button>
         </div>
       </div>
 
       {/* ── MODAL 1: STUDENT LEVEL FEE COLLECTION (BULK / OLDEST-FIRST) ─── */}
       {showStudentPay && (
-        <Modal title="طالب علم سے فیس وصول کریں (Collect Fee)" onClose={() => setShowStudentPay(false)}>
+        <Modal title="Collect Student Fee" onClose={() => setShowStudentPay(false)}>
           <div className="space-y-4">
             
             {/* Student Info Box */}
             <div className="rounded-xl bg-[#f8fafc] border border-[#e2e8f0] p-3.5 space-y-1 text-xs">
               <div className="flex justify-between">
-                <span className="text-[#64748b]">طالب علم:</span>
+                <span className="text-[#64748b]">Student:</span>
                 <strong className="text-[#0f172a]">{student.user.fullName} ({student.admissionNo})</strong>
               </div>
               <div className="flex justify-between">
-                <span className="text-[#64748b]">کلاس:</span>
+                <span className="text-[#64748b]">Class:</span>
                 <span className="font-semibold text-[#0f172a]">{classInfo}</span>
               </div>
               <div className="flex justify-between pt-1 border-t border-[#e2e8f0]">
-                <span className="text-[#b45309] font-bold">کل واجب الادا فیس:</span>
+                <span className="text-[#b45309] font-bold">Total Outstanding:</span>
                 <strong className="text-base text-[#b45309] font-black">{formatCurrency(totalRemaining)}</strong>
               </div>
               {unpaidMonthsCount > 0 && (
                 <div className="flex justify-between">
-                  <span className="text-[#64748b]">واجب الادا مہینے:</span>
-                  <span className="font-bold text-amber-800">{unpaidMonthsCount} ماہ</span>
+                  <span className="text-[#64748b]">Unpaid Months:</span>
+                  <span className="font-bold text-amber-800">{unpaidMonthsCount} Month(s)</span>
                 </div>
               )}
             </div>
 
             {/* Quick Amount Preset Buttons */}
             <div>
-              <p className="text-[11px] font-bold uppercase tracking-wider text-[#64748b] mb-1.5">فوری رقم کا انتخاب (Quick Presets)</p>
+              <p className="text-[11px] font-bold uppercase tracking-wider text-[#64748b] mb-1.5">Quick Presets</p>
               <div className="flex flex-wrap gap-1.5">
                 {totalRemaining > 0 && (
                   <button
@@ -800,7 +1053,7 @@ export default function StudentFeesClient({
                     onClick={() => setStudentPayAmount(String(totalRemaining))}
                     className="rounded-lg bg-amber-50 border border-amber-300 px-2.5 py-1 text-xs font-bold text-amber-900 hover:bg-amber-100 transition"
                   >
-                    مکمل بقایا: {formatCurrency(totalRemaining)}
+                    Full Balance: {formatCurrency(totalRemaining)}
                   </button>
                 )}
                 {unpaidFees.length > 0 && (
@@ -809,7 +1062,7 @@ export default function StudentFeesClient({
                     onClick={() => setStudentPayAmount(String(unpaidFees[0].remaining))}
                     className="rounded-lg bg-white border border-[#cbd5e1] px-2.5 py-1 text-xs font-semibold text-[#334155] hover:bg-[#f8fafc] transition"
                   >
-                    1 ماہ: {formatCurrency(unpaidFees[0].remaining)}
+                    1 Month: {formatCurrency(unpaidFees[0].remaining)}
                   </button>
                 )}
                 {unpaidFees.length > 1 && (
@@ -818,20 +1071,20 @@ export default function StudentFeesClient({
                     onClick={() => setStudentPayAmount(String(unpaidFees[0].remaining + unpaidFees[1].remaining))}
                     className="rounded-lg bg-white border border-[#cbd5e1] px-2.5 py-1 text-xs font-semibold text-[#334155] hover:bg-[#f8fafc] transition"
                   >
-                    2 ماہ: {formatCurrency(unpaidFees[0].remaining + unpaidFees[1].remaining)}
+                    2 Months: {formatCurrency(unpaidFees[0].remaining + unpaidFees[1].remaining)}
                   </button>
                 )}
               </div>
             </div>
 
             {/* Amount input */}
-            <Field label="وصول شدہ رقم (Amount Paid in PKR)">
+            <Field label="Amount Paid (PKR)">
               <input
                 className={INPUT}
                 type="number"
                 min="1"
                 step="1"
-                placeholder="مثلاً: 1500 یا 2000"
+                placeholder="e.g. 1500 or 3000"
                 value={studentPayAmount}
                 onChange={(e) => setStudentPayAmount(e.target.value)}
               />
@@ -842,28 +1095,28 @@ export default function StudentFeesClient({
               <div className="rounded-xl bg-blue-50/70 border border-blue-200 p-3 text-xs space-y-1.5">
                 <p className="font-bold text-blue-950 flex items-center gap-1">
                   <Check className="h-3.5 w-3.5 text-blue-700" />
-                  <span>رقم کی تقسیم (سب سے پرانی فیس پہلے):</span>
+                  <span>Payment Allocation (Oldest Vouchers First):</span>
                 </p>
                 <div className="divide-y divide-blue-200/60">
                   {previewAllocations.map(p => (
                     <div key={p.id} className="py-1 flex justify-between items-center text-blue-900">
                       <span className="truncate pr-2">{p.title}:</span>
                       <span className="font-semibold shrink-0">
-                        {formatCurrency(p.allocated)} {p.willBeFull ? '✓ مکمل ادا' : `(جزوی - ${formatCurrency(p.leftover)} باقی)`}
+                        {formatCurrency(p.allocated)} {p.willBeFull ? '✓ Paid in Full' : `(Partial - ${formatCurrency(p.leftover)} remaining)`}
                       </span>
                     </div>
                   ))}
                 </div>
                 {excessPayment > 0 && (
                   <p className="pt-1 border-t border-blue-200 text-emerald-800 font-bold">
-                    اضافی ایڈوانس رقم: {formatCurrency(excessPayment)}
+                    Excess / Advance Amount: {formatCurrency(excessPayment)}
                   </p>
                 )}
               </div>
             )}
 
             {/* Method selection */}
-            <Field label="ادائیگی کا ذریعہ (Payment Method)">
+            <Field label="Payment Method">
               <select
                 className={INPUT}
                 value={studentPayMethod}
@@ -871,17 +1124,17 @@ export default function StudentFeesClient({
               >
                 {METHODS.map((m) => (
                   <option key={m} value={m}>
-                    {m === 'CASH' ? 'نقد (CASH)' : m === 'BANK_TRANSFER' ? 'بینک ٹرانسفر (BANK TRANSFER)' : m === 'ONLINE' ? 'آن لائن (ONLINE)' : m}
+                    {m.replace('_', ' ')}
                   </option>
                 ))}
               </select>
             </Field>
 
             {/* Transaction Ref */}
-            <Field label="رسید نمبر / حوالہ (Transaction Reference / Notes)">
+            <Field label="Receipt # / Reference (Optional)">
               <input
                 className={INPUT}
-                placeholder="اختیاری: مثلاً رسید # 1045"
+                placeholder="e.g. Receipt # 1045 or Bank Ref"
                 value={studentPayRef}
                 onChange={(e) => setStudentPayRef(e.target.value)}
               />
@@ -895,64 +1148,124 @@ export default function StudentFeesClient({
               className="w-full flex items-center justify-center gap-2 h-11 rounded-xl bg-gradient-to-r from-[#004649] to-[#1b5e62] text-white font-bold text-sm hover:brightness-110 active:scale-[0.98] transition disabled:opacity-50"
             >
               {studentPaySaving ? <Loader2 className="h-4 w-4 animate-spin" /> : <Check className="h-4 w-4" />}
-              <span>ادائیگی وصول اور تصدیق کریں (Confirm Payment)</span>
+              <span>Confirm Payment</span>
             </button>
           </div>
         </Modal>
       )}
 
-      {/* ── MODAL 2: ADD SINGLE FEE ────────────────────────────────────────── */}
+      {/* ── MODAL 2: ADD SINGLE FEE (SMART TITLE DROPDOWN) ────────────────── */}
       {showAdd && (
-        <Modal title="نئی فیس شامل کریں (Add Fee)" onClose={() => setShowAdd(false)}>
-          <div className="space-y-3">
-            <Field label="عنوان (Title)">
-              <input
+        <Modal title="Add New Fee Voucher" onClose={() => setShowAdd(false)}>
+          <div className="space-y-3.5">
+            
+            {/* Fee Category Dropdown */}
+            <Field label="Fee Type">
+              <select
                 className={INPUT}
-                placeholder="مثلاً: Monthly Tuition Fee - November 2026"
-                value={addForm.title}
-                onChange={e => setAddForm(p => ({ ...p, title: e.target.value }))}
-              />
+                value={addCategory}
+                onChange={e => setAddCategory(e.target.value as any)}
+              >
+                {FEE_CATEGORIES.map(c => (
+                  <option key={c.id} value={c.id}>{c.label}</option>
+                ))}
+              </select>
             </Field>
+
+            {/* If Tuition Fee: Show Month and Year dropdowns */}
+            {addCategory === 'TUITION' && (
+              <div className="grid grid-cols-2 gap-3">
+                <Field label="Month">
+                  <select
+                    className={INPUT}
+                    value={selectedMonth}
+                    onChange={e => setSelectedMonth(Number(e.target.value))}
+                  >
+                    {MONTH_NAMES.map((m, idx) => (
+                      <option key={m} value={idx}>{m}</option>
+                    ))}
+                  </select>
+                </Field>
+                <Field label="Year">
+                  <select
+                    className={INPUT}
+                    value={selectedYear}
+                    onChange={e => setSelectedYear(Number(e.target.value))}
+                  >
+                    {[2024, 2025, 2026, 2027, 2028, 2029, 2030].map(y => (
+                      <option key={y} value={y}>{y}</option>
+                    ))}
+                  </select>
+                </Field>
+              </div>
+            )}
+
+            {/* If Custom: Show text input */}
+            {addCategory === 'CUSTOM' && (
+              <Field label="Custom Fee Title">
+                <input
+                  className={INPUT}
+                  placeholder="e.g. Sports Day Charges or Lab Fee"
+                  value={customTitle}
+                  onChange={e => setCustomTitle(e.target.value)}
+                />
+              </Field>
+            )}
+
+            {/* Generated Title Preview Banner */}
+            <div className="rounded-xl bg-teal-50/60 border border-teal-200 p-2.5 text-xs text-teal-950 flex items-center gap-2">
+              <Sparkles className="h-4 w-4 text-teal-700 shrink-0" />
+              <div className="truncate">
+                <span className="font-semibold text-teal-800">Title: </span>
+                <span className="font-bold text-[#004649]">{computedAddTitle || '(Enter title above)'}</span>
+              </div>
+            </div>
+
+            {/* Amount and Discount */}
             <div className="grid grid-cols-2 gap-3">
-              <Field label="فیس رقم (Amount PKR)">
+              <Field label="Amount (PKR)">
                 <input
                   className={INPUT}
                   type="number"
                   min="0"
                   step="1"
                   placeholder="1500"
-                  value={addForm.amount}
-                  onChange={e => setAddForm(p => ({ ...p, amount: e.target.value }))}
+                  value={addAmount}
+                  onChange={e => setAddAmount(e.target.value)}
                 />
               </Field>
-              <Field label="رعایت (Discount PKR)">
+              <Field label="Discount (PKR)">
                 <input
                   className={INPUT}
                   type="number"
                   min="0"
                   step="1"
                   placeholder="0"
-                  value={addForm.discount}
-                  onChange={e => setAddForm(p => ({ ...p, discount: e.target.value }))}
+                  value={addDiscount}
+                  onChange={e => setAddDiscount(e.target.value)}
                 />
               </Field>
             </div>
-            <Field label="آخری تاریخ (Due Date)">
+
+            {/* Due Date */}
+            <Field label="Due Date">
               <input
                 className={INPUT}
                 type="date"
-                value={addForm.dueDate}
-                onChange={e => setAddForm(p => ({ ...p, dueDate: e.target.value }))}
+                value={addDueDate}
+                onChange={e => setAddDueDate(e.target.value)}
               />
             </Field>
+
             {addErr && <p className="text-xs text-[#b91c1c] font-medium">{addErr}</p>}
+
             <button
               onClick={handleAddFee}
-              disabled={addSaving}
-              className="mt-1 flex w-full items-center justify-center gap-2 h-11 rounded-xl bg-[#004649] text-white font-semibold hover:bg-[#1b5e62] transition disabled:opacity-60"
+              disabled={addSaving || !computedAddTitle || !addAmount}
+              className="mt-2 flex w-full items-center justify-center gap-2 h-11 rounded-xl bg-[#004649] text-white font-semibold hover:bg-[#1b5e62] transition disabled:opacity-60"
             >
               {addSaving ? <Loader2 className="h-4 w-4 animate-spin" /> : <Plus className="h-4 w-4" />}
-              <span>Add Fee</span>
+              <span>Create Fee Voucher</span>
             </button>
           </div>
         </Modal>
@@ -960,9 +1273,9 @@ export default function StudentFeesClient({
 
       {/* ── MODAL 3: EDIT FEE ──────────────────────────────────────────────── */}
       {editTarget && (
-        <Modal title="فیس تبدیل کریں (Edit Fee)" onClose={() => setEditTarget(null)}>
+        <Modal title="Edit Fee Voucher" onClose={() => setEditTarget(null)}>
           <div className="space-y-3">
-            <Field label="عنوان (Title)">
+            <Field label="Title">
               <input
                 className={INPUT}
                 value={editForm.title}
@@ -970,7 +1283,7 @@ export default function StudentFeesClient({
               />
             </Field>
             <div className="grid grid-cols-2 gap-3">
-              <Field label="فیس رقم (Amount PKR)">
+              <Field label="Amount (PKR)">
                 <input
                   className={INPUT}
                   type="number"
@@ -980,7 +1293,7 @@ export default function StudentFeesClient({
                   onChange={e => setEditForm(p => ({ ...p, amount: e.target.value }))}
                 />
               </Field>
-              <Field label="رعایت (Discount PKR)">
+              <Field label="Discount (PKR)">
                 <input
                   className={INPUT}
                   type="number"
@@ -991,7 +1304,7 @@ export default function StudentFeesClient({
                 />
               </Field>
             </div>
-            <Field label="آخری تاریخ (Due Date)">
+            <Field label="Due Date">
               <input
                 className={INPUT}
                 type="date"
@@ -1014,17 +1327,17 @@ export default function StudentFeesClient({
 
       {/* ── MODAL 4: DELETE CONFIRM ────────────────────────────────────────── */}
       {deleteTarget && (
-        <Modal title="فیس ڈیلیٹ کریں؟ (Delete Fee)" onClose={() => setDeleteTarget(null)}>
+        <Modal title="Delete Fee Voucher?" onClose={() => setDeleteTarget(null)}>
           <div className="space-y-4">
             <p className="text-sm text-[#64748b]">
-              کیا آپ واقعی <strong className="text-[#0f172a]">{deleteTarget.title}</strong> ڈیلیٹ کرنا چاہتے ہیں؟ اس فیس کی تمام ادا شدہ رسیدیں بھی حذف ہو جائیں گی۔
+              Are you sure you want to delete <strong className="text-[#0f172a]">{deleteTarget.title}</strong>? Any payment records associated with this voucher will also be deleted.
             </p>
             <div className="flex gap-3">
               <button
                 onClick={() => setDeleteTarget(null)}
                 className="flex-1 h-11 border border-[#cbd5e1] rounded-xl text-sm font-semibold text-[#334155] hover:bg-[#f8fafc] transition"
               >
-                منسوخ کریں (Cancel)
+                Cancel
               </button>
               <button
                 onClick={handleDeleteFee}
@@ -1032,7 +1345,7 @@ export default function StudentFeesClient({
                 className="flex-1 h-11 flex items-center justify-center gap-2 rounded-xl bg-[#b91c1c] text-white text-sm font-semibold hover:bg-[#991b1b] transition disabled:opacity-60"
               >
                 {deleting ? <Loader2 className="h-4 w-4 animate-spin" /> : <Trash2 className="h-4 w-4" />}
-                <span>ڈیلیٹ کریں (Delete)</span>
+                <span>Delete</span>
               </button>
             </div>
           </div>
@@ -1041,9 +1354,9 @@ export default function StudentFeesClient({
 
       {/* ── MODAL 5: SINGLE FEE VOUCHER PAYMENT ────────────────────────────── */}
       {payTarget && (
-        <Modal title={`ادائیگی درج کریں — ${payTarget.title}`} onClose={() => setPayTarget(null)}>
+        <Modal title={`Record Payment — ${payTarget.title}`} onClose={() => setPayTarget(null)}>
           <div className="space-y-3">
-            <Field label="ادا شدہ رقم (Amount Paid PKR)">
+            <Field label="Amount Paid (PKR)">
               <input
                 className={INPUT}
                 type="number"
@@ -1054,7 +1367,7 @@ export default function StudentFeesClient({
                 onChange={e => setPayForm(p => ({ ...p, amount: e.target.value }))}
               />
             </Field>
-            <Field label="ادائیگی کا ذریعہ (Method)">
+            <Field label="Payment Method">
               <select
                 className={INPUT}
                 value={payForm.method}
@@ -1062,15 +1375,15 @@ export default function StudentFeesClient({
               >
                 {METHODS.map(m => (
                   <option key={m} value={m}>
-                    {m === 'CASH' ? 'نقد (CASH)' : m === 'BANK_TRANSFER' ? 'بینک ٹرانسفر (BANK TRANSFER)' : m === 'ONLINE' ? 'آن لائن (ONLINE)' : m}
+                    {m.replace('_', ' ')}
                   </option>
                 ))}
               </select>
             </Field>
-            <Field label="رسید نمبر / تفصیل (Transaction Ref - Optional)">
+            <Field label="Transaction Ref / Notes (Optional)">
               <input
                 className={INPUT}
-                placeholder="مثلاً: TXN-99881 یا Cash Rec # 12"
+                placeholder="e.g. Receipt # 1045 or Bank Ref"
                 value={payForm.ref}
                 onChange={e => setPayForm(p => ({ ...p, ref: e.target.value }))}
               />

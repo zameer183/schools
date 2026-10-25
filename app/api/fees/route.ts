@@ -2,6 +2,7 @@ import { PaymentStatus, TransactionType, UserRole } from '@prisma/client';
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { ensureApiRole } from '@/lib/rbac';
+import { runFeeAutomation } from '@/lib/fee-automation';
 
 function monthStart(date: Date) {
   return new Date(date.getFullYear(), date.getMonth(), 1);
@@ -82,7 +83,15 @@ export async function POST(request: Request) {
   const auth = await ensureApiRole([UserRole.ADMIN]);
   if (!auth.authorized) return auth.response;
 
-  const { studentId, title, dueDate, amount, discount } = await request.json();
+  const body = await request.json();
+
+  if (body.action === 'sync') {
+    const studentId = body.studentId || undefined;
+    const result = await runFeeAutomation(new Date(), studentId);
+    return NextResponse.json({ success: true, ...result });
+  }
+
+  const { studentId, title, dueDate, amount, discount, feeCategory, feeType } = body;
   const normalizedDueDate = monthStart(new Date(dueDate));
   const fee = await prisma.fee.create({
     data: {
@@ -91,6 +100,10 @@ export async function POST(request: Request) {
       dueDate: normalizedDueDate,
       amount,
       discount: discount ?? 0,
+      feeCategory: feeCategory || 'TUITION',
+      feeType: feeType || 'MONTHLY',
+      partialFeeSupported: true,
+      collectOnMonthStart: true,
       status: PaymentStatus.PENDING
     }
   });

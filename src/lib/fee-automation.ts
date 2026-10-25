@@ -147,21 +147,22 @@ export async function getFeeReminderCandidates(asOfDate = new Date()): Promise<F
   return Array.from(grouped.values());
 }
 
-export async function runFeeAutomation(targetDate = new Date()) {
-  const now = targetDate;
-  const monthStart = new Date(now.getFullYear(), now.getMonth(), 1, 0, 0, 0, 0);
-  const monthEnd = new Date(now.getFullYear(), now.getMonth() + 1, 0, 23, 59, 59, 999);
-  const monthLabel = now.toLocaleString('en-US', { month: 'long', year: 'numeric' });
+export async function runFeeAutomation(targetDate = new Date(), filterStudentId?: string) {
+  const currentMonthStart = new Date(targetDate.getFullYear(), targetDate.getMonth(), 1, 0, 0, 0, 0);
 
   const students = await prisma.student.findMany({
+    where: filterStudentId ? { id: filterStudentId } : undefined,
     include: {
       user: { select: { fullName: true, isActive: true } },
-      fees: { orderBy: { dueDate: 'desc' }, take: 1 }
+      fees: { orderBy: { dueDate: 'desc' } }
     }
   });
 
   let created = 0;
   let skipped = 0;
+
+  // Maximum lookback: up to 24 months before current month to prevent runaway loops
+  const minAllowedDate = new Date(targetDate.getFullYear() - 2, targetDate.getMonth(), 1, 0, 0, 0, 0);
 
   for (const student of students) {
     if (student.user && student.user.isActive === false) {
@@ -169,44 +170,85 @@ export async function runFeeAutomation(targetDate = new Date()) {
       continue;
     }
 
-    const existing = await prisma.fee.findFirst({
-      where: {
-        studentId: student.id,
-        dueDate: { gte: monthStart, lte: monthEnd }
-      }
-    });
-    if (existing) {
+    const rawStartDate = student.joinDate || student.createdAt || targetDate;
+    let studentStartMonth = new Date(rawStartDate.getFullYear(), rawStartDate.getMonth(), 1, 0, 0, 0, 0);
+
+    if (studentStartMonth < minAllowedDate) {
+      studentStartMonth = minAllowedDate;
+    }
+
+    if (studentStartMonth > currentMonthStart) {
       skipped++;
       continue;
     }
 
-    const latestFee = student.fees[0];
-    const amount = latestFee ? Number(latestFee.amount) : 2500;
-    const discount = latestFee ? Number(latestFee.discount) : 0;
-    const feeCategory = latestFee?.feeCategory || 'TUITION';
-    const feeType = latestFee?.feeType || 'MONTHLY';
+    const latestTuitionFee =
+      student.fees.find(
+        (f) =>
+          f.feeCategory === 'TUITION' ||
+          f.title.toLowerCase().includes('tuition') ||
+          f.title.toLowerCase().includes('monthly')
+      ) || student.fees[0];
 
-    await prisma.fee.create({
-      data: {
-        studentId: student.id,
-        title: `Monthly Tuition Fee - ${monthLabel}`,
-        dueDate: monthStart,
-        amount,
-        discount,
-        feeCategory,
-        feeType,
-        partialFeeSupported: true,
-        collectOnMonthStart: true,
-        status: PaymentStatus.PENDING
+    const amount = latestTuitionFee ? Number(latestTuitionFee.amount) : 2500;
+    const discount = latestTuitionFee ? Number(latestTuitionFee.discount) : 0;
+    const feeCategory = latestTuitionFee?.feeCategory || 'TUITION';
+    const feeType = latestTuitionFee?.feeType || 'MONTHLY';
+
+    // Iterate month-by-month from studentStartMonth up to currentMonthStart
+    let year = studentStartMonth.getUTCFullYear();
+    let month = studentStartMonth.getUTCMonth();
+    const endYear = currentMonthStart.getUTCFullYear();
+    const endMonth = currentMonthStart.getUTCMonth();
+
+    while (year < endYear || (year === endYear && month <= endMonth)) {
+      const monthStart = new Date(Date.UTC(year, month, 1, 0, 0, 0, 0));
+      const monthEnd = new Date(Date.UTC(year, month + 1, 0, 23, 59, 59, 999));
+      const monthLabel = monthStart.toLocaleString('en-US', { month: 'long', year: 'numeric', timeZone: 'UTC' });
+
+      const existing = await prisma.fee.findFirst({
+        where: {
+          studentId: student.id,
+          dueDate: { gte: monthStart, lte: monthEnd }
+        }
+      });
+
+      if (existing) {
+        skipped++;
+      } else {
+        const isPastMonth = monthStart < currentMonthStart;
+        const initialStatus = isPastMonth ? PaymentStatus.OVERDUE : PaymentStatus.PENDING;
+
+        await prisma.fee.create({
+          data: {
+            studentId: student.id,
+            title: `Monthly Tuition Fee - ${monthLabel}`,
+            dueDate: monthStart,
+            amount,
+            discount,
+            feeCategory,
+            feeType,
+            partialFeeSupported: true,
+            collectOnMonthStart: true,
+            status: initialStatus
+          }
+        });
+        created++;
       }
-    });
-    created++;
+
+      month++;
+      if (month > 11) {
+        month = 0;
+        year++;
+      }
+    }
   }
 
   // Auto-mark past unpaid fees (strictly before this month) from PENDING to OVERDUE
   const overdueResult = await prisma.fee.updateMany({
     where: {
-      dueDate: { lt: monthStart },
+      ...(filterStudentId ? { studentId: filterStudentId } : {}),
+      dueDate: { lt: currentMonthStart },
       status: PaymentStatus.PENDING
     },
     data: {
@@ -216,3 +258,4 @@ export async function runFeeAutomation(targetDate = new Date()) {
 
   return { overdueMarked: overdueResult.count, feesCreated: created, feesSkipped: skipped };
 }
+

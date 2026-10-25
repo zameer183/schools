@@ -13,6 +13,8 @@ type StudentView = {
   admissionNo: string;
   whatsApp: string | null;
   guardianPhone: string | null;
+  joinDate?: string | null;
+  createdAt?: string | null;
   user: { fullName: string; isActive: boolean };
   class: { name: string; section: string } | null;
 };
@@ -96,8 +98,10 @@ async function loadFeesViaRest(studentId: string): Promise<FeesPayload | null> {
     whatsApp: string | null;
     guardianPhone: string | null;
     classId: string | null;
+    joinDate: string | null;
+    createdAt: string | null;
   }>('Student', {
-    select: 'id,userId,admissionNo,whatsApp,guardianPhone,classId',
+    select: 'id,userId,admissionNo,whatsApp,guardianPhone,classId,joinDate,createdAt',
     id: `eq.${studentId}`,
     limit: '1'
   });
@@ -182,6 +186,8 @@ async function loadFeesViaRest(studentId: string): Promise<FeesPayload | null> {
       admissionNo: student.admissionNo,
       whatsApp: student.whatsApp,
       guardianPhone: student.guardianPhone,
+      joinDate: student.joinDate ?? null,
+      createdAt: student.createdAt ?? null,
       user: users[0] ?? { fullName: 'Unknown Student', isActive: false },
       class: classes[0] ?? null
     },
@@ -202,6 +208,8 @@ async function loadFeesViaPrisma(studentId: string): Promise<FeesPayload | null>
         admissionNo: true,
         whatsApp: true,
         guardianPhone: true,
+        joinDate: true,
+        createdAt: true,
         user: { select: { fullName: true, isActive: true } },
         class: { select: { name: true, section: true } }
       }
@@ -247,7 +255,16 @@ async function loadFeesViaPrisma(studentId: string): Promise<FeesPayload | null>
   const totalOverdue = totalRemaining;
 
   return {
-    student,
+    student: {
+      id: student.id,
+      admissionNo: student.admissionNo,
+      whatsApp: student.whatsApp,
+      guardianPhone: student.guardianPhone,
+      joinDate: student.joinDate ? student.joinDate.toISOString() : null,
+      createdAt: student.createdAt ? student.createdAt.toISOString() : null,
+      user: student.user,
+      class: student.class
+    },
     fees: serializedFees,
     totalAssigned,
     totalPaid,
