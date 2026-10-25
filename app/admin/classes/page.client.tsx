@@ -1,6 +1,7 @@
 'use client';
 
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import { useMemo, useState, useCallback, useEffect, useRef } from 'react';
 import {
   BookOpen, Users, GraduationCap, BarChart3,
@@ -146,30 +147,33 @@ function ActionMenu({
   }, []);
 
   return (
-    <div className="relative" ref={ref}>
+    <div className="relative" ref={ref} onClick={e => e.stopPropagation()}>
       <button
-        onClick={() => setOpen(p => !p)}
+        type="button"
+        onClick={(e) => { e.stopPropagation(); setOpen(p => !p); }}
         className="rounded-lg p-1.5 text-[#64748B] hover:bg-[#F1F5F9] hover:text-[#0F172A] transition-colors"
       >
         <MoreVertical size={16} />
       </button>
       {open && (
-        <div className="absolute right-0 top-8 z-20 w-44 overflow-hidden rounded-xl border border-[#E2E8F0] bg-white shadow-xl">
+        <div className="absolute right-0 top-8 z-20 w-44 overflow-hidden rounded-xl border border-[#E2E8F0] bg-white shadow-xl" onClick={e => e.stopPropagation()}>
           <Link
             href={`/admin/classes/${classId}`}
-            onClick={() => setOpen(false)}
+            onClick={(e) => { e.stopPropagation(); setOpen(false); }}
             className="flex items-center gap-2.5 px-3.5 py-2.5 text-xs font-medium text-[#0F766E] hover:bg-[#F0FDFA] transition-colors"
           >
             <Eye size={13} /> View Details
           </Link>
           <button
-            onClick={() => { onEdit(); setOpen(false); }}
+            type="button"
+            onClick={(e) => { e.stopPropagation(); onEdit(); setOpen(false); }}
             className="flex w-full items-center gap-2.5 px-3.5 py-2.5 text-xs font-medium text-[#334155] hover:bg-[#F8FAFC] transition-colors"
           >
             <Pencil size={13} /> Edit
           </button>
           <button
-            onClick={() => { onDelete(); setOpen(false); }}
+            type="button"
+            onClick={(e) => { e.stopPropagation(); onDelete(); setOpen(false); }}
             className="flex w-full items-center gap-2.5 px-3.5 py-2.5 text-xs font-medium text-[#B91C1C] hover:bg-[#FEF2F2] transition-colors"
           >
             <Trash2 size={13} /> Delete
@@ -325,29 +329,33 @@ function Drawer({
 function ClassCard({
   klass, onEdit, onDelete,
 }: { klass: ClassItem; onEdit: () => void; onDelete: () => void }) {
+  const router = useRouter();
   const teacher = klass.teacherLinks?.[0]?.teacher.user.fullName;
   const students = klass._count?.students ?? 0;
   const tColor = teacher ? teacherColor(teacher) : undefined;
 
   return (
-    <div className={`${CARD_CLS} flex flex-col gap-4 p-5 hover:shadow-md transition-shadow`}>
+    <div
+      onClick={() => router.push(`/admin/classes/${klass.id}`)}
+      className={`${CARD_CLS} group flex flex-col gap-4 p-5 hover:shadow-xl hover:border-teal-500 border-2 border-transparent transition-all cursor-pointer`}
+      title="Click to open class details"
+    >
       {/* Header */}
       <div className="flex items-start justify-between">
         <div className="flex min-w-0 items-center gap-3">
           <div
-            className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl text-white"
+            className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl text-white shadow-sm transition-transform group-hover:scale-105"
             style={{ backgroundColor: TEAL }}
           >
             <BookOpen size={18} />
           </div>
           <div className="min-w-0">
-            <Link
-              href={`/admin/classes/${klass.id}`}
-              className="block truncate font-bold text-[#0F172A] hover:text-[#0F766E] transition-colors leading-tight"
+            <span
+              className="block truncate font-bold text-[#0F172A] group-hover:text-[#0F766E] transition-colors leading-tight"
               dir="auto"
             >
               {klass.name}
-            </Link>
+            </span>
             <p className="mt-0.5 text-xs text-[#94A3B8]">
               Section {klass.section} · {klass.academicYear}
             </p>
@@ -452,6 +460,7 @@ export default function AdminClassesPageClient({
   initialClasses: ClassItem[];
   initialTeachers: TeacherOption[];
 }) {
+  const router = useRouter();
   const [classes, setClasses] = useState<ClassItem[]>(initialClasses);
   const [teachers] = useState<TeacherOption[]>(initialTeachers);
   const [view, setView] = useState<'grid' | 'table'>('grid');
@@ -707,16 +716,17 @@ export default function AdminClassesPageClient({
                 return (
                   <tr
                     key={klass.id}
-                    className={`transition-colors hover:bg-[#F0FDFA] ${idx < paged.length - 1 ? 'border-b border-[#F8FAFC]' : ''}`}
+                    onClick={() => router.push(`/admin/classes/${klass.id}`)}
+                    className={`transition-colors hover:bg-[#F0FDFA] cursor-pointer group ${idx < paged.length - 1 ? 'border-b border-[#F8FAFC]' : ''}`}
+                    title="Click to view class details"
                   >
                     <td className="px-4 py-4">
-                      <Link
-                        href={`/admin/classes/${klass.id}`}
-                        className="font-semibold text-[#0F172A] hover:text-[#0F766E] transition-colors"
+                      <span
+                        className="font-semibold text-[#0F172A] group-hover:text-[#0F766E] transition-colors"
                         dir="auto"
                       >
                         {klass.name} – {klass.section}
-                      </Link>
+                      </span>
                     </td>
                     <td className="px-4 py-4">
                       {teacher ? (
