@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useMemo, useRef, useState } from 'react';
+import React, { Fragment, useEffect, useMemo, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import {
   AlertCircle,
@@ -465,7 +465,7 @@ export function FeeBulkList({
                     const hasMultiMonths = fee.unpaidMonths && fee.unpaidMonths.length > 1;
 
                     return (
-                      <React.Fragment key={fee.id}>
+                      <Fragment key={fee.id}>
                         <tr className={isGroupSelected ? 'bg-[#f0f9f9]' : 'hover:bg-[#fafafa]'}>
                           <td className="px-3 py-3">
                             <label className="inline-flex items-start gap-2">
@@ -630,7 +630,7 @@ export function FeeBulkList({
                             </td>
                           </tr>
                         )}
-                      </React.Fragment>
+                      </Fragment>
                     );
                   })}
                 </tbody>
