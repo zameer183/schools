@@ -127,9 +127,6 @@ export function MobileLoginForm() {
           />
           <span>Save password &amp; Remember me</span>
         </label>
-        <a href="/forgot-password" className="text-xs font-medium text-[#1B4D4B]">
-          Forgot password?
-        </a>
       </div>
 
       {error ? <p className="text-xs text-[#B91C1C]">{error}</p> : null}

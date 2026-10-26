@@ -1,7 +1,6 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import Link from 'next/link';
 
 export interface LoginTheme {
   accent: string;
@@ -113,9 +112,6 @@ export default function LoginForm({ theme }: { theme: LoginTheme }) {
       <div>
         <div className="mb-2 flex items-center justify-between">
           <label htmlFor="password" className="block text-[11px] font-bold uppercase tracking-[0.14em] text-[#94a3b8]">Password</label>
-          <Link href="/forgot-password" style={{ color: theme.accent }} className="text-[13px] font-semibold transition-opacity hover:opacity-70">
-            Forgot password?
-          </Link>
         </div>
         <div className="relative">
           <span className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 transition-colors" style={{ color: focused === 'password' ? theme.accent : '#94a3b8' }}>

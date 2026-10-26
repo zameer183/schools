@@ -1,7 +1,6 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import Link from 'next/link';
 
 const STORAGE_KEY = 'manarah_saved_creds';
 
@@ -100,9 +99,6 @@ export default function LoginForm() {
           <label htmlFor="password" className="block text-[11px] font-bold uppercase tracking-widest text-[#94a3b8]">
             Password
           </label>
-          <Link href="/forgot-password" className="text-xs font-semibold text-[#C9952A] transition hover:text-[#a87820] hover:underline">
-            Forgot Password?
-          </Link>
         </div>
         <div className="relative">
           <span className="pointer-events-none absolute left-3.5 top-1/2 -translate-y-1/2 text-[#94a3b8]">
