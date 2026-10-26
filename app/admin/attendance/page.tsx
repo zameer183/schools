@@ -170,8 +170,8 @@ const getCachedAttendanceData = unstable_cache(
             }
           },
           orderBy: [{ admissionNo: 'asc' }],
-          take: pageSize,
-          skip
+          take: selectedClassId ? 150 : pageSize,
+          skip: selectedClassId ? 0 : skip
         }),
         tx.teacher.findMany({
           select: {

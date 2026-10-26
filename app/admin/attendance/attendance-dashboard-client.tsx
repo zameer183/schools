@@ -1,19 +1,25 @@
 'use client';
 
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useState, useRef, useTransition } from 'react';
 import { useRouter } from 'next/navigation';
-import { CalendarDays, X } from 'lucide-react';
+import {
+  CalendarDays, ChevronLeft, ChevronRight, Search, Check, X,
+  AlertCircle, Clock, Users, UserCheck, UserX, UserMinus, RotateCcw,
+  Sparkles, Loader2, Save, Filter, TrendingUp, BookOpen, GraduationCap,
+  Calendar, CheckCheck
+} from 'lucide-react';
 
-type TabKey = 'overview' | 'students' | 'teachers';
-type MarkStatus = 'PRESENT' | 'ABSENT' | 'LATE' | 'EXCUSED';
+export type TabKey = 'overview' | 'students' | 'teachers';
+export type MarkStatus = 'PRESENT' | 'ABSENT' | 'LATE' | 'EXCUSED';
+export type StatusFilter = 'ALL' | 'UNMARKED' | 'PRESENT' | 'ABSENT' | 'LATE' | 'EXCUSED';
 
-type ClassOption = {
+export type ClassOption = {
   id: string;
   name: string;
   section: string;
 };
 
-type StudentRow = {
+export type StudentRow = {
   id: string;
   fullName: string;
   admissionNo: string;
@@ -22,13 +28,13 @@ type StudentRow = {
   status: string | null;
 };
 
-type TeacherRow = {
+export type TeacherRow = {
   id: string;
   fullName: string;
   status: string | null;
 };
 
-type TeacherMonthlySummaryRow = {
+export type TeacherMonthlySummaryRow = {
   teacherId: string;
   present: number;
   absent: number;
@@ -36,13 +42,13 @@ type TeacherMonthlySummaryRow = {
   total: number;
 };
 
-type MonthDayStatus = {
+export type MonthDayStatus = {
   date: string;
   status: string;
   count: number;
 };
 
-type AttendanceDetailRow = {
+export type AttendanceDetailRow = {
   id: string;
   date: string;
   status: 'PRESENT' | 'ABSENT' | 'LATE' | 'EXCUSED';
@@ -51,36 +57,83 @@ type AttendanceDetailRow = {
   class: { name: string; section: string };
 };
 
-function statusTone(status: string | null) {
-  if (status === 'PRESENT') return 'bg-[#e8f5e9] text-[#046c4e] border-[#b7dfbc]';
-  if (status === 'ABSENT') return 'bg-[#fde8e8] text-[#b91c1c] border-[#fca5a5]';
-  if (status === 'LATE') return 'bg-[#fff3e0] text-[#9a5a00] border-[#f5d0a9]';
-  if (status === 'EXCUSED') return 'bg-[#e0ecff] text-[#1e3a8a] border-[#bfd3ff]';
-  return 'bg-[#edeeef] text-[#64748b] border-none';
+// ── Helpers ───────────────────────────────────────────────────────────────────
+
+function nameInitials(name: string) {
+  return name
+    .split(' ')
+    .filter(Boolean)
+    .slice(0, 2)
+    .map((p) => p[0]?.toUpperCase() ?? '')
+    .join('');
 }
 
-function heatTone(present: number, absent: number, late: number, excused: number) {
-  if (!present && !absent && !late && !excused) return 'bg-[#f1f5f9] text-[#94a3b8]';
-  if (absent > 0) return 'bg-[#fee2e2] text-[#b91c1c]';
-  if (late > 0) return 'bg-[#fef3c7] text-[#9a5a00]';
-  if (excused > 0) return 'bg-[#e0ecff] text-[#1e3a8a]';
-  return 'bg-[#dcfce7] text-[#166534]';
+function formatDateDisplay(dateStr: string) {
+  try {
+    const [y, m, d] = dateStr.split('-').map(Number);
+    const date = new Date(y, m - 1, d);
+    const today = new Date();
+    const isToday =
+      today.getFullYear() === y &&
+      today.getMonth() === m - 1 &&
+      today.getDate() === d;
+
+    const formatted = date.toLocaleDateString('en-US', {
+      weekday: 'short',
+      month: 'short',
+      day: 'numeric'
+    });
+    return isToday ? `Today (${formatted})` : formatted;
+  } catch {
+    return dateStr;
+  }
 }
 
-function modalTone(status: AttendanceDetailRow['status']) {
-  if (status === 'PRESENT') return 'bg-[#ecfdf3] text-[#166534]';
-  if (status === 'ABSENT') return 'bg-[#fef2f2] text-[#b91c1c]';
-  if (status === 'LATE') return 'bg-[#fffbeb] text-[#9a5a00]';
-  if (status === 'EXCUSED') return 'bg-[#eff6ff] text-[#1e3a8a]';
-  return 'bg-[#f1f5f9] text-[#64748b]';
+function getOffsetDate(dateStr: string, offsetDays: number): string {
+  try {
+    const [y, m, d] = dateStr.split('-').map(Number);
+    const date = new Date(y, m - 1, d + offsetDays);
+    const ny = date.getFullYear();
+    const nm = String(date.getMonth() + 1).padStart(2, '0');
+    const nd = String(date.getDate()).padStart(2, '0');
+    return `${ny}-${nm}-${nd}`;
+  } catch {
+    return dateStr;
+  }
 }
+
+function getTodayDateStr(): string {
+  const d = new Date();
+  const y = d.getFullYear();
+  const m = String(d.getMonth() + 1).padStart(2, '0');
+  const day = String(d.getDate()).padStart(2, '0');
+  return `${y}-${m}-${day}`;
+}
+
+function avatarTone(status: string | null) {
+  if (status === 'PRESENT') return 'bg-[#ECFDF3] text-[#15803D] border border-[#BBF7D0]';
+  if (status === 'ABSENT') return 'bg-[#FEF2F2] text-[#B91C1C] border border-[#FECACA]';
+  if (status === 'LATE') return 'bg-[#FFFBEB] text-[#B45309] border border-[#FDE68A]';
+  if (status === 'EXCUSED') return 'bg-[#EFF6FF] text-[#1E40AF] border border-[#BFDBFE]';
+  return 'bg-[#F1F5F9] text-[#64748B] border border-[#E2E8F0]';
+}
+
+function statusPillTone(status: string | null) {
+  if (status === 'PRESENT') return 'bg-[#ECFDF3] text-[#15803D] border border-[#86EFAC]';
+  if (status === 'ABSENT') return 'bg-[#FEF2F2] text-[#B91C1C] border border-[#FCA5A5]';
+  if (status === 'LATE') return 'bg-[#FFFBEB] text-[#B45309] border border-[#FCD34D]';
+  if (status === 'EXCUSED') return 'bg-[#EFF6FF] text-[#1E40AF] border border-[#93C5FD]';
+  return 'bg-[#F8FAFC] text-[#64748B] border border-[#E2E8F0]';
+}
+
+// ── Modal ─────────────────────────────────────────────────────────────────────
 
 function Modal({
   open,
   title,
   subtitle,
   onClose,
-  children,
+  children
 }: {
   open: boolean;
   title: string;
@@ -100,25 +153,34 @@ function Modal({
   if (!open) return null;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/40 p-0 sm:items-center sm:p-4" onClick={onClose}>
+    <div
+      className="fixed inset-0 z-50 flex items-end justify-center bg-black/50 p-0 backdrop-blur-sm sm:items-center sm:p-4"
+      onClick={onClose}
+    >
       <div
-        className="w-full max-h-[88vh] overflow-hidden rounded-t-3xl bg-white shadow-[0_24px_60px_rgba(15,23,42,0.2)] sm:max-w-3xl sm:rounded-3xl"
+        className="w-full max-h-[90vh] overflow-hidden rounded-t-3xl bg-white shadow-2xl sm:max-w-2xl sm:rounded-3xl"
         onClick={(event) => event.stopPropagation()}
       >
-        <div className="flex items-start justify-between gap-3 border-b border-[#e2e8f0] px-5 py-4 sm:px-6">
+        <div className="flex items-start justify-between gap-3 border-b border-[#E2E8F0] px-5 py-4 sm:px-6">
           <div>
-            <h3 className="text-lg font-bold text-[#0f172a] sm:text-xl">{title}</h3>
-            {subtitle ? <p className="mt-1 text-sm text-[#64748b]">{subtitle}</p> : null}
+            <h3 className="text-lg font-bold text-[#0F172A] sm:text-xl">{title}</h3>
+            {subtitle ? <p className="mt-0.5 text-xs text-[#64748B]">{subtitle}</p> : null}
           </div>
-          <button type="button" onClick={onClose} className="rounded-full p-2 text-[#64748b] hover:bg-[#f1f5f9]">
+          <button
+            type="button"
+            onClick={onClose}
+            className="rounded-xl p-2 text-[#64748B] hover:bg-[#F1F5F9] hover:text-[#0F172A] transition-colors"
+          >
             <X className="h-5 w-5" />
           </button>
         </div>
-        <div className="max-h-[calc(88vh-72px)] overflow-y-auto px-5 py-4 sm:px-6">{children}</div>
+        <div className="max-h-[calc(90vh-74px)] overflow-y-auto px-5 py-4 sm:px-6">{children}</div>
       </div>
     </div>
   );
 }
+
+// ── Main Component ────────────────────────────────────────────────────────────
 
 export default function AttendanceDashboardClient({
   initialTab,
@@ -129,8 +191,7 @@ export default function AttendanceDashboardClient({
   teachers,
   teacherMonthlySummary,
   overview,
-  monthStatusByDay,
-  page
+  monthStatusByDay
 }: {
   initialTab: 'overview' | 'students' | 'teachers';
   selectedDate: string;
@@ -144,23 +205,48 @@ export default function AttendanceDashboardClient({
   page?: number;
 }) {
   const router = useRouter();
+  const [isPending, startTransition] = useTransition();
   const [tab, setTab] = useState<TabKey>(initialTab);
-  const currentPage = page || 1;
+
+  // Attendance state maps
   const [studentStatusMap, setStudentStatusMap] = useState<Record<string, string | null>>(
     Object.fromEntries(students.map((item) => [item.id, item.status]))
   );
   const [teacherStatusMap, setTeacherStatusMap] = useState<Record<string, string | null>>(
     Object.fromEntries(teachers.map((item) => [item.id, item.status]))
   );
+
+  // Dirty tracking
   const [dirtyStudents, setDirtyStudents] = useState<Record<string, MarkStatus>>({});
   const [dirtyTeachers, setDirtyTeachers] = useState<Record<string, MarkStatus>>({});
   const [savingStudents, setSavingStudents] = useState(false);
   const [savingTeachers, setSavingTeachers] = useState(false);
-  const [flash, setFlash] = useState('');
+  const [flash, setFlash] = useState<{ message: string; type: 'success' | 'error' } | null>(null);
+
+  // Search & filter
+  const [studentSearch, setStudentSearch] = useState('');
+  const [studentStatusFilter, setStudentStatusFilter] = useState<StatusFilter>('ALL');
+  const [teacherSearch, setTeacherSearch] = useState('');
+  const [teacherStatusFilter, setTeacherStatusFilter] = useState<StatusFilter>('ALL');
+
+  // Day Inspector Modal
   const [selectedDay, setSelectedDay] = useState<string | null>(null);
   const [selectedDayLoading, setSelectedDayLoading] = useState(false);
   const [selectedDayError, setSelectedDayError] = useState('');
   const [selectedDayRows, setSelectedDayRows] = useState<AttendanceDetailRow[]>([]);
+  const [modalFilter, setModalFilter] = useState<'ALL' | 'PRESENT' | 'ABSENT' | 'LATE' | 'EXCUSED'>('ALL');
+
+  // Sync state if props change
+  useEffect(() => {
+    setStudentStatusMap(Object.fromEntries(students.map((item) => [item.id, item.status])));
+    setDirtyStudents({});
+  }, [students]);
+
+  useEffect(() => {
+    setTeacherStatusMap(Object.fromEntries(teachers.map((item) => [item.id, item.status])));
+    setDirtyTeachers({});
+  }, [teachers]);
+
   const teacherMonthlySummaryMap = useMemo(
     () => new Map(teacherMonthlySummary.map((item) => [item.teacherId, item])),
     [teacherMonthlySummary]
@@ -180,55 +266,70 @@ export default function AttendanceDashboardClient({
   }, [monthStatusByDay]);
 
   const studentsById = useMemo(() => new Map(students.map((item) => [item.id, item])), [students]);
-  const currentDate = new Date(`${selectedDate}T00:00:00`);
-  const daysInMonth = new Date(currentDate.getFullYear(), currentDate.getMonth() + 1, 0).getDate();
-  const selectedDayCounts = selectedDay ? monthMap.get(selectedDay) ?? { present: 0, absent: 0, late: 0 } : null;
-  const selectedDayDate = selectedDay ? new Date(`${selectedDay}T00:00:00`) : null;
 
-  const quickButtonClass = 'h-11 rounded-xl border px-3 text-sm font-semibold transition active:scale-[0.99]';
   const studentChangedCount = Object.keys(dirtyStudents).length;
   const teacherChangedCount = Object.keys(dirtyTeachers).length;
+  const todayDateStr = getTodayDateStr();
+  const isSelectedToday = selectedDate === todayDateStr;
 
-  function markStudentLocal(studentId: string, status: MarkStatus) {
-    setStudentStatusMap((prev) => ({ ...prev, [studentId]: status }));
-    setDirtyStudents((prev) => ({ ...prev, [studentId]: status }));
-    setFlash('');
+  // ── Navigation helpers ──
+  function navigateTo(date: string, classId: string, targetTab: TabKey = tab) {
+    if (studentChangedCount > 0 || teacherChangedCount > 0) {
+      const ok = window.confirm('You have unsaved attendance changes. Discard them and continue?');
+      if (!ok) return;
+    }
+    const params = new URLSearchParams();
+    if (date) params.set('date', date);
+    if (classId) params.set('classId', classId);
+    if (targetTab) params.set('tab', targetTab);
+
+    startTransition(() => {
+      router.push(`/admin/attendance?${params.toString()}`);
+    });
   }
 
-  function markTeacherLocal(teacherId: string, status: MarkStatus) {
-    setTeacherStatusMap((prev) => ({ ...prev, [teacherId]: status }));
-    setDirtyTeachers((prev) => ({ ...prev, [teacherId]: status }));
-    setFlash('');
+  function handleDateStep(offset: number) {
+    const nextDate = getOffsetDate(selectedDate, offset);
+    navigateTo(nextDate, selectedClassId);
+  }
+
+  function handleJumpToday() {
+    navigateTo(todayDateStr, selectedClassId);
+  }
+
+  function handleClassChange(e: React.ChangeEvent<HTMLSelectElement>) {
+    navigateTo(selectedDate, e.target.value);
+  }
+
+  // ── Student marking logic ──
+  function markStudent(studentId: string, status: MarkStatus) {
+    setStudentStatusMap((prev) => ({ ...prev, [studentId]: status }));
+    setDirtyStudents((prev) => ({ ...prev, [studentId]: status }));
+    setFlash(null);
   }
 
   function markAllStudents(status: MarkStatus) {
     const nextMap = { ...studentStatusMap };
     const nextDirty = { ...dirtyStudents };
-    for (const item of students) {
+    for (const item of filteredStudents) {
       nextMap[item.id] = status;
       nextDirty[item.id] = status;
     }
     setStudentStatusMap(nextMap);
     setDirtyStudents(nextDirty);
-    setFlash('');
+    setFlash(null);
   }
 
-  function markAllTeachers(status: MarkStatus) {
-    const nextMap = { ...teacherStatusMap };
-    const nextDirty = { ...dirtyTeachers };
-    for (const item of teachers) {
-      nextMap[item.id] = status;
-      nextDirty[item.id] = status;
-    }
-    setTeacherStatusMap(nextMap);
-    setDirtyTeachers(nextDirty);
-    setFlash('');
+  function discardStudentChanges() {
+    setStudentStatusMap(Object.fromEntries(students.map((item) => [item.id, item.status])));
+    setDirtyStudents({});
+    setFlash(null);
   }
 
   async function saveStudents() {
     if (!studentChangedCount) return;
     setSavingStudents(true);
-    setFlash('');
+    setFlash(null);
     try {
       const grouped = new Map<string, { studentId: string; status: MarkStatus }[]>();
       for (const [studentId, status] of Object.entries(dirtyStudents)) {
@@ -256,19 +357,44 @@ export default function AttendanceDashboardClient({
       }
 
       setDirtyStudents({});
-      setFlash('Student attendance saved.');
+      setFlash({ message: `Successfully saved attendance for ${studentChangedCount} student(s).`, type: 'success' });
       router.refresh();
     } catch (error) {
-      setFlash(error instanceof Error ? error.message : 'Failed to save student attendance.');
+      setFlash({ message: error instanceof Error ? error.message : 'Failed to save student attendance.', type: 'error' });
     } finally {
       setSavingStudents(false);
     }
   }
 
+  // ── Teacher marking logic ──
+  function markTeacher(teacherId: string, status: MarkStatus) {
+    setTeacherStatusMap((prev) => ({ ...prev, [teacherId]: status }));
+    setDirtyTeachers((prev) => ({ ...prev, [teacherId]: status }));
+    setFlash(null);
+  }
+
+  function markAllTeachers(status: MarkStatus) {
+    const nextMap = { ...teacherStatusMap };
+    const nextDirty = { ...dirtyTeachers };
+    for (const item of filteredTeachers) {
+      nextMap[item.id] = status;
+      nextDirty[item.id] = status;
+    }
+    setTeacherStatusMap(nextMap);
+    setDirtyTeachers(nextDirty);
+    setFlash(null);
+  }
+
+  function discardTeacherChanges() {
+    setTeacherStatusMap(Object.fromEntries(teachers.map((item) => [item.id, item.status])));
+    setDirtyTeachers({});
+    setFlash(null);
+  }
+
   async function saveTeachers() {
     if (!teacherChangedCount) return;
     setSavingTeachers(true);
-    setFlash('');
+    setFlash(null);
     try {
       const tasks = Object.entries(dirtyTeachers).map(async ([teacherId, status]) => {
         const res = await fetch('/api/staff-attendance', {
@@ -284,15 +410,89 @@ export default function AttendanceDashboardClient({
 
       await Promise.all(tasks);
       setDirtyTeachers({});
-      setFlash('Teacher attendance saved.');
+      setFlash({ message: `Successfully saved attendance for ${teacherChangedCount} staff member(s).`, type: 'success' });
       router.refresh();
     } catch (error) {
-      setFlash(error instanceof Error ? error.message : 'Failed to save teacher attendance.');
+      setFlash({ message: error instanceof Error ? error.message : 'Failed to save teacher attendance.', type: 'error' });
     } finally {
       setSavingTeachers(false);
     }
   }
 
+  // ── Dynamic live tally ──
+  const liveStudentStats = useMemo(() => {
+    let present = 0;
+    let absent = 0;
+    let late = 0;
+    let excused = 0;
+    let unmarked = 0;
+
+    for (const student of students) {
+      const s = studentStatusMap[student.id];
+      if (s === 'PRESENT') present++;
+      else if (s === 'ABSENT') absent++;
+      else if (s === 'LATE') late++;
+      else if (s === 'EXCUSED') excused++;
+      else unmarked++;
+    }
+
+    const markedTotal = present + absent + late + excused;
+    const rate = markedTotal > 0 ? Math.round((present / markedTotal) * 100) : 0;
+    return { total: students.length, present, absent, late, excused, unmarked, markedTotal, rate };
+  }, [students, studentStatusMap]);
+
+  const liveTeacherStats = useMemo(() => {
+    let present = 0;
+    let absent = 0;
+    let late = 0;
+    let excused = 0;
+    let unmarked = 0;
+
+    for (const teacher of teachers) {
+      const s = teacherStatusMap[teacher.id];
+      if (s === 'PRESENT') present++;
+      else if (s === 'ABSENT') absent++;
+      else if (s === 'LATE') late++;
+      else if (s === 'EXCUSED') excused++;
+      else unmarked++;
+    }
+
+    const markedTotal = present + absent + late + excused;
+    const rate = markedTotal > 0 ? Math.round((present / markedTotal) * 100) : 0;
+    return { total: teachers.length, present, absent, late, excused, unmarked, markedTotal, rate };
+  }, [teachers, teacherStatusMap]);
+
+  // ── Filtered Students List ──
+  const filteredStudents = useMemo(() => {
+    const q = studentSearch.trim().toLowerCase();
+    return students.filter((s) => {
+      const current = studentStatusMap[s.id] ?? null;
+      if (studentStatusFilter === 'UNMARKED' && current !== null) return false;
+      if (studentStatusFilter !== 'ALL' && studentStatusFilter !== 'UNMARKED' && current !== studentStatusFilter) return false;
+
+      if (!q) return true;
+      return (
+        s.fullName.toLowerCase().includes(q) ||
+        s.admissionNo.toLowerCase().includes(q) ||
+        s.classLabel.toLowerCase().includes(q)
+      );
+    });
+  }, [students, studentStatusMap, studentSearch, studentStatusFilter]);
+
+  // ── Filtered Teachers List ──
+  const filteredTeachers = useMemo(() => {
+    const q = teacherSearch.trim().toLowerCase();
+    return teachers.filter((t) => {
+      const current = teacherStatusMap[t.id] ?? null;
+      if (teacherStatusFilter === 'UNMARKED' && current !== null) return false;
+      if (teacherStatusFilter !== 'ALL' && teacherStatusFilter !== 'UNMARKED' && current !== teacherStatusFilter) return false;
+
+      if (!q) return true;
+      return t.fullName.toLowerCase().includes(q);
+    });
+  }, [teachers, teacherStatusMap, teacherSearch, teacherStatusFilter]);
+
+  // ── Day Inspector Modal Data Fetching ──
   useEffect(() => {
     if (!selectedDay) {
       setSelectedDayRows([]);
@@ -305,13 +505,11 @@ export default function AttendanceDashboardClient({
     let cancelled = false;
 
     async function loadDayDetails() {
-      const day = selectedDay;
-      if (!day) return;
+      if (!selectedDay) return;
       setSelectedDayLoading(true);
       setSelectedDayError('');
       try {
-        const params = new URLSearchParams({ limit: '500' });
-        params.set('date', day);
+        const params = new URLSearchParams({ limit: '500', date: selectedDay });
         if (selectedClassId) params.set('classId', selectedClassId);
         const res = await fetch(`/api/attendance?${params.toString()}`, { signal: controller.signal, cache: 'no-store' });
         if (!res.ok) {
@@ -331,406 +529,902 @@ export default function AttendanceDashboardClient({
     }
 
     void loadDayDetails();
-
     return () => {
       cancelled = true;
       controller.abort();
     };
   }, [selectedDay, selectedClassId]);
 
-  const selectedDayCountsTotal = selectedDayCounts ? selectedDayCounts.present + selectedDayCounts.absent + selectedDayCounts.late : 0;
-  const selectedDayAttendanceRate = selectedDayCountsTotal ? Math.round(((selectedDayCounts?.present ?? 0) / selectedDayCountsTotal) * 100) : 0;
-  const selectedDayLabel = selectedDayDate
-    ? selectedDayDate.toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric', year: 'numeric' })
-    : '';
+  // Calendar Heatmap generation
+  const [currentYear, currentMonth] = selectedDate.split('-').map(Number);
+  const daysInMonth = new Date(currentYear, currentMonth, 0).getDate();
+  const firstDayWeekday = new Date(currentYear, currentMonth - 1, 1).getDay(); // 0 = Sun
+  const monthName = new Date(currentYear, currentMonth - 1, 1).toLocaleDateString('en-US', {
+    month: 'long',
+    year: 'numeric'
+  });
+
+  const selectedDayStats = selectedDay ? monthMap.get(selectedDay) ?? { present: 0, absent: 0, late: 0, excused: 0 } : null;
+  const selectedDayTotal = selectedDayStats ? selectedDayStats.present + selectedDayStats.absent + selectedDayStats.late + selectedDayStats.excused : 0;
+  const selectedDayRate = selectedDayTotal > 0 ? Math.round(((selectedDayStats?.present ?? 0) / selectedDayTotal) * 100) : 0;
+
+  const modalFilteredRows = useMemo(() => {
+    if (modalFilter === 'ALL') return selectedDayRows;
+    return selectedDayRows.filter((r) => r.status === modalFilter);
+  }, [selectedDayRows, modalFilter]);
 
   return (
-    <>
-      <div className="space-y-4 pb-20">
-        <div className="rounded-2xl bg-white p-4 shadow-[0_12px_40px_rgba(0,70,73,0.06)] sm:p-6">
-          <div className="flex flex-wrap items-start justify-between gap-3">
-            <div>
-              <h2 className="text-2xl font-bold text-[#0f172a] sm:text-3xl">Attendance</h2>
-              <p className="mt-1 text-sm text-[#64748b]">Quick tap, then save once. Much faster on mobile.</p>
-            </div>
+    <div className="space-y-4 pb-24">
+      {/* ── Top Controls Card ── */}
+      <div className="rounded-2xl border border-[#E2E8F0] bg-white p-4 shadow-sm sm:p-5">
+        <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
+          
+          {/* Tab Switcher Pills */}
+          <div className="flex items-center gap-1.5 overflow-x-auto rounded-xl bg-[#F1F5F9] p-1.5 scrollbar-none">
+            <button
+              type="button"
+              onClick={() => setTab('overview')}
+              className={`flex items-center gap-2 rounded-lg px-3.5 py-2 text-xs font-bold transition-all whitespace-nowrap ${
+                tab === 'overview'
+                  ? 'bg-gradient-to-r from-[#1F5A5C] to-[#2D7578] text-white shadow-sm'
+                  : 'text-[#64748B] hover:text-[#0F172A] hover:bg-white/60'
+              }`}
+            >
+              <TrendingUp className="h-4 w-4" />
+              <span>Overview</span>
+            </button>
+
+            <button
+              type="button"
+              onClick={() => setTab('students')}
+              className={`flex items-center gap-2 rounded-lg px-3.5 py-2 text-xs font-bold transition-all whitespace-nowrap ${
+                tab === 'students'
+                  ? 'bg-gradient-to-r from-[#1F5A5C] to-[#2D7578] text-white shadow-sm'
+                  : 'text-[#64748B] hover:text-[#0F172A] hover:bg-white/60'
+              }`}
+            >
+              <Users className="h-4 w-4" />
+              <span>Students</span>
+              <span className={`rounded-full px-2 py-0.5 text-[10px] ${tab === 'students' ? 'bg-white/20 text-white' : 'bg-[#E2E8F0] text-[#475569]'}`}>
+                {students.length}
+              </span>
+            </button>
+
+            <button
+              type="button"
+              onClick={() => setTab('teachers')}
+              className={`flex items-center gap-2 rounded-lg px-3.5 py-2 text-xs font-bold transition-all whitespace-nowrap ${
+                tab === 'teachers'
+                  ? 'bg-gradient-to-r from-[#1F5A5C] to-[#2D7578] text-white shadow-sm'
+                  : 'text-[#64748B] hover:text-[#0F172A] hover:bg-white/60'
+              }`}
+            >
+              <GraduationCap className="h-4 w-4" />
+              <span>Teachers</span>
+              <span className={`rounded-full px-2 py-0.5 text-[10px] ${tab === 'teachers' ? 'bg-white/20 text-white' : 'bg-[#E2E8F0] text-[#475569]'}`}>
+                {teachers.length}
+              </span>
+            </button>
           </div>
 
-          <form className="mt-4 grid gap-3 sm:grid-cols-3">
-            <input type="hidden" name="tab" value={tab} />
-            <label className="rounded-xl border border-none bg-[#edeeef] px-3 py-2">
-              <span className="mb-1 block text-[10px] font-bold uppercase tracking-[0.14em] text-[#64748b]">Date</span>
-              <input type="date" name="date" defaultValue={selectedDate} className="w-full bg-transparent text-sm outline-none" />
-            </label>
-            <label className="rounded-xl border border-none bg-[#edeeef] px-3 py-2">
-              <span className="mb-1 block text-[10px] font-bold uppercase tracking-[0.14em] text-[#64748b]">Class</span>
-              <select name="classId" defaultValue={selectedClassId} className="w-full bg-transparent text-sm outline-none">
-                <option value="">All Classes</option>
-                {classes.map((item) => (
-                  <option key={item.id} value={item.id}>{item.name} - {item.section}</option>
+          {/* Date & Class Controls */}
+          <div className="flex flex-wrap items-center gap-2.5">
+            {/* Quick Date Stepper */}
+            <div className="flex items-center rounded-xl border border-[#E2E8F0] bg-white shadow-sm">
+              <button
+                type="button"
+                onClick={() => handleDateStep(-1)}
+                className="flex h-10 w-9 items-center justify-center rounded-l-xl text-[#64748B] hover:bg-[#F8FAFC] hover:text-[#0F172A] active:bg-[#F1F5F9] transition-colors"
+                title="Previous Day"
+              >
+                <ChevronLeft className="h-4 w-4" />
+              </button>
+
+              <label className="relative flex h-10 cursor-pointer items-center gap-2 px-3 hover:bg-[#F8FAFC] transition-colors">
+                <CalendarDays className="h-4 w-4 text-[#1F5A5C] shrink-0" />
+                <span className="text-xs font-bold text-[#0F172A] whitespace-nowrap">
+                  {formatDateDisplay(selectedDate)}
+                </span>
+                <input
+                  type="date"
+                  value={selectedDate}
+                  onChange={(e) => e.target.value && navigateTo(e.target.value, selectedClassId)}
+                  className="absolute inset-0 opacity-0 cursor-pointer w-full"
+                />
+              </label>
+
+              {!isSelectedToday && (
+                <button
+                  type="button"
+                  onClick={handleJumpToday}
+                  className="border-l border-[#E2E8F0] px-2.5 h-10 text-[11px] font-bold text-[#1F5A5C] hover:bg-[#F0FDFA] transition-colors"
+                  title="Jump to today"
+                >
+                  Today
+                </button>
+              )}
+
+              <button
+                type="button"
+                onClick={() => handleDateStep(1)}
+                className="flex h-10 w-9 items-center justify-center rounded-r-xl border-l border-[#E2E8F0] text-[#64748B] hover:bg-[#F8FAFC] hover:text-[#0F172A] active:bg-[#F1F5F9] transition-colors"
+                title="Next Day"
+              >
+                <ChevronRight className="h-4 w-4" />
+              </button>
+            </div>
+
+            {/* Class Selector Dropdown */}
+            <div className="relative min-w-[170px] flex-1 sm:flex-initial">
+              <select
+                value={selectedClassId}
+                onChange={handleClassChange}
+                className="h-10 w-full appearance-none rounded-xl border border-[#E2E8F0] bg-white pl-3.5 pr-8 text-xs font-bold text-[#0F172A] shadow-sm outline-none focus:ring-2 focus:ring-[#1F5A5C]/20 transition-all cursor-pointer"
+              >
+                <option value="">All Classes ({classes.length})</option>
+                {classes.map((c) => (
+                  <option key={c.id} value={c.id}>
+                    {c.name} - {c.section}
+                  </option>
                 ))}
               </select>
-            </label>
-            <button className="h-[58px] rounded-xl bg-gradient-to-br from-[#1F5A5C] to-[#1b5e62] px-4 text-sm font-semibold text-white shadow-[0_8px_20px_rgba(0,70,73,0.12)] active:scale-[0.98] transition-all">
-              Apply Filter
-            </button>
-          </form>
-
-          <div className="sticky top-2 z-20 mt-4 flex gap-2 overflow-x-auto rounded-xl bg-white/95 p-1 backdrop-blur sm:static sm:bg-transparent sm:p-0">
-            {[
-              { key: 'overview' as const, label: 'Overview' },
-              { key: 'students' as const, label: 'Students' },
-              { key: 'teachers' as const, label: 'Teachers' }
-            ].map((item) => (
-              <button
-                key={item.key}
-                type="button"
-                onClick={() => setTab(item.key)}
-                className={`flex h-11 items-center justify-center rounded-xl px-4 text-sm font-semibold transition ${
-                  tab === item.key
-                    ? 'bg-gradient-to-r from-[#1F5A5C] to-[#1b5e62] text-white shadow-sm'
-                    : 'bg-[#f1f5f9] text-[#334155] hover:bg-[#e2e8f0]'
-                }`}
-              >
-                {item.label}
-              </button>
-            ))}
-          </div>
-        </div>
-
-        {flash ? (
-          <div className="rounded-xl border border-[#dbeafe] bg-[#eff6ff] px-4 py-2 text-sm text-[#1d4ed8]">{flash}</div>
-        ) : null}
-
-        {tab === 'overview' ? (
-          <div className="space-y-4">
-            <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
-              <div className="rounded-2xl border border-[#dcfce7] bg-[#ecfdf3] p-4">
-                <p className="text-xs font-semibold text-[#15803d]">Present</p>
-                <p className="mt-2 text-3xl font-bold text-[#0f172a]">{overview.present}</p>
-              </div>
-              <div className="rounded-2xl border border-[#fee2e2] bg-[#fef2f2] p-4">
-                <p className="text-xs font-semibold text-[#b91c1c]">Absent</p>
-                <p className="mt-2 text-3xl font-bold text-[#0f172a]">{overview.absent}</p>
-              </div>
-              <div className="rounded-2xl border border-[#fef3c7] bg-[#fffbeb] p-4">
-                <p className="text-xs font-semibold text-[#9a5a00]">Late</p>
-                <p className="mt-2 text-3xl font-bold text-[#0f172a]">{overview.late}</p>
-              </div>
-              <div className="rounded-2xl border border-[#dbeafe] bg-[#eff6ff] p-4">
-                <p className="text-xs font-semibold text-[#1d4ed8]">Percentage</p>
-                <p className="mt-2 text-3xl font-bold text-[#0f172a]">{overview.percentage}%</p>
+              <div className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-[#94A3B8]">
+                ▼
               </div>
             </div>
+          </div>
+        </div>
+      </div>
 
-            <div className="sm:hidden rounded-2xl bg-white p-4 shadow-[0_12px_40px_rgba(0,70,73,0.06)]">
-              <div className="mb-3 flex items-center gap-2 text-[#0f172a]">
-                <CalendarDays className="h-5 w-5" />
-                <h3 className="font-bold">Attendance Summary</h3>
+      {/* ── Status Toast ── */}
+      {flash && (
+        <div
+          className={`flex items-center justify-between gap-3 rounded-xl border px-4 py-3 text-sm font-semibold transition-all ${
+            flash.type === 'success'
+              ? 'border-[#BBF7D0] bg-[#ECFDF3] text-[#15803D]'
+              : 'border-[#FECACA] bg-[#FEF2F2] text-[#B91C1C]'
+          }`}
+        >
+          <div className="flex items-center gap-2">
+            {flash.type === 'success' ? (
+              <Check className="h-4 w-4 shrink-0" />
+            ) : (
+              <AlertCircle className="h-4 w-4 shrink-0" />
+            )}
+            <span>{flash.message}</span>
+          </div>
+          <button
+            type="button"
+            onClick={() => setFlash(null)}
+            className="rounded-lg p-1 opacity-70 hover:opacity-100"
+          >
+            <X className="h-3.5 w-3.5" />
+          </button>
+        </div>
+      )}
+
+      {/* ══════════════════════════════════════════════════════════════════════ */}
+      {/* ── TAB 1: OVERVIEW & HEATMAP ────────────────────────────────────────── */}
+      {/* ══════════════════════════════════════════════════════════════════════ */}
+      {tab === 'overview' && (
+        <div className="space-y-4">
+          {/* KPI Cards */}
+          <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+            <div className="rounded-2xl border border-[#BBF7D0] bg-gradient-to-br from-[#ECFDF3] to-[#F2FBF6] p-4 shadow-sm">
+              <div className="flex items-center justify-between">
+                <span className="text-xs font-bold text-[#15803D]">Present</span>
+                <UserCheck className="h-4 w-4 text-[#15803D]" />
+              </div>
+              <p className="mt-2 text-2xl font-black text-[#0F172A] sm:text-3xl">{overview.present}</p>
+              <p className="mt-1 text-[11px] font-medium text-[#15803D]">Students attended</p>
+            </div>
+
+            <div className="rounded-2xl border border-[#FECACA] bg-gradient-to-br from-[#FEF2F2] to-[#FFF5F5] p-4 shadow-sm">
+              <div className="flex items-center justify-between">
+                <span className="text-xs font-bold text-[#B91C1C]">Absent</span>
+                <UserX className="h-4 w-4 text-[#B91C1C]" />
+              </div>
+              <p className="mt-2 text-2xl font-black text-[#0F172A] sm:text-3xl">{overview.absent}</p>
+              <p className="mt-1 text-[11px] font-medium text-[#B91C1C]">Unexcused absences</p>
+            </div>
+
+            <div className="rounded-2xl border border-[#FDE68A] bg-gradient-to-br from-[#FFFBEB] to-[#FFFDF5] p-4 shadow-sm">
+              <div className="flex items-center justify-between">
+                <span className="text-xs font-bold text-[#B45309]">Late</span>
+                <Clock className="h-4 w-4 text-[#B45309]" />
+              </div>
+              <p className="mt-2 text-2xl font-black text-[#0F172A] sm:text-3xl">{overview.late}</p>
+              <p className="mt-1 text-[11px] font-medium text-[#B45309]">Late arrivals</p>
+            </div>
+
+            <div className="rounded-2xl border border-[#CCFBF1] bg-gradient-to-br from-[#F0FDFA] to-[#F5FEFD] p-4 shadow-sm">
+              <div className="flex items-center justify-between">
+                <span className="text-xs font-bold text-[#0F766E]">Attendance Rate</span>
+                <TrendingUp className="h-4 w-4 text-[#0F766E]" />
+              </div>
+              <p className="mt-2 text-2xl font-black text-[#0F172A] sm:text-3xl">{overview.percentage}%</p>
+              <p className="mt-1 text-[11px] font-medium text-[#0F766E]">Overall institution rate</p>
+            </div>
+          </div>
+
+          {/* Monthly Calendar Heatmap */}
+          <div className="rounded-2xl border border-[#E2E8F0] bg-white p-4 shadow-sm sm:p-6">
+            <div className="mb-4 flex flex-wrap items-center justify-between gap-2 border-b border-[#F1F5F9] pb-4">
+              <div className="flex items-center gap-2">
+                <CalendarDays className="h-5 w-5 text-[#1F5A5C]" />
+                <h3 className="text-base font-bold text-[#0F172A] sm:text-lg">
+                  {monthName} Attendance Calendar
+                </h3>
+              </div>
+              <p className="text-xs font-medium text-[#64748B]">
+                Tap any date to inspect details
+              </p>
+            </div>
+
+            {/* Calendar Grid */}
+            <div className="grid grid-cols-7 gap-1 sm:gap-2">
+              {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map((d) => (
+                <div key={d} className="text-center text-[11px] font-bold uppercase tracking-wider text-[#94A3B8] pb-1">
+                  {d}
+                </div>
+              ))}
+
+              {/* Leading Empty Cells */}
+              {Array.from({ length: firstDayWeekday }).map((_, i) => (
+                <div key={`empty-${i}`} className="min-h-[56px] sm:min-h-[72px] rounded-xl bg-transparent" />
+              ))}
+
+              {/* Month Days */}
+              {Array.from({ length: daysInMonth }, (_, index) => index + 1).map((day) => {
+                const dateStr = `${currentYear}-${String(currentMonth).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+                const stats = monthMap.get(dateStr) ?? { present: 0, absent: 0, late: 0, excused: 0 };
+                const totalMarked = stats.present + stats.absent + stats.late + stats.excused;
+                const isSelected = selectedDay === dateStr || (!selectedDay && selectedDate === dateStr);
+
+                let cellTone = 'bg-[#F8FAFC] text-[#64748B] hover:bg-[#F1F5F9]';
+                let indicatorDot = null;
+
+                if (totalMarked > 0) {
+                  const rate = Math.round((stats.present / totalMarked) * 100);
+                  if (rate >= 90) {
+                    cellTone = 'bg-[#ECFDF3] text-[#15803D] hover:bg-[#DCFCE7] border border-[#BBF7D0]';
+                    indicatorDot = 'bg-[#15803D]';
+                  } else if (rate >= 70) {
+                    cellTone = 'bg-[#FFFBEB] text-[#B45309] hover:bg-[#FEF3C7] border border-[#FDE68A]';
+                    indicatorDot = 'bg-[#D97706]';
+                  } else {
+                    cellTone = 'bg-[#FEF2F2] text-[#B91C1C] hover:bg-[#FEE2E2] border border-[#FECACA]';
+                    indicatorDot = 'bg-[#DC2626]';
+                  }
+                }
+
+                return (
+                  <button
+                    key={dateStr}
+                    type="button"
+                    onClick={() => setSelectedDay(dateStr)}
+                    className={`min-h-[58px] sm:min-h-[76px] rounded-xl p-1.5 sm:p-2 text-left transition-all relative flex flex-col justify-between ${cellTone} ${
+                      isSelected ? 'ring-2 ring-[#1F5A5C] ring-offset-2' : ''
+                    }`}
+                  >
+                    <div className="flex items-center justify-between">
+                      <span className="text-xs sm:text-sm font-bold">{day}</span>
+                      {indicatorDot && (
+                        <span className={`h-1.5 w-1.5 sm:h-2 sm:w-2 rounded-full ${indicatorDot}`} />
+                      )}
+                    </div>
+
+                    {totalMarked > 0 ? (
+                      <div className="mt-1 text-[10px] sm:text-[11px] font-bold leading-tight truncate">
+                        <span className="text-[#15803D]">{stats.present}P</span>
+                        {stats.absent > 0 && <span className="ml-1 text-[#B91C1C]">{stats.absent}A</span>}
+                        {stats.late > 0 && <span className="ml-1 text-[#B45309]">{stats.late}L</span>}
+                      </div>
+                    ) : (
+                      <span className="text-[10px] text-[#94A3B8]">—</span>
+                    )}
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ══════════════════════════════════════════════════════════════════════ */}
+      {/* ── TAB 2: STUDENTS ATTENDANCE ───────────────────────────────────────── */}
+      {/* ══════════════════════════════════════════════════════════════════════ */}
+      {tab === 'students' && (
+        <div className="space-y-4">
+          {/* Live Progress & Tally Bar */}
+          <div className="rounded-2xl border border-[#E2E8F0] bg-white p-4 shadow-sm">
+            <div className="flex flex-wrap items-center justify-between gap-3">
+              <div>
+                <div className="flex items-center gap-2">
+                  <h3 className="text-base font-bold text-[#0F172A]">Student Attendance Tally</h3>
+                  <span className="rounded-full bg-[#ECFDF3] px-2.5 py-0.5 text-xs font-bold text-[#15803D]">
+                    {liveStudentStats.rate}% Present
+                  </span>
+                </div>
+                <p className="mt-0.5 text-xs text-[#64748B]">
+                  {liveStudentStats.markedTotal} of {liveStudentStats.total} students recorded for {formatDateDisplay(selectedDate)}
+                </p>
               </div>
 
-              <div className="space-y-3">
-                <p className="text-xs font-semibold text-[#64748b] uppercase tracking-[0.14em]">
-                  {currentDate.toLocaleDateString('en-US', { month: 'long', year: 'numeric' })}
-                </p>
-
-                <div className="rounded-xl border border-[#dbeafe] bg-gradient-to-br from-[#eff6ff] to-[#f0faff] p-3">
-                  <p className="text-xs font-semibold text-[#1d4ed8]">Attendance Rate</p>
-                  <p className="mt-2 text-4xl font-bold text-[#0f172a]">{overview.percentage}%</p>
-                </div>
-
-                <div className="grid grid-cols-3 gap-2">
-                  <div className="rounded-xl border border-[#dcfce7] bg-[#ecfdf3] p-3 text-center">
-                    <p className="text-xs font-semibold text-[#15803d]">Present</p>
-                    <p className="mt-1 text-lg font-bold text-[#0f172a]">{overview.present}</p>
-                  </div>
-                  <div className="rounded-xl border border-[#fee2e2] bg-[#fef2f2] p-3 text-center">
-                    <p className="text-xs font-semibold text-[#b91c1c]">Absent</p>
-                    <p className="mt-1 text-lg font-bold text-[#0f172a]">{overview.absent}</p>
-                  </div>
-                  <div className="rounded-xl border border-[#fef3c7] bg-[#fffbeb] p-3 text-center">
-                    <p className="text-xs font-semibold text-[#9a5a00]">Late</p>
-                    <p className="mt-1 text-lg font-bold text-[#0f172a]">{overview.late}</p>
-                  </div>
-                </div>
+              {/* Bulk Actions */}
+              <div className="flex items-center gap-2">
+                <button
+                  type="button"
+                  onClick={() => markAllStudents('PRESENT')}
+                  disabled={!students.length}
+                  className="flex items-center gap-1.5 rounded-xl bg-gradient-to-br from-[#1F5A5C] to-[#2D7578] px-3.5 py-2 text-xs font-bold text-white shadow-sm hover:scale-[1.02] active:scale-[0.98] transition-all disabled:opacity-50"
+                >
+                  <CheckCheck className="h-3.5 w-3.5" />
+                  <span>Mark All Present</span>
+                </button>
 
                 <button
                   type="button"
-                  onClick={() => setTab('overview')}
-                  className="flex h-11 w-full items-center justify-center rounded-xl bg-gradient-to-br from-[#1F5A5C] to-[#1b5e62] px-3 text-sm font-semibold text-white shadow-[0_8px_20px_rgba(0,70,73,0.12)] active:scale-[0.98] transition-all"
+                  onClick={() => markAllStudents('ABSENT')}
+                  disabled={!students.length}
+                  className="flex items-center gap-1.5 rounded-xl border border-[#FECACA] bg-[#FEF2F2] px-3.5 py-2 text-xs font-bold text-[#B91C1C] hover:bg-[#FEE2E2] active:scale-[0.98] transition-all disabled:opacity-50"
                 >
-                  View Calendar
+                  <UserX className="h-3.5 w-3.5" />
+                  <span>Mark All Absent</span>
                 </button>
               </div>
             </div>
 
-            <div className="hidden sm:block rounded-2xl bg-white p-4 shadow-[0_12px_40px_rgba(0,70,73,0.06)] sm:p-6">
-              <div className="mb-3 flex items-center gap-2 text-[#0f172a]">
-                <CalendarDays className="h-5 w-5" />
-                <h3 className="font-bold">Monthly Attendance Heatmap</h3>
-              </div>
-              <div className="grid grid-cols-4 gap-2 sm:grid-cols-7 lg:grid-cols-10">
-                {Array.from({ length: daysInMonth }, (_, index) => index + 1).map((day) => {
-                  const date = new Date(currentDate.getFullYear(), currentDate.getMonth(), day).toISOString().slice(0, 10);
-                  const stats = monthMap.get(date) ?? { present: 0, absent: 0, late: 0, excused: 0 };
-                  const active = selectedDay === date;
-                  return (
-                    <button
-                      key={date}
-                      type="button"
-                      onClick={() => setSelectedDay(date)}
-                      className={`rounded-xl border p-2 text-center text-xs transition-all hover:shadow-md focus:outline-none focus:ring-2 focus:ring-[#1F5A5C] ${heatTone(stats.present, stats.absent, stats.late, stats.excused)} ${active ? 'ring-2 ring-[#1F5A5C] ring-offset-1' : 'border-transparent'}`}
-                      aria-pressed={active}
-                    >
-                      <p className="font-bold">{day}</p>
-                      <p className="mt-1 text-[10px]">P {stats.present}</p>
-                      <p className="text-[10px]">A {stats.absent}</p>
-                      <p className="text-[10px]">L {stats.late}</p>
-                      <p className="text-[10px]">E {stats.excused}</p>
-                    </button>
-                  );
-                })}
-              </div>
+            {/* Visual Distribution Progress Bar */}
+            <div className="mt-3 h-2 w-full overflow-hidden rounded-full bg-[#F1F5F9] flex">
+              {liveStudentStats.present > 0 && (
+                <div
+                  style={{ width: `${(liveStudentStats.present / (liveStudentStats.total || 1)) * 100}%` }}
+                  className="bg-[#15803D] transition-all duration-300"
+                  title={`Present: ${liveStudentStats.present}`}
+                />
+              )}
+              {liveStudentStats.late > 0 && (
+                <div
+                  style={{ width: `${(liveStudentStats.late / (liveStudentStats.total || 1)) * 100}%` }}
+                  className="bg-[#D97706] transition-all duration-300"
+                  title={`Late: ${liveStudentStats.late}`}
+                />
+              )}
+              {liveStudentStats.excused > 0 && (
+                <div
+                  style={{ width: `${(liveStudentStats.excused / (liveStudentStats.total || 1)) * 100}%` }}
+                  className="bg-[#2563EB] transition-all duration-300"
+                  title={`Leave: ${liveStudentStats.excused}`}
+                />
+              )}
+              {liveStudentStats.absent > 0 && (
+                <div
+                  style={{ width: `${(liveStudentStats.absent / (liveStudentStats.total || 1)) * 100}%` }}
+                  className="bg-[#DC2626] transition-all duration-300"
+                  title={`Absent: ${liveStudentStats.absent}`}
+                />
+              )}
+            </div>
+
+            {/* Quick Status Filter Badges */}
+            <div className="mt-3.5 flex flex-wrap gap-1.5">
+              {[
+                { key: 'ALL' as const, label: 'All', count: liveStudentStats.total, cls: 'bg-[#F1F5F9] text-[#475569]' },
+                { key: 'UNMARKED' as const, label: 'Unmarked', count: liveStudentStats.unmarked, cls: 'bg-[#F8FAFC] text-[#64748B] border border-[#E2E8F0]' },
+                { key: 'PRESENT' as const, label: 'Present', count: liveStudentStats.present, cls: 'bg-[#ECFDF3] text-[#15803D] border border-[#BBF7D0]' },
+                { key: 'ABSENT' as const, label: 'Absent', count: liveStudentStats.absent, cls: 'bg-[#FEF2F2] text-[#B91C1C] border border-[#FECACA]' },
+                { key: 'LATE' as const, label: 'Late', count: liveStudentStats.late, cls: 'bg-[#FFFBEB] text-[#B45309] border border-[#FDE68A]' },
+                { key: 'EXCUSED' as const, label: 'Leave', count: liveStudentStats.excused, cls: 'bg-[#EFF6FF] text-[#1E40AF] border border-[#BFDBFE]' },
+              ].map((f) => (
+                <button
+                  key={f.key}
+                  type="button"
+                  onClick={() => setStudentStatusFilter(f.key)}
+                  className={`flex items-center gap-1.5 rounded-lg px-2.5 py-1 text-xs font-bold transition-all ${f.cls} ${
+                    studentStatusFilter === f.key ? 'ring-2 ring-[#1F5A5C] ring-offset-1 shadow-sm' : 'opacity-80 hover:opacity-100'
+                  }`}
+                >
+                  <span>{f.label}</span>
+                  <span className="rounded-full bg-black/10 px-1.5 py-0.2 text-[10px]">{f.count}</span>
+                </button>
+              ))}
             </div>
           </div>
-        ) : null}
 
-        {tab === 'students' ? (
-          <div className="rounded-2xl bg-white p-4 shadow-[0_12px_40px_rgba(0,70,73,0.06)] sm:p-6">
-            <div className="mb-4 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
-              <h3 className="font-bold text-[#0f172a]">Students Attendance</h3>
-              <div className="grid grid-cols-2 gap-2 sm:flex">
-                <button onClick={() => markAllStudents('PRESENT')} disabled={!students.length} className="h-10 rounded-xl bg-gradient-to-br from-[#1F5A5C] to-[#1b5e62] px-3 text-xs font-semibold text-white shadow-[0_8px_20px_rgba(0,70,73,0.12)] active:scale-[0.98] transition-all disabled:opacity-50">Mark all Present</button>
-                <button onClick={() => markAllStudents('ABSENT')} disabled={!students.length} className="h-10 rounded-xl bg-[#b91c1c] px-3 text-xs font-semibold text-white disabled:opacity-50">Mark all Absent</button>
-              </div>
+          {/* Search Input */}
+          <div className="relative">
+            <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-[#94A3B8]" />
+            <input
+              type="text"
+              value={studentSearch}
+              onChange={(e) => setStudentSearch(e.target.value)}
+              placeholder="Search student by name, admission no, or class…"
+              className="h-11 w-full rounded-xl border border-[#E2E8F0] bg-white pl-10 pr-9 text-xs sm:text-sm text-[#0F172A] placeholder-[#94A3B8] shadow-sm outline-none focus:ring-2 focus:ring-[#1F5A5C]/20 transition-all"
+            />
+            {studentSearch && (
+              <button
+                type="button"
+                onClick={() => setStudentSearch('')}
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-[#94A3B8] hover:text-[#0F172A]"
+              >
+                <X className="h-4 w-4" />
+              </button>
+            )}
+          </div>
+
+          {/* Student Cards List */}
+          {filteredStudents.length === 0 ? (
+            <div className="flex flex-col items-center justify-center rounded-2xl border border-dashed border-[#E2E8F0] bg-white p-12 text-center">
+              <Users className="h-10 w-10 text-[#94A3B8] mb-2" />
+              <p className="text-sm font-bold text-[#0F172A]">No students found</p>
+              <p className="mt-1 text-xs text-[#64748B]">
+                {studentSearch || studentStatusFilter !== 'ALL'
+                  ? 'Try clearing your search or filter criteria.'
+                  : 'No student records available for this class.'}
+              </p>
+              {(studentSearch || studentStatusFilter !== 'ALL') && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    setStudentSearch('');
+                    setStudentStatusFilter('ALL');
+                  }}
+                  className="mt-3 rounded-xl bg-[#F1F5F9] px-3.5 py-1.5 text-xs font-bold text-[#334155] hover:bg-[#E2E8F0]"
+                >
+                  Clear Filters
+                </button>
+              )}
             </div>
-
-            <div className="space-y-3">
-              {students.map((student) => {
+          ) : (
+            <div className="grid gap-2.5">
+              {filteredStudents.map((student) => {
                 const currentStatus = studentStatusMap[student.id] ?? null;
                 return (
-                  <div key={student.id} className="rounded-2xl border border-[#d7e2ea] bg-[#f9fcfd] p-3 sm:p-4">
-                    <div className="mb-3 flex items-start justify-between gap-2">
-                      <div>
-                        <p className="text-sm font-bold text-[#0f172a]">{student.fullName}</p>
-                        <p className="text-xs text-[#64748b]">{student.admissionNo} | {student.classLabel}</p>
+                  <div
+                    key={student.id}
+                    className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 rounded-2xl border border-[#E2E8F0] bg-white p-3.5 shadow-sm hover:shadow-md transition-all"
+                  >
+                    {/* Left: Info */}
+                    <div className="flex items-center gap-3 min-w-0">
+                      <div className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-xl text-xs font-black shadow-xs ${avatarTone(currentStatus)}`}>
+                        {nameInitials(student.fullName)}
                       </div>
-                      <span className={`rounded-full border px-2.5 py-1 text-[10px] font-bold ${statusTone(currentStatus)}`}>
-                        {currentStatus ?? 'UNMARKED'}
-                      </span>
+                      <div className="min-w-0">
+                        <div className="flex items-center gap-2">
+                          <p className="truncate text-sm font-bold text-[#0F172A]" dir="auto">
+                            {student.fullName}
+                          </p>
+                        </div>
+                        <p className="truncate text-xs text-[#64748B]">
+                          #{student.admissionNo} · {student.classLabel}
+                        </p>
+                      </div>
                     </div>
 
-                    <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
-                      {([
-                        { key: 'PRESENT', label: 'Present', cls: 'border-[#86efac] text-[#166534] bg-[#ecfdf3]' },
-                        { key: 'ABSENT', label: 'Absent', cls: 'border-[#fca5a5] text-[#b91c1c] bg-[#fef2f2]' },
-                        { key: 'LATE', label: 'Late', cls: 'border-[#fcd34d] text-[#9a5a00] bg-[#fffbeb]' },
-                        { key: 'EXCUSED', label: 'Leave (Rukhsat)', cls: 'border-[#bfd3ff] text-[#1e3a8a] bg-[#eff6ff]' }
-                      ] as { key: MarkStatus; label: string; cls: string }[]).map((item) => (
+                    {/* Right: 4-Segmented Control */}
+                    <div className="flex items-center gap-2">
+                      <div className="grid grid-cols-4 gap-1 p-1 rounded-xl bg-[#F8FAFC] border border-[#E2E8F0] w-full sm:w-[320px]">
+                        {/* Present */}
                         <button
-                          key={item.key}
-                          onClick={() => markStudentLocal(student.id, item.key)}
-                          className={`${quickButtonClass} w-full ${item.cls} ${currentStatus === item.key ? 'ring-2 ring-offset-1 ring-[#1F5A5C]' : ''}`}
+                          type="button"
+                          onClick={() => markStudent(student.id, 'PRESENT')}
+                          className={`h-9 flex items-center justify-center gap-1 rounded-lg text-xs font-bold transition-all active:scale-[0.97] ${
+                            currentStatus === 'PRESENT'
+                              ? 'bg-[#15803D] text-white shadow-sm ring-1 ring-[#15803D]'
+                              : 'text-[#15803D] hover:bg-[#ECFDF3]'
+                          }`}
                         >
-                          {item.label}
+                          <Check className="h-3.5 w-3.5" />
+                          <span>P</span>
                         </button>
-                      ))}
+
+                        {/* Absent */}
+                        <button
+                          type="button"
+                          onClick={() => markStudent(student.id, 'ABSENT')}
+                          className={`h-9 flex items-center justify-center gap-1 rounded-lg text-xs font-bold transition-all active:scale-[0.97] ${
+                            currentStatus === 'ABSENT'
+                              ? 'bg-[#B91C1C] text-white shadow-sm ring-1 ring-[#B91C1C]'
+                              : 'text-[#B91C1C] hover:bg-[#FEF2F2]'
+                          }`}
+                        >
+                          <X className="h-3.5 w-3.5" />
+                          <span>A</span>
+                        </button>
+
+                        {/* Late */}
+                        <button
+                          type="button"
+                          onClick={() => markStudent(student.id, 'LATE')}
+                          className={`h-9 flex items-center justify-center gap-1 rounded-lg text-xs font-bold transition-all active:scale-[0.97] ${
+                            currentStatus === 'LATE'
+                              ? 'bg-[#D97706] text-white shadow-sm ring-1 ring-[#D97706]'
+                              : 'text-[#B45309] hover:bg-[#FFFBEB]'
+                          }`}
+                        >
+                          <Clock className="h-3 w-3" />
+                          <span>L</span>
+                        </button>
+
+                        {/* Leave */}
+                        <button
+                          type="button"
+                          onClick={() => markStudent(student.id, 'EXCUSED')}
+                          className={`h-9 flex items-center justify-center gap-1 rounded-lg text-xs font-bold transition-all active:scale-[0.97] ${
+                            currentStatus === 'EXCUSED'
+                              ? 'bg-[#2563EB] text-white shadow-sm ring-1 ring-[#2563EB]'
+                              : 'text-[#1E40AF] hover:bg-[#EFF6FF]'
+                          }`}
+                        >
+                          <span>Leave</span>
+                        </button>
+                      </div>
                     </div>
                   </div>
                 );
               })}
-              {students.length === 0 ? <p className="text-sm text-[#64748b]">No students available for this filter.</p> : null}
             </div>
+          )}
 
-            <div className="sticky bottom-3 mt-4 rounded-2xl border border-[#dbeafe] bg-white/95 p-3 shadow-lg backdrop-blur">
-              <div className="flex flex-wrap items-center justify-between gap-2">
-                <p className="text-sm font-semibold text-[#1F5A5C]">{studentChangedCount} unsaved student change(s)</p>
+          {/* Floating Bottom Save Bar */}
+          {studentChangedCount > 0 && (
+            <div className="fixed bottom-4 left-4 right-4 z-40 flex items-center justify-between gap-3 rounded-2xl bg-[#0F172A]/95 p-3.5 text-white shadow-2xl backdrop-blur-md border border-white/10 sm:bottom-6 sm:left-auto sm:right-6 sm:w-auto sm:min-w-[420px]">
+              <div className="flex items-center gap-2">
+                <span className="flex h-2.5 w-2.5 rounded-full bg-[#10B981] animate-pulse" />
+                <p className="text-xs sm:text-sm font-semibold">
+                  {studentChangedCount} unsaved change{studentChangedCount > 1 ? 's' : ''}
+                </p>
+              </div>
+
+              <div className="flex items-center gap-2">
                 <button
+                  type="button"
+                  onClick={discardStudentChanges}
+                  disabled={savingStudents}
+                  className="rounded-xl px-3 py-2 text-xs font-semibold text-[#94A3B8] hover:text-white hover:bg-white/10 transition-colors disabled:opacity-50"
+                >
+                  Discard
+                </button>
+                <button
+                  type="button"
                   onClick={() => void saveStudents()}
-                  disabled={!studentChangedCount || savingStudents}
-                  className="h-10 rounded-xl bg-gradient-to-br from-[#1F5A5C] to-[#1b5e62] px-4 text-sm font-semibold text-white shadow-[0_8px_20px_rgba(0,70,73,0.12)] active:scale-[0.98] transition-all disabled:opacity-50"
+                  disabled={savingStudents}
+                  className="flex items-center gap-2 rounded-xl bg-gradient-to-br from-[#1F5A5C] to-[#2D7578] px-4 py-2 text-xs font-bold text-white shadow-md hover:scale-[1.02] active:scale-[0.98] transition-all disabled:opacity-50"
                 >
-                  {savingStudents ? 'Saving...' : 'Save Students'}
+                  {savingStudents ? (
+                    <>
+                      <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                      <span>Saving…</span>
+                    </>
+                  ) : (
+                    <>
+                      <Save className="h-3.5 w-3.5" />
+                      <span>Save Attendance</span>
+                    </>
+                  )}
                 </button>
               </div>
             </div>
-          </div>
-        ) : null}
+          )}
+        </div>
+      )}
 
-        {tab === 'teachers' ? (
-          <div className="rounded-2xl bg-white p-4 shadow-[0_12px_40px_rgba(0,70,73,0.06)] sm:p-6">
-            <div className="mb-4 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
-              <h3 className="font-bold text-[#0f172a]">Teachers Attendance</h3>
-              <div className="grid grid-cols-2 gap-2 sm:flex">
-                <button onClick={() => markAllTeachers('PRESENT')} disabled={!teachers.length} className="h-10 rounded-xl bg-gradient-to-br from-[#1F5A5C] to-[#1b5e62] px-3 text-xs font-semibold text-white shadow-[0_8px_20px_rgba(0,70,73,0.12)] active:scale-[0.98] transition-all disabled:opacity-50">Mark all Present</button>
-                <button onClick={() => markAllTeachers('ABSENT')} disabled={!teachers.length} className="h-10 rounded-xl bg-[#b91c1c] px-3 text-xs font-semibold text-white disabled:opacity-50">Mark all Absent</button>
+      {/* ══════════════════════════════════════════════════════════════════════ */}
+      {/* ── TAB 3: TEACHERS ATTENDANCE ───────────────────────────────────────── */}
+      {/* ══════════════════════════════════════════════════════════════════════ */}
+      {tab === 'teachers' && (
+        <div className="space-y-4">
+          {/* Live Progress & Tally Bar */}
+          <div className="rounded-2xl border border-[#E2E8F0] bg-white p-4 shadow-sm">
+            <div className="flex flex-wrap items-center justify-between gap-3">
+              <div>
+                <div className="flex items-center gap-2">
+                  <h3 className="text-base font-bold text-[#0F172A]">Staff Attendance Tally</h3>
+                  <span className="rounded-full bg-[#ECFDF3] px-2.5 py-0.5 text-xs font-bold text-[#15803D]">
+                    {liveTeacherStats.rate}% Present
+                  </span>
+                </div>
+                <p className="mt-0.5 text-xs text-[#64748B]">
+                  {liveTeacherStats.markedTotal} of {liveTeacherStats.total} staff recorded for {formatDateDisplay(selectedDate)}
+                </p>
+              </div>
+
+              {/* Bulk Actions */}
+              <div className="flex items-center gap-2">
+                <button
+                  type="button"
+                  onClick={() => markAllTeachers('PRESENT')}
+                  disabled={!teachers.length}
+                  className="flex items-center gap-1.5 rounded-xl bg-gradient-to-br from-[#1F5A5C] to-[#2D7578] px-3.5 py-2 text-xs font-bold text-white shadow-sm hover:scale-[1.02] active:scale-[0.98] transition-all disabled:opacity-50"
+                >
+                  <CheckCheck className="h-3.5 w-3.5" />
+                  <span>Mark All Present</span>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => markAllTeachers('ABSENT')}
+                  disabled={!teachers.length}
+                  className="flex items-center gap-1.5 rounded-xl border border-[#FECACA] bg-[#FEF2F2] px-3.5 py-2 text-xs font-bold text-[#B91C1C] hover:bg-[#FEE2E2] active:scale-[0.98] transition-all disabled:opacity-50"
+                >
+                  <UserX className="h-3.5 w-3.5" />
+                  <span>Mark All Absent</span>
+                </button>
               </div>
             </div>
 
-            <div className="space-y-3">
-              <div className="grid gap-3 xl:grid-cols-2">
-                {teachers.map((teacher) => {
-                  const summary = teacherMonthlySummaryMap.get(teacher.id) ?? { present: 0, absent: 0, late: 0, excused: 0, total: 0 };
-                  return (
-                    <div key={teacher.id} className="rounded-2xl border border-[#dbeafe] bg-[#f8fbff] p-4">
-                      <div className="flex items-start justify-between gap-3">
-                        <div className="min-w-0">
-                          <p className="truncate text-sm font-bold text-[#0f172a]">{teacher.fullName}</p>
-                          <p className="text-xs text-[#64748b]">Monthly attendance summary</p>
-                        </div>
-                        <span className={`rounded-full border px-2.5 py-1 text-[10px] font-bold ${statusTone(teacher.status)}`}>
-                          {teacher.status ?? 'UNMARKED'}
-                        </span>
-                      </div>
-                      <div className="mt-4 grid grid-cols-5 gap-2">
-                        <div className="rounded-xl bg-[#ecfdf3] p-2 text-center">
-                          <p className="text-[10px] font-semibold text-[#166534]">Present</p>
-                          <p className="mt-1 text-lg font-bold text-[#0f172a]">{summary.present}</p>
-                        </div>
-                        <div className="rounded-xl bg-[#fef2f2] p-2 text-center">
-                          <p className="text-[10px] font-semibold text-[#b91c1c]">Absent</p>
-                          <p className="mt-1 text-lg font-bold text-[#0f172a]">{summary.absent}</p>
-                        </div>
-                        <div className="rounded-xl bg-[#fffbeb] p-2 text-center">
-                          <p className="text-[10px] font-semibold text-[#9a5a00]">Late</p>
-                          <p className="mt-1 text-lg font-bold text-[#0f172a]">{summary.late}</p>
-                        </div>
-                        <div className="rounded-xl bg-[#eff6ff] p-2 text-center">
-                          <p className="text-[10px] font-semibold text-[#1e3a8a]">Leave</p>
-                          <p className="mt-1 text-lg font-bold text-[#0f172a]">{summary.excused}</p>
-                        </div>
-                        <div className="rounded-xl bg-[#f8fafc] p-2 text-center border border-[#e2e8f0]">
-                          <p className="text-[10px] font-semibold text-[#475569]">Total</p>
-                          <p className="mt-1 text-lg font-bold text-[#0f172a]">{summary.total}</p>
-                        </div>
-                      </div>
-                    </div>
-                  );
-                })}
-              </div>
+            {/* Quick Status Filter Badges */}
+            <div className="mt-3.5 flex flex-wrap gap-1.5">
+              {[
+                { key: 'ALL' as const, label: 'All', count: liveTeacherStats.total, cls: 'bg-[#F1F5F9] text-[#475569]' },
+                { key: 'UNMARKED' as const, label: 'Unmarked', count: liveTeacherStats.unmarked, cls: 'bg-[#F8FAFC] text-[#64748B] border border-[#E2E8F0]' },
+                { key: 'PRESENT' as const, label: 'Present', count: liveTeacherStats.present, cls: 'bg-[#ECFDF3] text-[#15803D] border border-[#BBF7D0]' },
+                { key: 'ABSENT' as const, label: 'Absent', count: liveTeacherStats.absent, cls: 'bg-[#FEF2F2] text-[#B91C1C] border border-[#FECACA]' },
+                { key: 'LATE' as const, label: 'Late', count: liveTeacherStats.late, cls: 'bg-[#FFFBEB] text-[#B45309] border border-[#FDE68A]' },
+                { key: 'EXCUSED' as const, label: 'Leave', count: liveTeacherStats.excused, cls: 'bg-[#EFF6FF] text-[#1E40AF] border border-[#BFDBFE]' },
+              ].map((f) => (
+                <button
+                  key={f.key}
+                  type="button"
+                  onClick={() => setTeacherStatusFilter(f.key)}
+                  className={`flex items-center gap-1.5 rounded-lg px-2.5 py-1 text-xs font-bold transition-all ${f.cls} ${
+                    teacherStatusFilter === f.key ? 'ring-2 ring-[#1F5A5C] ring-offset-1 shadow-sm' : 'opacity-80 hover:opacity-100'
+                  }`}
+                >
+                  <span>{f.label}</span>
+                  <span className="rounded-full bg-black/10 px-1.5 py-0.2 text-[10px]">{f.count}</span>
+                </button>
+              ))}
+            </div>
+          </div>
 
-              {teachers.map((teacher) => {
+          {/* Teacher Search */}
+          <div className="relative">
+            <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-[#94A3B8]" />
+            <input
+              type="text"
+              value={teacherSearch}
+              onChange={(e) => setTeacherSearch(e.target.value)}
+              placeholder="Search teacher by name…"
+              className="h-11 w-full rounded-xl border border-[#E2E8F0] bg-white pl-10 pr-9 text-xs sm:text-sm text-[#0F172A] placeholder-[#94A3B8] shadow-sm outline-none focus:ring-2 focus:ring-[#1F5A5C]/20 transition-all"
+            />
+            {teacherSearch && (
+              <button
+                type="button"
+                onClick={() => setTeacherSearch('')}
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-[#94A3B8] hover:text-[#0F172A]"
+              >
+                <X className="h-4 w-4" />
+              </button>
+            )}
+          </div>
+
+          {/* Teacher Cards List */}
+          {filteredTeachers.length === 0 ? (
+            <div className="flex flex-col items-center justify-center rounded-2xl border border-dashed border-[#E2E8F0] bg-white p-12 text-center">
+              <GraduationCap className="h-10 w-10 text-[#94A3B8] mb-2" />
+              <p className="text-sm font-bold text-[#0F172A]">No staff members found</p>
+              <p className="mt-1 text-xs text-[#64748B]">Try clearing your search criteria.</p>
+            </div>
+          ) : (
+            <div className="grid gap-2.5">
+              {filteredTeachers.map((teacher) => {
                 const currentStatus = teacherStatusMap[teacher.id] ?? null;
+                const summary = teacherMonthlySummaryMap.get(teacher.id) ?? { present: 0, absent: 0, late: 0, total: 0 };
                 return (
-                  <div key={teacher.id} className="rounded-2xl border border-[#d7e2ea] bg-[#f9fcfd] p-3 sm:p-4">
-                    <div className="mb-3 flex items-start justify-between gap-2">
-                      <div>
-                        <p className="text-sm font-bold text-[#0f172a]">{teacher.fullName}</p>
-                        <p className="text-xs text-[#64748b]">Teacher record</p>
+                  <div
+                    key={teacher.id}
+                    className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 rounded-2xl border border-[#E2E8F0] bg-white p-3.5 shadow-sm hover:shadow-md transition-all"
+                  >
+                    {/* Left: Info */}
+                    <div className="flex items-center gap-3 min-w-0">
+                      <div className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-xl text-xs font-black shadow-xs ${avatarTone(currentStatus)}`}>
+                        {nameInitials(teacher.fullName)}
                       </div>
-                      <span className={`rounded-full border px-2.5 py-1 text-[10px] font-bold ${statusTone(currentStatus)}`}>
-                        {currentStatus ?? 'UNMARKED'}
-                      </span>
+                      <div className="min-w-0">
+                        <p className="truncate text-sm font-bold text-[#0F172A]" dir="auto">
+                          {teacher.fullName}
+                        </p>
+                        <p className="text-xs text-[#64748B]">
+                          Monthly: <span className="text-[#15803D] font-bold">{summary.present}P</span> · <span className="text-[#B91C1C] font-bold">{summary.absent}A</span> · <span className="text-[#B45309] font-bold">{summary.late}L</span> ({summary.total} days)
+                        </p>
+                      </div>
                     </div>
 
-                    <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
-                      {([
-                        { key: 'PRESENT', label: 'Present', cls: 'border-[#86efac] text-[#166534] bg-[#ecfdf3]' },
-                        { key: 'ABSENT', label: 'Absent', cls: 'border-[#fca5a5] text-[#b91c1c] bg-[#fef2f2]' },
-                        { key: 'LATE', label: 'Late', cls: 'border-[#fcd34d] text-[#9a5a00] bg-[#fffbeb]' },
-                        { key: 'EXCUSED', label: 'Leave (Rukhsat)', cls: 'border-[#bfd3ff] text-[#1e3a8a] bg-[#eff6ff]' }
-                      ] as { key: MarkStatus; label: string; cls: string }[]).map((item) => (
+                    {/* Right: 4-Segmented Control */}
+                    <div className="flex items-center gap-2">
+                      <div className="grid grid-cols-4 gap-1 p-1 rounded-xl bg-[#F8FAFC] border border-[#E2E8F0] w-full sm:w-[320px]">
                         <button
-                          key={item.key}
-                          onClick={() => markTeacherLocal(teacher.id, item.key)}
-                          className={`${quickButtonClass} w-full ${item.cls} ${currentStatus === item.key ? 'ring-2 ring-offset-1 ring-[#1F5A5C]' : ''}`}
+                          type="button"
+                          onClick={() => markTeacher(teacher.id, 'PRESENT')}
+                          className={`h-9 flex items-center justify-center gap-1 rounded-lg text-xs font-bold transition-all active:scale-[0.97] ${
+                            currentStatus === 'PRESENT'
+                              ? 'bg-[#15803D] text-white shadow-sm ring-1 ring-[#15803D]'
+                              : 'text-[#15803D] hover:bg-[#ECFDF3]'
+                          }`}
                         >
-                          {item.label}
+                          <Check className="h-3.5 w-3.5" />
+                          <span>P</span>
                         </button>
-                      ))}
+
+                        <button
+                          type="button"
+                          onClick={() => markTeacher(teacher.id, 'ABSENT')}
+                          className={`h-9 flex items-center justify-center gap-1 rounded-lg text-xs font-bold transition-all active:scale-[0.97] ${
+                            currentStatus === 'ABSENT'
+                              ? 'bg-[#B91C1C] text-white shadow-sm ring-1 ring-[#B91C1C]'
+                              : 'text-[#B91C1C] hover:bg-[#FEF2F2]'
+                          }`}
+                        >
+                          <X className="h-3.5 w-3.5" />
+                          <span>A</span>
+                        </button>
+
+                        <button
+                          type="button"
+                          onClick={() => markTeacher(teacher.id, 'LATE')}
+                          className={`h-9 flex items-center justify-center gap-1 rounded-lg text-xs font-bold transition-all active:scale-[0.97] ${
+                            currentStatus === 'LATE'
+                              ? 'bg-[#D97706] text-white shadow-sm ring-1 ring-[#D97706]'
+                              : 'text-[#B45309] hover:bg-[#FFFBEB]'
+                          }`}
+                        >
+                          <Clock className="h-3 w-3" />
+                          <span>L</span>
+                        </button>
+
+                        <button
+                          type="button"
+                          onClick={() => markTeacher(teacher.id, 'EXCUSED')}
+                          className={`h-9 flex items-center justify-center gap-1 rounded-lg text-xs font-bold transition-all active:scale-[0.97] ${
+                            currentStatus === 'EXCUSED'
+                              ? 'bg-[#2563EB] text-white shadow-sm ring-1 ring-[#2563EB]'
+                              : 'text-[#1E40AF] hover:bg-[#EFF6FF]'
+                          }`}
+                        >
+                          <span>Leave</span>
+                        </button>
+                      </div>
                     </div>
                   </div>
                 );
               })}
-              {teachers.length === 0 ? <p className="text-sm text-[#64748b]">No teachers available.</p> : null}
             </div>
+          )}
 
-            <div className="sticky bottom-3 mt-4 rounded-2xl border border-[#dbeafe] bg-white/95 p-3 shadow-lg backdrop-blur">
-              <div className="flex flex-wrap items-center justify-between gap-2">
-                <p className="text-sm font-semibold text-[#1F5A5C]">{teacherChangedCount} unsaved teacher change(s)</p>
+          {/* Floating Bottom Save Bar for Teachers */}
+          {teacherChangedCount > 0 && (
+            <div className="fixed bottom-4 left-4 right-4 z-40 flex items-center justify-between gap-3 rounded-2xl bg-[#0F172A]/95 p-3.5 text-white shadow-2xl backdrop-blur-md border border-white/10 sm:bottom-6 sm:left-auto sm:right-6 sm:w-auto sm:min-w-[420px]">
+              <div className="flex items-center gap-2">
+                <span className="flex h-2.5 w-2.5 rounded-full bg-[#10B981] animate-pulse" />
+                <p className="text-xs sm:text-sm font-semibold">
+                  {teacherChangedCount} unsaved change{teacherChangedCount > 1 ? 's' : ''}
+                </p>
+              </div>
+
+              <div className="flex items-center gap-2">
                 <button
-                  onClick={() => void saveTeachers()}
-                  disabled={!teacherChangedCount || savingTeachers}
-                  className="h-10 rounded-xl bg-gradient-to-br from-[#1F5A5C] to-[#1b5e62] px-4 text-sm font-semibold text-white shadow-[0_8px_20px_rgba(0,70,73,0.12)] active:scale-[0.98] transition-all disabled:opacity-50"
+                  type="button"
+                  onClick={discardTeacherChanges}
+                  disabled={savingTeachers}
+                  className="rounded-xl px-3 py-2 text-xs font-semibold text-[#94A3B8] hover:text-white hover:bg-white/10 transition-colors disabled:opacity-50"
                 >
-                  {savingTeachers ? 'Saving...' : 'Save Teachers'}
+                  Discard
+                </button>
+                <button
+                  type="button"
+                  onClick={() => void saveTeachers()}
+                  disabled={savingTeachers}
+                  className="flex items-center gap-2 rounded-xl bg-gradient-to-br from-[#1F5A5C] to-[#2D7578] px-4 py-2 text-xs font-bold text-white shadow-md hover:scale-[1.02] active:scale-[0.98] transition-all disabled:opacity-50"
+                >
+                  {savingTeachers ? (
+                    <>
+                      <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                      <span>Saving…</span>
+                    </>
+                  ) : (
+                    <>
+                      <Save className="h-3.5 w-3.5" />
+                      <span>Save Teachers</span>
+                    </>
+                  )}
                 </button>
               </div>
             </div>
-          </div>
-        ) : null}
-      </div>
+          )}
+        </div>
+      )}
 
+      {/* ── Day Details Inspector Modal ── */}
       <Modal
         open={Boolean(selectedDay)}
-        title={selectedDayLabel || 'Day Details'}
-        subtitle={selectedClassId ? 'Filtered by selected class' : 'All classes for that day'}
+        title={selectedDay ? formatDateDisplay(selectedDay) : 'Day Attendance Details'}
+        subtitle={selectedClassId ? 'Filtered by selected class' : 'All classes across institution'}
         onClose={() => setSelectedDay(null)}
       >
-        {selectedDay ? (
+        {selectedDay && (
           <div className="space-y-4">
-            <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
-              <div className="rounded-2xl bg-[#ecfdf3] p-3">
-                <p className="text-xs font-semibold text-[#166534]">Present</p>
-                <p className="mt-1 text-2xl font-bold text-[#0f172a]">{selectedDayCounts?.present ?? 0}</p>
+            {/* Modal Quick KPI Bar */}
+            <div className="grid grid-cols-4 gap-2 text-center">
+              <div className="rounded-xl bg-[#ECFDF3] p-2.5 border border-[#BBF7D0]">
+                <p className="text-[10px] font-bold uppercase text-[#15803D]">Present</p>
+                <p className="mt-0.5 text-lg font-black text-[#0F172A]">{selectedDayStats?.present ?? 0}</p>
               </div>
-              <div className="rounded-2xl bg-[#fef2f2] p-3">
-                <p className="text-xs font-semibold text-[#b91c1c]">Absent</p>
-                <p className="mt-1 text-2xl font-bold text-[#0f172a]">{selectedDayCounts?.absent ?? 0}</p>
+              <div className="rounded-xl bg-[#FEF2F2] p-2.5 border border-[#FECACA]">
+                <p className="text-[10px] font-bold uppercase text-[#B91C1C]">Absent</p>
+                <p className="mt-0.5 text-lg font-black text-[#0F172A]">{selectedDayStats?.absent ?? 0}</p>
               </div>
-              <div className="rounded-2xl bg-[#fffbeb] p-3">
-                <p className="text-xs font-semibold text-[#9a5a00]">Late</p>
-                <p className="mt-1 text-2xl font-bold text-[#0f172a]">{selectedDayCounts?.late ?? 0}</p>
+              <div className="rounded-xl bg-[#FFFBEB] p-2.5 border border-[#FDE68A]">
+                <p className="text-[10px] font-bold uppercase text-[#B45309]">Late</p>
+                <p className="mt-0.5 text-lg font-black text-[#0F172A]">{selectedDayStats?.late ?? 0}</p>
               </div>
-              <div className="rounded-2xl bg-[#eff6ff] p-3">
-                <p className="text-xs font-semibold text-[#1d4ed8]">Rate</p>
-                <p className="mt-1 text-2xl font-bold text-[#0f172a]">{selectedDayAttendanceRate}%</p>
+              <div className="rounded-xl bg-[#F0FDFA] p-2.5 border border-[#CCFBF1]">
+                <p className="text-[10px] font-bold uppercase text-[#0F766E]">Rate</p>
+                <p className="mt-0.5 text-lg font-black text-[#0F172A]">{selectedDayRate}%</p>
               </div>
             </div>
 
+            {/* Modal Filter Pills */}
+            <div className="flex gap-1.5 overflow-x-auto pb-1 scrollbar-none">
+              {(['ALL', 'PRESENT', 'ABSENT', 'LATE', 'EXCUSED'] as const).map((st) => (
+                <button
+                  key={st}
+                  type="button"
+                  onClick={() => setModalFilter(st)}
+                  className={`rounded-lg px-3 py-1 text-xs font-bold transition-all ${
+                    modalFilter === st
+                      ? 'bg-[#1F5A5C] text-white shadow-sm'
+                      : 'bg-[#F1F5F9] text-[#64748B] hover:bg-[#E2E8F0]'
+                  }`}
+                >
+                  {st}
+                </button>
+              ))}
+            </div>
+
+            {/* Modal Student Rows */}
             {selectedDayLoading ? (
-              <p className="text-sm text-[#64748b]">Loading day details...</p>
+              <div className="flex items-center justify-center py-10 text-[#64748B]">
+                <Loader2 className="h-5 w-5 animate-spin mr-2 text-[#1F5A5C]" />
+                <span className="text-sm font-semibold">Loading day attendance…</span>
+              </div>
             ) : selectedDayError ? (
-              <p className="rounded-xl bg-[#fef2f2] px-4 py-3 text-sm text-[#b91c1c]">{selectedDayError}</p>
-            ) : selectedDayRows.length === 0 ? (
-              <p className="text-sm text-[#64748b]">No attendance records found for this day.</p>
+              <div className="rounded-xl bg-[#FEF2F2] p-4 text-xs font-semibold text-[#B91C1C]">
+                {selectedDayError}
+              </div>
+            ) : modalFilteredRows.length === 0 ? (
+              <p className="py-8 text-center text-xs font-medium text-[#64748B]">
+                No student records matching this filter for this date.
+              </p>
             ) : (
-              <div className="space-y-4">
-                {(['PRESENT', 'ABSENT', 'LATE', 'EXCUSED'] as AttendanceDetailRow['status'][]).map((status) => {
-                  const rows = selectedDayRows.filter((row) => row.status === status);
-                  if (!rows.length) return null;
-                  return (
-                    <div key={status} className="rounded-2xl border border-[#e2e8f0] bg-white p-4">
-                      <div className="mb-3 flex items-center justify-between gap-2">
-                        <h4 className="text-sm font-bold text-[#0f172a]">{status}</h4>
-                        <span className={`rounded-full px-2.5 py-1 text-[10px] font-bold ${modalTone(status)}`}>{rows.length}</span>
-                      </div>
-                      <div className="space-y-2">
-                        {rows.map((row) => (
-                          <div key={row.id} className="flex items-start justify-between gap-3 rounded-xl bg-[#f8fafc] px-3 py-2">
-                            <div className="min-w-0">
-                              <p className="truncate text-sm font-semibold text-[#0f172a]">{row.student.user.fullName}</p>
-                              <p className="text-xs text-[#64748b]">#{row.student.admissionNo} | {row.class.name} - {row.class.section}</p>
-                              {row.remarks ? <p className="mt-1 text-xs text-[#475569]">{row.remarks}</p> : null}
-                            </div>
-                            <span className={`shrink-0 rounded-full px-2.5 py-1 text-[10px] font-bold ${modalTone(status)}`}>{status}</span>
-                          </div>
-                        ))}
-                      </div>
+              <div className="space-y-2 max-h-[380px] overflow-y-auto pr-1">
+                {modalFilteredRows.map((row) => (
+                  <div
+                    key={row.id}
+                    className="flex items-center justify-between gap-3 rounded-xl border border-[#F1F5F9] bg-[#F8FAFC] px-3.5 py-2.5"
+                  >
+                    <div className="min-w-0">
+                      <p className="truncate text-xs sm:text-sm font-bold text-[#0F172A]" dir="auto">
+                        {row.student.user.fullName}
+                      </p>
+                      <p className="truncate text-[11px] text-[#64748B]">
+                        #{row.student.admissionNo} · {row.class.name} - {row.class.section}
+                      </p>
+                      {row.remarks && (
+                        <p className="mt-0.5 text-[10px] text-[#B45309]">Note: {row.remarks}</p>
+                      )}
                     </div>
-                  );
-                })}
+                    <span className={`shrink-0 rounded-full px-2.5 py-0.5 text-[10px] font-bold ${statusPillTone(row.status)}`}>
+                      {row.status}
+                    </span>
+                  </div>
+                ))}
               </div>
             )}
           </div>
-        ) : null}
+        )}
       </Modal>
-    </>
+    </div>
   );
 }
-
-
-
-
-
-
-
