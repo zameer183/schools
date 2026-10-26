@@ -258,6 +258,8 @@ export function TeacherMessagesClient({ messages, recipients }: TeacherMessagesC
   const [showChatMenu, setShowChatMenu] = useState(false);
   const [showDeleteChatConfirm, setShowDeleteChatConfirm] = useState(false);
   const [isDeletingChat, setIsDeletingChat] = useState(false);
+  const [messageToDelete, setMessageToDelete] = useState<{ id: string; direction: 'in' | 'out' } | null>(null);
+  const [isDeletingMessage, setIsDeletingMessage] = useState(false);
   const [chatDeleteToast, setChatDeleteToast] = useState<string | null>(null);
   const [hiddenConversationIds, setHiddenConversationIds] = useState<Set<string>>(new Set());
   const [deletedMessageIds, setDeletedMessageIds] = useState<Set<string>>(new Set());
@@ -554,11 +556,15 @@ export function TeacherMessagesClient({ messages, recipients }: TeacherMessagesC
     }
   };
 
-  const handleDeleteMessage = async (messageId: string, direction: 'in' | 'out') => {
-    if (!messageId || messageId.startsWith('tmp-')) return;
-    const confirmed = window.confirm('Delete this message?');
-    if (!confirmed) return;
+  const handleConfirmDeleteMessage = async () => {
+    if (!messageToDelete) return;
+    const { id: messageId, direction } = messageToDelete;
+    if (!messageId || messageId.startsWith('tmp-')) {
+      setMessageToDelete(null);
+      return;
+    }
 
+    setIsDeletingMessage(true);
     try {
       const response = await fetch(`/api/messages?id=${messageId}`, { method: 'DELETE', credentials: 'include' });
       if (response.status === 401) {
@@ -592,8 +598,11 @@ export function TeacherMessagesClient({ messages, recipients }: TeacherMessagesC
         }
         return next;
       });
-    } catch {
-      // no-op
+      setMessageToDelete(null);
+      setChatDeleteToast('Message deleted');
+      setTimeout(() => setChatDeleteToast(null), 2500);
+    } finally {
+      setIsDeletingMessage(false);
     }
   };
 
@@ -880,83 +889,109 @@ export function TeacherMessagesClient({ messages, recipients }: TeacherMessagesC
   );
 
   const rightPanel = (
-    <div className="flex h-[calc(100vh-150px)] min-h-[620px] flex-col overflow-hidden rounded-[24px] border border-white bg-white shadow-[0_16px_36px_rgba(15,23,42,0.08)] lg:h-[72vh]">
+    <div className="flex h-[calc(100dvh-135px)] min-h-0 flex-col overflow-hidden rounded-2xl border border-white bg-white shadow-sm sm:rounded-[24px] lg:h-[75vh]">
       {activeConversation ? (
         <>
-          <div className="relative flex items-center justify-between border-b border-[#E5EAF0] bg-white/95 px-4 py-3 backdrop-blur">
-            <div className="flex items-center gap-3">
+          <div className="sticky top-0 z-10 flex shrink-0 items-center justify-between border-b border-[#E5EAF0] bg-white px-3 py-2.5 backdrop-blur sm:px-4 sm:py-3 shadow-xs">
+            <div className="flex min-w-0 items-center gap-2.5 sm:gap-3">
               <button
+                type="button"
                 onClick={() => setActiveId(null)}
-                className="inline-flex h-9 w-9 items-center justify-center rounded-xl text-[#00507D] lg:hidden"
+                className="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-[#F0F4F8] text-[#00507D] hover:bg-[#E2E8F0] active:scale-95 transition lg:hidden"
+                aria-label="Back to conversations"
               >
-                <ChevronLeft className="h-4 w-4" />
+                <ChevronLeft className="h-5 w-5" />
               </button>
-              <div className="grid h-11 w-11 place-items-center rounded-full bg-[#7BE4D4] text-sm font-black text-[#006A61]">
+              <div className="grid h-10 w-10 shrink-0 place-items-center rounded-full bg-[#7BE4D4] text-xs font-black text-[#006A61]">
                 {initials(activeConversation.personName)}
               </div>
-              <div>
-                <p className="text-xl font-black leading-tight text-[#00507D]">{activeConversation.personName}</p>
-                <p className="text-xs text-[#64748B]">{recipientClassNameMap.get(activeConversation.personId) ?? 'Student'}</p>
+              <div className="min-w-0 flex-1">
+                <p className="truncate text-base font-black leading-tight text-[#00507D] sm:text-lg">{activeConversation.personName}</p>
+                <p className="truncate text-xs text-[#64748B]">{recipientClassNameMap.get(activeConversation.personId) ?? 'Student'}</p>
               </div>
             </div>
 
-            <button
-              onClick={() => setShowChatMenu((prev) => !prev)}
-              className="inline-flex h-9 w-9 items-center justify-center rounded-xl border border-[#EFE8DE] text-[#64748B]"
-            >
-              <EllipsisVertical className="h-4 w-4" />
-            </button>
+            <div className="relative flex items-center gap-1">
+              <button
+                type="button"
+                onClick={() => setShowChatMenu((prev) => !prev)}
+                className="inline-flex h-9 w-9 items-center justify-center rounded-xl border border-[#EFE8DE] text-[#64748B] hover:bg-[#F8FAFB] transition"
+                aria-label="Chat options"
+              >
+                <EllipsisVertical className="h-4 w-4" />
+              </button>
 
-            {showChatMenu ? (
-              <div className="absolute right-4 top-12 z-20 w-44 rounded-xl border border-[#e2e8f0] bg-white p-1.5 shadow-xl">
-                <button
-                  onClick={() => setShowDeleteChatConfirm(true)}
-                  className="flex w-full items-center rounded-lg px-3 py-2 text-left text-sm font-medium text-[#dc2626] hover:bg-[#fef2f2] disabled:cursor-not-allowed disabled:opacity-50"
-                  disabled={!recipientIdSet.has(activeConversation.personId)}
-                >
-                  Delete Chat
-                </button>
-              </div>
-            ) : null}
-          </div>
-
-          <div className="flex-1 space-y-4 overflow-auto bg-[#F4F7F8] px-4 py-4">
-            {activeConversation.messages.map((message) => (
-              <div key={message.id} className={`group flex ${message.direction === 'out' ? 'justify-end' : 'justify-start'}`}>
-                <div
-                  className={`max-w-[82%] rounded-2xl px-4 py-3 text-base leading-6 shadow-sm ${
-                    message.direction === 'out'
-                      ? 'rounded-br-sm bg-[#084750] text-white shadow-[0_10px_22px_rgba(8,71,80,0.18)]'
-                      : 'rounded-bl-sm bg-white text-[#111827] shadow-[0_8px_18px_rgba(15,23,42,0.08)]'
-                  }`}
-                >
-                  <p className="whitespace-pre-wrap">{message.body}</p>
-                  <div className="mt-1 flex items-center justify-between gap-2">
-                    <div className={`text-[10px] ${message.direction === 'out' ? 'text-white/75' : 'text-[#64748B]'}`} suppressHydrationWarning>
-                      {mounted ? formatTime(message.createdAt) : ''}
-                      {message.pending ? ' · Sending...' : ''}
-                    </div>
-                    {!message.pending && !message.id.startsWith('tmp-') ? (
-                      <button
-                        type="button"
-                        onClick={() => void handleDeleteMessage(message.id, message.direction)}
-                        className={`opacity-0 transition-opacity group-hover:opacity-100 ${
-                          message.direction === 'out' ? 'text-white/70 hover:text-white' : 'text-[#8aa0b3] hover:text-red-400'
-                        }`}
-                        title="Delete"
-                      >
-                        <Trash2 className="h-3 w-3" />
-                      </button>
-                    ) : null}
-                  </div>
+              {showChatMenu ? (
+                <div className="absolute right-0 top-11 z-30 w-44 rounded-xl border border-[#e2e8f0] bg-white p-1.5 shadow-xl">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setShowChatMenu(false);
+                      setShowDeleteChatConfirm(true);
+                    }}
+                    className="flex w-full items-center gap-2 rounded-lg px-3 py-2 text-left text-xs font-bold text-[#dc2626] hover:bg-[#fef2f2] transition"
+                  >
+                    <Trash2 className="h-3.5 w-3.5" />
+                    <span>Delete Entire Chat</span>
+                  </button>
                 </div>
-              </div>
-            ))}
+              ) : null}
+            </div>
           </div>
 
-          <div ref={chatBottomRef} />
+          <div className="flex-1 min-h-0 space-y-3 overflow-y-auto overscroll-contain bg-[#F4F7F8] p-3 sm:p-4">
+            {activeConversation.messages.map((message) => {
+              const isOutgoing = message.direction === 'out';
+              const canDelete = !message.pending && !message.id.startsWith('tmp-');
+              return (
+                <div key={message.id} className={`flex items-end gap-1.5 ${isOutgoing ? 'justify-end' : 'justify-start'}`}>
+                  {/* Delete button for outgoing message */}
+                  {isOutgoing && canDelete ? (
+                    <button
+                      type="button"
+                      onClick={() => setMessageToDelete({ id: message.id, direction: 'out' })}
+                      className="mb-1 inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-slate-400 hover:text-red-600 hover:bg-red-50 transition active:scale-95"
+                      title="Delete message"
+                      aria-label="Delete message"
+                    >
+                      <Trash2 className="h-3.5 w-3.5" />
+                    </button>
+                  ) : null}
 
-          <div className="sticky bottom-0 border-t border-[#E5EAF0] bg-white/95 p-3 backdrop-blur">
+                  <div
+                    className={`relative max-w-[84%] sm:max-w-[75%] rounded-2xl px-3.5 py-2.5 text-sm leading-relaxed shadow-xs ${
+                      isOutgoing
+                        ? 'rounded-br-xs bg-[#084750] text-white shadow-[0_6px_16px_rgba(8,71,80,0.18)]'
+                        : 'rounded-bl-xs border border-[#E2E8F0] bg-white text-[#111827]'
+                    }`}
+                  >
+                    <p className="whitespace-pre-wrap break-words">{message.body}</p>
+                    <div className={`mt-1 flex items-center justify-end gap-1 text-[10px] ${isOutgoing ? 'text-white/70' : 'text-[#64748B]'}`}>
+                      <span suppressHydrationWarning>{mounted ? formatTime(message.createdAt) : ''}</span>
+                      {isOutgoing && !message.pending ? <span className="font-bold">✓✓</span> : null}
+                      {message.pending ? <span>· Sending...</span> : null}
+                    </div>
+                  </div>
+
+                  {/* Delete button for incoming message */}
+                  {!isOutgoing && canDelete ? (
+                    <button
+                      type="button"
+                      onClick={() => setMessageToDelete({ id: message.id, direction: 'in' })}
+                      className="mb-1 inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-slate-400 hover:text-red-600 hover:bg-red-50 transition active:scale-95"
+                      title="Delete message"
+                      aria-label="Delete message"
+                    >
+                      <Trash2 className="h-3.5 w-3.5" />
+                    </button>
+                  ) : null}
+                </div>
+              );
+            })}
+            <div ref={chatBottomRef} />
+          </div>
+
+          <div className="sticky bottom-0 shrink-0 border-t border-[#E5EAF0] bg-white/95 p-2.5 sm:p-3 backdrop-blur">
             <div className="flex items-center gap-2">
               <input
                 value={draft}
@@ -968,12 +1003,14 @@ export function TeacherMessagesClient({ messages, recipients }: TeacherMessagesC
                   }
                 }}
                 placeholder={`Message ${activeConversation.personName.split(' ')[0]}...`}
-                className="h-12 flex-1 rounded-full border border-transparent bg-[#F0F2F4] px-5 text-sm text-[#111827] outline-none focus:border-[#007A70] focus:ring-4 focus:ring-[#7BE4D4]/25"
+                className="h-11 sm:h-12 flex-1 rounded-full border border-[#CBD5E1] bg-[#F8FAFC] px-4 text-sm text-[#111827] outline-none focus:border-[#007A70] focus:bg-white focus:ring-4 focus:ring-[#7BE4D4]/25 transition"
               />
               <button
+                type="button"
                 onClick={() => void handleSend()}
-                disabled={isSending || draft.trim().length < 2}
-                className="inline-flex h-12 w-12 items-center justify-center rounded-full bg-[#084750] text-white shadow-[0_10px_20px_rgba(8,71,80,0.24)] hover:bg-[#06353C] disabled:cursor-not-allowed disabled:opacity-50"
+                disabled={isSending || draft.trim().length < 1}
+                className="inline-flex h-11 w-11 sm:h-12 sm:w-12 shrink-0 items-center justify-center rounded-full bg-[#084750] text-white shadow-md hover:bg-[#06353C] disabled:cursor-not-allowed disabled:opacity-40 transition active:scale-95"
+                aria-label="Send message"
               >
                 <Send className="h-4 w-4" />
               </button>
@@ -997,8 +1034,8 @@ export function TeacherMessagesClient({ messages, recipients }: TeacherMessagesC
   );
 
   return (
-    <div className="-mx-4 -my-6 min-h-screen space-y-4 overflow-x-hidden bg-[#F8F6F3] px-4 py-5 pb-32 sm:-mx-6 sm:px-6 lg:-mx-8 lg:px-8">
-      <div className="overflow-hidden rounded-[24px] border border-white/80 bg-white p-5 shadow-[0_16px_36px_rgba(15,23,42,0.08)]">
+    <div className={`-mx-4 -my-6 min-h-screen space-y-3 overflow-x-hidden bg-[#F8F6F3] px-3 py-3 sm:-mx-6 sm:px-6 sm:py-5 lg:-mx-8 lg:px-8 ${activeConversation ? 'pb-2 sm:pb-32' : 'pb-32'}`}>
+      <div className={`overflow-hidden rounded-[24px] border border-white/80 bg-white p-4 shadow-[0_16px_36px_rgba(15,23,42,0.08)] sm:p-5 ${activeConversation ? 'hidden lg:block' : 'block'}`}>
         <div className="flex items-start justify-between gap-3">
           <div className="min-w-0 flex-1">
             <p className="text-[10px] font-black uppercase tracking-[0.24em] text-[#004D47]">Manarah Institute</p>
@@ -1126,6 +1163,43 @@ export function TeacherMessagesClient({ messages, recipients }: TeacherMessagesC
                   : selectedRecipients.size > 0
                     ? `Send to ${selectedRecipients.size} recipient${selectedRecipients.size > 1 ? 's' : ''}`
                     : 'Send Message'}
+              </button>
+            </div>
+          </div>
+        </div>
+      ) : null}
+
+      {/* Individual Message Delete Confirmation Modal */}
+      {messageToDelete ? (
+        <div className="fixed inset-0 z-[75] flex items-center justify-center bg-black/50 p-4 backdrop-blur-xs">
+          <div className="w-full max-w-sm rounded-2xl bg-white p-5 shadow-2xl animate-in fade-in zoom-in-95">
+            <div className="flex items-center gap-3">
+              <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-red-100 text-red-600">
+                <Trash2 className="h-5 w-5" />
+              </div>
+              <div>
+                <h3 className="text-base font-bold text-gray-900">Delete Message?</h3>
+                <p className="mt-0.5 text-xs text-gray-500">
+                  Are you sure you want to delete this message? This action cannot be undone.
+                </p>
+              </div>
+            </div>
+            <div className="mt-5 flex items-center justify-end gap-2.5">
+              <button
+                type="button"
+                onClick={() => setMessageToDelete(null)}
+                className="rounded-xl border border-gray-300 px-4 py-2 text-xs font-bold text-gray-700 hover:bg-gray-100 transition"
+                disabled={isDeletingMessage}
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                onClick={() => void handleConfirmDeleteMessage()}
+                className="inline-flex items-center justify-center rounded-xl bg-red-600 px-4 py-2 text-xs font-bold text-white hover:bg-red-700 transition disabled:opacity-50"
+                disabled={isDeletingMessage}
+              >
+                {isDeletingMessage ? 'Deleting...' : 'Delete'}
               </button>
             </div>
           </div>

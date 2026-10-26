@@ -275,6 +275,8 @@ export default function AdminMessagingWorkspace({
   const [chatDraft, setChatDraft] = useState('');
   const [chatSending, setChatSending] = useState(false);
   const [isDeletingChat, setIsDeletingChat] = useState(false);
+  const [messageToDelete, setMessageToDelete] = useState<{ id: string; direction: 'in' | 'out' } | null>(null);
+  const [isDeletingMessage, setIsDeletingMessage] = useState(false);
   const chatBottomRef = useRef<HTMLDivElement>(null);
 
   // Compose State
@@ -644,6 +646,38 @@ export default function AdminMessagingWorkspace({
     setSentState((prev) => prev.filter((message) => message.id !== messageId));
   }
 
+  // Delete Individual Chat Message from active thread
+  async function handleConfirmDeleteMessage() {
+    if (!messageToDelete) return;
+    const { id: messageId, direction } = messageToDelete;
+    if (!messageId || messageId.startsWith('tmp-')) {
+      setMessageToDelete(null);
+      return;
+    }
+
+    setIsDeletingMessage(true);
+    try {
+      const response = await fetch(`/api/messages?id=${encodeURIComponent(messageId)}`, { method: 'DELETE' });
+      if (!response.ok) return;
+
+      if (direction === 'out') {
+        setSentState((prev) => prev.filter((item) => item.id !== messageId));
+        setLocalOutgoing((prev) => {
+          const next = { ...prev };
+          for (const key of Object.keys(next)) {
+            next[key] = next[key].filter((m) => m.id !== messageId);
+          }
+          return next;
+        });
+      } else {
+        setReceivedState((prev) => prev.filter((item) => item.message.id !== messageId));
+      }
+      setMessageToDelete(null);
+    } finally {
+      setIsDeletingMessage(false);
+    }
+  }
+
   // Selected teacher details
   const selectedTeacher = teachers.find((t) => t.userId === selectedTeacherUserId);
   // Selected student details
@@ -904,8 +938,22 @@ export default function AdminMessagingWorkspace({
                 <div className="min-h-0 flex-1 space-y-3 overflow-x-hidden overflow-y-auto overscroll-contain bg-[#f8fbfb] p-3 sm:p-5">
                   {activeConversation.messages.map((message) => {
                     const incoming = message.direction === 'in';
+                    const canDelete = !message.pending && !message.id.startsWith('tmp-');
                     return (
-                      <div key={message.id} className={`flex ${incoming ? 'justify-start' : 'justify-end'}`}>
+                      <div key={message.id} className={`flex items-end gap-1.5 ${incoming ? 'justify-start' : 'justify-end'}`}>
+                        {/* Outgoing delete button (left of bubble) */}
+                        {!incoming && canDelete ? (
+                          <button
+                            type="button"
+                            onClick={() => setMessageToDelete({ id: message.id, direction: 'out' })}
+                            className="mb-1 inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-slate-400 hover:text-red-600 hover:bg-red-50 transition active:scale-95"
+                            title="Delete message"
+                            aria-label="Delete message"
+                          >
+                            <Trash2 className="h-3.5 w-3.5" />
+                          </button>
+                        ) : null}
+
                         <div
                           className={`max-w-[85%] rounded-2xl px-4 py-3 shadow-sm sm:max-w-[75%] ${
                             incoming
@@ -918,7 +966,7 @@ export default function AdminMessagingWorkspace({
                               {message.subject}
                             </p>
                           ) : null}
-                          <p className="whitespace-pre-wrap text-sm leading-relaxed">{message.body}</p>
+                          <p className="whitespace-pre-wrap text-sm leading-relaxed break-words">{message.body}</p>
                           <div
                             className={`mt-1.5 flex items-center justify-end gap-1.5 text-[10px] ${
                               incoming ? 'text-[#9ca3af]' : 'text-[#cbece6]'
@@ -928,6 +976,19 @@ export default function AdminMessagingWorkspace({
                             {!incoming ? <span>• {message.status ?? 'Sent'}</span> : null}
                           </div>
                         </div>
+
+                        {/* Incoming delete button (right of bubble) */}
+                        {incoming && canDelete ? (
+                          <button
+                            type="button"
+                            onClick={() => setMessageToDelete({ id: message.id, direction: 'in' })}
+                            className="mb-1 inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-slate-400 hover:text-red-600 hover:bg-red-50 transition active:scale-95"
+                            title="Delete message"
+                            aria-label="Delete message"
+                          >
+                            <Trash2 className="h-3.5 w-3.5" />
+                          </button>
+                        ) : null}
                       </div>
                     );
                   })}
@@ -1433,6 +1494,43 @@ export default function AdminMessagingWorkspace({
               </div>
             </div>
           </section>
+        </div>
+      ) : null}
+
+      {/* Individual Message Delete Confirmation Modal */}
+      {messageToDelete ? (
+        <div className="fixed inset-0 z-[75] flex items-center justify-center bg-black/50 p-4 backdrop-blur-xs">
+          <div className="w-full max-w-sm rounded-2xl bg-white p-5 shadow-2xl animate-in fade-in zoom-in-95">
+            <div className="flex items-center gap-3">
+              <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-red-100 text-red-600">
+                <Trash2 className="h-5 w-5" />
+              </div>
+              <div>
+                <h3 className="text-base font-bold text-gray-900">Delete Message?</h3>
+                <p className="mt-0.5 text-xs text-gray-500">
+                  Are you sure you want to delete this message? This action cannot be undone.
+                </p>
+              </div>
+            </div>
+            <div className="mt-5 flex items-center justify-end gap-2.5">
+              <button
+                type="button"
+                onClick={() => setMessageToDelete(null)}
+                className="rounded-xl border border-gray-300 px-4 py-2 text-xs font-bold text-gray-700 hover:bg-gray-100 transition"
+                disabled={isDeletingMessage}
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                onClick={() => void handleConfirmDeleteMessage()}
+                className="inline-flex items-center justify-center rounded-xl bg-red-600 px-4 py-2 text-xs font-bold text-white hover:bg-red-700 transition disabled:opacity-50"
+                disabled={isDeletingMessage}
+              >
+                {isDeletingMessage ? 'Deleting...' : 'Delete'}
+              </button>
+            </div>
+          </div>
         </div>
       ) : null}
     </div>
