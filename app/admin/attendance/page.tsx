@@ -422,7 +422,8 @@ async function loadAttendanceViaRest(
     classStudents,
     teachers,
     staffDailyRows,
-    staffMonthlyRows
+    staffMonthlyRows,
+    staffMonthStatusByDay
   };
 }
 
@@ -447,6 +448,7 @@ async function AttendanceContent({ searchParams }: { searchParams?: Promise<Sear
   let teachers: AttendancePayload['teachers'] = [];
   let staffDailyRows: StaffDailyRow[] = [];
   let staffMonthlyRows: StaffMonthlyRow[] = [];
+  let staffMonthStatusByDay: StaffMonthDayRow[] = [];
   let attendanceDataLoadFailed = false;
 
   try {
@@ -473,6 +475,7 @@ async function AttendanceContent({ searchParams }: { searchParams?: Promise<Sear
     teachers = data.teachers;
     staffDailyRows = data.staffDailyRows;
     staffMonthlyRows = data.staffMonthlyRows;
+    staffMonthStatusByDay = data.staffMonthStatusByDay || [];
   } catch (error) {
     console.error('[admin/attendance] prisma load failed', error);
     try {
@@ -485,6 +488,7 @@ async function AttendanceContent({ searchParams }: { searchParams?: Promise<Sear
       teachers = data.teachers;
       staffDailyRows = data.staffDailyRows;
       staffMonthlyRows = data.staffMonthlyRows;
+      staffMonthStatusByDay = data.staffMonthStatusByDay || [];
     } catch (restError) {
       console.error('[admin/attendance] rest fallback failed', restError);
       attendanceDataLoadFailed = true;
