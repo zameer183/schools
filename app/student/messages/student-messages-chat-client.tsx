@@ -214,6 +214,7 @@ export function StudentMessagesChatClient({
   const [sendError, setSendError] = useState('');
   const [messageToDelete, setMessageToDelete] = useState<{ id: string; direction: 'in' | 'out' } | null>(null);
   const [isDeletingMessage, setIsDeletingMessage] = useState(false);
+  const [deletedMessageIds, setDeletedMessageIds] = useState<Set<string>>(new Set());
   const markReadInFlightRef = useRef<Set<string>>(new Set());
 
   const conversations = useMemo(
@@ -246,18 +247,20 @@ export function StudentMessagesChatClient({
         if (!response.ok) return;
         const rows = (await response.json()) as InboxApiRow[];
         if (cancelled) return;
-        const merged = rows.map<StudentInboxItem>((item) => ({
-          id: item.id,
-          isRead: item.isRead,
-          readAt: item.readAt,
-          message: {
-            id: item.message.id,
-            subject: item.message.subject,
-            body: item.message.body,
-            createdAt: item.message.createdAt,
-            sender: item.message.sender
-          }
-        }));
+        const merged = rows
+          .filter((item) => !deletedMessageIds.has(item.message.id) && !deletedMessageIds.has(item.id))
+          .map<StudentInboxItem>((item) => ({
+            id: item.id,
+            isRead: item.isRead,
+            readAt: item.readAt,
+            message: {
+              id: item.message.id,
+              subject: item.message.subject,
+              body: item.message.body,
+              createdAt: item.message.createdAt,
+              sender: item.message.sender
+            }
+          }));
         setLiveInbox(merged);
       } catch {
         // ignore transient polling errors
@@ -455,8 +458,13 @@ export function StudentMessagesChatClient({
           [activeConversation.senderId]: (prev[activeConversation.senderId] ?? []).filter((item) => item.id !== messageId)
         }));
       } else {
-        setLiveInbox((prev) => prev.filter((item) => item.message.id !== messageId));
+        setLiveInbox((prev) => prev.filter((item) => item.message.id !== messageId && item.id !== messageId));
       }
+      setDeletedMessageIds((prev) => {
+        const next = new Set(prev);
+        next.add(messageId);
+        return next;
+      });
       setMessageToDelete(null);
     } catch {
       // no-op

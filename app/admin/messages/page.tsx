@@ -20,11 +20,9 @@ function toIsoString(value: Date | string | null | undefined) {
   return Number.isNaN(parsed.getTime()) ? null : parsed.toISOString();
 }
 
-const getCachedAdminMessagesData = unstable_cache(
-  async (userId: string, page: number) => {
-    const pageSize = 50;
-    const skip = (page - 1) * pageSize;
-    const [classes, teachers, students, sentMessages, receivedMessages] = await Promise.all([
+const getCachedAdminMetadata = unstable_cache(
+  async () => {
+    const [classes, teachers, students] = await Promise.all([
       prisma.class.findMany({
         select: {
           id: true,
@@ -64,18 +62,51 @@ const getCachedAdminMessagesData = unstable_cache(
           { class: { name: 'asc' } },
           { user: { fullName: 'asc' } }
         ]
-      }),
+      })
+    ]);
+
+    return { classes, teachers, students };
+  },
+  ['admin-messages-metadata-v1'],
+  { revalidate: 60 }
+);
+
+export default async function AdminMessagesPage({ searchParams }: AdminMessagesPageProps) {
+  const session = await requireAuth([UserRole.ADMIN]);
+  const params = (await searchParams) ?? {};
+  const presetRecipientId = params.recipientId?.trim() ?? '';
+  const page = Math.max(1, parseInt(params.page ?? '1') || 1);
+
+  let rawMetadata: Awaited<ReturnType<typeof getCachedAdminMetadata>> = {
+    classes: [],
+    teachers: [],
+    students: []
+  };
+
+  try {
+    rawMetadata = await getCachedAdminMetadata();
+  } catch (error) {
+    console.error('[admin/messages] metadata loading error:', error);
+  }
+
+  const pageSize = 50;
+  const skip = (page - 1) * pageSize;
+  let sentMessages: Awaited<ReturnType<typeof prisma.message.findMany>> = [];
+  let receivedMessages: Awaited<ReturnType<typeof prisma.messageRecipient.findMany>> = [];
+
+  try {
+    const [sent, received] = await Promise.all([
       prisma.message.findMany({
+        where: { senderId: session.id },
         include: {
           recipients: { include: { user: { select: { id: true, fullName: true, role: true } } } }
         },
-        where: { senderId: userId },
         orderBy: { createdAt: 'desc' },
         take: pageSize,
         skip
       }),
       prisma.messageRecipient.findMany({
-        where: { userId },
+        where: { userId: session.id },
         include: {
           message: {
             include: {
@@ -88,34 +119,13 @@ const getCachedAdminMessagesData = unstable_cache(
         skip
       })
     ]);
-
-    return { classes, teachers, students, sentMessages, receivedMessages };
-  },
-  ['admin-messages-page-data-v4'],
-  { revalidate: 20 }
-);
-
-export default async function AdminMessagesPage({ searchParams }: AdminMessagesPageProps) {
-  const session = await requireAuth([UserRole.ADMIN]);
-  const params = (await searchParams) ?? {};
-  const presetRecipientId = params.recipientId?.trim() ?? '';
-  const page = Math.max(1, parseInt(params.page ?? '1') || 1);
-
-  let rawData: Awaited<ReturnType<typeof getCachedAdminMessagesData>> = {
-    classes: [],
-    teachers: [],
-    students: [],
-    sentMessages: [],
-    receivedMessages: []
-  };
-
-  try {
-    rawData = await getCachedAdminMessagesData(session.id, page);
+    sentMessages = sent as any;
+    receivedMessages = received as any;
   } catch (error) {
-    console.error('[admin/messages] data loading error:', error);
+    console.error('[admin/messages] messages loading error:', error);
   }
 
-  const { classes, teachers, students, sentMessages, receivedMessages } = rawData;
+  const { classes, teachers, students } = rawMetadata;
 
   const serializedTeachers = teachers.map((teacher) => ({
     id: teacher.id,

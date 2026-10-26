@@ -35,9 +35,7 @@ type SentRow = Prisma.MessageGetPayload<{
   };
 }>;
 
-type TeacherMessagesPageData = {
-  inbox: InboxRow[];
-  sent: SentRow[];
+type TeacherMetadata = {
   recipients: RecipientOption[];
   access: Awaited<ReturnType<typeof getTeacherAccessMapByUserId>>;
 };
@@ -66,10 +64,8 @@ function DbOfflineBanner() {
   );
 }
 
-const getCachedTeacherMessagesData = unstable_cache(
-  async (userId: string, page: number) => {
-    const pageSize = 50;
-    const skip = (page - 1) * pageSize;
+const getCachedTeacherMetadata = unstable_cache(
+  async (userId: string) => {
     const teacher = await prisma.teacher.findUnique({
       where: { userId },
       select: {
@@ -98,47 +94,8 @@ const getCachedTeacherMessagesData = unstable_cache(
       return null;
     }
 
-    const [access, [inbox, sent], admins] = await Promise.all([
+    const [access, admins] = await Promise.all([
       getTeacherAccessMapByUserId(userId),
-      prisma.$transaction([
-        prisma.messageRecipient.findMany({
-          where: { userId },
-          select: {
-            id: true,
-            isRead: true,
-            message: {
-              select: {
-                id: true,
-                subject: true,
-                body: true,
-                createdAt: true,
-                sender: { select: { id: true, fullName: true, role: true } }
-              }
-            }
-          },
-          orderBy: { message: { createdAt: 'desc' } },
-          take: pageSize,
-          skip
-        }),
-        prisma.message.findMany({
-          where: { senderId: userId },
-          select: {
-            id: true,
-            subject: true,
-            body: true,
-            createdAt: true,
-            recipients: {
-              select: {
-                userId: true,
-                user: { select: { id: true, fullName: true } }
-              }
-            }
-          },
-          orderBy: { createdAt: 'desc' },
-          take: pageSize,
-          skip
-        })
-      ]),
       prisma.user.findMany({
         where: { role: UserRole.ADMIN, isActive: true },
         select: { id: true, fullName: true }
@@ -167,14 +124,12 @@ const getCachedTeacherMessagesData = unstable_cache(
     }
 
     return {
-      inbox,
-      sent,
       recipients: Array.from(recipientMap.values()),
       access
-    } satisfies TeacherMessagesPageData;
+    } satisfies TeacherMetadata;
   },
-  ['teacher-messages-page-data-v2'],
-  { revalidate: 30 }
+  ['teacher-messages-meta-v2'],
+  { revalidate: 60 }
 );
 
 type Props = { searchParams?: Promise<{ page?: string }> };
@@ -182,17 +137,65 @@ export default async function TeacherMessagesPage({ searchParams }: Props) {
   const session = await requireAuth([UserRole.TEACHER, UserRole.ADMIN]);
   const params = (await searchParams) ?? {};
   const page = Math.max(1, parseInt(params.page ?? '1') || 1);
+  const pageSize = 50;
+  const skip = (page - 1) * pageSize;
 
-  let data: Awaited<ReturnType<typeof getCachedTeacherMessagesData>> | null = null;
+  let metadata: TeacherMetadata | null = null;
+  let inbox: InboxRow[] = [];
+  let sent: SentRow[] = [];
 
   try {
-    data = await getCachedTeacherMessagesData(session.id, page);
+    const [meta, [dbInbox, dbSent]] = await Promise.all([
+      getCachedTeacherMetadata(session.id),
+      prisma.$transaction([
+        prisma.messageRecipient.findMany({
+          where: { userId: session.id },
+          select: {
+            id: true,
+            isRead: true,
+            message: {
+              select: {
+                id: true,
+                subject: true,
+                body: true,
+                createdAt: true,
+                sender: { select: { id: true, fullName: true, role: true } }
+              }
+            }
+          },
+          orderBy: { message: { createdAt: 'desc' } },
+          take: pageSize,
+          skip
+        }),
+        prisma.message.findMany({
+          where: { senderId: session.id },
+          select: {
+            id: true,
+            subject: true,
+            body: true,
+            createdAt: true,
+            recipients: {
+              select: {
+                userId: true,
+                user: { select: { id: true, fullName: true } }
+              }
+            }
+          },
+          orderBy: { createdAt: 'desc' },
+          take: pageSize,
+          skip
+        })
+      ])
+    ]);
+    metadata = meta;
+    inbox = dbInbox;
+    sent = dbSent;
   } catch (error) {
     console.error('[teacher/messages] load failed', error);
     if (!isDatabaseConnectionError(error)) throw error;
   }
 
-  if (session.role === 'TEACHER' && data && !data.access.MESSAGES) {
+  if (session.role === 'TEACHER' && metadata && !metadata.access.MESSAGES) {
     return (
       <div className="rounded-2xl bg-white shadow-[0_12px_40px_rgba(43,103,110,0.06)] p-8">
         <h2 className="font-headline text-3xl font-bold text-[#1a1c1c]">Messages Access Disabled</h2>
@@ -201,11 +204,11 @@ export default async function TeacherMessagesPage({ searchParams }: Props) {
     );
   }
 
-  if (!data) {
+  if (!metadata) {
     return <DbOfflineBanner />;
   }
 
-  const { inbox, sent, recipients } = data;
+  const { recipients } = metadata;
 
   const toIso = (value: Date | string | null | undefined) => {
     if (!value) return new Date().toISOString();

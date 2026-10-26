@@ -171,7 +171,7 @@ function buildConversations(
       const to = recipient.user;
       const meta = recipientMeta.get(to.id);
       const msg: ChatMessage = {
-        id: `${message.id}-${to.id}`,
+        id: message.id,
         subject: message.subject,
         body: message.body,
         createdAt: message.createdAt,
@@ -639,21 +639,21 @@ export default function AdminMessagingWorkspace({
 
   // Delete Individual Sent Message
   async function handleDeleteSentMessage(messageId: string) {
-    const ok = window.confirm('Delete this sent message?');
-    if (!ok) return;
-    const response = await fetch(`/api/messages?id=${messageId}`, { method: 'DELETE' });
-    if (!response.ok) return;
-    setSentState((prev) => prev.filter((message) => message.id !== messageId));
+    setMessageToDelete({ id: messageId, direction: 'out' });
   }
 
   // Delete Individual Chat Message from active thread
   async function handleConfirmDeleteMessage() {
     if (!messageToDelete) return;
-    const { id: messageId, direction } = messageToDelete;
-    if (!messageId || messageId.startsWith('tmp-')) {
+    const { id: rawMessageId, direction } = messageToDelete;
+    if (!rawMessageId || rawMessageId.startsWith('tmp-')) {
       setMessageToDelete(null);
       return;
     }
+
+    const messageId = rawMessageId.includes('-') && !rawMessageId.startsWith('sent-')
+      ? rawMessageId.split('-')[0]
+      : rawMessageId;
 
     setIsDeletingMessage(true);
     try {
@@ -661,16 +661,16 @@ export default function AdminMessagingWorkspace({
       if (!response.ok) return;
 
       if (direction === 'out') {
-        setSentState((prev) => prev.filter((item) => item.id !== messageId));
+        setSentState((prev) => prev.filter((item) => item.id !== messageId && item.id !== rawMessageId));
         setLocalOutgoing((prev) => {
           const next = { ...prev };
           for (const key of Object.keys(next)) {
-            next[key] = next[key].filter((m) => m.id !== messageId);
+            next[key] = next[key].filter((m) => m.id !== messageId && m.id !== rawMessageId);
           }
           return next;
         });
       } else {
-        setReceivedState((prev) => prev.filter((item) => item.message.id !== messageId));
+        setReceivedState((prev) => prev.filter((item) => item.message.id !== messageId && item.id !== messageId && item.id !== rawMessageId));
       }
       setMessageToDelete(null);
     } finally {

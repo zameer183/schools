@@ -113,11 +113,13 @@ function buildConversations(
   messages: SerializedMessage[],
   locallyRead: Set<string>,
   localSent: Map<string, ConvMessage[]>,
-  recipientMeta: Map<string, RecipientOption>
+  recipientMeta: Map<string, RecipientOption>,
+  deletedIds: Set<string> = new Set()
 ) {
   const grouped = new Map<string, Conversation>();
 
   for (const message of messages) {
+    if (deletedIds.has(message.id)) continue;
     if (message.direction === 'received' && message.senderId) {
       const personId = message.senderId;
       const baseMessage: ConvMessage = {
@@ -194,7 +196,9 @@ function buildConversations(
     }
   }
 
-  for (const [personId, extras] of localSent.entries()) {
+  for (const [personId, rawExtras] of localSent.entries()) {
+    const extras = rawExtras.filter((item) => !deletedIds.has(item.id));
+    if (extras.length === 0) continue;
     const existing = grouped.get(personId);
     const latest = extras[extras.length - 1];
     if (!latest) continue;
@@ -382,20 +386,23 @@ export function TeacherMessagesClient({ messages, recipients }: TeacherMessagesC
       const raw = window.localStorage.getItem(deletedMessageStorageKey);
       if (!raw) return;
       const parsed = JSON.parse(raw) as { ids?: string[]; savedAt?: number } | string[];
+      let ids: string[] = [];
       if (Array.isArray(parsed)) {
-        setDeletedMessageIds(new Set(parsed));
-        return;
-      }
-      const ids = Array.isArray(parsed?.ids) ? parsed.ids : [];
-      const savedAt = typeof parsed?.savedAt === 'number' ? parsed.savedAt : Date.now();
-      const age = Date.now() - savedAt;
-      const maxAge = 7 * 24 * 60 * 60 * 1000;
-      if (age > maxAge) {
-        window.localStorage.removeItem(deletedMessageStorageKey);
-        return;
+        ids = parsed;
+      } else if (Array.isArray(parsed?.ids)) {
+        const savedAt = typeof parsed?.savedAt === 'number' ? parsed.savedAt : Date.now();
+        const age = Date.now() - savedAt;
+        const maxAge = 7 * 24 * 60 * 60 * 1000;
+        if (age > maxAge) {
+          window.localStorage.removeItem(deletedMessageStorageKey);
+          return;
+        }
+        ids = parsed.ids;
       }
       if (ids.length > 0) {
-        setDeletedMessageIds(new Set(ids));
+        const idSet = new Set(ids);
+        setDeletedMessageIds(idSet);
+        setLiveMessages((prev) => prev.filter((item) => !idSet.has(item.id)));
       }
     } catch {
       // ignore storage parse errors
@@ -403,8 +410,8 @@ export function TeacherMessagesClient({ messages, recipients }: TeacherMessagesC
   }, [deletedMessageStorageKey]);
 
   const allConversations = useMemo(
-    () => buildConversations(liveMessages, locallyRead, localSent, new Map(recipients.map((item) => [item.userId, item] as const))),
-    [liveMessages, locallyRead, localSent, recipients]
+    () => buildConversations(liveMessages, locallyRead, localSent, new Map(recipients.map((item) => [item.userId, item] as const)), deletedMessageIds),
+    [liveMessages, locallyRead, localSent, recipients, deletedMessageIds]
   );
 
   const recipientClassNameMap = useMemo(
