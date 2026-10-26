@@ -554,7 +554,7 @@ export default function AttendanceDashboardClient({
   }, [selectedDayRows, modalFilter]);
 
   return (
-    <div className="space-y-4 pb-24">
+    <div className="space-y-4 pb-36 sm:pb-24">
       {/* ── Top Controls Card ── */}
       <div className="rounded-2xl border border-[#E2E8F0] bg-white p-4 shadow-sm sm:p-5">
         <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
@@ -852,7 +852,7 @@ export default function AttendanceDashboardClient({
               </div>
 
               {/* Bulk Actions */}
-              <div className="flex items-center gap-2">
+              <div className="flex flex-wrap items-center gap-2">
                 <button
                   type="button"
                   onClick={() => markAllStudents('PRESENT')}
@@ -872,6 +872,22 @@ export default function AttendanceDashboardClient({
                   <UserX className="h-3.5 w-3.5" />
                   <span>Mark All Absent</span>
                 </button>
+
+                {studentChangedCount > 0 && (
+                  <button
+                    type="button"
+                    onClick={() => void saveStudents()}
+                    disabled={savingStudents}
+                    className="flex items-center gap-1.5 rounded-xl bg-[#0F172A] px-3.5 py-2 text-xs font-bold text-white shadow-md hover:scale-[1.02] active:scale-[0.98] transition-all"
+                  >
+                    {savingStudents ? (
+                      <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                    ) : (
+                      <Save className="h-3.5 w-3.5 text-[#10B981]" />
+                    )}
+                    <span>Save ({studentChangedCount})</span>
+                  </button>
+                )}
               </div>
             </div>
 
@@ -1069,7 +1085,7 @@ export default function AttendanceDashboardClient({
 
           {/* Floating Bottom Save Bar */}
           {studentChangedCount > 0 && (
-            <div className="fixed bottom-4 left-4 right-4 z-40 flex items-center justify-between gap-3 rounded-2xl bg-[#0F172A]/95 p-3.5 text-white shadow-2xl backdrop-blur-md border border-white/10 sm:bottom-6 sm:left-auto sm:right-6 sm:w-auto sm:min-w-[420px]">
+            <div className="fixed bottom-[88px] left-3 right-3 z-50 flex items-center justify-between gap-3 rounded-2xl bg-[#0F172A]/95 p-3.5 text-white shadow-[0_16px_36px_rgba(0,0,0,0.35)] backdrop-blur-md border border-white/10 sm:bottom-6 sm:left-auto sm:right-6 sm:w-auto sm:min-w-[420px]">
               <div className="flex items-center gap-2">
                 <span className="flex h-2.5 w-2.5 rounded-full bg-[#10B981] animate-pulse" />
                 <p className="text-xs sm:text-sm font-semibold">
@@ -1131,7 +1147,7 @@ export default function AttendanceDashboardClient({
               </div>
 
               {/* Bulk Actions */}
-              <div className="flex items-center gap-2">
+              <div className="flex flex-wrap items-center gap-2">
                 <button
                   type="button"
                   onClick={() => markAllTeachers('PRESENT')}
@@ -1151,6 +1167,22 @@ export default function AttendanceDashboardClient({
                   <UserX className="h-3.5 w-3.5" />
                   <span>Mark All Absent</span>
                 </button>
+
+                {teacherChangedCount > 0 && (
+                  <button
+                    type="button"
+                    onClick={() => void saveTeachers()}
+                    disabled={savingTeachers}
+                    className="flex items-center gap-1.5 rounded-xl bg-[#0F172A] px-3.5 py-2 text-xs font-bold text-white shadow-md hover:scale-[1.02] active:scale-[0.98] transition-all"
+                  >
+                    {savingTeachers ? (
+                      <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                    ) : (
+                      <Save className="h-3.5 w-3.5 text-[#10B981]" />
+                    )}
+                    <span>Save ({teacherChangedCount})</span>
+                  </button>
+                )}
               </div>
             </div>
 
@@ -1295,7 +1327,7 @@ export default function AttendanceDashboardClient({
 
           {/* Floating Bottom Save Bar for Teachers */}
           {teacherChangedCount > 0 && (
-            <div className="fixed bottom-4 left-4 right-4 z-40 flex items-center justify-between gap-3 rounded-2xl bg-[#0F172A]/95 p-3.5 text-white shadow-2xl backdrop-blur-md border border-white/10 sm:bottom-6 sm:left-auto sm:right-6 sm:w-auto sm:min-w-[420px]">
+            <div className="fixed bottom-[88px] left-3 right-3 z-50 flex items-center justify-between gap-3 rounded-2xl bg-[#0F172A]/95 p-3.5 text-white shadow-[0_16px_36px_rgba(0,0,0,0.35)] backdrop-blur-md border border-white/10 sm:bottom-6 sm:left-auto sm:right-6 sm:w-auto sm:min-w-[420px]">
               <div className="flex items-center gap-2">
                 <span className="flex h-2.5 w-2.5 rounded-full bg-[#10B981] animate-pulse" />
                 <p className="text-xs sm:text-sm font-semibold">
