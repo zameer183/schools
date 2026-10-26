@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import Link from 'next/link';
 
 export interface LoginTheme {
@@ -10,13 +10,31 @@ export interface LoginTheme {
   btnShadow: string;
 }
 
+const STORAGE_KEY = 'manarah_saved_creds';
+
 export default function LoginForm({ theme }: { theme: LoginTheme }) {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [rememberMe, setRememberMe] = useState(true);
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
   const [focused, setFocused] = useState<'email' | 'password' | null>(null);
+
+  useEffect(() => {
+    try {
+      const saved = localStorage.getItem(STORAGE_KEY);
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        if (parsed?.email) setEmail(parsed.email);
+        if (parsed?.password) setPassword(parsed.password);
+        setRememberMe(true);
+      }
+    } catch {
+      // ignore
+    }
+  }, []);
+
   const onSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
@@ -30,6 +48,18 @@ export default function LoginForm({ theme }: { theme: LoginTheme }) {
       });
       const data = await res.json();
       if (!res.ok) { setError(data.error || 'Invalid credentials'); return; }
+
+      // Save or clear credentials on successful login
+      try {
+        if (rememberMe) {
+          localStorage.setItem(STORAGE_KEY, JSON.stringify({ email, password }));
+        } else {
+          localStorage.removeItem(STORAGE_KEY);
+        }
+      } catch {
+        // ignore
+      }
+
       const target =
         data.role === 'ADMIN' ? '/admin' :
         data.role === 'TEACHER' ? '/teacher' :
@@ -63,10 +93,17 @@ export default function LoginForm({ theme }: { theme: LoginTheme }) {
             </svg>
           </span>
           <input
-            type="email" required value={email}
+            id="email"
+            name="email"
+            type="email"
+            autoComplete="username"
+            required
+            value={email}
             onChange={(e) => setEmail(e.target.value)}
-            onFocus={() => setFocused('email')} onBlur={() => setFocused(null)}
-            placeholder="your@email.com" style={inputStyle('email')}
+            onFocus={() => setFocused('email')}
+            onBlur={() => setFocused(null)}
+            placeholder="your@email.com"
+            style={inputStyle('email')}
             className="h-11 w-full rounded-[14px] border bg-[#f8fafc] pl-11 pr-4 text-[14px] text-[#0d1117] outline-none transition-all placeholder:text-[#c4cdd8] focus:bg-white"
           />
         </div>
@@ -75,7 +112,7 @@ export default function LoginForm({ theme }: { theme: LoginTheme }) {
       {/* Password */}
       <div>
         <div className="mb-2 flex items-center justify-between">
-          <label className="block text-[11px] font-bold uppercase tracking-[0.14em] text-[#94a3b8]">Password</label>
+          <label htmlFor="password" className="block text-[11px] font-bold uppercase tracking-[0.14em] text-[#94a3b8]">Password</label>
           <Link href="/forgot-password" style={{ color: theme.accent }} className="text-[13px] font-semibold transition-opacity hover:opacity-70">
             Forgot password?
           </Link>
@@ -88,10 +125,17 @@ export default function LoginForm({ theme }: { theme: LoginTheme }) {
             </svg>
           </span>
           <input
-            type={showPassword ? 'text' : 'password'} required value={password}
+            id="password"
+            name="password"
+            type={showPassword ? 'text' : 'password'}
+            autoComplete="current-password"
+            required
+            value={password}
             onChange={(e) => setPassword(e.target.value)}
-            onFocus={() => setFocused('password')} onBlur={() => setFocused(null)}
-            placeholder="••••••••" style={inputStyle('password')}
+            onFocus={() => setFocused('password')}
+            onBlur={() => setFocused(null)}
+            placeholder="••••••••"
+            style={inputStyle('password')}
             className="h-11 w-full rounded-[14px] border bg-[#f8fafc] pl-11 pr-12 text-[14px] text-[#0d1117] outline-none transition-all placeholder:text-[#c4cdd8] focus:bg-white"
           />
           <button type="button" onClick={() => setShowPassword((p) => !p)}
@@ -110,6 +154,21 @@ export default function LoginForm({ theme }: { theme: LoginTheme }) {
             )}
           </button>
         </div>
+      </div>
+
+      {/* Remember me & Save password */}
+      <div className="flex items-center justify-between pt-0.5">
+        <label className="flex items-center gap-2.5 text-xs text-[#64748b] cursor-pointer select-none transition hover:text-[#0f172a]">
+          <input
+            type="checkbox"
+            id="rememberMe"
+            name="rememberMe"
+            checked={rememberMe}
+            onChange={(e) => setRememberMe(e.target.checked)}
+            className="h-4 w-4 cursor-pointer rounded border-[#cbd5e1] accent-[#0C3D2E]"
+          />
+          <span className="font-medium text-[#475569]">Save password &amp; Remember me</span>
+        </label>
       </div>
 
       {/* Error */}

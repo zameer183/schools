@@ -1,14 +1,32 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import Link from 'next/link';
+
+const STORAGE_KEY = 'manarah_saved_creds';
 
 export default function LoginForm() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [rememberMe, setRememberMe] = useState(true);
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
+
+  useEffect(() => {
+    try {
+      const saved = localStorage.getItem(STORAGE_KEY);
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        if (parsed?.email) setEmail(parsed.email);
+        if (parsed?.password) setPassword(parsed.password);
+        setRememberMe(true);
+      }
+    } catch {
+      // ignore
+    }
+  }, []);
+
   const onSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
@@ -26,6 +44,16 @@ export default function LoginForm() {
       if (!res.ok) {
         setError(data.error || 'Login failed');
         return;
+      }
+
+      try {
+        if (rememberMe) {
+          localStorage.setItem(STORAGE_KEY, JSON.stringify({ email, password }));
+        } else {
+          localStorage.removeItem(STORAGE_KEY);
+        }
+      } catch {
+        // ignore
       }
 
       const target = data.role === 'ADMIN' ? '/admin' : data.role === 'TEACHER' ? '/teacher' : data.role === 'STUDENT' ? '/student' : '/parent';
@@ -54,11 +82,13 @@ export default function LoginForm() {
           </span>
           <input
             id="email"
+            name="email"
             className="h-11 w-full rounded-xl border border-[#e2e8f0] bg-[#f8fafc] pl-10 pr-4 text-sm text-[#0f172a] outline-none transition placeholder:text-[#c4cdd8] focus:border-[#C9952A] focus:bg-white focus:ring-2 focus:ring-[#C9952A]/15 sm:h-12"
             value={email}
             onChange={(e) => setEmail(e.target.value)}
             placeholder="name@manarah.edu"
             type="email"
+            autoComplete="username"
             required
           />
         </div>
@@ -83,11 +113,13 @@ export default function LoginForm() {
           </span>
           <input
             id="password"
+            name="password"
             className="h-11 w-full rounded-xl border border-[#e2e8f0] bg-[#f8fafc] pl-10 pr-16 text-sm text-[#0f172a] outline-none transition placeholder:text-[#c4cdd8] focus:border-[#C9952A] focus:bg-white focus:ring-2 focus:ring-[#C9952A]/15 sm:h-12"
             type={showPassword ? 'text' : 'password'}
             value={password}
             onChange={(e) => setPassword(e.target.value)}
             placeholder="••••••••"
+            autoComplete="current-password"
             required
           />
           <button
@@ -100,15 +132,18 @@ export default function LoginForm() {
         </div>
       </div>
 
-      {/* Remember me */}
+      {/* Remember me & Save password */}
       <div className="flex items-center gap-2.5">
         <input
           type="checkbox"
           id="remember"
+          name="remember"
+          checked={rememberMe}
+          onChange={(e) => setRememberMe(e.target.checked)}
           className="h-4 w-4 cursor-pointer rounded border-[#cbd5e1] accent-[#C9952A]"
         />
-        <label htmlFor="remember" className="cursor-pointer select-none text-sm text-[#64748b]">
-          Remember me for 30 days
+        <label htmlFor="remember" className="cursor-pointer select-none text-sm font-medium text-[#64748b] hover:text-[#0f172a]">
+          Save password &amp; Remember me
         </label>
       </div>
 

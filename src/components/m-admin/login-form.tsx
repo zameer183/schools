@@ -1,14 +1,32 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Mail, Lock, Eye, EyeOff } from 'lucide-react';
+
+const STORAGE_KEY = 'manarah_saved_creds';
 
 export function MobileLoginForm() {
   const [email, setEmail] = useState('manarahinstitute01@gmail.com');
   const [password, setPassword] = useState('');
+  const [rememberMe, setRememberMe] = useState(true);
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
+
+  useEffect(() => {
+    try {
+      const saved = localStorage.getItem(STORAGE_KEY);
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        if (parsed?.email) setEmail(parsed.email);
+        if (parsed?.password) setPassword(parsed.password);
+        setRememberMe(true);
+      }
+    } catch {
+      // ignore
+    }
+  }, []);
+
   const onSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
@@ -33,6 +51,16 @@ export function MobileLoginForm() {
         return;
       }
 
+      try {
+        if (rememberMe) {
+          localStorage.setItem(STORAGE_KEY, JSON.stringify({ email, password }));
+        } else {
+          localStorage.removeItem(STORAGE_KEY);
+        }
+      } catch {
+        // ignore
+      }
+
       window.location.assign('/m/admin');
     } catch {
       setError('Unable to login right now');
@@ -44,11 +72,14 @@ export function MobileLoginForm() {
   return (
     <form onSubmit={onSubmit} className="space-y-4">
       <div>
-        <label className="mb-1.5 block text-[11px] font-medium text-[#6B7280]">Email or institute ID</label>
+        <label htmlFor="email" className="mb-1.5 block text-[11px] font-medium text-[#6B7280]">Email or institute ID</label>
         <div className="flex h-11 items-center gap-3 rounded-xl border border-[#E5E7EB] bg-white px-3 focus-within:border-[#1B4D4B] focus-within:ring-2 focus-within:ring-[#1B4D4B]/20">
           <Mail className="h-4 w-4 text-[#6B7280]" />
           <input
+            id="email"
+            name="email"
             type="email"
+            autoComplete="username"
             value={email}
             onChange={(e) => setEmail(e.target.value)}
             required
@@ -59,11 +90,14 @@ export function MobileLoginForm() {
       </div>
 
       <div>
-        <label className="mb-1.5 block text-[11px] font-medium text-[#6B7280]">Password</label>
+        <label htmlFor="password" className="mb-1.5 block text-[11px] font-medium text-[#6B7280]">Password</label>
         <div className="flex h-11 items-center gap-3 rounded-xl border border-[#E5E7EB] bg-white px-3 focus-within:border-[#1B4D4B] focus-within:ring-2 focus-within:ring-[#1B4D4B]/20">
           <Lock className="h-4 w-4 text-[#1B4D4B]" />
           <input
+            id="password"
+            name="password"
             type={showPassword ? 'text' : 'password'}
+            autoComplete="current-password"
             value={password}
             onChange={(e) => setPassword(e.target.value)}
             required
@@ -82,9 +116,16 @@ export function MobileLoginForm() {
       </div>
 
       <div className="flex items-center justify-between">
-        <label className="flex items-center gap-2 text-xs text-[#6B7280]">
-          <input type="checkbox" className="h-4 w-4 rounded border-[#E5E7EB] accent-[#1B4D4B]" />
-          Remember me
+        <label className="flex items-center gap-2 text-xs text-[#6B7280] cursor-pointer select-none">
+          <input
+            type="checkbox"
+            id="rememberMe"
+            name="rememberMe"
+            checked={rememberMe}
+            onChange={(e) => setRememberMe(e.target.checked)}
+            className="h-4 w-4 cursor-pointer rounded border-[#E5E7EB] accent-[#1B4D4B]"
+          />
+          <span>Save password &amp; Remember me</span>
         </label>
         <a href="/forgot-password" className="text-xs font-medium text-[#1B4D4B]">
           Forgot password?
