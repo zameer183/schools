@@ -1,5 +1,4 @@
 import { PaymentStatus, Prisma } from '@prisma/client';
-import { unstable_cache } from 'next/cache';
 import { DollarSign, TrendingUp, Clock, AlertCircle, Percent } from 'lucide-react';
 import { prisma } from '@/lib/prisma';
 import { formatCurrency } from '@/lib/utils';
@@ -89,170 +88,164 @@ type FinancePageData = {
   }>;
 };
 
-const getCachedFinanceData = unstable_cache(
-  async (selectedStatus: string, selectedClassId: string, selectedSort: string, selectedPeriod: string, selectedFrom: string, selectedTo: string, selectedMonth: string, page: number) => {
-    const pageSize = 40;
-    const skip = (page - 1) * pageSize;
-    const now = new Date();
-    const rangeStart = new Date(now.getFullYear(), now.getMonth(), 1, 0, 0, 0, 0);
-    let rangeEnd: Date | null = null;
-    if (selectedPeriod === 'mtd_1_8') {
-      rangeEnd = new Date(now.getFullYear(), now.getMonth(), 8, 23, 59, 59, 999);
-    } else if (selectedPeriod === 'mtd_1_15') {
-      rangeEnd = new Date(now.getFullYear(), now.getMonth(), 15, 23, 59, 59, 999);
-    } else if (selectedPeriod === 'mtd_full') {
-      rangeEnd = new Date(now.getFullYear(), now.getMonth() + 1, 0, 23, 59, 59, 999);
-    }
+async function getFinanceData(
+  selectedStatus: string,
+  selectedClassId: string,
+  selectedSort: string,
+  selectedPeriod: string,
+  selectedFrom: string,
+  selectedTo: string,
+  selectedMonth: string,
+  page: number
+) {
+  const pageSize = 40;
+  const skip = (page - 1) * pageSize;
+  const now = new Date();
+  const rangeStart = new Date(now.getFullYear(), now.getMonth(), 1, 0, 0, 0, 0);
+  let rangeEnd: Date | null = null;
+  if (selectedPeriod === 'mtd_1_8') {
+    rangeEnd = new Date(now.getFullYear(), now.getMonth(), 8, 23, 59, 59, 999);
+  } else if (selectedPeriod === 'mtd_1_15') {
+    rangeEnd = new Date(now.getFullYear(), now.getMonth(), 15, 23, 59, 59, 999);
+  } else if (selectedPeriod === 'mtd_full') {
+    rangeEnd = new Date(now.getFullYear(), now.getMonth() + 1, 0, 23, 59, 59, 999);
+  }
 
-    const periodDueDateWhere: Prisma.DateTimeFilter | undefined = (() => {
-      const hasCustomFrom = /^\d{4}-\d{2}-\d{2}$/.test(selectedFrom);
-      const hasCustomTo = /^\d{4}-\d{2}-\d{2}$/.test(selectedTo);
-      if (hasCustomFrom || hasCustomTo) {
-        const customFrom = hasCustomFrom ? new Date(`${selectedFrom}T00:00:00.000`) : null;
-        const customTo = hasCustomTo ? new Date(`${selectedTo}T23:59:59.999`) : null;
-        return {
-          ...(customFrom ? { gte: customFrom } : {}),
-          ...(customTo ? { lte: customTo } : {})
-        };
-      }
-      if (selectedMonth) {
-        const [year, month] = selectedMonth.split('-').map(Number);
-        if (!year || !month) return undefined;
-        const monthStart = new Date(year, month - 1, 1, 0, 0, 0, 0);
-        const monthEnd = new Date(year, month, 0, 23, 59, 59, 999);
-        return { gte: monthStart, lte: monthEnd };
-      }
-      if (selectedPeriod === 'all') return undefined;
+  const periodDueDateWhere: Prisma.DateTimeFilter | undefined = (() => {
+    const hasCustomFrom = /^\d{4}-\d{2}-\d{2}$/.test(selectedFrom);
+    const hasCustomTo = /^\d{4}-\d{2}-\d{2}$/.test(selectedTo);
+    if (hasCustomFrom || hasCustomTo) {
+      const customFrom = hasCustomFrom ? new Date(`${selectedFrom}T00:00:00.000`) : null;
+      const customTo = hasCustomTo ? new Date(`${selectedTo}T23:59:59.999`) : null;
       return {
-        gte: rangeStart,
-        ...(rangeEnd ? { lte: rangeEnd } : {})
+        ...(customFrom ? { gte: customFrom } : {}),
+        ...(customTo ? { lte: customTo } : {})
       };
-    })();
-
-    let feeStatusWhere: Prisma.FeeWhereInput = {};
-    if (selectedStatus === 'paid') {
-      feeStatusWhere = { status: PaymentStatus.PAID };
-    } else if (selectedStatus === 'unpaid') {
-      feeStatusWhere = { status: { in: [PaymentStatus.PENDING, PaymentStatus.PARTIAL, PaymentStatus.OVERDUE] } };
-    } else if (selectedStatus === 'partial') {
-      feeStatusWhere = { status: PaymentStatus.PARTIAL };
     }
-
-    const classWhere = selectedClassId !== 'all' ? { student: { classId: selectedClassId } } : {};
-    const combinedWhere = { ...feeStatusWhere, ...classWhere };
-    let orderBy: Prisma.FeeOrderByWithRelationInput[] = [{ status: 'desc' }, { dueDate: 'asc' }];
-    if (selectedSort === 'amount') {
-      orderBy = [{ amount: 'desc' }];
-    } else if (selectedSort === 'name') {
-      orderBy = [{ student: { user: { fullName: 'asc' } } }];
+    if (selectedMonth) {
+      const [year, month] = selectedMonth.split('-').map(Number);
+      if (!year || !month) return undefined;
+      const monthStart = new Date(year, month - 1, 1, 0, 0, 0, 0);
+      const monthEnd = new Date(year, month, 0, 23, 59, 59, 999);
+      return { gte: monthStart, lte: monthEnd };
     }
-
-    const feeWhere: Prisma.FeeWhereInput = {
-      ...combinedWhere,
-      ...(periodDueDateWhere ? { dueDate: periodDueDateWhere } : {})
+    if (selectedPeriod === 'all') return undefined;
+    return {
+      gte: rangeStart,
+      ...(rangeEnd ? { lte: rangeEnd } : {})
     };
+  })();
 
-    const paymentWhere: Prisma.PaymentWhereInput = {
-      ...(selectedStatus === 'all' ? {} : { fee: feeStatusWhere }),
-      ...(selectedClassId !== 'all' ? { fee: { ...(selectedStatus === 'all' ? {} : feeStatusWhere), student: { classId: selectedClassId } } } : {}),
-      ...(periodDueDateWhere ? { paidAt: periodDueDateWhere } : {})
-    };
+  let feeStatusWhere: Prisma.FeeWhereInput = {};
+  if (selectedStatus === 'paid') {
+    feeStatusWhere = { status: PaymentStatus.PAID };
+  } else if (selectedStatus === 'unpaid') {
+    feeStatusWhere = { status: { in: [PaymentStatus.PENDING, PaymentStatus.PARTIAL, PaymentStatus.OVERDUE] } };
+  } else if (selectedStatus === 'partial') {
+    feeStatusWhere = { status: PaymentStatus.PARTIAL };
+  }
 
-    const [classes, feeAgg, paidAgg, recentPayments, totalDuesCount, dues] = await Promise.all([
-      prisma.class.findMany({
-        select: { id: true, name: true, section: true },
-        orderBy: { name: 'asc' }
-      }),
-      prisma.fee.aggregate({ where: feeWhere, _sum: { amount: true, discount: true } }),
-      prisma.payment.aggregate({ where: paymentWhere, _sum: { amountPaid: true } }),
-      prisma.payment.findMany({
-        where: paymentWhere,
-        select: {
-          id: true,
-          feeId: true,
-          amountPaid: true,
-          paidAt: true,
-          fee: {
-            select: {
-              title: true,
-              dueDate: true,
-              amount: true,
-              discount: true,
-              student: {
-                select: {
-                  user: { select: { fullName: true } }
-                }
-              }
-            }
-          }
-        },
-        orderBy: { paidAt: 'desc' },
-        take: 10
-      }),
-      prisma.fee.count({ where: feeWhere }),
-      prisma.fee.findMany({
-        where: feeWhere,
-        select: {
-          id: true,
-          title: true,
-          status: true,
-          dueDate: true,
-          amount: true,
-          discount: true,
-          student: {
-            select: {
-              id: true,
-              emergencyContact: true,
-              whatsApp: true,
-              class: { select: { name: true, section: true } },
-              user: { select: { fullName: true, phone: true } }
-            }
-          }
-        },
-        orderBy,
-        skip, take: pageSize
-      })
-    ]);
+  const classWhere = selectedClassId !== 'all' ? { student: { classId: selectedClassId } } : {};
+  const combinedWhere = { ...feeStatusWhere, ...classWhere };
+  let orderBy: Prisma.FeeOrderByWithRelationInput[] = [{ status: 'desc' }, { dueDate: 'asc' }];
+  if (selectedSort === 'amount') {
+    orderBy = [{ amount: 'desc' }];
+  } else if (selectedSort === 'name') {
+    orderBy = [{ student: { user: { fullName: 'asc' } } }];
+  }
 
-    const feeIds = Array.from(new Set([...recentPayments.map((item) => item.feeId), ...dues.map((fee) => fee.id)]));
-    const feePaidRows = feeIds.length
-      ? await prisma.payment.groupBy({
-          by: ['feeId'],
-          where: { feeId: { in: feeIds } },
-          _sum: { amountPaid: true }
-        })
-      : [];
+  const feeWhere: Prisma.FeeWhereInput = {
+    ...combinedWhere,
+    ...(periodDueDateWhere ? { dueDate: periodDueDateWhere } : {})
+  };
 
-    const feePaidById = new Map(
-      feePaidRows.map((row) => [row.feeId, Number(row._sum.amountPaid ?? 0)])
-    );
+  const paymentWhere: Prisma.PaymentWhereInput = {
+    ...(selectedStatus === 'all' ? {} : { fee: feeStatusWhere }),
+    ...(selectedClassId !== 'all' ? { fee: { ...(selectedStatus === 'all' ? {} : feeStatusWhere), student: { classId: selectedClassId } } } : {}),
+    ...(periodDueDateWhere ? { paidAt: periodDueDateWhere } : {})
+  };
 
-        const studentIds = Array.from(new Set(dues.map((fee) => fee.student.id)));
-    const allStudentUnpaidFees = studentIds.length
-      ? await prisma.fee.findMany({
-          where: {
-            studentId: { in: studentIds },
-            status: { in: [PaymentStatus.PENDING, PaymentStatus.PARTIAL, PaymentStatus.OVERDUE] }
-          },
+  const [classes, feeAgg, paidAgg, recentPayments, totalDuesCount, dues] = await Promise.all([
+    prisma.class.findMany({
+      select: { id: true, name: true, section: true },
+      orderBy: { name: 'asc' }
+    }),
+    prisma.fee.aggregate({ where: feeWhere, _sum: { amount: true, discount: true } }),
+    prisma.payment.aggregate({ where: paymentWhere, _sum: { amountPaid: true } }),
+    prisma.payment.findMany({
+      where: paymentWhere,
+      select: {
+        id: true,
+        feeId: true,
+        amountPaid: true,
+        paidAt: true,
+        fee: {
           select: {
-            id: true,
-            studentId: true,
             title: true,
             dueDate: true,
             amount: true,
             discount: true,
-            status: true,
-            payments: { select: { amountPaid: true } }
-          },
-          orderBy: { dueDate: 'asc' }
-        })
-      : [];
+            student: {
+              select: {
+                user: { select: { fullName: true } }
+              }
+            }
+          }
+        }
+      },
+      orderBy: { paidAt: 'desc' },
+      take: 10
+    }),
+    prisma.fee.count({ where: feeWhere }),
+    prisma.fee.findMany({
+      where: feeWhere,
+      select: {
+        id: true,
+        title: true,
+        status: true,
+        dueDate: true,
+        amount: true,
+        discount: true,
+        payments: { select: { amountPaid: true } },
+        student: {
+          select: {
+            id: true,
+            emergencyContact: true,
+            whatsApp: true,
+            class: { select: { name: true, section: true } },
+            user: { select: { fullName: true, phone: true } }
+          }
+        }
+      },
+      orderBy,
+      skip,
+      take: pageSize
+    })
+  ]);
 
-    return { classes, feeAgg, paidAgg, recentPayments, totalDuesCount, dues, feePaidById, allStudentUnpaidFees };
-  },
-  ['admin-finance-page'],
-  { revalidate: 30 }
-);
+  const studentIds = Array.from(new Set(dues.map((fee) => fee.student.id)));
+  const allStudentUnpaidFees = studentIds.length
+    ? await prisma.fee.findMany({
+        where: {
+          studentId: { in: studentIds },
+          status: { in: [PaymentStatus.PENDING, PaymentStatus.PARTIAL, PaymentStatus.OVERDUE] }
+        },
+        select: {
+          id: true,
+          studentId: true,
+          title: true,
+          dueDate: true,
+          amount: true,
+          discount: true,
+          status: true,
+          payments: { select: { amountPaid: true } }
+        },
+        orderBy: { dueDate: 'asc' }
+      })
+    : [];
+
+  return { classes, feeAgg, paidAgg, recentPayments, totalDuesCount, dues, allStudentUnpaidFees };
+}
 
 export default async function AdminFinancePage({ searchParams }: AdminFinancePageProps) {
   const params = (await searchParams) ?? {};
@@ -277,9 +270,9 @@ export default async function AdminFinancePage({ searchParams }: AdminFinancePag
       : defaultPeriod;
       
   const page = Math.max(1, Number(params.page) || 1);
-  let data: Awaited<ReturnType<typeof getCachedFinanceData>> | null = null;
+  let data: Awaited<ReturnType<typeof getFinanceData>> | null = null;
   try {
-    data = await getCachedFinanceData(selectedStatus, selectedClassId, selectedSort, selectedPeriod, selectedFrom, selectedTo, selectedMonth, page);
+    data = await getFinanceData(selectedStatus, selectedClassId, selectedSort, selectedPeriod, selectedFrom, selectedTo, selectedMonth, page);
   } catch (error) {
     console.error('[admin/finance] load failed', error);
     if (!isDatabaseConnectionError(error)) throw error;
@@ -297,8 +290,7 @@ export default async function AdminFinancePage({ searchParams }: AdminFinancePag
     );
   }
 
-  const { classes, feeAgg, paidAgg, recentPayments, totalDuesCount, dues, feePaidById, allStudentUnpaidFees = [] } = data;
-  const feePaidTotals = new Map<string, number>(Object.entries(feePaidById ?? {}));
+  const { classes, feeAgg, paidAgg, recentPayments, totalDuesCount, dues, allStudentUnpaidFees = [] } = data;
   const totalBilled = Number(feeAgg._sum.amount ?? 0) - Number(feeAgg._sum.discount ?? 0);
   const totalPaid = Number(paidAgg._sum.amountPaid ?? 0);
   const totalDueKpi = Math.max(totalBilled - totalPaid, 0);
@@ -345,8 +337,8 @@ export default async function AdminFinancePage({ searchParams }: AdminFinancePag
   let dueAmount = 0;
 
   let serializedDues: SerializedFeeItem[] = dues.map(fee => {
-    const paidAmount = Number(feePaidTotals.get(fee.id) ?? 0);
-    const total = Number(fee.amount) - Number(fee.discount);
+    const paidAmount = fee.payments.reduce((sum, p) => sum + Number(p.amountPaid), 0);
+    const total = Math.max(Number(fee.amount) - Number(fee.discount), 0);
     const remaining = Math.max(total - paidAmount, 0);
     const computedStatus = deriveFeeStatus({
       dueDate: fee.dueDate,
@@ -398,15 +390,9 @@ export default async function AdminFinancePage({ searchParams }: AdminFinancePag
     { label: 'Collection Rate',  value: `${collectionRate}%` }
   ];
   const recentPaymentRows = recentPayments.map((item) => {
-    const total = Number(item.fee.amount) - Number(item.fee.discount);
-    const paidAmount = Number(feePaidTotals.get(item.feeId) ?? 0);
     return {
       ...item,
-      computedStatus: deriveFeeStatus({
-        dueDate: item.fee.dueDate,
-        totalAmount: total,
-        paidAmount
-      })
+      computedStatus: PaymentStatus.PAID
     };
   });
 

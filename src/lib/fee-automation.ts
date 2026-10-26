@@ -211,11 +211,9 @@ export async function runFeeAutomation(targetDate = new Date(), filterStudentId?
       const monthEnd = new Date(Date.UTC(year, month + 1, 0, 23, 59, 59, 999));
       const monthLabel = monthStart.toLocaleString('en-US', { month: 'long', year: 'numeric', timeZone: 'UTC' });
 
-      const existing = await prisma.fee.findFirst({
-        where: {
-          studentId: student.id,
-          dueDate: { gte: monthStart, lte: monthEnd }
-        }
+      const existing = student.fees.some((f) => {
+        const d = new Date(f.dueDate);
+        return d >= monthStart && d <= monthEnd;
       });
 
       if (existing) {
@@ -224,7 +222,7 @@ export async function runFeeAutomation(targetDate = new Date(), filterStudentId?
         const isPastMonth = monthStart < currentMonthStart;
         const initialStatus = isPastMonth ? PaymentStatus.OVERDUE : PaymentStatus.PENDING;
 
-        await prisma.fee.create({
+        const newFee = await prisma.fee.create({
           data: {
             studentId: student.id,
             title: `Monthly Tuition Fee - ${monthLabel}`,
@@ -238,6 +236,7 @@ export async function runFeeAutomation(targetDate = new Date(), filterStudentId?
             status: initialStatus
           }
         });
+        student.fees.push(newFee);
         created++;
       }
 

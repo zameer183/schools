@@ -124,6 +124,12 @@ export function FeeBulkList({
     router.push(`?${params.toString()}`);
   }
 
+  const [feesList, setFeesList] = useState<SerializedFeeItem[]>(fees);
+
+  useEffect(() => {
+    setFeesList(fees);
+  }, [fees]);
+
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [loading, setLoading] = useState(false);
   const [loadingIds, setLoadingIds] = useState<Set<string>>(new Set());
@@ -162,6 +168,7 @@ export function FeeBulkList({
   const handleRecordPayment = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!payTarget || !payAmount || Number(payAmount) <= 0) return;
+    const amountNum = Number(payAmount);
     setPaySubmitting(true);
     try {
       const res = await fetch('/api/fees', {
@@ -170,7 +177,7 @@ export function FeeBulkList({
         body: JSON.stringify({
           studentId: payTarget.studentId,
           feeId: payTarget.id,
-          amountPaid: Number(payAmount),
+          amountPaid: amountNum,
           method: payMethod,
           transactionRef: payRef || null,
           allocateToOldest: true
@@ -178,8 +185,39 @@ export function FeeBulkList({
       });
       const data = await res.json();
       if (res.ok) {
+        // Optimistically update feesList so UI updates INSTANTLY
+        setFeesList((prevList) => {
+          let leftToPay = amountNum;
+          return prevList.map((item) => {
+            if (item.studentId !== payTarget.studentId) return item;
+            const apply = Math.min(leftToPay, item.remaining);
+            leftToPay -= apply;
+            const newPaid = item.paidAmount + apply;
+            const newRem = Math.max(item.remaining - apply, 0);
+            const newTotalDue = Math.max((item.totalStudentDue ?? item.remaining) - amountNum, 0);
+            const newStatus = newRem <= 0 ? 'PAID' : (newPaid > 0 ? 'PARTIAL' : item.status);
+            return {
+              ...item,
+              paidAmount: newPaid,
+              remaining: newRem,
+              totalStudentDue: newTotalDue,
+              status: newStatus,
+              unpaidMonths: item.unpaidMonths
+                ? item.unpaidMonths
+                    .map((m) => {
+                      if (m.id === item.id) {
+                        return { ...m, remaining: newRem, paidAmount: newPaid, status: newStatus };
+                      }
+                      return m;
+                    })
+                    .filter((m) => m.remaining > 0)
+                : []
+            };
+          });
+        });
+
         setToast({
-          message: `Payment of ${formatCurrency(Number(payAmount))} recorded successfully for ${payTarget.studentName}!`,
+          message: `Payment of ${formatCurrency(amountNum)} recorded successfully for ${payTarget.studentName}!`,
           type: 'success'
         });
         setPayTarget(null);
@@ -195,60 +233,70 @@ export function FeeBulkList({
   };
 
   const groupedFees = useMemo(() => {
-    const map = new Map<string, SerializedFeeItem & { mergedIds: string[]; totalRemaining: number; titleList: string[] }>();
-    for (const f of fees) {
-      const existing = map.get(f.studentId);
-      if (existing && f.status !== 'PAID' && existing.status !== 'PAID') {
-        const mergedTotalRem = f.totalStudentDue ?? (existing.totalRemaining + f.remaining);
-        existing.totalRemaining = mergedTotalRem;
-        existing.amount += f.amount;
-        existing.paidAmount += f.paidAmount;
-        existing.discount += f.discount;
-        existing.mergedIds.push(f.id);
-        existing.titleList.push(f.title);
-        existing.dueMonthCount = f.studentDueMonthCount ?? Math.max(existing.dueMonthCount || 1, f.dueMonthCount || 1);
-        if (new Date(f.dueDate) < new Date(existing.dueDate)) existing.dueDate = f.dueDate;
-        existing.status = (mergedTotalRem <= 0) ? 'PAID' : (existing.paidAmount > 0 || f.paidAmount > 0 ? 'PARTIAL' : 'PENDING');
-        if (f.unpaidMonths && f.unpaidMonths.length > 0) {
-          existing.unpaidMonths = f.unpaidMonths;
-        }
-      } else if (!existing) {
-        const totalRem = f.totalStudentDue ?? f.remaining;
-        map.set(f.studentId, {
-          ...f,
-          mergedIds: [f.id],
-          totalRemaining: totalRem,
-          titleList: [f.title],
-          dueMonthCount: f.studentDueMonthCount ?? f.dueMonthCount ?? 1
-        });
-      } else {
-        map.set(f.id, {
+    const studentMap = new Map<string, SerializedFeeItem & { mergedIds: string[]; totalRemaining: number; titleList: string[] }>();
+
+    for (const f of feesList) {
+      const existing = studentMap.get(f.studentId);
+      if (!existing) {
+        studentMap.set(f.studentId, {
           ...f,
           mergedIds: [f.id],
           totalRemaining: f.totalStudentDue ?? f.remaining,
           titleList: [f.title],
           dueMonthCount: f.studentDueMonthCount ?? f.dueMonthCount ?? 1
         });
+      } else {
+        existing.mergedIds.push(f.id);
+        if (!existing.titleList.includes(f.title)) {
+          existing.titleList.push(f.title);
+        }
+        existing.amount += f.amount;
+        existing.paidAmount += f.paidAmount;
+        existing.discount += f.discount;
+
+        const currentTotalRem = f.totalStudentDue ?? (existing.totalRemaining + f.remaining);
+        existing.totalRemaining = Math.max(existing.totalRemaining, currentTotalRem);
+        existing.dueMonthCount = f.studentDueMonthCount ?? Math.max(existing.dueMonthCount || 1, f.dueMonthCount || 1);
+
+        if (new Date(f.dueDate) < new Date(existing.dueDate)) {
+          existing.dueDate = f.dueDate;
+        }
+
+        if (existing.totalRemaining > 0) {
+          if (existing.paidAmount > 0) {
+            existing.status = 'PARTIAL';
+          } else if (new Date(existing.dueDate) < new Date()) {
+            existing.status = 'OVERDUE';
+          } else {
+            existing.status = 'PENDING';
+          }
+        } else {
+          existing.status = 'PAID';
+        }
+
+        if (f.unpaidMonths && f.unpaidMonths.length > 0) {
+          existing.unpaidMonths = f.unpaidMonths;
+        }
       }
     }
-    return Array.from(map.values());
-  }, [fees]);
+    return Array.from(studentMap.values());
+  }, [feesList]);
 
   const selectedGroups = useMemo(
     () => groupedFees.filter((g) => g.mergedIds.every((id) => selected.has(id))),
     [groupedFees, selected]
   );
-  const allSelected = fees.length > 0 && selected.size === fees.length;
-  const someSelected = selected.size > 0 && selected.size < fees.length;
+  const allSelected = feesList.length > 0 && selected.size === feesList.length;
+  const someSelected = selected.size > 0 && selected.size < feesList.length;
 
   useEffect(() => {
     if (selectAllRef.current) selectAllRef.current.indeterminate = someSelected;
   }, [someSelected]);
 
   useEffect(() => {
-    const visibleIds = new Set(fees.map((fee) => fee.id));
+    const visibleIds = new Set(feesList.map((fee) => fee.id));
     setSelected((prev) => new Set(Array.from(prev).filter((id) => visibleIds.has(id))));
-  }, [fees]);
+  }, [feesList]);
 
   const title =
     selectedFeeStatus === 'paid'
@@ -272,12 +320,32 @@ export function FeeBulkList({
   };
 
   const toggleAll = () => {
-    setSelected(allSelected ? new Set() : new Set(fees.map((fee) => fee.id)));
+    setSelected(allSelected ? new Set() : new Set(feesList.map((fee) => fee.id)));
   };
 
   const bulkUpdate = async (status: 'PAID' | 'PENDING') => {
     if (selected.size === 0) return;
+    const selSet = new Set(selected);
     setLoading(true);
+
+    // Optimistic update
+    setFeesList((prevList) =>
+      prevList.map((item) => {
+        if (selSet.has(item.id)) {
+          const isMarkingPaid = status === 'PAID';
+          const net = Math.max(item.amount - item.discount, 0);
+          return {
+            ...item,
+            status,
+            paidAmount: isMarkingPaid ? net : 0,
+            remaining: isMarkingPaid ? 0 : net,
+            totalStudentDue: isMarkingPaid ? Math.max((item.totalStudentDue ?? net) - net, 0) : (item.totalStudentDue ?? net)
+          };
+        }
+        return item;
+      })
+    );
+
     const res = await fetch('/api/fees/bulk', {
       method: 'PATCH',
       headers: { 'Content-Type': 'application/json' },
@@ -294,12 +362,33 @@ export function FeeBulkList({
     setLoading(false);
   };
 
-  const updateOne = async (feeId: string, status: 'PAID' | 'PENDING') => {
-    setLoadingIds((prev) => new Set(prev).add(feeId));
+  const updateOne = async (targetIds: string | string[], status: 'PAID' | 'PENDING') => {
+    const ids = Array.isArray(targetIds) ? targetIds : [targetIds];
+    const idSet = new Set(ids);
+    setLoadingIds((prev) => new Set([...prev, ...ids]));
+
+    // Optimistic update
+    setFeesList((prevList) =>
+      prevList.map((item) => {
+        if (idSet.has(item.id)) {
+          const isMarkingPaid = status === 'PAID';
+          const net = Math.max(item.amount - item.discount, 0);
+          return {
+            ...item,
+            status,
+            paidAmount: isMarkingPaid ? net : 0,
+            remaining: isMarkingPaid ? 0 : net,
+            totalStudentDue: isMarkingPaid ? Math.max((item.totalStudentDue ?? net) - net, 0) : (item.totalStudentDue ?? net)
+          };
+        }
+        return item;
+      })
+    );
+
     const res = await fetch('/api/fees/bulk', {
       method: 'PATCH',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ ids: [feeId], status })
+      body: JSON.stringify({ ids, status })
     });
     const data = await res.json().catch(() => ({}));
     if (res.ok) {
@@ -310,7 +399,7 @@ export function FeeBulkList({
     }
     setLoadingIds((prev) => {
       const next = new Set(prev);
-      next.delete(feeId);
+      ids.forEach((id) => next.delete(id));
       return next;
     });
   };
@@ -563,7 +652,7 @@ export function FeeBulkList({
                               {isPaid ? (
                                 <button
                                   type="button"
-                                  onClick={() => updateOne(fee.id, 'PENDING')}
+                                  onClick={() => updateOne(fee.mergedIds, 'PENDING')}
                                   disabled={isLoading}
                                   className="h-8 rounded-lg bg-[#fff7ed] px-2 text-xs font-semibold text-[#b45309] ring-1 ring-[#fed7aa] transition hover:bg-[#ffedd5] disabled:opacity-50"
                                 >
@@ -572,7 +661,7 @@ export function FeeBulkList({
                               ) : (
                                 <button
                                   type="button"
-                                  onClick={() => updateOne(fee.id, 'PAID')}
+                                  onClick={() => updateOne(fee.mergedIds, 'PAID')}
                                   disabled={isLoading}
                                   className="h-8 rounded-lg bg-[#16a34a] px-2 text-xs font-semibold text-white transition hover:bg-[#15803d] disabled:opacity-50"
                                   title="Mark Full Fee Paid"
@@ -730,7 +819,7 @@ export function FeeBulkList({
                       )}
                       <button
                         type="button"
-                        onClick={() => bulkUpdate(isPaid ? 'PENDING' : 'PAID')}
+                        onClick={() => updateOne(fee.mergedIds, isPaid ? 'PENDING' : 'PAID')}
                         disabled={isLoading}
                         className={`flex-1 h-9 rounded-xl px-3 text-xs font-bold transition disabled:opacity-50 ${
                           isPaid
