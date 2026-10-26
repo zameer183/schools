@@ -464,7 +464,7 @@ export function FeeBulkList({
         <div className="mb-4 flex flex-wrap items-start justify-between gap-3">
           <div>
             <h3 className="text-lg font-bold text-[#0f172a]">{title}</h3>
-            <p className="mt-1 text-xs text-[#6f7979]">
+            <p className="mt-1 text-xs text-[#64748b]">
               Manage monthly tuition, outstanding dues, partial collections, and payment history in one place.
             </p>
           </div>
@@ -500,7 +500,7 @@ export function FeeBulkList({
                   type="checkbox"
                   checked={allSelected}
                   onChange={toggleAll}
-                  className="h-4 w-4 cursor-pointer accent-[#004649]"
+                  className="h-4 w-4 cursor-pointer accent-[#1F5A5C]"
                 />
                 {selected.size > 0 ? `Selected (${selected.size})` : `Select all (${feesList.length})`}
               </label>
@@ -580,7 +580,7 @@ export function FeeBulkList({
                                 type="checkbox"
                                 checked={isGroupSelected}
                                 onChange={() => toggleGroup(fee.mergedIds)}
-                                className="mt-1 h-3.5 w-3.5 accent-[#004649]"
+                                className="mt-1 h-3.5 w-3.5 accent-[#1F5A5C]"
                               />
                               <div>
                                 <span className="block font-semibold text-[#111827]">{fee.studentName}</span>
@@ -595,7 +595,7 @@ export function FeeBulkList({
                                   <button
                                     type="button"
                                     onClick={() => toggleExpand(fee.studentId)}
-                                    className="mt-1 flex items-center gap-1 text-[11px] font-semibold text-[#004649] hover:underline"
+                                    className="mt-1 flex items-center gap-1 text-[11px] font-semibold text-[#1F5A5C] hover:underline"
                                   >
                                     {isExpanded ? <ChevronUp className="h-3 w-3" /> : <ChevronDown className="h-3 w-3" />}
                                     <span>{isExpanded ? 'Hide Details' : `${fee.unpaidMonths!.length} Months Breakdown`}</span>
@@ -659,7 +659,7 @@ export function FeeBulkList({
                                 <button
                                   type="button"
                                   onClick={() => openPayModal(fee)}
-                                  className="inline-flex h-8 items-center gap-1 rounded-lg bg-[#004649] px-2.5 text-xs font-bold text-white transition hover:bg-[#003638] shadow-xs active:scale-95"
+                                  className="inline-flex h-8 items-center gap-1 rounded-lg bg-[#1F5A5C] px-2.5 text-xs font-bold text-white transition hover:bg-[#003638] shadow-xs active:scale-95"
                                   title="Collect Fee Payment"
                                 >
                                   <Coins className="h-3.5 w-3.5" />
@@ -708,7 +708,7 @@ export function FeeBulkList({
                               <div className="rounded-xl border border-[#cbd5e1] bg-white p-3 shadow-xs">
                                 <div className="flex items-center justify-between mb-2">
                                   <p className="text-xs font-bold text-[#0f172a] flex items-center gap-1.5">
-                                    <Layers className="h-3.5 w-3.5 text-[#004649]" />
+                                    <Layers className="h-3.5 w-3.5 text-[#1F5A5C]" />
                                     Monthly Fee Breakdown ({fee.studentName})
                                   </p>
                                   <span className="text-xs font-bold text-rose-700">
@@ -765,7 +765,7 @@ export function FeeBulkList({
                           type="checkbox"
                           checked={isGroupSelected}
                           onChange={() => toggleGroup(fee.mergedIds)}
-                          className="mt-1 h-4 w-4 accent-[#004649]"
+                          className="mt-1 h-4 w-4 accent-[#1F5A5C]"
                         />
                         <div className="min-w-0">
                           <span className="block truncate text-sm font-semibold text-[#111827]">{fee.studentName}</span>
@@ -800,7 +800,7 @@ export function FeeBulkList({
                         <button
                           type="button"
                           onClick={() => toggleExpand(fee.studentId)}
-                          className="flex items-center gap-1 text-xs font-semibold text-[#004649] hover:underline"
+                          className="flex items-center gap-1 text-xs font-semibold text-[#1F5A5C] hover:underline"
                         >
                           {isExpanded ? <ChevronUp className="h-3.5 w-3.5" /> : <ChevronDown className="h-3.5 w-3.5" />}
                           <span>{isExpanded ? 'Hide Details' : `${fee.unpaidMonths!.length} Months Breakdown`}</span>
@@ -829,7 +829,7 @@ export function FeeBulkList({
                         <button
                           type="button"
                           onClick={() => openPayModal(fee)}
-                          className="flex-1 inline-flex h-9 items-center justify-center gap-1.5 rounded-xl bg-[#004649] px-3 text-xs font-bold text-white shadow-xs"
+                          className="flex-1 inline-flex h-9 items-center justify-center gap-1.5 rounded-xl bg-[#1F5A5C] px-3 text-xs font-bold text-white shadow-xs"
                         >
                           <Coins className="h-3.5 w-3.5" />
                           <span>Collect Fee</span>
@@ -901,7 +901,7 @@ export function FeeBulkList({
         ) : (
           <div className="rounded-xl bg-[#f8fafc] px-4 py-10 text-center">
             <p className="font-semibold text-[#3d4a4a]">No fee records</p>
-            <p className="mt-1 text-xs text-[#6f7979]">No records match the selected filters.</p>
+            <p className="mt-1 text-xs text-[#64748b]">No records match the selected filters.</p>
           </div>
         )}
       </section>
@@ -954,8 +954,8 @@ export function FeeBulkList({
                 {payTarget.unpaidMonths && payTarget.unpaidMonths.length > 1 && (
                   <div className="mt-3.5 pt-3 border-t border-[#bce4e4]/80">
                     <div className="flex items-center justify-between mb-2">
-                      <p className="text-xs font-bold text-[#004649] flex items-center gap-1.5">
-                        <Layers className="h-3.5 w-3.5 text-[#004649]" />
+                      <p className="text-xs font-bold text-[#1F5A5C] flex items-center gap-1.5">
+                        <Layers className="h-3.5 w-3.5 text-[#1F5A5C]" />
                         <span>Outstanding Breakdown ({payTarget.unpaidMonths.length} Months)</span>
                       </p>
                     </div>
@@ -982,7 +982,7 @@ export function FeeBulkList({
                   <label className="text-xs font-bold uppercase tracking-wider text-[#334155]">
                     Amount Received (PKR) <span className="text-rose-500">*</span>
                   </label>
-                  <span className="text-[11px] font-semibold text-[#004649]">Direct Ledger Credit</span>
+                  <span className="text-[11px] font-semibold text-[#1F5A5C]">Direct Ledger Credit</span>
                 </div>
                 <div className="relative">
                   <div className="pointer-events-none absolute left-3.5 top-1/2 -translate-y-1/2 flex items-center gap-1 text-xs font-extrabold text-[#64748b]">
@@ -996,7 +996,7 @@ export function FeeBulkList({
                     onChange={(e) => setPayAmount(e.target.value)}
                     required
                     placeholder="Enter amount..."
-                    className="h-12 w-full rounded-xl border border-[#cbd5e1] pl-11 pr-4 text-base sm:text-lg font-bold text-[#0f172a] shadow-xs outline-none focus:border-[#004649] focus:ring-2 focus:ring-[#004649]/20 transition"
+                    className="h-12 w-full rounded-xl border border-[#cbd5e1] pl-11 pr-4 text-base sm:text-lg font-bold text-[#0f172a] shadow-xs outline-none focus:border-[#1F5A5C] focus:ring-2 focus:ring-[#1F5A5C]/20 transition"
                   />
                 </div>
 
@@ -1009,7 +1009,7 @@ export function FeeBulkList({
                       const total = payTarget.totalStudentDue ?? payTarget.totalRemaining ?? payTarget.remaining;
                       setPayAmount(String(total));
                     }}
-                    className="rounded-lg bg-[#004649] text-white px-2.5 py-1 text-[11px] font-semibold hover:bg-[#003638] shadow-2xs active:scale-95 transition"
+                    className="rounded-lg bg-[#1F5A5C] text-white px-2.5 py-1 text-[11px] font-semibold hover:bg-[#003638] shadow-2xs active:scale-95 transition"
                   >
                     Full Balance ({formatCurrency(payTarget.totalStudentDue ?? payTarget.totalRemaining ?? payTarget.remaining)})
                   </button>
@@ -1043,7 +1043,7 @@ export function FeeBulkList({
                 <select
                   value={payMethod}
                   onChange={(e) => setPayMethod(e.target.value)}
-                  className="h-11 w-full rounded-xl border border-[#cbd5e1] bg-white px-3.5 text-xs sm:text-sm font-semibold text-[#0f172a] shadow-xs outline-none focus:border-[#004649] focus:ring-2 focus:ring-[#004649]/20"
+                  className="h-11 w-full rounded-xl border border-[#cbd5e1] bg-white px-3.5 text-xs sm:text-sm font-semibold text-[#0f172a] shadow-xs outline-none focus:border-[#1F5A5C] focus:ring-2 focus:ring-[#1F5A5C]/20"
                 >
                   <option value="CASH">Cash in Hand</option>
                   <option value="BANK_TRANSFER">Bank Transfer</option>
@@ -1062,7 +1062,7 @@ export function FeeBulkList({
                   value={payRef}
                   onChange={(e) => setPayRef(e.target.value)}
                   placeholder="e.g. REC-1048 or Bank Transaction ID"
-                  className="h-11 w-full rounded-xl border border-[#cbd5e1] px-3.5 text-xs sm:text-sm text-[#0f172a] shadow-xs outline-none focus:border-[#004649] focus:ring-2 focus:ring-[#004649]/20"
+                  className="h-11 w-full rounded-xl border border-[#cbd5e1] px-3.5 text-xs sm:text-sm text-[#0f172a] shadow-xs outline-none focus:border-[#1F5A5C] focus:ring-2 focus:ring-[#1F5A5C]/20"
                 />
               </div>
 
@@ -1079,7 +1079,7 @@ export function FeeBulkList({
                 <button
                   type="submit"
                   disabled={paySubmitting || !payAmount || Number(payAmount) <= 0}
-                  className="inline-flex h-11 items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-[#004649] to-[#1b5e62] px-6 text-xs sm:text-sm font-bold text-white shadow-sm hover:brightness-105 active:scale-95 transition disabled:opacity-50"
+                  className="inline-flex h-11 items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-[#1F5A5C] to-[#2D7578] px-6 text-xs sm:text-sm font-bold text-white shadow-sm hover:brightness-105 active:scale-95 transition disabled:opacity-50"
                 >
                   {paySubmitting ? <Loader2 className="h-4 w-4 animate-spin" /> : <Coins className="h-4 w-4" />}
                   <span>Confirm Payment</span>

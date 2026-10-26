@@ -23,7 +23,7 @@ function monthBounds(monthKey?: string) {
 }
 
 function formatMoney(value: number) {
-  return `AED ${value.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+  return `₨ ${Number(value || 0).toLocaleString('en-PK', { maximumFractionDigits: 0 })}`;
 }
 
 export default async function HigherStudentsFinanceReportPage({ searchParams }: PageProps) {
@@ -138,12 +138,12 @@ export default async function HigherStudentsFinanceReportPage({ searchParams }: 
   return (
     <div className="space-y-4 pb-8">
       <div className="rounded-2xl bg-white p-4 shadow-[0_4px_12px_rgba(0,0,0,0.08)] sm:p-6 print:hidden">
-        <Link href="/admin/reports" className="text-xs font-semibold text-[#004649] hover:text-[#1b5e62]">&larr; Back to Reports</Link>
-        <h1 className="mt-2 text-2xl font-bold text-[#1a1c1c]">Higher Students Finance Report</h1>
-        <p className="mt-1 text-sm text-[#6f7979]">Monthly consolidated report for higher-session students.</p>
+        <Link href="/admin/reports" className="text-xs font-semibold text-[#1F5A5C] hover:text-[#2D7578]">&larr; Back to Reports</Link>
+        <h1 className="mt-2 text-2xl font-bold text-[#0f172a]">Higher Students Finance Report</h1>
+        <p className="mt-1 text-sm text-[#64748b]">Monthly consolidated report for higher-session students.</p>
 
         <form className="mt-4 grid gap-3 sm:grid-cols-3" method="get">
-          <label className="text-xs font-semibold text-[#6f7979]">
+          <label className="text-xs font-semibold text-[#64748b]">
             Class Scope
             <select name="classId" defaultValue={selectedClassId} className="mt-1 h-10 w-full rounded-xl bg-[#f3f4f5] px-3 text-sm text-[#1f2937]">
               <option value="all">Higher Students (Auto)</option>
@@ -152,12 +152,12 @@ export default async function HigherStudentsFinanceReportPage({ searchParams }: 
               ))}
             </select>
           </label>
-          <label className="text-xs font-semibold text-[#6f7979]">
+          <label className="text-xs font-semibold text-[#64748b]">
             Month
             <input type="month" name="month" defaultValue={monthKey} className="mt-1 h-10 w-full rounded-xl bg-[#f3f4f5] px-3 text-sm text-[#1f2937]" />
           </label>
           <div className="flex items-end">
-            <button type="submit" className="h-10 w-full rounded-xl bg-gradient-to-br from-[#004649] to-[#1b5e62] text-sm font-semibold text-white">Apply</button>
+            <button type="submit" className="h-10 w-full rounded-xl bg-gradient-to-br from-[#1F5A5C] to-[#2D7578] text-sm font-semibold text-white">Apply</button>
           </div>
         </form>
       </div>

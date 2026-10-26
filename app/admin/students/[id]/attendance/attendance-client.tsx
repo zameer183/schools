@@ -238,7 +238,7 @@ export default function StudentAttendanceClient({
 
         {/* Print-only header */}
         <div className="hidden print:block mb-4 border-b pb-3">
-          <h1 className="text-lg font-bold text-[#1a1c1c]">Student Attendance Report</h1>
+          <h1 className="text-lg font-bold text-[#0f172a]">Student Attendance Report</h1>
           <div className="mt-1 flex flex-wrap gap-4 text-sm text-[#374151]">
             <span><span className="font-semibold">Student:</span> {student.user.fullName}</span>
             <span><span className="font-semibold">Class:</span> {student.class ? `${student.class.name} ${student.class.section}` : 'Unassigned'}</span>
@@ -248,7 +248,7 @@ export default function StudentAttendanceClient({
         </div>
 
         {/* Back */}
-        <Link href={backHref} className="inline-flex items-center gap-1 text-xs font-semibold text-[#004649] hover:text-[#1b5e62] transition print:hidden">
+        <Link href={backHref} className="inline-flex items-center gap-1 text-xs font-semibold text-[#1F5A5C] hover:text-[#2D7578] transition print:hidden">
           <ChevronLeft className="h-4 w-4" />
           {backLabel}
         </Link>
@@ -280,12 +280,12 @@ export default function StudentAttendanceClient({
           <div className="mb-5 flex items-center justify-between">
             <button onClick={() => setCurrentMonth(new Date(currentMonth.getFullYear(), currentMonth.getMonth() - 1, 1))}
               className="h-11 w-11 flex items-center justify-center rounded-xl bg-[#f0f2f5] hover:bg-[#e2e8e8] transition">
-              <ChevronLeft size={18} className="text-[#1a1c1c]" />
+              <ChevronLeft size={18} className="text-[#0f172a]" />
             </button>
-            <h3 className="font-semibold text-[#1a1c1c]">{monthName}</h3>
+            <h3 className="font-semibold text-[#0f172a]">{monthName}</h3>
             <button onClick={() => setCurrentMonth(new Date(currentMonth.getFullYear(), currentMonth.getMonth() + 1, 1))}
               className="h-11 w-11 flex items-center justify-center rounded-xl bg-[#f0f2f5] hover:bg-[#e2e8e8] transition">
-              <ChevronRight size={18} className="text-[#1a1c1c]" />
+              <ChevronRight size={18} className="text-[#0f172a]" />
             </button>
           </div>
 
@@ -309,7 +309,7 @@ export default function StudentAttendanceClient({
                   onClick={() => openDay(day)}
                   className={`aspect-square flex items-center justify-center rounded-lg text-xs font-semibold transition-all hover:scale-105 active:scale-95 relative
                     ${cfg ? `${cfg.bg} ${cfg.text}` : 'bg-[#f1f5f9] text-[#94a3b8] hover:bg-[#e2e8f0]'}
-                    ${isToday ? 'ring-2 ring-[#004649] ring-offset-1' : ''}
+                    ${isToday ? 'ring-2 ring-[#1F5A5C] ring-offset-1' : ''}
                   `}
                 >
                   {day}
@@ -361,7 +361,7 @@ export default function StudentAttendanceClient({
           <PrintButton label="Print / PDF" orientation="portrait" />
           <button
             onClick={handleDownload}
-            className="h-11 flex flex-1 items-center justify-center gap-2 rounded-xl bg-[#004649] text-white font-semibold hover:bg-[#1b5e62] transition"
+            className="h-11 flex flex-1 items-center justify-center gap-2 rounded-xl bg-[#1F5A5C] text-white font-semibold hover:bg-[#2D7578] transition"
           >
             <Download className="h-4 w-4" />
             Download CSV
@@ -370,7 +370,7 @@ export default function StudentAttendanceClient({
             onClick={handleShare}
             disabled={!waPhone}
             className={`h-11 flex flex-1 items-center justify-center gap-2 rounded-xl font-semibold transition ${
-              waPhone ? 'bg-[#25d366] text-white hover:scale-105 active:scale-[0.98]' : 'bg-[#f0f2f5] text-[#6f7979] cursor-not-allowed opacity-60'
+              waPhone ? 'bg-[#25d366] text-white hover:scale-105 active:scale-[0.98]' : 'bg-[#f0f2f5] text-[#64748b] cursor-not-allowed opacity-60'
             }`}
           >
             <Share2 className="h-4 w-4" />
@@ -413,7 +413,7 @@ export default function StudentAttendanceClient({
             <div>
               <label className="text-[10px] font-semibold uppercase tracking-wider text-[#9ca3af]">Remarks (optional)</label>
               <input
-                className="mt-1 h-10 w-full rounded-xl bg-[#f3f4f5] border-none px-3 text-sm text-[#111827] outline-none focus:ring-2 focus:ring-[#004649]/30"
+                className="mt-1 h-10 w-full rounded-xl bg-[#f3f4f5] border-none px-3 text-sm text-[#111827] outline-none focus:ring-2 focus:ring-[#1F5A5C]/30"
                 placeholder="e.g. Sick leave"
                 value={remarks}
                 onChange={(e) => setRemarks(e.target.value)}
@@ -436,7 +436,7 @@ export default function StudentAttendanceClient({
               <button
                 onClick={handleSave}
                 disabled={saving}
-                className="h-11 flex flex-1 items-center justify-center gap-2 rounded-xl bg-[#004649] text-white font-semibold hover:bg-[#1b5e62] transition disabled:opacity-60"
+                className="h-11 flex flex-1 items-center justify-center gap-2 rounded-xl bg-[#1F5A5C] text-white font-semibold hover:bg-[#2D7578] transition disabled:opacity-60"
               >
                 {saving ? <Loader2 className="h-4 w-4 animate-spin" /> : <Check className="h-4 w-4" />}
                 {modal.existing ? 'Update Attendance' : 'Mark Attendance'}

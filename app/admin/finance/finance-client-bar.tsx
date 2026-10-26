@@ -128,7 +128,7 @@ export function FinanceClientBar({
         
         {/* Search input — full width */}
         <div className="relative">
-          <label className="flex h-11 items-center gap-2.5 rounded-xl bg-[#f8fafc] border border-[#e2e8f0] px-3.5 transition focus-within:bg-white focus-within:ring-2 focus-within:ring-[#004649]/20 focus-within:border-[#004649]">
+          <label className="flex h-11 items-center gap-2.5 rounded-xl bg-[#f8fafc] border border-[#e2e8f0] px-3.5 transition focus-within:bg-white focus-within:ring-2 focus-within:ring-[#1F5A5C]/20 focus-within:border-[#1F5A5C]">
             <Search className="h-4 w-4 shrink-0 text-[#94a3b8]" />
             <input
               type="text"
@@ -162,7 +162,7 @@ export function FinanceClientBar({
                 onClick={() => updateFilter('status', chip.value)}
                 className={`shrink-0 inline-flex h-9 items-center justify-center rounded-xl px-3.5 text-xs font-bold transition-all active:scale-95 ${
                   selectedStatus === chip.value
-                    ? 'bg-gradient-to-r from-[#004649] to-[#1b5e62] text-white shadow-2xs'
+                    ? 'bg-gradient-to-r from-[#1F5A5C] to-[#2D7578] text-white shadow-2xs'
                     : 'bg-[#f8fafc] border border-[#e2e8f0] text-[#64748b] hover:bg-[#f1f5f9] hover:text-[#0f172a]'
                 }`}
               >
@@ -178,7 +178,7 @@ export function FinanceClientBar({
               onClick={handleAutoRun}
               disabled={autoRunPending}
               title="Create monthly fees for current active students"
-              className="flex-1 sm:flex-none inline-flex h-9 items-center justify-center gap-1.5 rounded-xl border border-[#004649]/30 bg-[#e0eff0]/60 px-3.5 text-xs font-bold text-[#004649] hover:bg-[#e0eff0] active:scale-95 transition disabled:opacity-60"
+              className="flex-1 sm:flex-none inline-flex h-9 items-center justify-center gap-1.5 rounded-xl border border-[#1F5A5C]/30 bg-[#e0eff0]/60 px-3.5 text-xs font-bold text-[#1F5A5C] hover:bg-[#e0eff0] active:scale-95 transition disabled:opacity-60"
             >
               <RefreshCw className={`h-3.5 w-3.5 ${autoRunPending ? 'animate-spin' : ''}`} />
               <span>Generate Monthly Fees</span>
@@ -187,7 +187,7 @@ export function FinanceClientBar({
             <button
               type="button"
               onClick={() => setShowModal(true)}
-              className="flex-1 sm:flex-none inline-flex h-9 items-center justify-center gap-1.5 rounded-xl bg-gradient-to-r from-[#004649] to-[#1b5e62] px-4 text-xs font-bold text-white shadow-2xs hover:brightness-105 active:scale-95 transition"
+              className="flex-1 sm:flex-none inline-flex h-9 items-center justify-center gap-1.5 rounded-xl bg-gradient-to-r from-[#1F5A5C] to-[#2D7578] px-4 text-xs font-bold text-white shadow-2xs hover:brightness-105 active:scale-95 transition"
             >
               <Plus className="h-4 w-4" />
               <span>+ Add Fee</span>
@@ -201,7 +201,7 @@ export function FinanceClientBar({
           <select
             value={selectedClassId}
             onChange={e => updateFilter('classId', e.target.value)}
-            className="h-9 rounded-xl bg-[#f8fafc] border border-[#cbd5e1] px-3 text-xs font-semibold text-[#0f172a] outline-none focus:ring-2 focus:ring-[#004649]/20 focus:border-[#004649] transition cursor-pointer"
+            className="h-9 rounded-xl bg-[#f8fafc] border border-[#cbd5e1] px-3 text-xs font-semibold text-[#0f172a] outline-none focus:ring-2 focus:ring-[#1F5A5C]/20 focus:border-[#1F5A5C] transition cursor-pointer"
             aria-label="Filter by class"
           >
             <option value="all">All Classes & Sections</option>
@@ -213,7 +213,7 @@ export function FinanceClientBar({
           <select
             value={selectedPeriod || 'all'}
             onChange={e => updateFilter('period', e.target.value)}
-            className="h-9 rounded-xl bg-[#f8fafc] border border-[#cbd5e1] px-3 text-xs font-semibold text-[#0f172a] outline-none focus:ring-2 focus:ring-[#004649]/20 focus:border-[#004649] transition cursor-pointer"
+            className="h-9 rounded-xl bg-[#f8fafc] border border-[#cbd5e1] px-3 text-xs font-semibold text-[#0f172a] outline-none focus:ring-2 focus:ring-[#1F5A5C]/20 focus:border-[#1F5A5C] transition cursor-pointer"
             aria-label="Filter by period"
           >
             {periodOptions.map(opt => (
@@ -224,7 +224,7 @@ export function FinanceClientBar({
           <select
             value={selectedSort || 'dueDate'}
             onChange={e => updateFilter('sort', e.target.value)}
-            className="h-9 rounded-xl bg-[#f8fafc] border border-[#cbd5e1] px-3 text-xs font-semibold text-[#0f172a] outline-none focus:ring-2 focus:ring-[#004649]/20 focus:border-[#004649] transition cursor-pointer"
+            className="h-9 rounded-xl bg-[#f8fafc] border border-[#cbd5e1] px-3 text-xs font-semibold text-[#0f172a] outline-none focus:ring-2 focus:ring-[#1F5A5C]/20 focus:border-[#1F5A5C] transition cursor-pointer"
             aria-label="Sort records"
           >
             {sortOptions.map(opt => (
@@ -272,7 +272,7 @@ export function FinanceClientBar({
                 setToDate('');
               }
             }}
-            className="h-9 rounded-xl bg-[#f8fafc] border border-[#cbd5e1] px-2.5 text-xs font-medium text-[#0f172a] outline-none focus:ring-2 focus:ring-[#004649]/20"
+            className="h-9 rounded-xl bg-[#f8fafc] border border-[#cbd5e1] px-2.5 text-xs font-medium text-[#0f172a] outline-none focus:ring-2 focus:ring-[#1F5A5C]/20"
             aria-label="Month filter"
           />
 
@@ -370,10 +370,10 @@ function AddFeeModal({
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40 backdrop-blur-sm">
       <div className="w-full max-w-md rounded-2xl bg-white shadow-[0_20px_60px_rgba(0,0,0,0.18)] p-6">
         <div className="mb-5 flex items-center justify-between">
-          <h2 className="font-headline text-xl font-bold text-[#1a1c1c]">Add Fee</h2>
+          <h2 className="text-xl font-bold text-[#0f172a]">Add Fee</h2>
           <button
             onClick={onClose}
-            className="rounded-xl p-1.5 text-[#6f7979] transition-colors hover:bg-[#f3f4f5]"
+            className="rounded-xl p-1.5 text-[#64748b] transition-colors hover:bg-[#f3f4f5]"
           >
             <X className="h-5 w-5" />
           </button>
@@ -381,14 +381,14 @@ function AddFeeModal({
 
         <form onSubmit={onSubmit} className="space-y-4">
           <div>
-            <label className="mb-1.5 block text-[10px] font-bold uppercase tracking-widest text-[#6f7979]">
+            <label className="mb-1.5 block text-[10px] font-bold uppercase tracking-widest text-[#64748b]">
               Student
             </label>
             <select
               required
               value={form.studentId}
               onChange={e => setForm(f => ({ ...f, studentId: e.target.value }))}
-              className="h-11 w-full rounded-xl bg-[#f0f2f5] border-none px-3 text-sm text-[#2c3e50] outline-none focus:ring-2 focus:ring-[#004649]/20"
+              className="h-11 w-full rounded-xl bg-[#f0f2f5] border-none px-3 text-sm text-[#2c3e50] outline-none focus:ring-2 focus:ring-[#1F5A5C]/20"
             >
               <option value="">Select Student</option>
               {students.map(s => (
@@ -400,7 +400,7 @@ function AddFeeModal({
           </div>
 
           <div>
-            <label className="mb-1.5 block text-[10px] font-bold uppercase tracking-widest text-[#6f7979]">
+            <label className="mb-1.5 block text-[10px] font-bold uppercase tracking-widest text-[#64748b]">
               Fee Name / Type
             </label>
             <input
@@ -408,13 +408,13 @@ function AddFeeModal({
               value={form.title}
               onChange={e => setForm(f => ({ ...f, title: e.target.value }))}
               placeholder="e.g. Monthly Tuition Fee - April"
-              className="h-11 w-full rounded-xl bg-[#f0f2f5] border-none px-3 text-sm text-[#2c3e50] placeholder:text-[#6f7979]/60 outline-none focus:ring-2 focus:ring-[#004649]/20"
+              className="h-11 w-full rounded-xl bg-[#f0f2f5] border-none px-3 text-sm text-[#2c3e50] placeholder:text-[#64748b]/60 outline-none focus:ring-2 focus:ring-[#1F5A5C]/20"
             />
           </div>
 
           <div className="grid grid-cols-2 gap-3">
             <div>
-              <label className="mb-1.5 block text-[10px] font-bold uppercase tracking-widest text-[#6f7979]">
+              <label className="mb-1.5 block text-[10px] font-bold uppercase tracking-widest text-[#64748b]">
                 Amount
               </label>
               <input
@@ -425,11 +425,11 @@ function AddFeeModal({
                 value={form.amount}
                 onChange={e => setForm(f => ({ ...f, amount: e.target.value }))}
                 placeholder="0.00"
-                className="h-11 w-full rounded-xl bg-[#f0f2f5] border-none px-3 text-sm text-[#2c3e50] placeholder:text-[#6f7979]/60 outline-none focus:ring-2 focus:ring-[#004649]/20"
+                className="h-11 w-full rounded-xl bg-[#f0f2f5] border-none px-3 text-sm text-[#2c3e50] placeholder:text-[#64748b]/60 outline-none focus:ring-2 focus:ring-[#1F5A5C]/20"
               />
             </div>
             <div>
-              <label className="mb-1.5 block text-[10px] font-bold uppercase tracking-widest text-[#6f7979]">
+              <label className="mb-1.5 block text-[10px] font-bold uppercase tracking-widest text-[#64748b]">
                 Due Date
               </label>
               <input
@@ -437,7 +437,7 @@ function AddFeeModal({
                 type="date"
                 value={form.dueDate}
                 onChange={e => setForm(f => ({ ...f, dueDate: e.target.value }))}
-                className="h-11 w-full rounded-xl bg-[#f0f2f5] border-none px-3 text-sm text-[#2c3e50] outline-none focus:ring-2 focus:ring-[#004649]/20"
+                className="h-11 w-full rounded-xl bg-[#f0f2f5] border-none px-3 text-sm text-[#2c3e50] outline-none focus:ring-2 focus:ring-[#1F5A5C]/20"
               />
             </div>
           </div>

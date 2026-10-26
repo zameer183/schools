@@ -107,7 +107,7 @@ function Modal({
       >
         <div className="flex items-start justify-between gap-3 border-b border-[#e2e8f0] px-5 py-4 sm:px-6">
           <div>
-            <h3 className="font-headline text-lg font-bold text-[#0f172a] sm:text-xl">{title}</h3>
+            <h3 className="text-lg font-bold text-[#0f172a] sm:text-xl">{title}</h3>
             {subtitle ? <p className="mt-1 text-sm text-[#64748b]">{subtitle}</p> : null}
           </div>
           <button type="button" onClick={onClose} className="rounded-full p-2 text-[#64748b] hover:bg-[#f1f5f9]">
@@ -350,7 +350,7 @@ export default function AttendanceDashboardClient({
         <div className="rounded-2xl bg-white p-4 shadow-[0_12px_40px_rgba(0,70,73,0.06)] sm:p-6">
           <div className="flex flex-wrap items-start justify-between gap-3">
             <div>
-              <h2 className="font-headline text-2xl font-bold text-[#0f172a] sm:text-3xl">Attendance</h2>
+              <h2 className="text-2xl font-bold text-[#0f172a] sm:text-3xl">Attendance</h2>
               <p className="mt-1 text-sm text-[#64748b]">Quick tap, then save once. Much faster on mobile.</p>
             </div>
           </div>
@@ -370,7 +370,7 @@ export default function AttendanceDashboardClient({
                 ))}
               </select>
             </label>
-            <button className="h-[58px] rounded-xl bg-gradient-to-br from-[#004649] to-[#1b5e62] px-4 text-sm font-semibold text-white shadow-[0_8px_20px_rgba(0,70,73,0.12)] active:scale-[0.98] transition-all">
+            <button className="h-[58px] rounded-xl bg-gradient-to-br from-[#1F5A5C] to-[#1b5e62] px-4 text-sm font-semibold text-white shadow-[0_8px_20px_rgba(0,70,73,0.12)] active:scale-[0.98] transition-all">
               Apply Filter
             </button>
           </form>
@@ -387,7 +387,7 @@ export default function AttendanceDashboardClient({
                 onClick={() => setTab(item.key)}
                 className={`flex h-11 items-center justify-center rounded-xl px-4 text-sm font-semibold transition ${
                   tab === item.key
-                    ? 'bg-gradient-to-r from-[#004649] to-[#1b5e62] text-white shadow-sm'
+                    ? 'bg-gradient-to-r from-[#1F5A5C] to-[#1b5e62] text-white shadow-sm'
                     : 'bg-[#f1f5f9] text-[#334155] hover:bg-[#e2e8f0]'
                 }`}
               >
@@ -456,7 +456,7 @@ export default function AttendanceDashboardClient({
                 <button
                   type="button"
                   onClick={() => setTab('overview')}
-                  className="flex h-11 w-full items-center justify-center rounded-xl bg-gradient-to-br from-[#004649] to-[#1b5e62] px-3 text-sm font-semibold text-white shadow-[0_8px_20px_rgba(0,70,73,0.12)] active:scale-[0.98] transition-all"
+                  className="flex h-11 w-full items-center justify-center rounded-xl bg-gradient-to-br from-[#1F5A5C] to-[#1b5e62] px-3 text-sm font-semibold text-white shadow-[0_8px_20px_rgba(0,70,73,0.12)] active:scale-[0.98] transition-all"
                 >
                   View Calendar
                 </button>
@@ -478,7 +478,7 @@ export default function AttendanceDashboardClient({
                       key={date}
                       type="button"
                       onClick={() => setSelectedDay(date)}
-                      className={`rounded-xl border p-2 text-center text-xs transition-all hover:shadow-md focus:outline-none focus:ring-2 focus:ring-[#004649] ${heatTone(stats.present, stats.absent, stats.late, stats.excused)} ${active ? 'ring-2 ring-[#004649] ring-offset-1' : 'border-transparent'}`}
+                      className={`rounded-xl border p-2 text-center text-xs transition-all hover:shadow-md focus:outline-none focus:ring-2 focus:ring-[#1F5A5C] ${heatTone(stats.present, stats.absent, stats.late, stats.excused)} ${active ? 'ring-2 ring-[#1F5A5C] ring-offset-1' : 'border-transparent'}`}
                       aria-pressed={active}
                     >
                       <p className="font-bold">{day}</p>
@@ -497,9 +497,9 @@ export default function AttendanceDashboardClient({
         {tab === 'students' ? (
           <div className="rounded-2xl bg-white p-4 shadow-[0_12px_40px_rgba(0,70,73,0.06)] sm:p-6">
             <div className="mb-4 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
-              <h3 className="font-headline font-bold text-[#0f172a]">Students Attendance</h3>
+              <h3 className="font-bold text-[#0f172a]">Students Attendance</h3>
               <div className="grid grid-cols-2 gap-2 sm:flex">
-                <button onClick={() => markAllStudents('PRESENT')} disabled={!students.length} className="h-10 rounded-xl bg-gradient-to-br from-[#004649] to-[#1b5e62] px-3 text-xs font-semibold text-white shadow-[0_8px_20px_rgba(0,70,73,0.12)] active:scale-[0.98] transition-all disabled:opacity-50">Mark all Present</button>
+                <button onClick={() => markAllStudents('PRESENT')} disabled={!students.length} className="h-10 rounded-xl bg-gradient-to-br from-[#1F5A5C] to-[#1b5e62] px-3 text-xs font-semibold text-white shadow-[0_8px_20px_rgba(0,70,73,0.12)] active:scale-[0.98] transition-all disabled:opacity-50">Mark all Present</button>
                 <button onClick={() => markAllStudents('ABSENT')} disabled={!students.length} className="h-10 rounded-xl bg-[#b91c1c] px-3 text-xs font-semibold text-white disabled:opacity-50">Mark all Absent</button>
               </div>
             </div>
@@ -529,7 +529,7 @@ export default function AttendanceDashboardClient({
                         <button
                           key={item.key}
                           onClick={() => markStudentLocal(student.id, item.key)}
-                          className={`${quickButtonClass} w-full ${item.cls} ${currentStatus === item.key ? 'ring-2 ring-offset-1 ring-[#004649]' : ''}`}
+                          className={`${quickButtonClass} w-full ${item.cls} ${currentStatus === item.key ? 'ring-2 ring-offset-1 ring-[#1F5A5C]' : ''}`}
                         >
                           {item.label}
                         </button>
@@ -543,11 +543,11 @@ export default function AttendanceDashboardClient({
 
             <div className="sticky bottom-3 mt-4 rounded-2xl border border-[#dbeafe] bg-white/95 p-3 shadow-lg backdrop-blur">
               <div className="flex flex-wrap items-center justify-between gap-2">
-                <p className="text-sm font-semibold text-[#004649]">{studentChangedCount} unsaved student change(s)</p>
+                <p className="text-sm font-semibold text-[#1F5A5C]">{studentChangedCount} unsaved student change(s)</p>
                 <button
                   onClick={() => void saveStudents()}
                   disabled={!studentChangedCount || savingStudents}
-                  className="h-10 rounded-xl bg-gradient-to-br from-[#004649] to-[#1b5e62] px-4 text-sm font-semibold text-white shadow-[0_8px_20px_rgba(0,70,73,0.12)] active:scale-[0.98] transition-all disabled:opacity-50"
+                  className="h-10 rounded-xl bg-gradient-to-br from-[#1F5A5C] to-[#1b5e62] px-4 text-sm font-semibold text-white shadow-[0_8px_20px_rgba(0,70,73,0.12)] active:scale-[0.98] transition-all disabled:opacity-50"
                 >
                   {savingStudents ? 'Saving...' : 'Save Students'}
                 </button>
@@ -559,9 +559,9 @@ export default function AttendanceDashboardClient({
         {tab === 'teachers' ? (
           <div className="rounded-2xl bg-white p-4 shadow-[0_12px_40px_rgba(0,70,73,0.06)] sm:p-6">
             <div className="mb-4 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
-              <h3 className="font-headline font-bold text-[#0f172a]">Teachers Attendance</h3>
+              <h3 className="font-bold text-[#0f172a]">Teachers Attendance</h3>
               <div className="grid grid-cols-2 gap-2 sm:flex">
-                <button onClick={() => markAllTeachers('PRESENT')} disabled={!teachers.length} className="h-10 rounded-xl bg-gradient-to-br from-[#004649] to-[#1b5e62] px-3 text-xs font-semibold text-white shadow-[0_8px_20px_rgba(0,70,73,0.12)] active:scale-[0.98] transition-all disabled:opacity-50">Mark all Present</button>
+                <button onClick={() => markAllTeachers('PRESENT')} disabled={!teachers.length} className="h-10 rounded-xl bg-gradient-to-br from-[#1F5A5C] to-[#1b5e62] px-3 text-xs font-semibold text-white shadow-[0_8px_20px_rgba(0,70,73,0.12)] active:scale-[0.98] transition-all disabled:opacity-50">Mark all Present</button>
                 <button onClick={() => markAllTeachers('ABSENT')} disabled={!teachers.length} className="h-10 rounded-xl bg-[#b91c1c] px-3 text-xs font-semibold text-white disabled:opacity-50">Mark all Absent</button>
               </div>
             </div>
@@ -632,7 +632,7 @@ export default function AttendanceDashboardClient({
                         <button
                           key={item.key}
                           onClick={() => markTeacherLocal(teacher.id, item.key)}
-                          className={`${quickButtonClass} w-full ${item.cls} ${currentStatus === item.key ? 'ring-2 ring-offset-1 ring-[#004649]' : ''}`}
+                          className={`${quickButtonClass} w-full ${item.cls} ${currentStatus === item.key ? 'ring-2 ring-offset-1 ring-[#1F5A5C]' : ''}`}
                         >
                           {item.label}
                         </button>
@@ -646,11 +646,11 @@ export default function AttendanceDashboardClient({
 
             <div className="sticky bottom-3 mt-4 rounded-2xl border border-[#dbeafe] bg-white/95 p-3 shadow-lg backdrop-blur">
               <div className="flex flex-wrap items-center justify-between gap-2">
-                <p className="text-sm font-semibold text-[#004649]">{teacherChangedCount} unsaved teacher change(s)</p>
+                <p className="text-sm font-semibold text-[#1F5A5C]">{teacherChangedCount} unsaved teacher change(s)</p>
                 <button
                   onClick={() => void saveTeachers()}
                   disabled={!teacherChangedCount || savingTeachers}
-                  className="h-10 rounded-xl bg-gradient-to-br from-[#004649] to-[#1b5e62] px-4 text-sm font-semibold text-white shadow-[0_8px_20px_rgba(0,70,73,0.12)] active:scale-[0.98] transition-all disabled:opacity-50"
+                  className="h-10 rounded-xl bg-gradient-to-br from-[#1F5A5C] to-[#1b5e62] px-4 text-sm font-semibold text-white shadow-[0_8px_20px_rgba(0,70,73,0.12)] active:scale-[0.98] transition-all disabled:opacity-50"
                 >
                   {savingTeachers ? 'Saving...' : 'Save Teachers'}
                 </button>

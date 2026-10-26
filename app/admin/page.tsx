@@ -231,7 +231,7 @@ function DbOfflineBanner() {
           <div className="flex h-16 w-16 items-center justify-center rounded-full bg-[#fef2f2]">
             <WifiOff className="h-8 w-8 text-[#ef4444]" strokeWidth={1.5} />
           </div>
-          <h2 className="font-headline mt-4 text-xl font-bold text-[#111827]">Database Unreachable</h2>
+          <h2 className="mt-4 text-xl font-bold text-[#111827]">Database Unreachable</h2>
           <p className="mt-2 max-w-sm text-sm leading-relaxed text-[#6b7280]">
             Cannot connect to the database server. Check your internet connection or Supabase project status, then refresh.
           </p>
@@ -335,7 +335,7 @@ async function DashboardContent() {
                   href={action.href}
                   className={`flex items-center gap-2.5 rounded-lg px-3 py-4 sm:py-3 transition hover:shadow-md active:scale-[0.97] ${
                     isEnrollStudent
-                      ? 'col-span-2 sm:col-span-1 bg-gradient-to-r from-[#004649] to-[#1b5e62] text-white'
+                      ? 'col-span-2 sm:col-span-1 bg-gradient-to-r from-[#1F5A5C] to-[#2D7578] text-white'
                       : `${action.bg} ${action.color}`
                   }`}
                 >

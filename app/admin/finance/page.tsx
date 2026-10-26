@@ -492,12 +492,12 @@ export default async function AdminFinancePage({ searchParams }: AdminFinancePag
               <div key={item.id} className="rounded-xl bg-[#f5f7fa] p-3">
                 <div className="flex items-start justify-between gap-2">
                   <div className="min-w-0">
-                    <p className="font-semibold text-[#1a1c1c] text-sm">{item.fee.student.user.fullName}</p>
-                    <p className="mt-0.5 truncate text-xs text-[#6f7979]">{item.fee.title}</p>
-                    <p className="mt-1 text-xs text-[#6f7979]">{toIsoDateString(item.paidAt).slice(0, 10)}</p>
+                    <p className="font-semibold text-[#0f172a] text-sm">{item.fee.student.user.fullName}</p>
+                    <p className="mt-0.5 truncate text-xs text-[#64748b]">{item.fee.title}</p>
+                    <p className="mt-1 text-xs text-[#64748b]">{toIsoDateString(item.paidAt).slice(0, 10)}</p>
                   </div>
                   <div className="shrink-0 text-right">
-                    <p className="font-bold text-[#1a1c1c] text-sm">{formatCurrency(Number(item.amountPaid))}</p>
+                    <p className="font-bold text-[#0f172a] text-sm">{formatCurrency(Number(item.amountPaid))}</p>
                     <span className={`mt-1.5 inline-block rounded-full px-2 py-0.5 text-[9px] font-bold uppercase ${txnStatusBadge(item.computedStatus)}`}>
                       {item.computedStatus === PaymentStatus.PENDING ? 'DUE' : item.computedStatus}
                     </span>
@@ -505,7 +505,7 @@ export default async function AdminFinancePage({ searchParams }: AdminFinancePag
                 </div>
               </div>
             ))}
-            {recentPaymentRows.length === 0 ? <p className="text-xs text-[#6f7979]">No transactions yet.</p> : null}
+            {recentPaymentRows.length === 0 ? <p className="text-xs text-[#64748b]">No transactions yet.</p> : null}
           </div>
 
           {/* Desktop table */}
@@ -513,10 +513,10 @@ export default async function AdminFinancePage({ searchParams }: AdminFinancePag
             <table className="w-full text-xs">
               <thead>
                 <tr className="rounded-xl bg-[#f3f4f5]">
-                  <th className="rounded-l-xl px-3 py-2 text-left text-[9px] font-bold uppercase tracking-widest text-[#6f7979]">Date</th>
-                  <th className="px-3 py-2 text-left text-[9px] font-bold uppercase tracking-widest text-[#6f7979]">Student</th>
-                  <th className="px-3 py-2 text-right text-[9px] font-bold uppercase tracking-widest text-[#6f7979]">Amount</th>
-                  <th className="rounded-r-xl px-3 py-2 text-right text-[9px] font-bold uppercase tracking-widest text-[#6f7979]">Status</th>
+                  <th className="rounded-l-xl px-3 py-2 text-left text-[9px] font-bold uppercase tracking-widest text-[#64748b]">Date</th>
+                  <th className="px-3 py-2 text-left text-[9px] font-bold uppercase tracking-widest text-[#64748b]">Student</th>
+                  <th className="px-3 py-2 text-right text-[9px] font-bold uppercase tracking-widest text-[#64748b]">Amount</th>
+                  <th className="rounded-r-xl px-3 py-2 text-right text-[9px] font-bold uppercase tracking-widest text-[#64748b]">Status</th>
                 </tr>
               </thead>
               <tbody>
@@ -526,12 +526,12 @@ export default async function AdminFinancePage({ searchParams }: AdminFinancePag
                     className="border-b border-[#f0f2f0] transition-colors last:border-0 hover:bg-[#f9fafb]"
                   >
                     <td className="px-3 py-2.5">
-                      <span className="rounded-full bg-[#edeeef] px-2 py-0.5 text-xs text-[#6f7979]">
+                      <span className="rounded-full bg-[#edeeef] px-2 py-0.5 text-xs text-[#64748b]">
                         {toIsoDateString(item.paidAt).slice(0, 10)}
                       </span>
                     </td>
-                    <td className="px-3 py-2.5 font-medium text-[#1a1c1c] truncate">{item.fee.student.user.fullName}</td>
-                    <td className="px-3 py-2.5 text-right font-bold text-[#1a1c1c]">{formatCurrency(Number(item.amountPaid))}</td>
+                    <td className="px-3 py-2.5 font-medium text-[#0f172a] truncate">{item.fee.student.user.fullName}</td>
+                    <td className="px-3 py-2.5 text-right font-bold text-[#0f172a]">{formatCurrency(Number(item.amountPaid))}</td>
                     <td className="px-3 py-2.5 text-right">
                       <span className={`rounded-full px-2 py-0.5 text-xs font-bold uppercase ${txnStatusBadge(item.computedStatus)}`}>
                         {item.computedStatus === PaymentStatus.PENDING ? 'DUE' : item.computedStatus}
@@ -541,7 +541,7 @@ export default async function AdminFinancePage({ searchParams }: AdminFinancePag
                 ))}
               </tbody>
             </table>
-            {recentPaymentRows.length === 0 ? <p className="mt-4 text-xs text-[#6f7979]">No transactions yet.</p> : null}
+            {recentPaymentRows.length === 0 ? <p className="mt-4 text-xs text-[#64748b]">No transactions yet.</p> : null}
           </div>
         </div>
       </div>

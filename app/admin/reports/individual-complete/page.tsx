@@ -557,10 +557,10 @@ export default async function IndividualCompleteReportPage({ searchParams }: Pag
 
       return (
         <div className="rounded-2xl bg-white p-6 shadow-[0_4px_12px_rgba(0,0,0,0.08)]">
-          <h1 className="text-2xl font-bold text-[#1a1c1c]">Individual Complete Report</h1>
-          <p className="mt-2 text-sm text-[#6f7979]">Database is temporarily unreachable, so this report cannot be loaded right now.</p>
-          <p className="mt-1 text-sm text-[#6f7979]">Please refresh once the connection recovers.</p>
-          <Link href="/admin/reports" className="mt-4 inline-flex text-sm font-semibold text-[#004649] hover:text-[#1b5e62]">
+          <h1 className="text-2xl font-bold text-[#0f172a]">Individual Complete Report</h1>
+          <p className="mt-2 text-sm text-[#64748b]">Database is temporarily unreachable, so this report cannot be loaded right now.</p>
+          <p className="mt-1 text-sm text-[#64748b]">Please refresh once the connection recovers.</p>
+          <Link href="/admin/reports" className="mt-4 inline-flex text-sm font-semibold text-[#1F5A5C] hover:text-[#1b5e62]">
             Back to Reports
           </Link>
         </div>
@@ -624,14 +624,14 @@ export default async function IndividualCompleteReportPage({ searchParams }: Pag
   return (
     <div className="space-y-4 pb-8">
       <div className="rounded-2xl bg-white p-4 shadow-[0_4px_12px_rgba(0,0,0,0.08)] sm:p-6 print:hidden">
-        <Link href="/admin/reports" className="text-xs font-semibold text-[#004649] hover:text-[#1b5e62]">
+        <Link href="/admin/reports" className="text-xs font-semibold text-[#1F5A5C] hover:text-[#1b5e62]">
           &larr; Back to Reports
         </Link>
-        <h1 className="mt-2 text-2xl font-bold text-[#1a1c1c]">Individual Complete Report</h1>
-        <p className="mt-1 text-sm text-[#6f7979]">Date-wise complete sheet with attendance, sabq/sabqi/manzil, and test/exam notes.</p>
+        <h1 className="mt-2 text-2xl font-bold text-[#0f172a]">Individual Complete Report</h1>
+        <p className="mt-1 text-sm text-[#64748b]">Date-wise complete sheet with attendance, sabq/sabqi/manzil, and test/exam notes.</p>
 
         <form className="mt-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-5" method="get">
-          <label className="text-xs font-semibold text-[#6f7979] lg:col-span-1">
+          <label className="text-xs font-semibold text-[#64748b] lg:col-span-1">
             Class
             <select name="classId" defaultValue={selectedClassId} className="mt-1 h-10 w-full rounded-xl bg-[#f3f4f5] px-3 text-sm text-[#1f2937]">
               <option value="all">All Classes</option>
@@ -642,7 +642,7 @@ export default async function IndividualCompleteReportPage({ searchParams }: Pag
               ))}
             </select>
           </label>
-          <label className="text-xs font-semibold text-[#6f7979] lg:col-span-2">
+          <label className="text-xs font-semibold text-[#64748b] lg:col-span-2">
             Student
             <select name="studentId" defaultValue={selectedStudentId} className="mt-1 h-10 w-full rounded-xl bg-[#f3f4f5] px-3 text-sm text-[#1f2937]">
               {students.map((student) => (
@@ -652,16 +652,16 @@ export default async function IndividualCompleteReportPage({ searchParams }: Pag
               ))}
             </select>
           </label>
-          <label className="text-xs font-semibold text-[#6f7979]">
+          <label className="text-xs font-semibold text-[#64748b]">
             From
             <input type="date" name="from" defaultValue={trimToDateInput(fromDate)} className="mt-1 h-10 w-full rounded-xl bg-[#f3f4f5] px-3 text-sm text-[#1f2937]" />
           </label>
-          <label className="text-xs font-semibold text-[#6f7979]">
+          <label className="text-xs font-semibold text-[#64748b]">
             To
             <input type="date" name="to" defaultValue={trimToDateInput(toDateBoundary)} className="mt-1 h-10 w-full rounded-xl bg-[#f3f4f5] px-3 text-sm text-[#1f2937]" />
           </label>
           <div className="sm:col-span-2 lg:col-span-5">
-            <button type="submit" className="h-10 w-full rounded-xl bg-gradient-to-br from-[#004649] to-[#1b5e62] text-sm font-semibold text-white">
+            <button type="submit" className="h-10 w-full rounded-xl bg-gradient-to-br from-[#1F5A5C] to-[#1b5e62] text-sm font-semibold text-white">
               Apply
             </button>
           </div>
@@ -702,7 +702,7 @@ export default async function IndividualCompleteReportPage({ searchParams }: Pag
               Date: {formatDateLabel(fromDate)} to {formatDateLabel(toDateBoundary)}
             </p>
           </div>
-          <h2 className="text-xl font-bold text-[#1a1c1c]">Individual Complete Report</h2>
+          <h2 className="text-xl font-bold text-[#0f172a]">Individual Complete Report</h2>
           <div className="mt-2 grid gap-1 text-sm text-[#374151] sm:grid-cols-2 lg:grid-cols-4">
             <p>
               <span className="font-semibold">Date:</span> {formatDateLabel(fromDate)} to {formatDateLabel(toDateBoundary)}
@@ -729,7 +729,7 @@ export default async function IndividualCompleteReportPage({ searchParams }: Pag
           <div className="mt-4 overflow-x-auto print:overflow-visible rounded-xl border border-[#e5e7eb]">
             <table className="min-w-[1600px] print:min-w-0 print:w-full w-full border-collapse text-xs print:text-[9px]">
               <thead>
-                <tr className="bg-[#004649] text-white">
+                <tr className="bg-[#1F5A5C] text-white">
                   <th rowSpan={2} className="border-b border-r border-[#1b5e62] px-3 py-2 text-left font-semibold align-middle">
                     Date
                   </th>
@@ -794,7 +794,7 @@ export default async function IndividualCompleteReportPage({ searchParams }: Pag
           </div>
         </div>
       ) : (
-        <div className="rounded-2xl bg-white p-6 text-sm text-[#6f7979] shadow-[0_4px_12px_rgba(0,0,0,0.08)]">No student data found.</div>
+        <div className="rounded-2xl bg-white p-6 text-sm text-[#64748b] shadow-[0_4px_12px_rgba(0,0,0,0.08)]">No student data found.</div>
       )}
     </div>
   );

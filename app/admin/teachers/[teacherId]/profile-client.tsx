@@ -152,7 +152,7 @@ const CARD = 'rounded-2xl bg-white shadow-[0_2px_8px_rgba(0,0,0,0.06),0_8px_32px
 function CardHeader({ title, trailing }: { title: string; trailing?: React.ReactNode }) {
   return (
     <div className="flex items-center justify-between border-b border-[#f1f5f9] px-5 py-4">
-      <h3 className="font-headline text-base font-bold text-[#111827]">{title}</h3>
+      <h3 className="text-base font-bold text-[#111827]">{title}</h3>
       {trailing}
     </div>
   );
@@ -301,7 +301,7 @@ export default function TeacherProfileClient({ teacher, allClasses }: Props) {
             </div>
             <div>
               <div className="flex items-center gap-2">
-                <h2 className="font-headline text-xl font-bold text-[#111827]">{teacher.user.fullName}</h2>
+                <h2 className="text-xl font-bold text-[#111827]">{teacher.user.fullName}</h2>
                 {teacher.user.isActive ? (
                   <span className="rounded-full bg-[#d0e8ea] px-2 py-0.5 text-[10px] font-bold uppercase text-[#2b676e]">Active</span>
                 ) : (

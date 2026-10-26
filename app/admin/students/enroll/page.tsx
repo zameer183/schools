@@ -475,7 +475,7 @@ export default function EnrollStudentPage() {
             <Check className="h-9 w-9 stroke-[2.5] text-[#0F4F4A]" />
           </div>
           <p className="text-xs font-semibold uppercase tracking-widest text-[#0F4F4A]">Enrollment Successful</p>
-          <h2 className="font-headline mt-2 text-2xl font-bold text-[#0f172a]">{result.studentName}</h2>
+          <h2 className="mt-2 text-2xl font-bold text-[#0f172a]">{result.studentName}</h2>
           <p className="mt-1 text-sm text-[#64748b]">Student has been enrolled and account created.</p>
 
           <div className="mt-6 space-y-3">
@@ -517,7 +517,7 @@ export default function EnrollStudentPage() {
                       const msg = formatCredentialsWhatsAppMessage({ email: result.email, password: 'Pass@123' });
                       openWhatsAppDirect({ phone, message: msg, clientType: 'business' });
                     }}
-                    className="flex items-center justify-center gap-1.5 rounded-lg bg-[#004649] py-2.5 px-3 text-xs font-bold text-white shadow-xs hover:bg-[#1b5e62] active:scale-[0.98]"
+                    className="flex items-center justify-center gap-1.5 rounded-lg bg-[#1F5A5C] py-2.5 px-3 text-xs font-bold text-white shadow-xs hover:bg-[#2D7578] active:scale-[0.98]"
                   >
                     <span>WA Business</span>
                   </button>
@@ -563,7 +563,7 @@ export default function EnrollStudentPage() {
         {/* Header */}
         <div className="mb-6">
           <p className="text-xs font-semibold uppercase tracking-widest text-[#0F4F4A]">Student Enrollment</p>
-          <h1 className="font-headline mt-1 text-2xl font-bold text-[#0f172a] sm:text-3xl">Add New Student</h1>
+          <h1 className="mt-1 text-2xl font-bold text-[#0f172a] sm:text-3xl">Add New Student</h1>
         </div>
 
         {/* Step bar */}
@@ -576,7 +576,7 @@ export default function EnrollStudentPage() {
           {step === 1 && (
             <div className="space-y-5">
               <div>
-                <p className="font-headline text-lg font-bold text-[#0f172a]">Student Information</p>
+                <p className="text-lg font-bold text-[#0f172a]">Student Information</p>
                 <p className="mt-0.5 text-sm text-[#64748b]">Basic identity details of the student.</p>
               </div>
 
@@ -639,7 +639,7 @@ export default function EnrollStudentPage() {
           {step === 2 && (
             <div className="space-y-5">
               <div>
-                <p className="font-headline text-lg font-bold text-[#0f172a]">Contact Information</p>
+                <p className="text-lg font-bold text-[#0f172a]">Contact Information</p>
                 <p className="mt-0.5 text-sm text-[#64748b]">How to reach the student or guardian.</p>
               </div>
 
@@ -728,7 +728,7 @@ export default function EnrollStudentPage() {
           {step === 3 && (
             <div className="space-y-5">
               <div>
-                <p className="font-headline text-lg font-bold text-[#0f172a]">Institute Information</p>
+                <p className="text-lg font-bold text-[#0f172a]">Institute Information</p>
                 <p className="mt-0.5 text-sm text-[#64748b]">Academic and enrollment details.</p>
               </div>
 
@@ -796,7 +796,7 @@ export default function EnrollStudentPage() {
           {step === 4 && (
             <div className="space-y-5">
               <div>
-                <p className="font-headline text-lg font-bold text-[#0f172a]">Fee Configuration</p>
+                <p className="text-lg font-bold text-[#0f172a]">Fee Configuration</p>
                 <p className="mt-0.5 text-sm text-[#64748b]">Fee is optional. Use 0 for free students.</p>
               </div>
 

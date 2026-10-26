@@ -45,13 +45,13 @@ export function ReportsFilterBar({
     <div className="rounded-2xl bg-white p-4 shadow-[0_4px_12px_rgba(0,0,0,0.08)] sm:p-6">
       <div className="grid gap-3 sm:grid-cols-3">
         <div>
-          <label className="block text-xs font-semibold uppercase tracking-wide text-[#6f7979] mb-2">
+          <label className="block text-xs font-semibold uppercase tracking-wide text-[#64748b] mb-2">
             Filter by Class
           </label>
           <select
             value={selectedClassId}
             onChange={(e) => handleClassChange(e.target.value)}
-            className="h-10 w-full rounded-xl bg-[#f0f2f5] border-none px-3 text-sm text-[#2c3e50] outline-none focus:ring-2 focus:ring-[#004649]/20"
+            className="h-10 w-full rounded-xl bg-[#f0f2f5] border-none px-3 text-sm text-[#2c3e50] outline-none focus:ring-2 focus:ring-[#1F5A5C]/20"
           >
             <option value="all">All Classes</option>
             {classes.map((c) => (
@@ -63,13 +63,13 @@ export function ReportsFilterBar({
         </div>
 
         <div>
-          <label className="block text-xs font-semibold uppercase tracking-wide text-[#6f7979] mb-2">
+          <label className="block text-xs font-semibold uppercase tracking-wide text-[#64748b] mb-2">
             Filter by Student
           </label>
           <select
             value={selectedStudentId}
             onChange={(e) => handleStudentChange(e.target.value)}
-            className="h-10 w-full rounded-xl bg-[#f0f2f5] border-none px-3 text-sm text-[#2c3e50] outline-none focus:ring-2 focus:ring-[#004649]/20"
+            className="h-10 w-full rounded-xl bg-[#f0f2f5] border-none px-3 text-sm text-[#2c3e50] outline-none focus:ring-2 focus:ring-[#1F5A5C]/20"
           >
             <option value="all">All Students</option>
             {selectedClassId !== 'all' && students.length === 0 ? (
@@ -86,7 +86,7 @@ export function ReportsFilterBar({
         </div>
 
         <div>
-          <label className="block text-xs font-semibold uppercase tracking-wide text-[#6f7979] mb-2">
+          <label className="block text-xs font-semibold uppercase tracking-wide text-[#64748b] mb-2">
             Period
           </label>
           <div className="flex gap-2">
@@ -96,7 +96,7 @@ export function ReportsFilterBar({
                 onClick={() => handlePeriodChange(period)}
                 className={`flex-1 h-11 rounded-xl text-xs font-semibold transition-all ${
                   selectedPeriod === period
-                    ? 'bg-gradient-to-br from-[#004649] to-[#1b5e62] text-white shadow-sm'
+                    ? 'bg-gradient-to-br from-[#1F5A5C] to-[#1b5e62] text-white shadow-sm'
                     : 'bg-[#f0f2f5] text-[#2c3e50] hover:bg-[#e8ecf0]'
                 }`}
               >

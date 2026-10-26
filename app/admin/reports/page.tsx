@@ -18,7 +18,7 @@ type ReportsPageProps = {
 };
 
 function fmtMoney(v: number) {
-  return `AED ${v.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+  return `₨ ${Number(v || 0).toLocaleString('en-PK', { maximumFractionDigits: 0 })}`;
 }
 
 function fmtDate(v: Date | string) {
@@ -44,7 +44,7 @@ function CardHeader({ title, subtitle, trailing }: { title: string; subtitle?: s
   return (
     <div className="flex items-start justify-between gap-3 border-b border-[#f1f5f9] px-5 py-4">
       <div>
-        <h2 className="font-headline text-base font-bold text-[#111827]">{title}</h2>
+        <h2 className="text-base font-bold text-[#111827]">{title}</h2>
         {subtitle && <p className="mt-0.5 text-xs text-[#9ca3af]">{subtitle}</p>}
       </div>
       {trailing}
@@ -223,12 +223,12 @@ export default async function AdminReportsPage({ searchParams }: ReportsPageProp
       <div className={CARD}>
         <div className="flex items-start justify-between gap-3 border-b border-[#f1f5f9] px-5 py-4">
           <div>
-            <h1 className="font-headline text-2xl font-bold text-[#111827]">Reports</h1>
+            <h1 className="text-2xl font-bold text-[#111827]">Reports</h1>
             <p className="mt-0.5 text-sm text-[#9ca3af]">Live summary — students, attendance, finance, progress.</p>
           </div>
         </div>
         <div className="p-6">
-          <h2 className="font-headline text-lg font-bold text-[#111827]">Database Unreachable</h2>
+          <h2 className="text-lg font-bold text-[#111827]">Database Unreachable</h2>
           <p className="mt-2 text-sm text-[#6b7280]">
             Reports data is temporarily unavailable. The page will work again once the database connection recovers.
           </p>
@@ -276,7 +276,7 @@ export default async function AdminReportsPage({ searchParams }: ReportsPageProp
       <div className={`${CARD} px-5 py-4 sm:px-6 sm:py-5`}>
         <div className="flex items-center justify-between gap-4">
           <div>
-            <h1 className="font-headline text-2xl font-bold text-[#111827]">Reports</h1>
+            <h1 className="text-2xl font-bold text-[#111827]">Reports</h1>
             <p className="mt-0.5 text-sm text-[#9ca3af]">Live summary — students, attendance, finance, progress.</p>
           </div>
           <TrendingUp className="h-8 w-8 text-[#d1d5db]" />

@@ -500,7 +500,7 @@ function RemoveConfirmModal({
           <div className="flex h-12 w-12 items-center justify-center rounded-full bg-[#fef2f2]">
             <Trash2 className="h-6 w-6 text-[#ef4444]" strokeWidth={1.75} />
           </div>
-          <h3 className="font-headline mt-4 text-lg font-bold text-[#111827]">Remove Student?</h3>
+          <h3 className="mt-4 text-lg font-bold text-[#111827]">Remove Student?</h3>
           <p className="mt-1.5 text-sm leading-relaxed text-[#6b7280]">
             This action will permanently remove{' '}
             <span className="font-semibold text-[#111827]">{student.user.fullName}</span>
@@ -542,7 +542,7 @@ function EmptyState() {
           🔍
         </div>
       </div>
-      <h3 className="font-headline text-xl font-bold text-[#111827]">No students found</h3>
+      <h3 className="text-xl font-bold text-[#111827]">No students found</h3>
       <p className="mt-2 max-w-xs text-sm text-[#64748b]">
         Try adjusting search terms or filters. Or enroll a new student to get started.
       </p>
@@ -825,7 +825,7 @@ function ShareCredentialsModal({
                   });
                 }}
                 className={`flex items-center justify-center gap-2 rounded-xl py-3 text-sm font-bold text-white shadow-md active:scale-[0.98] ${
-                  appType === 'business' ? 'bg-[#004649] hover:bg-[#1b5e62]' : 'bg-[#16a34a] hover:bg-[#15803d]'
+                  appType === 'business' ? 'bg-[#1F5A5C] hover:bg-[#2D7578]' : 'bg-[#16a34a] hover:bg-[#15803d]'
                 }`}
               >
                 <MessageSquare className="h-4 w-4" />
@@ -896,16 +896,16 @@ function ShareCredentialsModal({
                     onClick={() => handleSelectAppType('business')}
                     className={`flex items-center gap-2.5 rounded-xl border p-2.5 text-left transition-all active:scale-[0.98] ${
                       appType === 'business'
-                        ? 'border-[#004649] bg-[#e0eff0] text-[#004649] ring-2 ring-[#004649]/30 shadow-xs'
+                        ? 'border-[#1F5A5C] bg-[#e0eff0] text-[#1F5A5C] ring-2 ring-[#1F5A5C]/30 shadow-xs'
                         : 'border-[#e2e8f0] bg-white text-[#64748b] hover:bg-[#f8fafc]'
                     }`}
                   >
-                    <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-[#004649] text-white text-xs font-black shadow-xs">
+                    <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-[#1F5A5C] text-white text-xs font-black shadow-xs">
                       WB
                     </span>
                     <div className="min-w-0">
                       <p className="text-xs font-bold leading-tight text-[#0f172a]">WA Business</p>
-                      <p className="text-[10px] text-[#004649] font-medium">Business</p>
+                      <p className="text-[10px] text-[#1F5A5C] font-medium">Business</p>
                     </div>
                   </button>
                 </div>
@@ -1001,7 +1001,7 @@ ${showPwd ? password : '********'}`}
                 disabled={loading}
                 className={`flex flex-[2] items-center justify-center gap-2 rounded-xl py-3 text-sm font-semibold text-white shadow-[0_4px_12px_rgba(22,163,74,0.25)] transition active:scale-[0.98] disabled:opacity-60 ${
                   appType === 'business'
-                    ? 'bg-[#004649] hover:bg-[#1b5e62]'
+                    ? 'bg-[#1F5A5C] hover:bg-[#2D7578]'
                     : 'bg-[#16a34a] hover:bg-[#15803d]'
                 }`}
               >
@@ -1364,7 +1364,7 @@ export default function AdminStudentsPageClient({
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3.5">
           <div>
             <span className="text-[10px] sm:text-[11px] font-bold uppercase tracking-wider text-[#64748b]">Student Management</span>
-            <h1 className="font-headline text-xl sm:text-2xl font-bold text-[#0f172a] mt-0.5">Students Dashboard</h1>
+            <h1 className="text-xl sm:text-2xl font-bold text-[#0f172a] mt-0.5">Students Dashboard</h1>
             <p className="text-xs sm:text-sm text-[#64748b] mt-0.5">
               Manage enrollments, track attendance & fees, and monitor student records.
             </p>
@@ -1372,7 +1372,7 @@ export default function AdminStudentsPageClient({
           <div className="flex items-center gap-2">
             <Link
               href="/admin/students/enroll"
-              className="h-10 sm:h-11 px-4 sm:px-5 text-xs sm:text-sm font-bold bg-gradient-to-r from-[#004649] to-[#1b5e62] text-white hover:brightness-105 active:scale-[0.98] rounded-xl shadow-2xs transition-all inline-flex items-center justify-center gap-2 w-full sm:w-auto"
+              className="h-10 sm:h-11 px-4 sm:px-5 text-xs sm:text-sm font-bold bg-gradient-to-r from-[#1F5A5C] to-[#2D7578] text-white hover:brightness-105 active:scale-[0.98] rounded-xl shadow-2xs transition-all inline-flex items-center justify-center gap-2 w-full sm:w-auto"
             >
               <UserPlus size={16} />
               <span>+ Enroll Student</span>
@@ -1383,7 +1383,7 @@ export default function AdminStudentsPageClient({
         {/* 4 Stats KPI Cards (Always crisp and visible in 2x2 grid on mobile) */}
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-2.5 sm:gap-4 pt-1">
           <div className="rounded-xl bg-[#f8fafc] border border-[#e2e8f0] p-3 sm:p-4 flex items-center gap-3">
-            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-[#e0eff0] text-[#004649]">
+            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-[#e0eff0] text-[#1F5A5C]">
               <Users size={20} />
             </div>
             <div className="min-w-0">
@@ -1429,7 +1429,7 @@ export default function AdminStudentsPageClient({
         
         {/* Search Input */}
         <div className="relative">
-          <label className="flex h-11 items-center gap-2.5 rounded-xl bg-[#f8fafc] border border-[#e2e8f0] px-3.5 transition focus-within:bg-white focus-within:ring-2 focus-within:ring-[#004649]/20 focus-within:border-[#004649]">
+          <label className="flex h-11 items-center gap-2.5 rounded-xl bg-[#f8fafc] border border-[#e2e8f0] px-3.5 transition focus-within:bg-white focus-within:ring-2 focus-within:ring-[#1F5A5C]/20 focus-within:border-[#1F5A5C]">
             <Search className="h-4 w-4 shrink-0 text-[#94a3b8]" />
             <input
               value={search}
@@ -1458,7 +1458,7 @@ export default function AdminStudentsPageClient({
             <select
               value={classFilter}
               onChange={(e) => updateFilters({ classId: e.target.value, page: '1' })}
-              className="h-10 rounded-xl bg-[#f8fafc] border border-[#cbd5e1] px-3 text-xs sm:text-sm font-semibold text-[#0f172a] outline-none focus:ring-2 focus:ring-[#004649]/20 focus:border-[#004649] transition cursor-pointer"
+              className="h-10 rounded-xl bg-[#f8fafc] border border-[#cbd5e1] px-3 text-xs sm:text-sm font-semibold text-[#0f172a] outline-none focus:ring-2 focus:ring-[#1F5A5C]/20 focus:border-[#1F5A5C] transition cursor-pointer"
               aria-label="Filter by class"
             >
               <option value="">All Classes & Sections</option>
@@ -1519,7 +1519,7 @@ export default function AdminStudentsPageClient({
                 onClick={() => updateFilters({ view: 'list', page: '1' })}
                 className={`flex h-8 w-8 items-center justify-center rounded-lg transition-all ${
                   view === 'list'
-                    ? 'bg-white text-[#004649] shadow-xs'
+                    ? 'bg-white text-[#1F5A5C] shadow-xs'
                     : 'text-[#64748b] hover:text-[#0f172a]'
                 }`}
                 title="List View"
@@ -1542,7 +1542,7 @@ export default function AdminStudentsPageClient({
           <div className="flex items-center gap-3">
             <input type="checkbox" checked={allPageSelected} onChange={toggleAll}
               className="h-4 w-4 rounded accent-[#16a34a]" title="Select all on page" />
-            <h2 className="font-headline text-base font-bold text-[#111827]">Student Directory</h2>
+            <h2 className="text-base font-bold text-[#111827]">Student Directory</h2>
           </div>
           <div className="flex items-center gap-2">
             {selected.size > 0 ? (
@@ -1619,7 +1619,7 @@ export default function AdminStudentsPageClient({
                         {initials(student.user.fullName)}
                       </div>
                       <div className="min-w-0 flex-1">
-                        <p className="font-semibold text-[#1a1c1c] truncate">{student.user.fullName}</p>
+                        <p className="font-semibold text-[#0f172a] truncate">{student.user.fullName}</p>
                         <p className="text-xs text-[#6b7280] truncate">{student.class?.name || 'No class'}</p>
                       </div>
                       <div className="hidden md:block" onClick={(e) => e.stopPropagation()}>
@@ -1655,7 +1655,7 @@ export default function AdminStudentsPageClient({
                       </div>
                       <div className="flex justify-between">
                         <span className="text-[#6b7280]">Attendance</span>
-                        <span className="font-semibold text-[#1a1c1c]">{student.attendancePercentage ?? 0}%</span>
+                        <span className="font-semibold text-[#0f172a]">{student.attendancePercentage ?? 0}%</span>
                       </div>
                       <div className="flex justify-between">
                         <span className="text-[#6b7280]">Fee Status</span>
@@ -2006,7 +2006,7 @@ export default function AdminStudentsPageClient({
       {showPromoteModal ? (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
           <div className="w-full max-w-sm rounded-2xl bg-white p-6 shadow-[0_20px_60px_rgba(0,0,0,0.15)]">
-            <h3 className="font-headline text-lg font-bold text-[#111827]">Promote Students</h3>
+            <h3 className="text-lg font-bold text-[#111827]">Promote Students</h3>
             <p className="mt-1 text-sm text-[#6b7280]">
               Move <strong>{selected.size}</strong> student(s) to a new class.
             </p>

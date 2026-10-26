@@ -53,7 +53,7 @@ export function StudentReportDetailActions({
 
 💰 Fees:
   ✅ Paid: ${paidCount} | ⏳ Pending: ${pendingCount} | 🔴 Overdue: ${overdueCount}
-  Total Collected: AED ${totalCollected.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+  Total Collected: ₨ ${totalCollected.toLocaleString('en-PK')}
 
 📅 Attendance (last 30 days):
   Present: ${presentCount} | Absent: ${absentCount} | Late: ${lateCount}
@@ -71,7 +71,7 @@ export function StudentReportDetailActions({
     <div className="flex gap-2">
       <button
         onClick={handlePrint}
-        className="h-11 flex-1 sm:flex-none flex items-center justify-center gap-1.5 rounded-xl bg-gradient-to-br from-[#004649] to-[#1b5e62] px-3 text-xs font-semibold text-white hover:scale-105 active:scale-[0.98] transition-all print:hidden"
+        className="h-11 flex-1 sm:flex-none flex items-center justify-center gap-1.5 rounded-xl bg-gradient-to-br from-[#1F5A5C] to-[#2D7578] px-3 text-xs font-semibold text-white hover:scale-105 active:scale-[0.98] transition-all print:hidden"
         title="Print or save as PDF"
       >
         <Printer className="h-4 w-4" />
@@ -93,7 +93,7 @@ export function StudentReportDetailActions({
         className={`h-11 flex-1 sm:flex-none flex items-center justify-center gap-1.5 rounded-xl px-3 text-xs font-semibold transition-all print:hidden ${
           hasWaPhone
             ? 'bg-[#25d366] text-white hover:scale-105 active:scale-[0.98]'
-            : 'bg-[#f0f2f5] text-[#6f7979] cursor-not-allowed opacity-60'
+            : 'bg-[#f0f2f5] text-[#64748b] cursor-not-allowed opacity-60'
         }`}
       >
         <MessageCircle className="h-4 w-4" />

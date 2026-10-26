@@ -54,13 +54,13 @@ function formatDate(isoString: string): string {
 
 function formatCurrency(value: string | number): string {
   const num = typeof value === 'string' ? parseFloat(value) : value;
-  return `AED ${num.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+  return `₨ ${Number(num || 0).toLocaleString('en-PK', { maximumFractionDigits: 0 })}`;
 }
 
 function statusBadgeClass(status: 'PENDING' | 'SENT' | 'SKIPPED') {
   if (status === 'PENDING') return 'bg-[#fff7ed] text-[#b45309]';
   if (status === 'SENT') return 'bg-[#dcfce7] text-[#15803d]';
-  return 'bg-[#f3f4f5] text-[#6f7979]';
+  return 'bg-[#f3f4f5] text-[#64748b]';
 }
 
 function statusBorderClass(status: 'PENDING' | 'SENT' | 'SKIPPED') {
@@ -225,9 +225,9 @@ export default function AdminFinanceRemindersPage() {
       <div className="rounded-2xl bg-white p-4 shadow-[0_4px_12px_rgba(0,0,0,0.08)] sm:p-6">
         <div className="flex items-start justify-between gap-4">
           <div>
-            <p className="text-[10px] font-bold uppercase tracking-widest text-[#6f7979]">Finance</p>
-            <h1 className="mt-0.5 text-2xl font-extrabold text-[#1a1c1c] sm:text-3xl">Reminder Campaign</h1>
-            <p className="mt-1 text-sm text-[#6f7979]">Build one WhatsApp reminder list for unpaid and overdue students, then send and track status from one place.</p>
+            <p className="text-[10px] font-bold uppercase tracking-widest text-[#64748b]">Finance</p>
+            <h1 className="mt-0.5 text-2xl font-extrabold text-[#0f172a] sm:text-3xl">Reminder Campaign</h1>
+            <p className="mt-1 text-sm text-[#64748b]">Build one WhatsApp reminder list for unpaid and overdue students, then send and track status from one place.</p>
           </div>
           <div className="flex gap-2">
             {data ? (
@@ -243,7 +243,7 @@ export default function AdminFinanceRemindersPage() {
             <button
               onClick={generateCampaign}
               disabled={generating}
-              className="h-10 flex items-center gap-1.5 rounded-xl bg-gradient-to-br from-[#004649] to-[#1b5e62] px-4 text-xs font-semibold text-white shadow-[0_4px_12px_rgba(0,70,73,0.2)] hover:scale-105 hover:shadow-[0_6px_16px_rgba(0,70,73,0.3)] active:scale-[0.98] disabled:opacity-60 transition-all"
+              className="h-10 flex items-center gap-1.5 rounded-xl bg-gradient-to-br from-[#1F5A5C] to-[#2D7578] px-4 text-xs font-semibold text-white shadow-[0_4px_12px_rgba(0,70,73,0.2)] hover:scale-105 hover:shadow-[0_6px_16px_rgba(0,70,73,0.3)] active:scale-[0.98] disabled:opacity-60 transition-all"
             >
               <Zap className={`h-4 w-4 ${generating ? 'animate-spin' : ''}`} />
               Build Campaign
@@ -254,8 +254,8 @@ export default function AdminFinanceRemindersPage() {
 
       {!data ? (
         <div className="rounded-2xl bg-white p-4 shadow-[0_4px_12px_rgba(0,0,0,0.08)] sm:p-6">
-          <h3 className="text-sm font-bold text-[#1a1c1c]">How this works</h3>
-          <ul className="mt-2 space-y-1 text-xs text-[#6f7979]">
+          <h3 className="text-sm font-bold text-[#0f172a]">How this works</h3>
+          <ul className="mt-2 space-y-1 text-xs text-[#64748b]">
             <li>1. Build Campaign collects students with unpaid or overdue fee.</li>
             <li>2. Students without WhatsApp are automatically skipped.</li>
             <li>3. Open WhatsApp sends reminder message and marks item as sent.</li>
@@ -268,14 +268,14 @@ export default function AdminFinanceRemindersPage() {
         <div className="rounded-2xl bg-white p-8 shadow-[0_4px_12px_rgba(0,0,0,0.08)] sm:p-12">
           <div className="flex flex-col items-center justify-center text-center">
             <div className="mb-4 rounded-full bg-[#f0f2f5] p-4">
-              <AlertCircle className="h-8 w-8 text-[#6f7979]" />
+              <AlertCircle className="h-8 w-8 text-[#64748b]" />
             </div>
-            <h2 className="text-lg font-bold text-[#1a1c1c]">No campaign built yet.</h2>
-            <p className="mt-2 text-sm text-[#6f7979] max-w-sm">Click Build Campaign to prepare reminder items for students whose fee is unpaid or overdue.</p>
+            <h2 className="text-lg font-bold text-[#0f172a]">No campaign built yet.</h2>
+            <p className="mt-2 text-sm text-[#64748b] max-w-sm">Click Build Campaign to prepare reminder items for students whose fee is unpaid or overdue.</p>
             <button
               onClick={generateCampaign}
               disabled={generating}
-              className="mt-6 h-11 flex items-center gap-1.5 rounded-xl bg-gradient-to-br from-[#004649] to-[#1b5e62] px-5 text-sm font-bold text-white shadow-[0_4px_12px_rgba(0,70,73,0.2)] hover:scale-105 hover:shadow-[0_6px_16px_rgba(0,70,73,0.3)] active:scale-[0.98] disabled:opacity-60 transition-all"
+              className="mt-6 h-11 flex items-center gap-1.5 rounded-xl bg-gradient-to-br from-[#1F5A5C] to-[#2D7578] px-5 text-sm font-bold text-white shadow-[0_4px_12px_rgba(0,70,73,0.2)] hover:scale-105 hover:shadow-[0_6px_16px_rgba(0,70,73,0.3)] active:scale-[0.98] disabled:opacity-60 transition-all"
             >
               <Zap className="h-4 w-4" />
               Build Reminder Campaign
@@ -287,8 +287,8 @@ export default function AdminFinanceRemindersPage() {
       {/* ── Loading ── */}
       {generating && !data ? (
         <div className="rounded-2xl bg-white p-6 shadow-[0_4px_12px_rgba(0,0,0,0.08)]">
-          <div className="flex items-center gap-2 text-sm text-[#6f7979]">
-            <div className="h-4 w-4 animate-spin rounded-full border-2 border-[#004649] border-t-transparent" />
+          <div className="flex items-center gap-2 text-sm text-[#64748b]">
+            <div className="h-4 w-4 animate-spin rounded-full border-2 border-[#1F5A5C] border-t-transparent" />
             <span>Generating campaign...</span>
           </div>
         </div>
@@ -316,10 +316,10 @@ export default function AdminFinanceRemindersPage() {
           <div className="rounded-2xl bg-white p-4 shadow-[0_4px_12px_rgba(0,0,0,0.08)] sm:p-6">
             <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
               <div>
-                <p className="text-xs text-[#6f7979] uppercase font-bold">Campaign Status</p>
+                <p className="text-xs text-[#64748b] uppercase font-bold">Campaign Status</p>
                 <div className="mt-1.5 flex gap-2">
                   {campaign.status === 'DRAFT' ? (
-                    <span className="rounded-full bg-[#f3f4f5] px-3 py-1 text-xs font-bold text-[#6f7979]">DRAFT</span>
+                    <span className="rounded-full bg-[#f3f4f5] px-3 py-1 text-xs font-bold text-[#64748b]">DRAFT</span>
                   ) : campaign.status === 'APPROVED' ? (
                     <span className="rounded-full bg-[#fff7ed] px-3 py-1 text-xs font-bold text-[#b45309]">APPROVED</span>
                   ) : (
@@ -327,10 +327,10 @@ export default function AdminFinanceRemindersPage() {
                   )}
                 </div>
               </div>
-              <div className="text-xs text-[#6f7979]">
-                <p>Created: <span className="font-semibold text-[#1a1c1c]">{createdAt}</span></p>
+              <div className="text-xs text-[#64748b]">
+                <p>Created: <span className="font-semibold text-[#0f172a]">{createdAt}</span></p>
                 {campaign.scheduledAt ? (
-                  <p className="mt-1">Scheduled: <span className="font-semibold text-[#1a1c1c]">{new Date(campaign.scheduledAt).toLocaleString('en-GB')}</span></p>
+                  <p className="mt-1">Scheduled: <span className="font-semibold text-[#0f172a]">{new Date(campaign.scheduledAt).toLocaleString('en-GB')}</span></p>
                 ) : null}
               </div>
             </div>
@@ -371,10 +371,10 @@ export default function AdminFinanceRemindersPage() {
 
           {/* Items List */}
           <div className="rounded-2xl bg-white p-4 shadow-[0_4px_12px_rgba(0,0,0,0.08)] sm:p-6">
-            <h3 className="text-lg font-bold text-[#1a1c1c] mb-4">Campaign Items ({items.length})</h3>
+            <h3 className="text-lg font-bold text-[#0f172a] mb-4">Campaign Items ({items.length})</h3>
 
             {items.length === 0 ? (
-              <p className="text-sm text-[#6f7979]">No items in campaign.</p>
+              <p className="text-sm text-[#64748b]">No items in campaign.</p>
             ) : (
               <>
                 {/* Mobile Cards */}
@@ -385,12 +385,12 @@ export default function AdminFinanceRemindersPage() {
                       className={`rounded-xl border-l-4 p-4 ${statusBorderClass(item.status)} bg-white shadow-[0_2px_6px_rgba(0,0,0,0.06)]`}
                     >
                       <div className="flex items-start justify-between gap-2 mb-2">
-                        <p className="font-semibold text-[#1a1c1c] flex-1 truncate">{item.studentName}</p>
+                        <p className="font-semibold text-[#0f172a] flex-1 truncate">{item.studentName}</p>
                         <span className={`shrink-0 rounded-full px-2 py-0.5 text-[10px] font-bold uppercase ${statusBadgeClass(item.status)}`}>
                           {item.status}
                         </span>
                       </div>
-                      <div className="flex items-baseline justify-between gap-2 mb-3 text-xs text-[#6f7979]">
+                      <div className="flex items-baseline justify-between gap-2 mb-3 text-xs text-[#64748b]">
                         <span>
                           {item.templateData?.amountDue ? formatCurrency(item.templateData.amountDue) : 'N/A'} due •{' '}
                           {item.templateData?.dueDate ? formatDate(item.templateData.dueDate) : 'N/A'}
@@ -410,7 +410,7 @@ export default function AdminFinanceRemindersPage() {
                           {item.status === 'SENT' ? '✓ Sent' : markingItemId === item.id ? 'Sending...' : '📱 Send WhatsApp'}
                         </button>
                       ) : (
-                        <div className="w-full h-11 flex items-center justify-center rounded-lg bg-[#f3f4f5] text-xs font-bold text-[#6f7979]">
+                        <div className="w-full h-11 flex items-center justify-center rounded-lg bg-[#f3f4f5] text-xs font-bold text-[#64748b]">
                           No Phone
                         </div>
                       )}
@@ -423,21 +423,21 @@ export default function AdminFinanceRemindersPage() {
                   <table className="w-full min-w-[800px] text-sm">
                     <thead>
                       <tr className="bg-[#f3f4f5] border-b border-[#e2e8e8]">
-                        <th className="px-4 py-3 text-left text-[10px] font-bold uppercase tracking-widest text-[#6f7979]">Student</th>
-                        <th className="px-4 py-3 text-left text-[10px] font-bold uppercase tracking-widest text-[#6f7979]">Fee Amount</th>
-                        <th className="px-4 py-3 text-left text-[10px] font-bold uppercase tracking-widest text-[#6f7979]">Due Date</th>
-                        <th className="px-4 py-3 text-left text-[10px] font-bold uppercase tracking-widest text-[#6f7979]">Status</th>
-                        <th className="px-4 py-3 text-right text-[10px] font-bold uppercase tracking-widest text-[#6f7979]">Action</th>
+                        <th className="px-4 py-3 text-left text-[10px] font-bold uppercase tracking-widest text-[#64748b]">Student</th>
+                        <th className="px-4 py-3 text-left text-[10px] font-bold uppercase tracking-widest text-[#64748b]">Fee Amount</th>
+                        <th className="px-4 py-3 text-left text-[10px] font-bold uppercase tracking-widest text-[#64748b]">Due Date</th>
+                        <th className="px-4 py-3 text-left text-[10px] font-bold uppercase tracking-widest text-[#64748b]">Status</th>
+                        <th className="px-4 py-3 text-right text-[10px] font-bold uppercase tracking-widest text-[#64748b]">Action</th>
                       </tr>
                     </thead>
                     <tbody>
                       {items.map((item) => (
                         <tr key={item.id} className="border-b border-[#f0f2f0] last:border-0 hover:bg-[#f9fafb]">
-                          <td className="px-4 py-3.5 font-medium text-[#1a1c1c]">{item.studentName}</td>
-                          <td className="px-4 py-3.5 text-[#6f7979]">
+                          <td className="px-4 py-3.5 font-medium text-[#0f172a]">{item.studentName}</td>
+                          <td className="px-4 py-3.5 text-[#64748b]">
                             {item.templateData?.amountDue ? formatCurrency(item.templateData.amountDue) : '-'}
                           </td>
-                          <td className="px-4 py-3.5 text-[#6f7979]">
+                          <td className="px-4 py-3.5 text-[#64748b]">
                             {item.templateData?.dueDate ? formatDate(item.templateData.dueDate) : '-'}
                           </td>
                           <td className="px-4 py-3.5">
@@ -460,7 +460,7 @@ export default function AdminFinanceRemindersPage() {
                                 {item.status === 'SENT' ? '✓ Sent' : markingItemId === item.id ? '...' : '📱 Send'}
                               </button>
                             ) : (
-                              <span className="inline-flex h-10 items-center justify-center px-3 text-xs font-bold text-[#6f7979] bg-[#f3f4f5] rounded-lg">
+                              <span className="inline-flex h-10 items-center justify-center px-3 text-xs font-bold text-[#64748b] bg-[#f3f4f5] rounded-lg">
                                 N/A
                               </span>
                             )}

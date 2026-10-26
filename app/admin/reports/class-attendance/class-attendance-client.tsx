@@ -93,14 +93,14 @@ export default function ClassAttendanceClient({
     <div className="space-y-4 pb-8">
       {/* Filter */}
       <div className="rounded-2xl bg-white p-4 shadow-[0_4px_12px_rgba(0,0,0,0.08)] sm:p-6 print:hidden">
-        <Link href="/admin/reports" className="text-xs font-semibold text-[#004649] hover:text-[#1b5e62]">
+        <Link href="/admin/reports" className="text-xs font-semibold text-[#1F5A5C] hover:text-[#1b5e62]">
           &larr; Back to Reports
         </Link>
-        <h1 className="mt-2 text-2xl font-bold text-[#1a1c1c]">Class Attendance Report</h1>
-        <p className="mt-1 text-sm text-[#6f7979]">Student-wise monthly attendance sheet with daily P/A/L/H codes.</p>
+        <h1 className="mt-2 text-2xl font-bold text-[#0f172a]">Class Attendance Report</h1>
+        <p className="mt-1 text-sm text-[#64748b]">Student-wise monthly attendance sheet with daily P/A/L/H codes.</p>
 
         <div className="mt-4 grid gap-3 sm:grid-cols-3">
-          <label className="text-xs font-semibold text-[#6f7979]">
+          <label className="text-xs font-semibold text-[#64748b]">
             Class
             <select
               value={selectedClassId}
@@ -112,7 +112,7 @@ export default function ClassAttendanceClient({
               ))}
             </select>
           </label>
-          <label className="text-xs font-semibold text-[#6f7979]">
+          <label className="text-xs font-semibold text-[#64748b]">
             Month
             <input
               type="month"
@@ -142,7 +142,7 @@ export default function ClassAttendanceClient({
         <div className="rounded-2xl bg-white p-4 shadow-[0_4px_12px_rgba(0,0,0,0.08)] sm:p-6">
           {/* Print-only header */}
           <div className="hidden print:block mb-4 border-b pb-3">
-            <h2 className="text-lg font-bold text-[#1a1c1c]">Class Attendance Report</h2>
+            <h2 className="text-lg font-bold text-[#0f172a]">Class Attendance Report</h2>
             <div className="mt-1 flex flex-wrap gap-4 text-sm text-[#374151]">
               <span><span className="font-semibold">Class:</span> {selectedClass.name} {selectedClass.section}</span>
               <span><span className="font-semibold">Month:</span> {monthLabel}</span>
@@ -154,7 +154,7 @@ export default function ClassAttendanceClient({
           {/* Header row */}
           <div className="mb-4 flex items-start justify-between gap-3 print:hidden">
             <div>
-              <h2 className="text-xl font-bold text-[#1a1c1c]">
+              <h2 className="text-xl font-bold text-[#0f172a]">
                 {selectedClass.name} {selectedClass.section}
               </h2>
               <div className="mt-1 flex flex-wrap gap-4 text-sm text-[#374151]">
@@ -167,7 +167,7 @@ export default function ClassAttendanceClient({
               <PrintButton label="Print / PDF" orientation="landscape" />
               <button
                 onClick={handleDownload}
-                className="flex items-center gap-2 rounded-xl bg-[#004649] px-4 py-2 text-sm font-semibold text-white hover:bg-[#1b5e62] transition"
+                className="flex items-center gap-2 rounded-xl bg-[#1F5A5C] px-4 py-2 text-sm font-semibold text-white hover:bg-[#1b5e62] transition"
               >
                 <Download className="h-4 w-4" />
                 CSV (Page)
@@ -179,8 +179,8 @@ export default function ClassAttendanceClient({
           <div className="overflow-x-auto rounded-xl border border-[#e5e7eb]">
             <table className="w-full border-collapse text-xs" style={{ minWidth: `${Math.max(900, 180 + dayColumns.length * 32 + 120)}px` }}>
               <thead>
-                <tr className="bg-[#004649] text-white">
-                  <th className="sticky left-0 z-10 border-b border-r border-[#1b5e62] bg-[#004649] px-3 py-2 text-left font-semibold">Student</th>
+                <tr className="bg-[#1F5A5C] text-white">
+                  <th className="sticky left-0 z-10 border-b border-r border-[#1b5e62] bg-[#1F5A5C] px-3 py-2 text-left font-semibold">Student</th>
                   <th className="border-b border-r border-[#1b5e62] px-2 py-2 text-center font-semibold w-10">Roll</th>
                   {dayColumns.map((day) => (
                     <th key={day} className="border-b border-r border-[#1b5e62] px-1 py-2 text-center font-semibold w-8">{day}</th>
@@ -284,7 +284,7 @@ export default function ClassAttendanceClient({
           <p className="mt-3 text-xs text-[#6b7280]">P = Present / Late &nbsp;·&nbsp; A = Absent &nbsp;·&nbsp; L = Leave / Excused &nbsp;·&nbsp; H = Holiday (weekend)</p>
         </div>
       ) : (
-        <div className="rounded-2xl bg-white p-6 text-sm text-[#6f7979] shadow-[0_4px_12px_rgba(0,0,0,0.08)]">
+        <div className="rounded-2xl bg-white p-6 text-sm text-[#64748b] shadow-[0_4px_12px_rgba(0,0,0,0.08)]">
           No class data found.
         </div>
       )}

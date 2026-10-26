@@ -17,7 +17,7 @@ type MonthRow = {
 };
 
 function formatMoney(value: number) {
-  return `AED ${value.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+  return `₨ ${Number(value || 0).toLocaleString('en-PK', { maximumFractionDigits: 0 })}`;
 }
 
 export default async function IndividualFinanceReportPage({ searchParams }: PageProps) {
@@ -90,22 +90,22 @@ export default async function IndividualFinanceReportPage({ searchParams }: Page
   return (
     <div className="space-y-4 pb-8">
       <div className="rounded-2xl bg-white p-4 shadow-[0_4px_12px_rgba(0,0,0,0.08)] sm:p-6 print:hidden">
-        <Link href="/admin/reports" className="text-xs font-semibold text-[#004649] hover:text-[#1b5e62]">&larr; Back to Reports</Link>
-        <h1 className="mt-2 text-2xl font-bold text-[#1a1c1c]">Individual Finance Report</h1>
-        <p className="mt-1 text-sm text-[#6f7979]">12-month student fee report with paid and unpaid totals.</p>
+        <Link href="/admin/reports" className="text-xs font-semibold text-[#1F5A5C] hover:text-[#2D7578]">&larr; Back to Reports</Link>
+        <h1 className="mt-2 text-2xl font-bold text-[#0f172a]">Individual Finance Report</h1>
+        <p className="mt-1 text-sm text-[#64748b]">12-month student fee report with paid and unpaid totals.</p>
 
         <form className="mt-4 grid gap-3 sm:grid-cols-3" method="get">
-          <label className="text-xs font-semibold text-[#6f7979] sm:col-span-2">
+          <label className="text-xs font-semibold text-[#64748b] sm:col-span-2">
             Student
             <select name="studentId" defaultValue={selectedStudentId} className="mt-1 h-10 w-full rounded-xl bg-[#f3f4f5] px-3 text-sm text-[#1f2937]">
               {students.map((student) => <option key={student.id} value={student.id}>{student.user.fullName}</option>)}
             </select>
           </label>
-          <label className="text-xs font-semibold text-[#6f7979]">
+          <label className="text-xs font-semibold text-[#64748b]">
             Year
             <input name="year" type="number" min="2020" max="2100" defaultValue={year} className="mt-1 h-10 w-full rounded-xl bg-[#f3f4f5] px-3 text-sm text-[#1f2937]" />
           </label>
-          <div className="sm:col-span-3"><button type="submit" className="h-10 w-full rounded-xl bg-gradient-to-br from-[#004649] to-[#1b5e62] text-sm font-semibold text-white">Apply</button></div>
+          <div className="sm:col-span-3"><button type="submit" className="h-10 w-full rounded-xl bg-gradient-to-br from-[#1F5A5C] to-[#2D7578] text-sm font-semibold text-white">Apply</button></div>
         </form>
       </div>
 
@@ -166,7 +166,7 @@ export default async function IndividualFinanceReportPage({ searchParams }: Page
           </div>
         </div>
       ) : (
-        <div className="rounded-2xl bg-white p-6 text-sm text-[#6f7979] shadow-[0_4px_12px_rgba(0,0,0,0.08)]">No student data found.</div>
+        <div className="rounded-2xl bg-white p-6 text-sm text-[#64748b] shadow-[0_4px_12px_rgba(0,0,0,0.08)]">No student data found.</div>
       )}
     </div>
   );

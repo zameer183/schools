@@ -61,7 +61,7 @@ export function QuickFeePaymentForm({ fees, classes, students, action }: QuickFe
   return (
     <form action={action} className="mt-4 grid gap-3 rounded-xl bg-[#f3f4f5] p-4 sm:grid-cols-2">
       <div className="space-y-1">
-        <label className="text-[10px] font-bold uppercase tracking-widest text-[#6f7979]">Class</label>
+        <label className="text-[10px] font-bold uppercase tracking-widest text-[#64748b]">Class</label>
         <select
           value={classId}
           onChange={(event) => {
@@ -70,7 +70,7 @@ export function QuickFeePaymentForm({ fees, classes, students, action }: QuickFe
             setFeeId('');
             setAmountPaid('');
           }}
-          className="h-10 w-full rounded-xl bg-[#edeeef] border-none px-3 text-sm outline-none focus:ring-2 focus:ring-[#004649]/20"
+          className="h-10 w-full rounded-xl bg-[#edeeef] border-none px-3 text-sm outline-none focus:ring-2 focus:ring-[#1F5A5C]/20"
         >
           <option value="">All Classes</option>
           {classOptions.map((item) => (
@@ -82,7 +82,7 @@ export function QuickFeePaymentForm({ fees, classes, students, action }: QuickFe
       </div>
 
       <div className="space-y-1">
-        <label className="text-[10px] font-bold uppercase tracking-widest text-[#6f7979]">Student</label>
+        <label className="text-[10px] font-bold uppercase tracking-widest text-[#64748b]">Student</label>
         <select
           value={studentId}
           onChange={(event) => {
@@ -90,7 +90,7 @@ export function QuickFeePaymentForm({ fees, classes, students, action }: QuickFe
             setFeeId('');
             setAmountPaid('');
           }}
-          className="h-10 w-full rounded-xl bg-[#edeeef] border-none px-3 text-sm outline-none focus:ring-2 focus:ring-[#004649]/20"
+          className="h-10 w-full rounded-xl bg-[#edeeef] border-none px-3 text-sm outline-none focus:ring-2 focus:ring-[#1F5A5C]/20"
         >
           <option value="">Select Student</option>
           {studentOptions.map((item) => (
@@ -102,7 +102,7 @@ export function QuickFeePaymentForm({ fees, classes, students, action }: QuickFe
       </div>
 
       <div className="space-y-1">
-        <label className="text-[10px] font-bold uppercase tracking-widest text-[#6f7979]">Fee</label>
+        <label className="text-[10px] font-bold uppercase tracking-widest text-[#64748b]">Fee</label>
         <select
           name="feeId"
           value={feeId}
@@ -112,7 +112,7 @@ export function QuickFeePaymentForm({ fees, classes, students, action }: QuickFe
             const fee = feeOptions.find((item) => item.id === nextFeeId);
             setAmountPaid(fee ? fee.remaining.toFixed(2) : '');
           }}
-          className="h-10 w-full rounded-xl bg-[#edeeef] border-none px-3 text-sm outline-none focus:ring-2 focus:ring-[#004649]/20"
+          className="h-10 w-full rounded-xl bg-[#edeeef] border-none px-3 text-sm outline-none focus:ring-2 focus:ring-[#1F5A5C]/20"
           required
         >
           <option value="">Select Fee</option>
@@ -126,7 +126,7 @@ export function QuickFeePaymentForm({ fees, classes, students, action }: QuickFe
       </div>
 
       <div className="space-y-1">
-        <label className="text-[10px] font-bold uppercase tracking-widest text-[#6f7979]">Amount</label>
+        <label className="text-[10px] font-bold uppercase tracking-widest text-[#64748b]">Amount</label>
         <input
           name="amountPaid"
           type="number"
@@ -134,23 +134,23 @@ export function QuickFeePaymentForm({ fees, classes, students, action }: QuickFe
           step="0.01"
           value={amountPaid}
           onChange={(event) => setAmountPaid(event.target.value)}
-          className="h-10 w-full rounded-xl bg-[#edeeef] border-none px-3 text-sm outline-none focus:ring-2 focus:ring-[#004649]/20"
+          className="h-10 w-full rounded-xl bg-[#edeeef] border-none px-3 text-sm outline-none focus:ring-2 focus:ring-[#1F5A5C]/20"
           placeholder="0.00"
           required
         />
         {selectedFee ? (
-          <p className="text-[10px] text-[#6f7979]">Enter more than remaining to pay future months in advance.</p>
+          <p className="text-[10px] text-[#64748b]">Enter more than remaining to pay future months in advance.</p>
         ) : null}
       </div>
 
       <div className="grid gap-2 sm:col-span-2 sm:grid-cols-2">
-        <select name="method" defaultValue={TransactionType.CASH} className="h-10 rounded-xl bg-[#edeeef] border-none px-3 text-sm outline-none focus:ring-2 focus:ring-[#004649]/20">
+        <select name="method" defaultValue={TransactionType.CASH} className="h-10 rounded-xl bg-[#edeeef] border-none px-3 text-sm outline-none focus:ring-2 focus:ring-[#1F5A5C]/20">
           <option value={TransactionType.CASH}>Cash</option>
           <option value={TransactionType.BANK_TRANSFER}>Bank Transfer</option>
           <option value={TransactionType.CARD}>Card</option>
           <option value={TransactionType.ONLINE}>Online</option>
         </select>
-        <button type="submit" disabled={!feeId} className="h-10 rounded-xl bg-gradient-to-br from-[#004649] to-[#1b5e62] px-4 text-sm font-semibold text-white hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-60">
+        <button type="submit" disabled={!feeId} className="h-10 rounded-xl bg-gradient-to-br from-[#1F5A5C] to-[#2D7578] px-4 text-sm font-semibold text-white hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-60">
           Mark Paid
         </button>
       </div>

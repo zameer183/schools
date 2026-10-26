@@ -16,7 +16,7 @@ function formatDate(value: Date | string) {
 }
 
 function formatMoney(value: number) {
-  return `AED ${value.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+  return `₨ ${Number(value || 0).toLocaleString('en-PK', { maximumFractionDigits: 0 })}`;
 }
 
 export default async function StudentDetailPage({ params }: StudentDetailPageProps) {
@@ -83,13 +83,13 @@ export default async function StudentDetailPage({ params }: StudentDetailPagePro
     <div className="space-y-4 pb-24 sm:pb-6">
       {/* ── Header ── */}
       <div className="rounded-2xl bg-white p-4 shadow-[0_4px_12px_rgba(0,0,0,0.08)] sm:p-6">
-        <Link href="/admin/reports" className="mb-4 inline-flex items-center gap-1 text-xs font-semibold text-[#004649] hover:text-[#1b5e62]">
+        <Link href="/admin/reports" className="mb-4 inline-flex items-center gap-1 text-xs font-semibold text-[#1F5A5C] hover:text-[#1b5e62]">
           <ChevronLeft className="h-4 w-4" />
           Back to Reports
         </Link>
         <div>
-          <h1 className="text-2xl font-bold text-[#1a1c1c] sm:text-3xl">{student.user.fullName}</h1>
-          <p className="mt-2 text-sm text-[#6f7979]">
+          <h1 className="text-2xl font-bold text-[#0f172a] sm:text-3xl">{student.user.fullName}</h1>
+          <p className="mt-2 text-sm text-[#64748b]">
             {className} • Admission: {admissionNo}
           </p>
         </div>
@@ -97,53 +97,53 @@ export default async function StudentDetailPage({ params }: StudentDetailPagePro
 
       {/* ── Fee Summary ── */}
       <div className="rounded-2xl bg-white p-4 shadow-[0_4px_12px_rgba(0,0,0,0.08)] sm:p-6">
-        <h2 className="text-lg font-bold text-[#1a1c1c] mb-4">Fee Summary</h2>
+        <h2 className="text-lg font-bold text-[#0f172a] mb-4">Fee Summary</h2>
 
         {/* Status Grid */}
         <div className="grid gap-3 mb-6 grid-cols-2 sm:grid-cols-4">
           <div className="rounded-xl bg-[#f0fdf4] p-4">
-            <p className="text-xs text-[#6f7979] mb-2">Paid</p>
+            <p className="text-xs text-[#64748b] mb-2">Paid</p>
             <p className="text-2xl font-bold text-[#15803d]">{feeCounts.paid}</p>
           </div>
           <div className="rounded-xl bg-[#fef2f2] p-4">
-            <p className="text-xs text-[#6f7979] mb-2">Pending</p>
+            <p className="text-xs text-[#64748b] mb-2">Pending</p>
             <p className="text-2xl font-bold text-[#b91c1c]">{feeCounts.pending}</p>
           </div>
           <div className="rounded-xl bg-[#fff7ed] p-4">
-            <p className="text-xs text-[#6f7979] mb-2">Partial</p>
+            <p className="text-xs text-[#64748b] mb-2">Partial</p>
             <p className="text-2xl font-bold text-[#b45309]">{feeCounts.partial}</p>
           </div>
           <div className="rounded-xl bg-[#fef2f2] p-4">
-            <p className="text-xs text-[#6f7979] mb-2">Overdue</p>
+            <p className="text-xs text-[#64748b] mb-2">Overdue</p>
             <p className="text-2xl font-bold text-[#dc2626]">{feeCounts.overdue}</p>
           </div>
         </div>
 
         {/* Total Collected */}
         <div className="rounded-xl bg-[#f4f7f7] p-4">
-          <p className="text-xs text-[#6f7979]">Total Collected</p>
-          <p className="mt-1.5 text-xl font-bold text-[#1a1c1c]">{formatMoney(totalCollected)}</p>
+          <p className="text-xs text-[#64748b]">Total Collected</p>
+          <p className="mt-1.5 text-xl font-bold text-[#0f172a]">{formatMoney(totalCollected)}</p>
         </div>
       </div>
 
       {/* ── Attendance Summary ── */}
       <div className="rounded-2xl bg-white p-4 shadow-[0_4px_12px_rgba(0,0,0,0.08)] sm:p-6">
         <div className="flex items-center gap-2 mb-4">
-          <Calendar className="h-5 w-5 text-[#004649]" />
-          <h2 className="text-lg font-bold text-[#1a1c1c]">Attendance (Last 30 Days)</h2>
+          <Calendar className="h-5 w-5 text-[#1F5A5C]" />
+          <h2 className="text-lg font-bold text-[#0f172a]">Attendance (Last 30 Days)</h2>
         </div>
 
         <div className="grid gap-3 grid-cols-3">
           <div className="rounded-xl bg-[#f0fdf4] p-4 text-center">
-            <p className="text-xs text-[#6f7979] mb-2">Present</p>
+            <p className="text-xs text-[#64748b] mb-2">Present</p>
             <p className="text-2xl font-bold text-[#15803d]">{attendanceCounts.present}</p>
           </div>
           <div className="rounded-xl bg-[#fef2f2] p-4 text-center">
-            <p className="text-xs text-[#6f7979] mb-2">Absent</p>
+            <p className="text-xs text-[#64748b] mb-2">Absent</p>
             <p className="text-2xl font-bold text-[#dc2626]">{attendanceCounts.absent}</p>
           </div>
           <div className="rounded-xl bg-[#fff7ed] p-4 text-center">
-            <p className="text-xs text-[#6f7979] mb-2">Late</p>
+            <p className="text-xs text-[#64748b] mb-2">Late</p>
             <p className="text-2xl font-bold text-[#b45309]">{attendanceCounts.late}</p>
           </div>
         </div>
@@ -152,24 +152,24 @@ export default async function StudentDetailPage({ params }: StudentDetailPagePro
       {/* ── Hifz Progress ── */}
       <div className="rounded-2xl bg-white p-4 shadow-[0_4px_12px_rgba(0,0,0,0.08)] sm:p-6">
         <div className="flex items-center gap-2 mb-4">
-          <BookOpen className="h-5 w-5 text-[#004649]" />
-          <h2 className="text-lg font-bold text-[#1a1c1c]">Hifz Progress</h2>
+          <BookOpen className="h-5 w-5 text-[#1F5A5C]" />
+          <h2 className="text-lg font-bold text-[#0f172a]">Hifz Progress</h2>
         </div>
 
         {progress.length === 0 ? (
-          <p className="text-xs text-center text-[#6f7979] py-6">No progress records found.</p>
+          <p className="text-xs text-center text-[#64748b] py-6">No progress records found.</p>
         ) : (
           <>
             {/* Latest Summary */}
             {latestProgress && (
               <div className="mb-6 rounded-xl bg-[#f4f7f7] p-4">
-                <p className="text-xs text-[#6f7979] mb-2">Latest Lesson</p>
-                <p className="font-semibold text-[#1a1c1c]">
+                <p className="text-xs text-[#64748b] mb-2">Latest Lesson</p>
+                <p className="font-semibold text-[#0f172a]">
                   {latestProgress.lessonType === 'JUZZ' && latestProgress.juzzNumber
                     ? `Juzz ${latestProgress.juzzNumber}`
                     : `Lesson ${latestProgress.lessonNumber}`}
                 </p>
-                <div className="mt-2 flex gap-3 text-xs text-[#6f7979]">
+                <div className="mt-2 flex gap-3 text-xs text-[#64748b]">
                   <span>{latestProgress.lessonType} lesson #{latestProgress.lessonNumber}</span>
                 </div>
               </div>
@@ -180,21 +180,21 @@ export default async function StudentDetailPage({ params }: StudentDetailPagePro
               <table className="w-full min-w-[500px] text-sm">
                 <thead>
                   <tr className="bg-[#f3f4f5] border-b border-[#e2e8e8]">
-                    <th className="py-2 px-3 text-left text-xs font-bold uppercase tracking-widest text-[#6f7979]">Date</th>
-                    <th className="py-2 px-3 text-left text-xs font-bold uppercase tracking-widest text-[#6f7979]">Lesson</th>
-                    <th className="py-2 px-3 text-left text-xs font-bold uppercase tracking-widest text-[#6f7979]">Tajweedi</th>
-                    <th className="py-2 px-3 text-left text-xs font-bold uppercase tracking-widest text-[#6f7979]">Hifz</th>
+                    <th className="py-2 px-3 text-left text-xs font-bold uppercase tracking-widest text-[#64748b]">Date</th>
+                    <th className="py-2 px-3 text-left text-xs font-bold uppercase tracking-widest text-[#64748b]">Lesson</th>
+                    <th className="py-2 px-3 text-left text-xs font-bold uppercase tracking-widest text-[#64748b]">Tajweedi</th>
+                    <th className="py-2 px-3 text-left text-xs font-bold uppercase tracking-widest text-[#64748b]">Hifz</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-[#e2e8e8]">
                   {progress.map((p) => (
                     <tr key={p.date.toString()} className="hover:bg-[#f9fafb]">
-                      <td className="py-2 px-3 text-xs text-[#6f7979]">{formatDate(p.date)}</td>
-                      <td className="py-2 px-3 text-[#1a1c1c]">
+                      <td className="py-2 px-3 text-xs text-[#64748b]">{formatDate(p.date)}</td>
+                      <td className="py-2 px-3 text-[#0f172a]">
                         {p.lessonType === 'JUZZ' && p.juzzNumber ? `Juzz ${p.juzzNumber}` : `Lesson ${p.lessonNumber}`}
                       </td>
-                      <td className="py-2 px-3 text-[#6f7979]">—</td>
-                      <td className="py-2 px-3 text-[#6f7979]">—</td>
+                      <td className="py-2 px-3 text-[#64748b]">—</td>
+                      <td className="py-2 px-3 text-[#64748b]">—</td>
                     </tr>
                   ))}
                 </tbody>
@@ -207,34 +207,34 @@ export default async function StudentDetailPage({ params }: StudentDetailPagePro
       {/* ── Exam Results ── */}
       <div className="rounded-2xl bg-white p-4 shadow-[0_4px_12px_rgba(0,0,0,0.08)] sm:p-6">
         <div className="flex items-center gap-2 mb-4">
-          <FileText className="h-5 w-5 text-[#004649]" />
-          <h2 className="text-lg font-bold text-[#1a1c1c]">Exam Results</h2>
+          <FileText className="h-5 w-5 text-[#1F5A5C]" />
+          <h2 className="text-lg font-bold text-[#0f172a]">Exam Results</h2>
         </div>
 
         {results.length === 0 ? (
-          <p className="text-xs text-center text-[#6f7979] py-6">No exam results found.</p>
+          <p className="text-xs text-center text-[#64748b] py-6">No exam results found.</p>
         ) : (
           <div className="overflow-x-auto">
             <table className="w-full min-w-[600px] text-sm">
               <thead>
                 <tr className="bg-[#f3f4f5] border-b border-[#e2e8e8]">
-                  <th className="py-2 px-3 text-left text-xs font-bold uppercase tracking-widest text-[#6f7979]">Exam</th>
-                  <th className="py-2 px-3 text-left text-xs font-bold uppercase tracking-widest text-[#6f7979]">Subject</th>
-                  <th className="py-2 px-3 text-left text-xs font-bold uppercase tracking-widest text-[#6f7979]">Marks</th>
-                  <th className="py-2 px-3 text-left text-xs font-bold uppercase tracking-widest text-[#6f7979]">Grade</th>
-                  <th className="py-2 px-3 text-left text-xs font-bold uppercase tracking-widest text-[#6f7979]">Date</th>
+                  <th className="py-2 px-3 text-left text-xs font-bold uppercase tracking-widest text-[#64748b]">Exam</th>
+                  <th className="py-2 px-3 text-left text-xs font-bold uppercase tracking-widest text-[#64748b]">Subject</th>
+                  <th className="py-2 px-3 text-left text-xs font-bold uppercase tracking-widest text-[#64748b]">Marks</th>
+                  <th className="py-2 px-3 text-left text-xs font-bold uppercase tracking-widest text-[#64748b]">Grade</th>
+                  <th className="py-2 px-3 text-left text-xs font-bold uppercase tracking-widest text-[#64748b]">Date</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-[#e2e8e8]">
                 {results.map((r) => (
                   <tr key={r.id} className="hover:bg-[#f9fafb]">
-                    <td className="py-2 px-3 font-medium text-[#1a1c1c]">{r.exam.title}</td>
+                    <td className="py-2 px-3 font-medium text-[#0f172a]">{r.exam.title}</td>
                     <td className="py-2 px-3 text-[#445050]">{r.subject.name}</td>
-                    <td className="py-2 px-3 font-semibold text-[#004649]">
+                    <td className="py-2 px-3 font-semibold text-[#1F5A5C]">
                       {r.marksObtained}/{r.exam.totalMarks}
                     </td>
-                    <td className="py-2 px-3 text-[#6f7979]">{r.grade || '—'}</td>
-                    <td className="py-2 px-3 text-xs text-[#6f7979]">{formatDate(r.exam.examDate)}</td>
+                    <td className="py-2 px-3 text-[#64748b]">{r.grade || '—'}</td>
+                    <td className="py-2 px-3 text-xs text-[#64748b]">{formatDate(r.exam.examDate)}</td>
                   </tr>
                 ))}
               </tbody>

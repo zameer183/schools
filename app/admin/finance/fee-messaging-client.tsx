@@ -249,7 +249,7 @@ export default function FeeMessagingClient({ rows, classes }: Props) {
           className="flex w-full items-center justify-between sm:flex-row sm:gap-3 mb-4"
         >
           <div className="text-left">
-            <h2 className="font-headline text-base font-bold text-[#111827] sm:text-lg">Fee Messaging</h2>
+            <h2 className="text-base font-bold text-[#111827] sm:text-lg">Fee Messaging</h2>
             <p className="text-xs text-[#64748b] hidden sm:block">Filter students by fee status and send WhatsApp reminders/confirmations.</p>
           </div>
           <div className="flex items-center gap-2 shrink-0">
@@ -305,7 +305,7 @@ export default function FeeMessagingClient({ rows, classes }: Props) {
                   onClick={() => setFeeStatusFilter(filter.value)}
                   className={`inline-flex h-11 items-center justify-center rounded-full px-3 text-xs font-semibold transition lg:h-9 ${
                     feeStatusFilter === filter.value
-                      ? 'bg-gradient-to-br from-[#004649] to-[#1b5e62] text-white shadow-sm'
+                      ? 'bg-gradient-to-br from-[#1F5A5C] to-[#2D7578] text-white shadow-sm'
                       : 'bg-[#f3f4f5] text-[#4b5563] hover:bg-[#e5e7eb]'
                   }`}
                 >
@@ -370,7 +370,7 @@ export default function FeeMessagingClient({ rows, classes }: Props) {
                       type="checkbox"
                       checked={selectedIds.has(row.studentId)}
                       onChange={() => toggleSelected(row.studentId)}
-                      className="h-3.5 w-3.5 accent-[#004649]"
+                      className="h-3.5 w-3.5 accent-[#1F5A5C]"
                     />
                     Select
                   </label>
@@ -425,7 +425,7 @@ export default function FeeMessagingClient({ rows, classes }: Props) {
                         type="checkbox"
                         checked={selectedIds.has(row.studentId)}
                         onChange={() => toggleSelected(row.studentId)}
-                        className="h-3.5 w-3.5 accent-[#004649]"
+                        className="h-3.5 w-3.5 accent-[#1F5A5C]"
                       />
                       <span>{row.studentName}</span>
                     </label>
@@ -472,7 +472,7 @@ export default function FeeMessagingClient({ rows, classes }: Props) {
           <div className="h-[82vh] w-full overflow-hidden rounded-t-2xl bg-white shadow-2xl sm:h-auto sm:max-h-[80vh] sm:max-w-2xl sm:rounded-2xl" onClick={(e) => e.stopPropagation()}>
             <div className="flex items-center justify-between border-b border-[#eef2f7] px-5 py-4">
               <div>
-                <h3 className="font-headline text-base font-bold text-[#111827]">{bulkWhatsAppModal.title}</h3>
+                <h3 className="text-base font-bold text-[#111827]">{bulkWhatsAppModal.title}</h3>
                 <p className="text-xs text-[#64748b]">
                   Selected: <span className="font-semibold text-[#111827]">{bulkWhatsAppModal.rows.length}</span>
                   {' '}| Skipped (no number): <span className="font-semibold text-[#111827]">{bulkWhatsAppModal.skippedCount}</span>
@@ -524,7 +524,7 @@ export default function FeeMessagingClient({ rows, classes }: Props) {
                           type="checkbox"
                           checked={modalSelectedIds.has(row.studentId)}
                           onChange={() => toggleModalSelected(row.studentId)}
-                          className="h-3.5 w-3.5 accent-[#004649]"
+                          className="h-3.5 w-3.5 accent-[#1F5A5C]"
                         />
                         Select
                       </label>

@@ -76,15 +76,15 @@ function genCode(name: string) {
 const LBL = 'mb-1.5 block text-[11px] font-semibold uppercase tracking-wider text-[#475569]';
 
 const inp = (err?: string) =>
-  `h-12 w-full rounded-xl border border-[#E5E7EB] px-4 text-sm text-[#1a1c1c] placeholder:text-[#9CA3AF] outline-none transition-all bg-white ${
+  `h-12 w-full rounded-xl border border-[#E5E7EB] px-4 text-sm text-[#0f172a] placeholder:text-[#9CA3AF] outline-none transition-all bg-white ${
     err
       ? 'ring-2 ring-[#ef4444]/30 focus:ring-[#ef4444]/50'
       : 'focus:ring-2 focus:ring-[#0F4F4A]/25'
   }`;
 
-const sel = `h-12 w-full rounded-xl border border-[#E5E7EB] bg-white px-4 text-sm text-[#1a1c1c] outline-none transition-all focus:ring-2 focus:ring-[#0F4F4A]/25 [&_option]:bg-white`;
+const sel = `h-12 w-full rounded-xl border border-[#E5E7EB] bg-white px-4 text-sm text-[#0f172a] outline-none transition-all focus:ring-2 focus:ring-[#0F4F4A]/25 [&_option]:bg-white`;
 
-const textarea = `w-full resize-none rounded-xl border border-[#E5E7EB] bg-white px-4 py-3 text-sm text-[#1a1c1c] placeholder:text-[#9CA3AF] outline-none transition-all focus:ring-2 focus:ring-[#0F4F4A]/25`;
+const textarea = `w-full resize-none rounded-xl border border-[#E5E7EB] bg-white px-4 py-3 text-sm text-[#0f172a] placeholder:text-[#9CA3AF] outline-none transition-all focus:ring-2 focus:ring-[#0F4F4A]/25`;
 
 // ── Sub-components ───────────────────────────────────────────────────────────
 
@@ -126,8 +126,8 @@ function Card({ id, icon: Icon, title, subtitle, children }: {
           <Icon className="h-5 w-5 text-white" />
         </div>
         <div>
-          <h3 className="font-semibold text-[#1a1c1c]">{title}</h3>
-          <p className="text-xs text-[#6f7979]">{subtitle}</p>
+          <h3 className="font-semibold text-[#0f172a]">{title}</h3>
+          <p className="text-xs text-[#64748b]">{subtitle}</p>
         </div>
       </div>
       <div className="space-y-4">{children}</div>

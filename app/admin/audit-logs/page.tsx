@@ -10,8 +10,8 @@ export const dynamic = 'force-dynamic';
 
 const ACTION_COLOR: Record<string, string> = {
   ADMIN: 'bg-[#e8f0ff] text-[#1a4bcc]',
-  TEACHER: 'bg-[#e8f5e9] text-[#004649]',
-  STUDENT: 'bg-[#fff3e0] text-[#865300]',
+  TEACHER: 'bg-[#e8f5e9] text-[#1F5A5C]',
+  STUDENT: 'bg-[#fff3e0] text-[#b45309]',
   PARENT: 'bg-[#fce4ec] text-[#ba1a1a]',
 };
 
@@ -69,8 +69,8 @@ export default async function AdminAuditLogsPage() {
     <div className="space-y-4">
       <Card className="p-6 flex flex-col md:flex-row md:items-start md:justify-between gap-4">
         <div>
-          <h2 className="font-headline text-2xl font-bold text-[#1a1c1c] sm:text-3xl">Audit Ledger</h2>
-          <p className="mt-1 text-sm text-[#6f7979]">System-wide monitoring of administrative activities and governance logs.</p>
+          <h2 className="text-2xl font-bold text-[#0f172a] sm:text-3xl">Audit Ledger</h2>
+          <p className="mt-1 text-sm text-[#64748b]">System-wide monitoring of administrative activities and governance logs.</p>
         </div>
         <Button size="md" className="shrink-0 flex items-center gap-2">
           <Download className="h-4 w-4" />
@@ -97,14 +97,14 @@ export default async function AdminAuditLogsPage() {
       <Card className="p-5">
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           <div>
-            <p className="text-[10px] font-bold uppercase tracking-widest text-[#6f7979] mb-2">Date Range</p>
-            <div className="flex items-center gap-2 rounded-xl bg-[#f3f4f5] border-none px-3 py-2.5 text-sm text-[#1a1c1c]">
+            <p className="text-[10px] font-bold uppercase tracking-widest text-[#64748b] mb-2">Date Range</p>
+            <div className="flex items-center gap-2 rounded-xl bg-[#f3f4f5] border-none px-3 py-2.5 text-sm text-[#0f172a]">
               Oct 24, 2024 – Oct 31, 2024
             </div>
           </div>
           <div>
-            <p className="text-[10px] font-bold uppercase tracking-widest text-[#6f7979] mb-2">User Role</p>
-            <select className="w-full rounded-xl bg-[#f3f4f5] border-none px-3 py-2.5 text-sm text-[#1a1c1c] outline-none">
+            <p className="text-[10px] font-bold uppercase tracking-widest text-[#64748b] mb-2">User Role</p>
+            <select className="w-full rounded-xl bg-[#f3f4f5] border-none px-3 py-2.5 text-sm text-[#0f172a] outline-none">
               <option>All Roles</option>
               <option>Admin</option>
               <option>Teacher</option>
@@ -113,8 +113,8 @@ export default async function AdminAuditLogsPage() {
             </select>
           </div>
           <div>
-            <p className="text-[10px] font-bold uppercase tracking-widest text-[#6f7979] mb-2">Action Type</p>
-            <select className="w-full rounded-xl bg-[#f3f4f5] border-none px-3 py-2.5 text-sm text-[#1a1c1c] outline-none">
+            <p className="text-[10px] font-bold uppercase tracking-widest text-[#64748b] mb-2">Action Type</p>
+            <select className="w-full rounded-xl bg-[#f3f4f5] border-none px-3 py-2.5 text-sm text-[#0f172a] outline-none">
               <option>All Actions</option>
               <option>Logins</option>
               <option>Edits</option>
@@ -133,13 +133,13 @@ export default async function AdminAuditLogsPage() {
         <div className="space-y-2 p-3 md:hidden">
           {logEntries.map((entry, i) => (
             <div key={i} className="rounded-xl bg-[#f3f4f5] p-3">
-              <p className="text-xs text-[#6f7979]">{format(entry.timestamp, 'MMM d, yyyy HH:mm')}</p>
-              <p className="mt-1 font-semibold text-[#1a1c1c]">{entry.user.fullName} • {entry.user.role}</p>
-              <p className="text-sm text-[#1a1c1c] mt-1">{entry.action}</p>
-              <p className="text-xs text-[#6f7979] mt-0.5">{entry.module}</p>
+              <p className="text-xs text-[#64748b]">{format(entry.timestamp, 'MMM d, yyyy HH:mm')}</p>
+              <p className="mt-1 font-semibold text-[#0f172a]">{entry.user.fullName} • {entry.user.role}</p>
+              <p className="text-sm text-[#0f172a] mt-1">{entry.action}</p>
+              <p className="text-xs text-[#64748b] mt-0.5">{entry.module}</p>
               <div className="mt-2 flex items-center justify-between">
-                <code className="rounded bg-[#f3f4f5] px-2 py-1 text-[10px] text-[#6f7979]">{entry.ip}</code>
-                <button className="text-xs font-semibold text-[#865300] hover:underline">Details</button>
+                <code className="rounded bg-[#f3f4f5] px-2 py-1 text-[10px] text-[#64748b]">{entry.ip}</code>
+                <button className="text-xs font-semibold text-[#b45309] hover:underline">Details</button>
               </div>
             </div>
           ))}
@@ -148,34 +148,34 @@ export default async function AdminAuditLogsPage() {
           <table className="hidden w-full min-w-[980px] text-sm md:table">
             <thead>
               <tr className="border-b border-[#e2e8e8] bg-[#f3f4f5]">
-                <th className="px-5 py-3 text-left text-[10px] font-bold uppercase tracking-widest text-[#6f7979]">Timestamp</th>
-                <th className="px-5 py-3 text-left text-[10px] font-bold uppercase tracking-widest text-[#6f7979]">User</th>
-                <th className="px-5 py-3 text-left text-[10px] font-bold uppercase tracking-widest text-[#6f7979]">Action</th>
-                <th className="px-5 py-3 text-left text-[10px] font-bold uppercase tracking-widest text-[#6f7979]">Module</th>
-                <th className="px-5 py-3 text-left text-[10px] font-bold uppercase tracking-widest text-[#6f7979]">IP Address</th>
-                <th className="px-5 py-3 text-left text-[10px] font-bold uppercase tracking-widest text-[#6f7979]"></th>
+                <th className="px-5 py-3 text-left text-[10px] font-bold uppercase tracking-widest text-[#64748b]">Timestamp</th>
+                <th className="px-5 py-3 text-left text-[10px] font-bold uppercase tracking-widest text-[#64748b]">User</th>
+                <th className="px-5 py-3 text-left text-[10px] font-bold uppercase tracking-widest text-[#64748b]">Action</th>
+                <th className="px-5 py-3 text-left text-[10px] font-bold uppercase tracking-widest text-[#64748b]">Module</th>
+                <th className="px-5 py-3 text-left text-[10px] font-bold uppercase tracking-widest text-[#64748b]">IP Address</th>
+                <th className="px-5 py-3 text-left text-[10px] font-bold uppercase tracking-widest text-[#64748b]"></th>
               </tr>
             </thead>
             <tbody className="divide-y divide-[#e2e8e8]">
               {logEntries.length === 0 ? (
                 <tr>
-                  <td colSpan={6} className="px-5 py-8 text-center text-sm text-[#6f7979]">No activity logs found.</td>
+                  <td colSpan={6} className="px-5 py-8 text-center text-sm text-[#64748b]">No activity logs found.</td>
                 </tr>
               ) : (
                 logEntries.map((entry, i) => (
                   <tr key={i} className="hover:bg-[#f3f4f5]">
-                    <td className="px-5 py-4 text-[#1a1c1c] whitespace-nowrap">
+                    <td className="px-5 py-4 text-[#0f172a] whitespace-nowrap">
                       <p className="font-medium">{format(entry.timestamp, 'MMM d, yyyy')}</p>
-                      <p className="text-xs text-[#6f7979]">{format(entry.timestamp, 'HH:mm:ss')} PM</p>
+                      <p className="text-xs text-[#64748b]">{format(entry.timestamp, 'HH:mm:ss')} PM</p>
                     </td>
                     <td className="px-5 py-4">
                       <div className="flex items-center gap-3">
-                        <div className="w-8 h-8 rounded-full bg-[#f0f2f0] flex items-center justify-center text-xs font-bold text-[#004649]">
+                        <div className="w-8 h-8 rounded-full bg-[#f0f2f0] flex items-center justify-center text-xs font-bold text-[#1F5A5C]">
                           {entry.user.fullName.charAt(0)}
                         </div>
                         <div>
-                          <p className="font-medium text-[#1a1c1c]">{entry.user.fullName}</p>
-                          <span className={`text-[9px] font-bold uppercase tracking-wider px-1.5 py-0.5 rounded ${ACTION_COLOR[entry.user.role] ?? 'bg-[#f3f4f5] text-[#6f7979]'}`}>
+                          <p className="font-medium text-[#0f172a]">{entry.user.fullName}</p>
+                          <span className={`text-[9px] font-bold uppercase tracking-wider px-1.5 py-0.5 rounded ${ACTION_COLOR[entry.user.role] ?? 'bg-[#f3f4f5] text-[#64748b]'}`}>
                             {entry.user.role}
                           </span>
                         </div>
@@ -183,16 +183,16 @@ export default async function AdminAuditLogsPage() {
                     </td>
                     <td className="px-5 py-4">
                       <div className="flex items-center gap-2">
-                        <span className={`h-2 w-2 rounded-full shrink-0 ${entry.isFlag ? 'bg-[#ba1a1a]' : 'bg-[#004649]'}`} />
-                        <span className="text-[#1a1c1c]">{entry.action}</span>
+                        <span className={`h-2 w-2 rounded-full shrink-0 ${entry.isFlag ? 'bg-[#ba1a1a]' : 'bg-[#1F5A5C]'}`} />
+                        <span className="text-[#0f172a]">{entry.action}</span>
                       </div>
                     </td>
-                    <td className="px-5 py-4 text-[#6f7979]">{entry.module}</td>
+                    <td className="px-5 py-4 text-[#64748b]">{entry.module}</td>
                     <td className="px-5 py-4">
-                      <code className="text-xs bg-[#f3f4f5] px-2 py-1 rounded text-[#6f7979]">{entry.ip}</code>
+                      <code className="text-xs bg-[#f3f4f5] px-2 py-1 rounded text-[#64748b]">{entry.ip}</code>
                     </td>
                     <td className="px-5 py-4">
-                      <button className="text-xs font-semibold text-[#865300] hover:underline">Details</button>
+                      <button className="text-xs font-semibold text-[#b45309] hover:underline">Details</button>
                     </td>
                   </tr>
                 ))

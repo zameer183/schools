@@ -223,7 +223,7 @@ function InfoField({
   return (
     <div className={`rounded-xl bg-[#f8fafc] border border-[#e2e8f0]/80 p-3.5 transition hover:border-[#cbd5e1] ${fullWidth ? 'col-span-full' : ''}`}>
       <div className="flex items-start gap-3">
-        <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-white border border-[#e2e8f0] shadow-xs text-[#004649]">
+        <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-white border border-[#e2e8f0] shadow-xs text-[#1F5A5C]">
           <Icon className="h-4 w-4" />
         </div>
         <div className="min-w-0 flex-1">
@@ -236,7 +236,7 @@ function InfoField({
             <select
               value={editValue}
               onChange={(e) => onChange?.(e.target.value)}
-              className="mt-1.5 h-10 w-full rounded-xl bg-white border border-[#cbd5e1] px-3 text-xs sm:text-sm text-[#0f172a] outline-none focus:ring-2 focus:ring-[#004649]/20 focus:border-[#004649]"
+              className="mt-1.5 h-10 w-full rounded-xl bg-white border border-[#cbd5e1] px-3 text-xs sm:text-sm text-[#0f172a] outline-none focus:ring-2 focus:ring-[#1F5A5C]/20 focus:border-[#1F5A5C]"
             >
               <option value="">— Select —</option>
               {options.map((o) => (
@@ -250,7 +250,7 @@ function InfoField({
               type={inputType}
               value={editValue}
               onChange={(e) => onChange?.(e.target.value)}
-              className="mt-1.5 h-10 w-full rounded-xl bg-white border border-[#cbd5e1] px-3 text-xs sm:text-sm text-[#0f172a] outline-none focus:ring-2 focus:ring-[#004649]/20 focus:border-[#004649]"
+              className="mt-1.5 h-10 w-full rounded-xl bg-white border border-[#cbd5e1] px-3 text-xs sm:text-sm text-[#0f172a] outline-none focus:ring-2 focus:ring-[#1F5A5C]/20 focus:border-[#1F5A5C]"
             />
           )}
         </div>
@@ -272,7 +272,7 @@ function CardHeader({
 }) {
   return (
     <div className="flex items-center justify-between border-b border-[#f1f5f9] px-4 py-3.5 sm:px-6 sm:py-4">
-      <h3 className="font-headline text-sm sm:text-base font-bold text-[#0f172a]">{title}</h3>
+      <h3 className="text-sm sm:text-base font-bold text-[#0f172a]">{title}</h3>
       {trailing}
     </div>
   );
@@ -686,7 +686,7 @@ export default function StudentProfileClient({
           href="/admin/students"
           className="inline-flex items-center gap-2 rounded-xl bg-white border border-[#e2e8f0] px-3.5 py-2 text-xs sm:text-sm font-semibold text-[#0f172a] shadow-2xs hover:bg-[#f8fafc] active:scale-[0.98] transition"
         >
-          <ArrowLeft className="h-4 w-4 text-[#004649]" />
+          <ArrowLeft className="h-4 w-4 text-[#1F5A5C]" />
           <span>Back to Students</span>
         </Link>
         <span className="text-xs font-semibold text-[#64748b] hidden sm:inline">
@@ -700,12 +700,12 @@ export default function StudentProfileClient({
           
           {/* Identity Left */}
           <div className="flex items-start gap-3.5 sm:gap-4">
-            <div className="flex h-14 w-14 sm:h-16 sm:w-16 shrink-0 items-center justify-center rounded-2xl bg-gradient-to-br from-[#004649] to-[#1b5e62] text-lg sm:text-xl font-bold text-white shadow-sm ring-4 ring-[#e0eff0]">
+            <div className="flex h-14 w-14 sm:h-16 sm:w-16 shrink-0 items-center justify-center rounded-2xl bg-gradient-to-br from-[#1F5A5C] to-[#2D7578] text-lg sm:text-xl font-bold text-white shadow-sm ring-4 ring-[#e0eff0]">
               {initials(student.user.fullName)}
             </div>
             <div className="min-w-0 flex-1">
               <div className="flex flex-wrap items-center gap-2">
-                <h1 className="font-headline text-lg sm:text-2xl font-bold text-[#0f172a] truncate">
+                <h1 className="text-lg sm:text-2xl font-bold text-[#0f172a] truncate">
                   {student.user.fullName}
                 </h1>
                 {isActive ? (
@@ -861,7 +861,7 @@ export default function StudentProfileClient({
             </div>
             <div className="flex items-center justify-between sm:justify-end gap-3 rounded-xl bg-white border border-[#e2e8f0] px-3.5 py-2 shadow-2xs">
               <span className="text-[10px] sm:text-xs font-semibold uppercase tracking-wider text-[#64748b]">Monthly Fee</span>
-              <span className="text-base sm:text-lg font-bold text-[#004649]">{monthlyFee != null ? fmtCurrency(monthlyFee) : '—'}</span>
+              <span className="text-base sm:text-lg font-bold text-[#1F5A5C]">{monthlyFee != null ? fmtCurrency(monthlyFee) : '—'}</span>
             </div>
           </div>
 
@@ -898,7 +898,7 @@ export default function StudentProfileClient({
             href={callPhone ? `tel:${callPhone}` : undefined}
             aria-disabled={!callPhone}
             className={`inline-flex h-10 sm:h-11 flex-1 items-center justify-center gap-1.5 sm:gap-2 rounded-xl text-xs sm:text-sm font-semibold transition active:scale-[0.98] ${
-              callPhone ? 'bg-[#004649] text-white hover:bg-[#1b5e62] shadow-2xs' : 'cursor-not-allowed bg-[#f1f5f9] text-[#94a3b8]'
+              callPhone ? 'bg-[#1F5A5C] text-white hover:bg-[#2D7578] shadow-2xs' : 'cursor-not-allowed bg-[#f1f5f9] text-[#94a3b8]'
             }`}
             onClick={(e) => { if (!callPhone) e.preventDefault(); }}
           >
@@ -1092,7 +1092,7 @@ export default function StudentProfileClient({
               trailing={
                 <Link
                   href={`/admin/students/${student.id}/attendance`}
-                  className="inline-flex items-center gap-1 text-xs font-semibold text-[#004649] hover:underline"
+                  className="inline-flex items-center gap-1 text-xs font-semibold text-[#1F5A5C] hover:underline"
                 >
                   <span>Full calendar</span>
                   <ExternalLink className="h-3 w-3" />
@@ -1188,7 +1188,7 @@ export default function StudentProfileClient({
                 </button>
                 <Link
                   href={`/admin/students/${student.id}/fees`}
-                  className="h-11 flex items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-[#004649] to-[#1b5e62] text-white text-xs sm:text-sm font-bold shadow-2xs hover:shadow-md hover:brightness-105 active:scale-[0.98] transition-all"
+                  className="h-11 flex items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-[#1F5A5C] to-[#2D7578] text-white text-xs sm:text-sm font-bold shadow-2xs hover:shadow-md hover:brightness-105 active:scale-[0.98] transition-all"
                 >
                   <Plus className="h-4 w-4" />
                   <span>+ Add New Fee</span>
@@ -1203,18 +1203,18 @@ export default function StudentProfileClient({
             <div className="p-4 sm:p-6 grid grid-cols-1 sm:grid-cols-3 gap-3">
               <Link
                 href={`/admin/students/${student.id}/attendance`}
-                className="group flex items-center justify-between rounded-2xl bg-white border border-[#e2e8f0] p-4 shadow-2xs hover:border-[#004649]/40 hover:shadow-sm active:scale-[0.98] transition-all"
+                className="group flex items-center justify-between rounded-2xl bg-white border border-[#e2e8f0] p-4 shadow-2xs hover:border-[#1F5A5C]/40 hover:shadow-sm active:scale-[0.98] transition-all"
               >
                 <div className="flex items-center gap-3">
-                  <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-[#e0eff0] text-[#004649]">
+                  <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-[#e0eff0] text-[#1F5A5C]">
                     <Calendar className="h-5 w-5" />
                   </div>
                   <div>
-                    <p className="text-xs sm:text-sm font-bold text-[#0f172a] group-hover:text-[#004649] transition-colors">Attendance Records</p>
+                    <p className="text-xs sm:text-sm font-bold text-[#0f172a] group-hover:text-[#1F5A5C] transition-colors">Attendance Records</p>
                     <p className="text-[11px] text-[#64748b]">View monthly calendar</p>
                   </div>
                 </div>
-                <ChevronRight className="h-4 w-4 text-[#94a3b8] group-hover:text-[#004649] group-hover:translate-x-0.5 transition-all" />
+                <ChevronRight className="h-4 w-4 text-[#94a3b8] group-hover:text-[#1F5A5C] group-hover:translate-x-0.5 transition-all" />
               </Link>
 
               <Link
@@ -1345,7 +1345,7 @@ export default function StudentProfileClient({
                   onClick={() => setActiveTab('class')}
                   className={`flex items-center justify-center gap-1.5 rounded-xl py-2.5 text-xs font-bold transition-all active:scale-[0.98] ${
                     activeTab === 'class'
-                      ? 'bg-white text-[#004649] shadow-xs border border-[#e2e8f0]'
+                      ? 'bg-white text-[#1F5A5C] shadow-xs border border-[#e2e8f0]'
                       : 'text-[#64748b] hover:text-[#0f172a]'
                   }`}
                 >
@@ -1357,7 +1357,7 @@ export default function StudentProfileClient({
                   onClick={() => setActiveTab('security')}
                   className={`flex items-center justify-center gap-1.5 rounded-xl py-2.5 text-xs font-bold transition-all active:scale-[0.98] ${
                     activeTab === 'security'
-                      ? 'bg-white text-[#004649] shadow-xs border border-[#e2e8f0]'
+                      ? 'bg-white text-[#1F5A5C] shadow-xs border border-[#e2e8f0]'
                       : 'text-[#64748b] hover:text-[#0f172a]'
                   }`}
                 >
@@ -1369,7 +1369,7 @@ export default function StudentProfileClient({
                   onClick={() => setActiveTab('guardian')}
                   className={`flex items-center justify-center gap-1.5 rounded-xl py-2.5 text-xs font-bold transition-all active:scale-[0.98] ${
                     activeTab === 'guardian'
-                      ? 'bg-white text-[#004649] shadow-xs border border-[#e2e8f0]'
+                      ? 'bg-white text-[#1F5A5C] shadow-xs border border-[#e2e8f0]'
                       : 'text-[#64748b] hover:text-[#0f172a]'
                   }`}
                 >
@@ -1386,7 +1386,7 @@ export default function StudentProfileClient({
                   <p className="text-[10px] font-bold uppercase tracking-wider text-[#64748b] mb-1.5">Current Enrolled Class</p>
                   <div className="flex items-center justify-between rounded-xl bg-[#f8fafc] border border-[#e2e8f0] px-4 py-3">
                     <div className="flex items-center gap-2.5 min-w-0">
-                      <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-[#e0eff0] text-[#004649]">
+                      <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-[#e0eff0] text-[#1F5A5C]">
                         <BookOpen className="h-4 w-4" />
                       </div>
                       <span className="text-xs sm:text-sm font-bold text-[#0f172a] truncate">
@@ -1403,7 +1403,7 @@ export default function StudentProfileClient({
                   <select
                     value={selectedClass}
                     onChange={(e) => setSelectedClass(e.target.value)}
-                    className="mt-1.5 h-11 w-full rounded-xl bg-white border border-[#cbd5e1] px-3.5 text-xs sm:text-sm text-[#0f172a] outline-none focus:ring-2 focus:ring-[#004649]/20 focus:border-[#004649]"
+                    className="mt-1.5 h-11 w-full rounded-xl bg-white border border-[#cbd5e1] px-3.5 text-xs sm:text-sm text-[#0f172a] outline-none focus:ring-2 focus:ring-[#1F5A5C]/20 focus:border-[#1F5A5C]"
                   >
                     <option value="">— Select Class —</option>
                     {classes.map((c) => (
@@ -1417,7 +1417,7 @@ export default function StudentProfileClient({
                   type="button"
                   onClick={saveClass}
                   disabled={classSaving}
-                  className="flex w-full items-center justify-center gap-2 bg-gradient-to-r from-[#004649] to-[#1b5e62] text-white rounded-xl h-11 text-xs sm:text-sm font-bold shadow-2xs hover:shadow-md hover:brightness-105 active:scale-[0.98] transition-all disabled:opacity-60"
+                  className="flex w-full items-center justify-center gap-2 bg-gradient-to-r from-[#1F5A5C] to-[#2D7578] text-white rounded-xl h-11 text-xs sm:text-sm font-bold shadow-2xs hover:shadow-md hover:brightness-105 active:scale-[0.98] transition-all disabled:opacity-60"
                 >
                   {classSaving ? <Loader2 className="h-4 w-4 animate-spin" /> : <UserCog className="h-4 w-4" />}
                   <span>Save Class Assignment</span>
@@ -1443,7 +1443,7 @@ export default function StudentProfileClient({
                       value={newPassword}
                       onChange={(e) => setNewPassword(e.target.value)}
                       placeholder="Min. 6 characters"
-                      className="h-11 w-full rounded-xl bg-white border border-[#cbd5e1] pl-3.5 pr-10 text-xs sm:text-sm text-[#0f172a] outline-none focus:ring-2 focus:ring-[#004649]/20 focus:border-[#004649]"
+                      className="h-11 w-full rounded-xl bg-white border border-[#cbd5e1] pl-3.5 pr-10 text-xs sm:text-sm text-[#0f172a] outline-none focus:ring-2 focus:ring-[#1F5A5C]/20 focus:border-[#1F5A5C]"
                     />
                     <button
                       type="button"
@@ -1465,7 +1465,7 @@ export default function StudentProfileClient({
                     setShowPwdConfirm(true);
                   }}
                   disabled={pwdSaving}
-                  className="flex w-full items-center justify-center gap-2 bg-gradient-to-r from-[#004649] to-[#1b5e62] text-white rounded-xl h-11 text-xs sm:text-sm font-bold shadow-2xs hover:shadow-md hover:brightness-105 active:scale-[0.98] transition-all disabled:opacity-60"
+                  className="flex w-full items-center justify-center gap-2 bg-gradient-to-r from-[#1F5A5C] to-[#2D7578] text-white rounded-xl h-11 text-xs sm:text-sm font-bold shadow-2xs hover:shadow-md hover:brightness-105 active:scale-[0.98] transition-all disabled:opacity-60"
                 >
                   {pwdSaving ? <Loader2 className="h-4 w-4 animate-spin" /> : <Lock className="h-4 w-4" />}
                   <span>Update Password</span>
@@ -1492,7 +1492,7 @@ export default function StudentProfileClient({
                       value={guardianPhone}
                       onChange={(e) => setGuardianPhone(e.target.value)}
                       placeholder="e.g. +92 300 1234567"
-                      className="h-11 w-full rounded-xl bg-white border border-[#cbd5e1] pl-10 pr-3.5 text-xs sm:text-sm text-[#0f172a] outline-none focus:ring-2 focus:ring-[#004649]/20 focus:border-[#004649]"
+                      className="h-11 w-full rounded-xl bg-white border border-[#cbd5e1] pl-10 pr-3.5 text-xs sm:text-sm text-[#0f172a] outline-none focus:ring-2 focus:ring-[#1F5A5C]/20 focus:border-[#1F5A5C]"
                     />
                   </div>
                 </div>
@@ -1507,7 +1507,7 @@ export default function StudentProfileClient({
                       value={guardianEmail}
                       onChange={(e) => setGuardianEmail(e.target.value)}
                       placeholder="guardian@example.com"
-                      className="h-11 w-full rounded-xl bg-white border border-[#cbd5e1] pl-10 pr-3.5 text-xs sm:text-sm text-[#0f172a] outline-none focus:ring-2 focus:ring-[#004649]/20 focus:border-[#004649]"
+                      className="h-11 w-full rounded-xl bg-white border border-[#cbd5e1] pl-10 pr-3.5 text-xs sm:text-sm text-[#0f172a] outline-none focus:ring-2 focus:ring-[#1F5A5C]/20 focus:border-[#1F5A5C]"
                     />
                   </div>
                 </div>
@@ -1515,7 +1515,7 @@ export default function StudentProfileClient({
                   type="button"
                   onClick={saveGuardian}
                   disabled={guardianSaving}
-                  className="flex w-full items-center justify-center gap-2 bg-gradient-to-r from-[#004649] to-[#1b5e62] text-white rounded-xl h-11 text-xs sm:text-sm font-bold shadow-2xs hover:shadow-md hover:brightness-105 active:scale-[0.98] transition-all disabled:opacity-60"
+                  className="flex w-full items-center justify-center gap-2 bg-gradient-to-r from-[#1F5A5C] to-[#2D7578] text-white rounded-xl h-11 text-xs sm:text-sm font-bold shadow-2xs hover:shadow-md hover:brightness-105 active:scale-[0.98] transition-all disabled:opacity-60"
                 >
                   {guardianSaving ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />}
                   <span>Save Guardian Info</span>
@@ -1774,7 +1774,7 @@ export default function StudentProfileClient({
                 type="button"
                 onClick={handleReopenStudent}
                 disabled={reopenSaving}
-                className="flex-1 h-10 flex items-center justify-center gap-1.5 bg-[#004649] text-white rounded-xl text-xs sm:text-sm font-semibold shadow-xs hover:bg-[#1b5e62] active:scale-[0.98] transition disabled:opacity-60"
+                className="flex-1 h-10 flex items-center justify-center gap-1.5 bg-[#1F5A5C] text-white rounded-xl text-xs sm:text-sm font-semibold shadow-xs hover:bg-[#2D7578] active:scale-[0.98] transition disabled:opacity-60"
               >
                 {reopenSaving ? <Loader2 className="h-4 w-4 animate-spin" /> : <UserCheck className="h-4 w-4" />}
                 <span>Activate Student</span>

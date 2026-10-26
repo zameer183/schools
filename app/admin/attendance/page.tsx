@@ -456,7 +456,7 @@ async function AttendanceContent({ searchParams }: { searchParams?: Promise<Sear
   if (attendanceDataLoadFailed) {
     return (
       <div className="rounded-2xl bg-white p-6 shadow-[0_4px_12px_rgba(0,0,0,0.08)]">
-        <h1 className="font-headline text-2xl font-bold text-[#1a1c1c]">Attendance</h1>
+        <h1 className="text-2xl font-bold text-[#0f172a]">Attendance</h1>
         <h2 className="mt-3 text-lg font-bold text-[#111827]">Database Unreachable</h2>
         <p className="mt-2 text-sm text-[#6b7280]">
           Attendance data is temporarily unavailable. Please refresh once the database connection recovers.

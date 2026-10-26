@@ -596,7 +596,7 @@ function renderProfile(data: ViewModel) {
 function DatabaseFallback() {
   return (
     <div className="rounded-2xl bg-white p-10 text-center shadow-sm">
-      <h2 className="font-headline text-xl font-bold text-[#111827]">Database Unreachable</h2>
+      <h2 className="text-xl font-bold text-[#111827]">Database Unreachable</h2>
       <p className="mx-auto mt-2 max-w-md text-sm text-[#64748b]">
         Cannot load this student profile right now. Please refresh once after the database connection recovers.
       </p>

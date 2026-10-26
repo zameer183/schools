@@ -198,7 +198,7 @@ export default function AdminRolesWorkspace({ roles }: { roles: RoleItem[] }) {
       <section className="rounded-2xl bg-white p-4 shadow-[0_12px_40px_rgba(0,70,73,0.06)] sm:p-5">
         <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
           <div>
-            <h2 className="font-headline text-2xl font-semibold tracking-tight text-slate-900 sm:text-3xl">Role Management</h2>
+            <h2 className="text-2xl font-semibold tracking-tight text-slate-900 sm:text-3xl">Role Management</h2>
             <p className="mt-1 text-sm text-slate-500">Manage role access with clean controls and permission boundaries.</p>
           </div>
           <button

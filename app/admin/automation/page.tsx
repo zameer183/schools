@@ -23,8 +23,8 @@ export default async function AdminAutomationPage() {
   return (
     <div className="space-y-4">
       <Card className="p-6">
-        <h2 className="font-headline text-3xl font-bold text-[#1a1c1c]">Automation Engine</h2>
-        <p className="mt-1 text-sm text-[#6f7979]">
+        <h2 className="text-3xl font-bold text-[#0f172a]">Automation Engine</h2>
+        <p className="mt-1 text-sm text-[#64748b]">
           Manage intelligent triggers that handle routine institutional communication and data governance autonomously.
         </p>
       </Card>
@@ -37,34 +37,34 @@ export default async function AdminAutomationPage() {
                 <AlertCircle className="h-6 w-6 text-[#16a34a]" />
               </div>
               <div>
-                <h3 className="font-headline font-bold text-[#1a1c1c] text-lg">Fee Reminders</h3>
-                <p className="text-sm text-[#6f7979]">Scheduled workflows for pending dues</p>
+                <h3 className="font-bold text-[#0f172a] text-lg">Fee Reminders</h3>
+                <p className="text-sm text-[#64748b]">Scheduled workflows for pending dues</p>
               </div>
             </div>
             <span className="text-[10px] font-bold uppercase tracking-wider bg-[#dcfce7] text-[#16a34a] px-2.5 py-1 rounded-full">● ACTIVE</span>
           </div>
           <div className="mb-5 grid grid-cols-1 gap-3 sm:grid-cols-3">
             <div className="rounded-xl bg-[#f3f4f5] p-4">
-              <p className="text-[10px] font-bold uppercase tracking-widest text-[#6f7979]">Next Run</p>
-              <p className="mt-1.5 text-sm font-bold text-[#1a1c1c]">Tomorrow, 09:00 AM</p>
+              <p className="text-[10px] font-bold uppercase tracking-widest text-[#64748b]">Next Run</p>
+              <p className="mt-1.5 text-sm font-bold text-[#0f172a]">Tomorrow, 09:00 AM</p>
             </div>
             <div className="rounded-xl bg-[#fef3c7] p-4">
               <p className="text-[10px] font-bold uppercase tracking-widest text-[#92400e]">Pending Dues</p>
-              <p className="mt-1.5 text-sm font-bold text-[#1a1c1c]">${pendingAmount}</p>
+              <p className="mt-1.5 text-sm font-bold text-[#0f172a]">${pendingAmount}</p>
             </div>
             <div className="rounded-xl bg-[#e0e7ff] p-4">
               <p className="text-[10px] font-bold uppercase tracking-widest text-[#312e81]">Recipients</p>
-              <p className="mt-1.5 text-sm font-bold text-[#1a1c1c]">{parents} Parents</p>
+              <p className="mt-1.5 text-sm font-bold text-[#0f172a]">{parents} Parents</p>
             </div>
           </div>
           <div className="flex flex-col items-stretch gap-3 sm:flex-row sm:items-center sm:justify-between">
             <div className="flex -space-x-2">
               {[...Array(3)].map((_, i) => (
-                <div key={i} className="w-8 h-8 rounded-full bg-[#004649]/10 border-2 border-white flex items-center justify-center text-xs font-bold text-[#004649]">
+                <div key={i} className="w-8 h-8 rounded-full bg-[#1F5A5C]/10 border-2 border-white flex items-center justify-center text-xs font-bold text-[#1F5A5C]">
                   {String.fromCharCode(65 + i)}
                 </div>
               ))}
-              <div className="w-8 h-8 rounded-full bg-[#f3f4f5] border-2 border-white flex items-center justify-center text-xs font-bold text-[#6f7979]">
+              <div className="w-8 h-8 rounded-full bg-[#f3f4f5] border-2 border-white flex items-center justify-center text-xs font-bold text-[#64748b]">
                 +4
               </div>
             </div>
@@ -84,14 +84,14 @@ export default async function AdminAutomationPage() {
             </div>
           </Card>
           <Card className="p-5">
-            <p className="font-semibold text-[#1a1c1c] mb-3">Quick Insights</p>
+            <p className="font-semibold text-[#0f172a] mb-3">Quick Insights</p>
             <ul className="space-y-2 text-sm">
-              <li className="flex items-center gap-2 text-[#6f7979]">
+              <li className="flex items-center gap-2 text-[#64748b]">
                 <span className="h-2 w-2 rounded-full bg-[#fdb24f] shrink-0" />
                 32 notifications sent today
               </li>
-              <li className="flex items-center gap-2 text-[#6f7979]">
-                <span className="h-2 w-2 rounded-full bg-[#004649] shrink-0" />
+              <li className="flex items-center gap-2 text-[#64748b]">
+                <span className="h-2 w-2 rounded-full bg-[#1F5A5C] shrink-0" />
                 98.2% delivery success rate
               </li>
             </ul>
@@ -107,10 +107,10 @@ export default async function AdminAutomationPage() {
             </div>
             <span className="text-[10px] font-bold uppercase tracking-wider text-[#16a34a]">ACTIVE</span>
           </div>
-          <h3 className="font-bold text-[#1a1c1c] text-lg mb-1">Grade Alerts</h3>
-          <p className="text-sm text-[#6f7979] mb-4">Instantly notify guardians of scores falling below departmental benchmarks.</p>
+          <h3 className="font-bold text-[#0f172a] text-lg mb-1">Grade Alerts</h3>
+          <p className="text-sm text-[#64748b] mb-4">Instantly notify guardians of scores falling below departmental benchmarks.</p>
           <div className="mb-4">
-            <p className="text-[10px] font-bold uppercase tracking-widest text-[#6f7979] mb-2">Benchmark: &lt; 65%</p>
+            <p className="text-[10px] font-bold uppercase tracking-widest text-[#64748b] mb-2">Benchmark: &lt; 65%</p>
             <div className="h-1.5 rounded-full bg-[#f3f4f5]">
               <div className="h-1.5 rounded-full bg-[#dc2626] w-[65%]" />
             </div>
@@ -127,15 +127,15 @@ export default async function AdminAutomationPage() {
             </div>
             <span className="text-[10px] font-bold uppercase tracking-wider bg-[#fef3c7] text-[#92400e] px-2 py-0.5 rounded-full">PAUSED</span>
           </div>
-          <h3 className="font-bold text-[#1a1c1c] text-lg mb-1">Attendance Broadcasts</h3>
-          <p className="text-sm text-[#6f7979] mb-4">Mass notification system for daily absentee reports to primary emergency contacts.</p>
+          <h3 className="font-bold text-[#0f172a] text-lg mb-1">Attendance Broadcasts</h3>
+          <p className="text-sm text-[#64748b] mb-4">Mass notification system for daily absentee reports to primary emergency contacts.</p>
           <div className="flex items-center gap-2 mb-4">
             <div className="flex -space-x-1">
               {['#14b8a6', '#f59e0b', '#ef4444'].map((c, i) => (
                 <div key={i} className="w-5 h-5 rounded-full border-2 border-white" style={{ background: c }} />
               ))}
             </div>
-            <span className="text-xs text-[#6f7979]">Multichannel (SMS, Email, App)</span>
+            <span className="text-xs text-[#64748b]">Multichannel (SMS, Email, App)</span>
           </div>
           <Button variant="secondary" className="w-full">
             Resume &amp; Edit

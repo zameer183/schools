@@ -45,19 +45,19 @@ export function QuickStudentAttendanceForm({
   return (
     <form action={action} className="grid gap-2 rounded-xl bg-[#f3f4f5] p-3 sm:grid-cols-12 sm:items-center">
       <div className="sm:col-span-2">
-        <label className="mb-1 block text-[10px] font-bold uppercase tracking-widest text-[#6f7979]">Date</label>
+        <label className="mb-1 block text-[10px] font-bold uppercase tracking-widest text-[#64748b]">Date</label>
         <input
           type="date"
           name="date"
           value={attendanceDate}
           onChange={(event) => setAttendanceDate(event.target.value)}
-          className="h-9 w-full rounded-xl bg-[#edeeef] border-none px-3 text-xs outline-none focus:ring-2 focus:ring-[#004649]/20"
+          className="h-9 w-full rounded-xl bg-[#edeeef] border-none px-3 text-xs outline-none focus:ring-2 focus:ring-[#1F5A5C]/20"
           required
         />
       </div>
 
       <div className="sm:col-span-3">
-        <label className="mb-1 block text-[10px] font-bold uppercase tracking-widest text-[#6f7979]">Class</label>
+        <label className="mb-1 block text-[10px] font-bold uppercase tracking-widest text-[#64748b]">Class</label>
         <select
           name="classId"
           value={classId}
@@ -65,7 +65,7 @@ export function QuickStudentAttendanceForm({
             setClassId(event.target.value);
             setStudentId('');
           }}
-          className="h-9 w-full rounded-xl bg-[#edeeef] border-none px-3 text-xs outline-none focus:ring-2 focus:ring-[#004649]/20"
+          className="h-9 w-full rounded-xl bg-[#edeeef] border-none px-3 text-xs outline-none focus:ring-2 focus:ring-[#1F5A5C]/20"
           required
         >
           <option value="">Select class</option>
@@ -78,12 +78,12 @@ export function QuickStudentAttendanceForm({
       </div>
 
       <div className="sm:col-span-3">
-        <label className="mb-1 block text-[10px] font-bold uppercase tracking-widest text-[#6f7979]">Student</label>
+        <label className="mb-1 block text-[10px] font-bold uppercase tracking-widest text-[#64748b]">Student</label>
         <select
           name="studentId"
           value={studentId}
           onChange={(event) => setStudentId(event.target.value)}
-          className="h-9 w-full rounded-xl bg-[#edeeef] border-none px-3 text-xs outline-none focus:ring-2 focus:ring-[#004649]/20"
+          className="h-9 w-full rounded-xl bg-[#edeeef] border-none px-3 text-xs outline-none focus:ring-2 focus:ring-[#1F5A5C]/20"
           required
         >
           <option value="">Select student</option>
@@ -96,8 +96,8 @@ export function QuickStudentAttendanceForm({
       </div>
 
       <div className="sm:col-span-1">
-        <label className="mb-1 block text-[10px] font-bold uppercase tracking-widest text-[#6f7979]">Status</label>
-        <select name="status" defaultValue="PRESENT" className="h-9 w-full rounded-xl bg-[#edeeef] border-none px-3 text-xs outline-none focus:ring-2 focus:ring-[#004649]/20">
+        <label className="mb-1 block text-[10px] font-bold uppercase tracking-widest text-[#64748b]">Status</label>
+        <select name="status" defaultValue="PRESENT" className="h-9 w-full rounded-xl bg-[#edeeef] border-none px-3 text-xs outline-none focus:ring-2 focus:ring-[#1F5A5C]/20">
           <option value="PRESENT">Present</option>
           <option value="ABSENT">Absent</option>
           <option value="LATE">Late</option>
@@ -106,12 +106,12 @@ export function QuickStudentAttendanceForm({
       </div>
 
       <div className="sm:col-span-2">
-        <label className="mb-1 block text-[10px] font-bold uppercase tracking-widest text-[#6f7979]">Remarks</label>
-        <input name="remarks" placeholder="Optional remark" className="h-9 w-full rounded-xl bg-[#edeeef] border-none px-3 text-xs outline-none focus:ring-2 focus:ring-[#004649]/20" />
+        <label className="mb-1 block text-[10px] font-bold uppercase tracking-widest text-[#64748b]">Remarks</label>
+        <input name="remarks" placeholder="Optional remark" className="h-9 w-full rounded-xl bg-[#edeeef] border-none px-3 text-xs outline-none focus:ring-2 focus:ring-[#1F5A5C]/20" />
       </div>
 
       <div className="sm:col-span-1 sm:self-end">
-        <button disabled={!attendanceDate || !classId || !studentId} className="h-9 w-full rounded-xl bg-gradient-to-br from-[#004649] to-[#1b5e62] px-3 text-xs font-semibold text-white hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-60">
+        <button disabled={!attendanceDate || !classId || !studentId} className="h-9 w-full rounded-xl bg-gradient-to-br from-[#1F5A5C] to-[#1b5e62] px-3 text-xs font-semibold text-white hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-60">
           Mark
         </button>
       </div>

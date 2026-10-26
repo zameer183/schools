@@ -154,7 +154,7 @@ export default function AttendanceReportClient({
         {/* Print-only header */}
         {selectedStudent && (
           <div className="hidden print:block mb-4 border-b pb-3">
-            <h1 className="text-lg font-bold text-[#1a1c1c]">Individual Attendance Report</h1>
+            <h1 className="text-lg font-bold text-[#0f172a]">Individual Attendance Report</h1>
             <div className="mt-1 flex flex-wrap gap-4 text-sm text-[#374151]">
               <span><span className="font-semibold">Student:</span> {selectedStudent.fullName}</span>
               <span><span className="font-semibold">Class:</span> {selectedStudent.className ?? 'Unassigned'}</span>
@@ -165,16 +165,16 @@ export default function AttendanceReportClient({
         )}
 
         {/* Back */}
-        <Link href="/admin/reports" className="inline-flex items-center gap-1 text-xs font-semibold text-[#004649] hover:text-[#1b5e62] transition print:hidden">
+        <Link href="/admin/reports" className="inline-flex items-center gap-1 text-xs font-semibold text-[#1F5A5C] hover:text-[#1b5e62] transition print:hidden">
           <ChevronLeft className="h-4 w-4" />
           Back to Reports
         </Link>
 
         {/* Filters */}
         <div className="rounded-2xl bg-white p-5 shadow-[0_2px_8px_rgba(0,0,0,0.06),0_8px_32px_rgba(0,0,0,0.04)] print:hidden">
-          <h1 className="mb-4 text-lg font-bold text-[#1a1c1c]">Individual Attendance Report</h1>
+          <h1 className="mb-4 text-lg font-bold text-[#0f172a]">Individual Attendance Report</h1>
           <div className="grid gap-3 sm:grid-cols-3">
-            <label className="text-xs font-semibold text-[#6f7979]">
+            <label className="text-xs font-semibold text-[#64748b]">
               Class
               <select
                 value={selectedClassId}
@@ -187,7 +187,7 @@ export default function AttendanceReportClient({
                 ))}
               </select>
             </label>
-            <label className="text-xs font-semibold text-[#6f7979]">
+            <label className="text-xs font-semibold text-[#64748b]">
               Student
               <select
                 value={selectedStudentId}
@@ -199,7 +199,7 @@ export default function AttendanceReportClient({
                 ))}
               </select>
             </label>
-            <label className="text-xs font-semibold text-[#6f7979]">
+            <label className="text-xs font-semibold text-[#64748b]">
               Month
               <input
                 type="month"
@@ -243,14 +243,14 @@ export default function AttendanceReportClient({
                   onClick={() => navigate({ month: shiftMonth(monthKey, -1) })}
                   className="h-11 w-11 flex items-center justify-center rounded-xl bg-[#f0f2f5] hover:bg-[#e2e8e8] transition"
                 >
-                  <ChevronLeft size={18} className="text-[#1a1c1c]" />
+                  <ChevronLeft size={18} className="text-[#0f172a]" />
                 </button>
-                <h3 className="font-semibold text-[#1a1c1c]">{monthName}</h3>
+                <h3 className="font-semibold text-[#0f172a]">{monthName}</h3>
                 <button
                   onClick={() => navigate({ month: shiftMonth(monthKey, 1) })}
                   className="h-11 w-11 flex items-center justify-center rounded-xl bg-[#f0f2f5] hover:bg-[#e2e8e8] transition"
                 >
-                  <ChevronRight size={18} className="text-[#1a1c1c]" />
+                  <ChevronRight size={18} className="text-[#0f172a]" />
                 </button>
               </div>
 
@@ -273,7 +273,7 @@ export default function AttendanceReportClient({
                       key={day}
                       className={`aspect-square flex items-center justify-center rounded-lg text-xs font-semibold relative
                         ${cfg ? `${cfg.bg} ${cfg.text}` : 'bg-[#f1f5f9] text-[#94a3b8]'}
-                        ${isToday ? 'ring-2 ring-[#004649] ring-offset-1' : ''}
+                        ${isToday ? 'ring-2 ring-[#1F5A5C] ring-offset-1' : ''}
                       `}
                     >
                       {day}
@@ -325,7 +325,7 @@ export default function AttendanceReportClient({
               <PrintButton label="Print / PDF" orientation="portrait" />
               <button
                 onClick={handleDownload}
-                className="h-11 flex flex-1 items-center justify-center gap-2 rounded-xl bg-[#004649] text-white font-semibold hover:bg-[#1b5e62] transition"
+                className="h-11 flex flex-1 items-center justify-center gap-2 rounded-xl bg-[#1F5A5C] text-white font-semibold hover:bg-[#1b5e62] transition"
               >
                 <Download className="h-4 w-4" />
                 Download CSV
@@ -334,7 +334,7 @@ export default function AttendanceReportClient({
                 onClick={handleShare}
                 disabled={!waPhone}
                 className={`h-11 flex flex-1 items-center justify-center gap-2 rounded-xl font-semibold transition ${
-                  waPhone ? 'bg-[#25d366] text-white hover:scale-105 active:scale-[0.98]' : 'bg-[#f0f2f5] text-[#6f7979] cursor-not-allowed opacity-60'
+                  waPhone ? 'bg-[#25d366] text-white hover:scale-105 active:scale-[0.98]' : 'bg-[#f0f2f5] text-[#64748b] cursor-not-allowed opacity-60'
                 }`}
               >
                 <Share2 className="h-4 w-4" />
@@ -343,7 +343,7 @@ export default function AttendanceReportClient({
             </div>
           </>
         ) : (
-          <div className="rounded-2xl bg-white p-6 text-sm text-[#6f7979] shadow-[0_2px_8px_rgba(0,0,0,0.06)]">
+          <div className="rounded-2xl bg-white p-6 text-sm text-[#64748b] shadow-[0_2px_8px_rgba(0,0,0,0.06)]">
             No student found. Select a student above.
           </div>
         )}

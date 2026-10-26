@@ -50,14 +50,14 @@ export default function ComposeMessageForm({
         name="subject"
         required
         placeholder="Subject"
-        className="h-10 rounded-xl bg-[#edeeef] border-none px-3 text-sm text-[#2c3e50] outline-none focus:ring-2 focus:ring-[#004649]/20 sm:col-span-2"
+        className="h-10 rounded-xl bg-[#edeeef] border-none px-3 text-sm text-[#2c3e50] outline-none focus:ring-2 focus:ring-[#1F5A5C]/20 sm:col-span-2"
       />
 
       <select
         name="targetMode"
         value={targetMode}
         onChange={(e) => setTargetMode(e.target.value as TargetMode)}
-        className="h-10 rounded-xl bg-[#edeeef] border-none px-3 text-sm text-[#2c3e50] outline-none focus:ring-2 focus:ring-[#004649]/20 sm:col-span-2"
+        className="h-10 rounded-xl bg-[#edeeef] border-none px-3 text-sm text-[#2c3e50] outline-none focus:ring-2 focus:ring-[#1F5A5C]/20 sm:col-span-2"
       >
         <option value="individual_student">Individual Student</option>
         <option value="individual_teacher">Individual Teacher</option>
@@ -71,7 +71,7 @@ export default function ComposeMessageForm({
           value={studentRecipientId}
           onChange={(e) => setStudentRecipientId(e.target.value)}
           required
-          className="h-10 rounded-xl bg-[#edeeef] border-none px-3 text-sm text-[#2c3e50] outline-none focus:ring-2 focus:ring-[#004649]/20 sm:col-span-2"
+          className="h-10 rounded-xl bg-[#edeeef] border-none px-3 text-sm text-[#2c3e50] outline-none focus:ring-2 focus:ring-[#1F5A5C]/20 sm:col-span-2"
         >
           <option value="">Select student</option>
           {students.map((student) => (
@@ -88,7 +88,7 @@ export default function ComposeMessageForm({
           value={teacherRecipientId}
           onChange={(e) => setTeacherRecipientId(e.target.value)}
           required
-          className="h-10 rounded-xl bg-[#edeeef] border-none px-3 text-sm text-[#2c3e50] outline-none focus:ring-2 focus:ring-[#004649]/20 sm:col-span-2"
+          className="h-10 rounded-xl bg-[#edeeef] border-none px-3 text-sm text-[#2c3e50] outline-none focus:ring-2 focus:ring-[#1F5A5C]/20 sm:col-span-2"
         >
           <option value="">Select teacher</option>
           {teachers.map((teacher) => (
@@ -105,7 +105,7 @@ export default function ComposeMessageForm({
           value={classId}
           onChange={(e) => setClassId(e.target.value)}
           required
-          className="h-10 rounded-xl bg-[#edeeef] border-none px-3 text-sm text-[#2c3e50] outline-none focus:ring-2 focus:ring-[#004649]/20 sm:col-span-2"
+          className="h-10 rounded-xl bg-[#edeeef] border-none px-3 text-sm text-[#2c3e50] outline-none focus:ring-2 focus:ring-[#1F5A5C]/20 sm:col-span-2"
         >
           <option value="">Select class for group message</option>
           {classes.map((item) => (
@@ -116,17 +116,17 @@ export default function ComposeMessageForm({
         </select>
       ) : null}
 
-      <p className="text-xs text-[#6f7979] sm:col-span-2">{modeHelpText}</p>
+      <p className="text-xs text-[#64748b] sm:col-span-2">{modeHelpText}</p>
 
       <textarea
         name="body"
         required
         rows={5}
         placeholder="Write message"
-        className="sm:col-span-2 rounded-xl bg-[#edeeef] border-none p-3 text-sm text-[#2c3e50] outline-none focus:ring-2 focus:ring-[#004649]/20"
+        className="sm:col-span-2 rounded-xl bg-[#edeeef] border-none p-3 text-sm text-[#2c3e50] outline-none focus:ring-2 focus:ring-[#1F5A5C]/20"
       />
 
-      <button className="h-10 rounded-xl bg-gradient-to-br from-[#004649] to-[#1b5e62] px-4 text-sm font-semibold text-white shadow-[0_4px_12px_rgba(0,70,73,0.2)] transition-all hover:scale-105 sm:w-fit">
+      <button className="h-10 rounded-xl bg-gradient-to-br from-[#1F5A5C] to-[#1b5e62] px-4 text-sm font-semibold text-white shadow-[0_4px_12px_rgba(0,70,73,0.2)] transition-all hover:scale-105 sm:w-fit">
         Send In-App Message
       </button>
     </form>

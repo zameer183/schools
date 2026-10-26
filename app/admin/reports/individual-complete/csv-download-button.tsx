@@ -66,7 +66,7 @@ export default function CsvDownloadButton({ rows, studentName, className, fromLa
   return (
     <button
       onClick={handleDownload}
-      className="flex items-center gap-2 rounded-xl bg-[#004649] px-4 py-2 text-sm font-semibold text-white hover:bg-[#1b5e62] transition"
+      className="flex items-center gap-2 rounded-xl bg-[#1F5A5C] px-4 py-2 text-sm font-semibold text-white hover:bg-[#2D7578] transition"
     >
       <Download className="h-4 w-4" />
       Download CSV

@@ -61,10 +61,9 @@ const ACCESS_LABELS: Record<keyof TeacherAccess, string> = {
 const ACCESS_LEVEL_OPTIONS: Array<TeacherAccess[keyof TeacherAccess]> = ['NONE', 'VIEW', 'MANAGE', 'FULL'];
 const AVATAR_COLORS = ['#7c3aed', '#0891b2', '#059669', '#d97706', '#dc2626', '#2563eb', '#0d9488'];
 
-const INPUT_CLS =
-  'w-full rounded-xl bg-[#edeeef] border-none px-3 py-2.5 text-sm text-[#1a1c1c] placeholder-[#9ca3af] outline-none focus:ring-2 focus:ring-[#004649]/20 transition-shadow';
-const LABEL_CLS = 'mb-1 block text-xs font-medium text-[#6f7979]';
-const CARD_CLS = 'rounded-2xl bg-white shadow-[0_12px_40px_rgba(0,70,73,0.06)]';
+const INPUT_CLS = 'w-full rounded-xl bg-[#f8fafc] border border-[#e2e8f0] px-3.5 py-2.5 text-sm text-[#0f172a] placeholder-[#94a3b8] outline-none focus:bg-white focus:border-[#1F5A5C] focus:ring-2 focus:ring-[#1F5A5C]/20 transition-all';
+const LABEL_CLS = 'mb-1 block text-xs font-semibold text-[#64748b]';
+const CARD_CLS = 'rounded-2xl bg-white shadow-[0_4px_16px_rgba(15,23,42,0.06)] border border-[#edf2f7]';
 
 // ── Helpers ──────────────────────────────────────────────────────────────────
 function initials(name: string) {
@@ -122,16 +121,16 @@ function DeleteModal({
         <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-full bg-[#fef2f2]">
           <Trash2 size={22} className="text-[#b91c1c]" />
         </div>
-        <h3 className="mb-1 text-center text-lg font-bold text-[#1a1c1c]">Delete Teacher?</h3>
-        <p className="mb-6 text-center text-sm text-[#6f7979]">
+        <h3 className="mb-1 text-center text-lg font-bold text-[#0f172a]">Delete Teacher?</h3>
+        <p className="mb-6 text-center text-sm text-[#64748b]">
           Permanently delete{' '}
-          <span className="font-semibold text-[#1a1c1c]">{teacher.user.fullName}</span>{' '}
+          <span className="font-semibold text-[#0f172a]">{teacher.user.fullName}</span>{' '}
           and all their data. This cannot be undone.
         </p>
         <div className="flex gap-3">
           <button
             onClick={onCancel}
-            className="flex-1 rounded-xl border border-[#e0e5e5] py-2.5 text-sm font-semibold text-[#1a1c1c] hover:bg-[#f3f4f5] transition-colors"
+            className="flex-1 rounded-xl border border-[#e0e5e5] py-2.5 text-sm font-semibold text-[#0f172a] hover:bg-[#f3f4f5] transition-colors"
           >
             Cancel
           </button>
@@ -199,7 +198,7 @@ function ShareModal({ teacher, onClose }: { teacher: TeacherItem; onClose: () =>
       onClick={onClose}
     >
       <div
-        className={`w-full sm:max-w-md rounded-t-2xl sm:rounded-2xl bg-white shadow-[0_12px_40px_rgba(0,70,73,0.12)] p-5`}
+        className={`w-full sm:max-w-md rounded-t-2xl sm:rounded-2xl bg-white shadow-2xl border border-slate-200 p-5`}
         onClick={e => e.stopPropagation()}
       >
         <div className="mx-auto mb-4 h-1 w-10 rounded-full bg-[#e0e5e5] sm:hidden" />
@@ -213,11 +212,11 @@ function ShareModal({ teacher, onClose }: { teacher: TeacherItem; onClose: () =>
               {initials(teacher.user.fullName)}
             </div>
             <div>
-              <p className="text-sm font-bold text-[#1a1c1c]">{teacher.user.fullName}</p>
-              <p className="text-xs text-[#6f7979]">{teacher.user.email}</p>
+              <p className="text-sm font-bold text-[#0f172a]">{teacher.user.fullName}</p>
+              <p className="text-xs text-[#64748b]">{teacher.user.email}</p>
             </div>
           </div>
-          <button onClick={onClose} className="rounded-lg p-1.5 text-[#6f7979] hover:bg-[#f3f4f5] hover:text-[#1a1c1c]">
+          <button onClick={onClose} className="rounded-lg p-1.5 text-[#64748b] hover:bg-[#f3f4f5] hover:text-[#0f172a]">
             <X size={16} />
           </button>
         </div>
@@ -259,16 +258,16 @@ function ShareModal({ teacher, onClose }: { teacher: TeacherItem; onClose: () =>
                 onClick={() => handleSelectAppType('business')}
                 className={`flex items-center gap-2.5 rounded-xl border p-2.5 text-left transition-all active:scale-[0.98] ${
                   appType === 'business'
-                    ? 'border-[#004649] bg-[#e0eff0] text-[#004649] ring-2 ring-[#004649]/30 shadow-xs'
+                    ? 'border-[#1F5A5C] bg-[#e0eff0] text-[#1F5A5C] ring-2 ring-[#1F5A5C]/30 shadow-xs'
                     : 'border-[#e2e8f0] bg-white text-[#64748b] hover:bg-[#f8fafc]'
                 }`}
               >
-                <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-[#004649] text-white text-xs font-black shadow-xs">
+                <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-[#1F5A5C] text-white text-xs font-black shadow-xs">
                   WB
                 </span>
                 <div className="min-w-0">
                   <p className="text-xs font-bold leading-tight text-[#0f172a]">WA Business</p>
-                  <p className="text-[10px] text-[#004649] font-medium">Business</p>
+                  <p className="text-[10px] text-[#1F5A5C] font-medium">Business</p>
                 </div>
               </button>
             </div>
@@ -280,7 +279,7 @@ function ShareModal({ teacher, onClose }: { teacher: TeacherItem; onClose: () =>
           <input
             readOnly
             value={teacher.user.email}
-            className="w-full rounded-xl bg-[#f3f4f5] border-none px-3 py-2 text-sm text-[#6f7979] outline-none"
+            className="w-full rounded-xl bg-[#f3f4f5] border-none px-3 py-2 text-sm text-[#64748b] outline-none"
           />
         </div>
 
@@ -291,12 +290,12 @@ function ShareModal({ teacher, onClose }: { teacher: TeacherItem; onClose: () =>
               type={showPwd ? 'text' : 'password'}
               value={password}
               onChange={e => setPassword(e.target.value)}
-              className="w-full rounded-xl bg-[#edeeef] border-none px-3 py-2 pr-10 text-sm text-[#1a1c1c] outline-none focus:ring-2 focus:ring-[#004649]/20"
+              className="w-full rounded-xl bg-[#f8fafc] border-none px-3 py-2 pr-10 text-sm text-[#0f172a] outline-none focus:ring-2 focus:ring-[#1F5A5C]/20"
             />
             <button
               type="button"
               onClick={() => setShowPwd(p => !p)}
-              className="absolute right-3 top-1/2 -translate-y-1/2 text-[#6f7979] hover:text-[#1a1c1c]"
+              className="absolute right-3 top-1/2 -translate-y-1/2 text-[#64748b] hover:text-[#0f172a]"
             >
               {showPwd ? <EyeOff size={14} /> : <Eye size={14} />}
             </button>
@@ -304,8 +303,8 @@ function ShareModal({ teacher, onClose }: { teacher: TeacherItem; onClose: () =>
         </div>
 
         <div className="mb-4 rounded-xl bg-[#f3f4f5] p-3">
-          <p className="mb-1.5 text-[10px] font-bold uppercase tracking-widest text-[#6f7979]">Preview</p>
-          <pre className="whitespace-pre-wrap text-xs text-[#6f7979]">{msg}</pre>
+          <p className="mb-1.5 text-[10px] font-bold uppercase tracking-widest text-[#64748b]">Preview</p>
+          <pre className="whitespace-pre-wrap text-xs text-[#64748b]">{msg}</pre>
         </div>
 
         {done ? (
@@ -324,7 +323,7 @@ function ShareModal({ teacher, onClose }: { teacher: TeacherItem; onClose: () =>
                   });
                 }}
                 className={`w-full rounded-xl py-2.5 text-xs font-bold text-white shadow-sm active:scale-[0.98] ${
-                  appType === 'business' ? 'bg-[#004649]' : 'bg-[#16a34a]'
+                  appType === 'business' ? 'bg-[#1F5A5C]' : 'bg-[#16a34a]'
                 }`}
               >
                 Re-open {appType === 'business' ? 'WhatsApp Business' : 'WhatsApp'}
@@ -333,7 +332,7 @@ function ShareModal({ teacher, onClose }: { teacher: TeacherItem; onClose: () =>
             <button
               type="button"
               onClick={onClose}
-              className="w-full rounded-xl border border-[#e2e8f0] py-2 text-xs font-semibold text-[#6f7979] hover:bg-[#f8fafc]"
+              className="w-full rounded-xl border border-[#e2e8f0] py-2 text-xs font-semibold text-[#64748b] hover:bg-[#f8fafc]"
             >
               Done
             </button>
@@ -344,8 +343,8 @@ function ShareModal({ teacher, onClose }: { teacher: TeacherItem; onClose: () =>
             disabled={saving || password.length < 6}
             className={`w-full rounded-xl py-3 text-sm font-bold text-white disabled:opacity-50 transition-opacity ${
               hasPhone
-                ? appType === 'business' ? 'bg-[#004649]' : 'bg-[#25D366]'
-                : 'bg-[#004649]'
+                ? appType === 'business' ? 'bg-[#1F5A5C]' : 'bg-[#25D366]'
+                : 'bg-[#1F5A5C]'
             }`}
           >
             {saving
@@ -399,7 +398,7 @@ function ActionMenu({
     <div className="relative" ref={ref}>
       <button
         onClick={() => setOpen(p => !p)}
-        className="rounded-lg p-1.5 text-[#6f7979] hover:bg-[#f3f4f5] hover:text-[#1a1c1c] transition-colors"
+        className="rounded-lg p-1.5 text-[#64748b] hover:bg-[#f3f4f5] hover:text-[#0f172a] transition-colors"
       >
         <MoreVertical size={16} />
       </button>
@@ -485,8 +484,8 @@ function Drawer({
       >
         {/* Header */}
         <div className="flex shrink-0 items-center justify-between border-b border-[#e2e8e8] px-5 py-4">
-          <h2 className="font-bold text-[#1a1c1c]">{isEdit ? 'Edit Teacher' : 'Add Teacher'}</h2>
-          <button onClick={onClose} className="rounded-lg p-1.5 text-[#6f7979] hover:bg-[#f3f4f5] hover:text-[#1a1c1c]">
+          <h2 className="font-bold text-[#0f172a]">{isEdit ? 'Edit Teacher' : 'Add Teacher'}</h2>
+          <button onClick={onClose} className="rounded-lg p-1.5 text-[#64748b] hover:bg-[#f3f4f5] hover:text-[#0f172a]">
             <X size={18} />
           </button>
         </div>
@@ -499,18 +498,18 @@ function Drawer({
             const done = step > n;
             return (
               <div key={label} className="flex items-center gap-1">
-                {i > 0 && <div className={`h-px w-5 ${done || active ? 'bg-[#004649]' : 'bg-[#e0e5e5]'}`} />}
+                {i > 0 && <div className={`h-px w-5 ${done || active ? 'bg-[#1F5A5C]' : 'bg-[#e0e5e5]'}`} />}
                 <div className="flex items-center gap-1.5">
                   <div
                     className={`flex h-6 w-6 items-center justify-center rounded-full text-xs font-bold ${
-                      active ? 'bg-[#004649] text-white' : done ? 'bg-[#004649]/20 text-[#004649]' : 'bg-[#edeeef] text-[#6f7979]'
+                      active ? 'bg-[#1F5A5C] text-white' : done ? 'bg-[#1F5A5C]/20 text-[#1F5A5C]' : 'bg-[#f8fafc] text-[#64748b]'
                     }`}
                   >
                     {n}
                   </div>
                   <span
                     className={`hidden text-xs font-medium sm:block ${
-                      active ? 'text-[#1a1c1c]' : done ? 'text-[#004649]' : 'text-[#6f7979]'
+                      active ? 'text-[#0f172a]' : done ? 'text-[#1F5A5C]' : 'text-[#64748b]'
                     }`}
                   >
                     {label}
@@ -557,7 +556,7 @@ function Drawer({
                     <button
                       type="button"
                       onClick={() => setShowPwd(p => !p)}
-                      className="absolute right-3 top-1/2 -translate-y-1/2 text-[#6f7979] hover:text-[#1a1c1c]"
+                      className="absolute right-3 top-1/2 -translate-y-1/2 text-[#64748b] hover:text-[#0f172a]"
                     >
                       {showPwd ? <EyeOff size={14} /> : <Eye size={14} />}
                     </button>
@@ -587,7 +586,7 @@ function Drawer({
                     className={`flex h-[42px] w-full items-center justify-center gap-2 rounded-xl border text-sm font-semibold transition-colors ${
                       form.isActive
                         ? 'border-[#bbf7d0] bg-[#f0fdf4] text-[#15803d]'
-                        : 'border-[#e0e5e5] bg-[#edeeef] text-[#6f7979]'
+                        : 'border-[#e0e5e5] bg-[#f8fafc] text-[#64748b]'
                     }`}
                   >
                     <span className={`h-2 w-2 rounded-full ${form.isActive ? 'bg-[#22c55e]' : 'bg-[#9ca3af]'}`} />
@@ -712,7 +711,7 @@ function Drawer({
                 <input value={form.deduction} onChange={ff('deduction')} type="number" min={0} step={100} placeholder="0" className={INPUT_CLS} />
               </div>
               <div className="flex items-center justify-between rounded-xl bg-[#f0fdf4] border border-[#bbf7d0] px-4 py-3">
-                <span className="text-sm text-[#6f7979]">Net Salary</span>
+                <span className="text-sm text-[#64748b]">Net Salary</span>
                 <span className="text-lg font-bold text-[#15803d]">{fmtCurrency(netSalary)}</span>
               </div>
             </div>
@@ -755,21 +754,21 @@ function SkeletonCard() {
   return (
     <div className={`animate-pulse ${CARD_CLS} p-4`}>
       <div className="mb-3 flex items-center gap-3">
-        <div className="h-12 w-12 rounded-xl bg-[#edeeef]" />
+        <div className="h-12 w-12 rounded-xl bg-[#f8fafc]" />
         <div className="flex-1">
-          <div className="mb-1.5 h-4 w-32 rounded bg-[#edeeef]" />
-          <div className="h-3 w-20 rounded bg-[#edeeef]" />
+          <div className="mb-1.5 h-4 w-32 rounded bg-[#f8fafc]" />
+          <div className="h-3 w-20 rounded bg-[#f8fafc]" />
         </div>
       </div>
-      <div className="mb-2 h-3 w-24 rounded bg-[#edeeef]" />
+      <div className="mb-2 h-3 w-24 rounded bg-[#f8fafc]" />
       <div className="mb-3 flex gap-1.5">
-        <div className="h-5 w-16 rounded-lg bg-[#edeeef]" />
-        <div className="h-5 w-16 rounded-lg bg-[#edeeef]" />
+        <div className="h-5 w-16 rounded-lg bg-[#f8fafc]" />
+        <div className="h-5 w-16 rounded-lg bg-[#f8fafc]" />
       </div>
-      <div className="h-px w-full rounded bg-[#edeeef]" />
+      <div className="h-px w-full rounded bg-[#f8fafc]" />
       <div className="mt-2 flex justify-between">
-        <div className="h-3 w-16 rounded bg-[#edeeef]" />
-        <div className="h-3 w-20 rounded bg-[#edeeef]" />
+        <div className="h-3 w-16 rounded bg-[#f8fafc]" />
+        <div className="h-3 w-20 rounded bg-[#f8fafc]" />
       </div>
     </div>
   );
@@ -961,27 +960,27 @@ export default function AdminTeachersPageClient({
               value={search}
               onChange={e => setSearch(e.target.value)}
               placeholder="Search teachers…"
-              className="h-10 w-full rounded-xl bg-[#edeeef] border-none pl-9 pr-8 text-sm text-[#1a1c1c] placeholder-[#9ca3af] outline-none focus:ring-2 focus:ring-[#004649]/20"
+              className="h-10 w-full rounded-xl bg-[#f8fafc] border-none pl-9 pr-8 text-sm text-[#0f172a] placeholder-[#9ca3af] outline-none focus:ring-2 focus:ring-[#1F5A5C]/20"
             />
             {search && (
               <button
                 onClick={() => setSearch('')}
-                className="absolute right-3 top-1/2 -translate-y-1/2 text-[#6f7979] hover:text-[#1a1c1c]"
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-[#64748b] hover:text-[#0f172a]"
               >
                 <X size={13} />
               </button>
             )}
           </div>
-          <div className="flex items-center gap-1 rounded-xl bg-[#edeeef] p-1">
+          <div className="flex items-center gap-1 rounded-xl bg-[#f8fafc] p-1">
             <button
               onClick={() => updateFilters({ view: 'grid', page: '1' })}
-              className={`rounded-lg p-1.5 transition-colors ${view === 'grid' ? 'bg-gradient-to-br from-[#004649] to-[#1b5e62] text-white shadow-sm' : 'text-[#6f7979] hover:text-[#1a1c1c]'}`}
+              className={`rounded-lg p-1.5 transition-colors ${view === 'grid' ? 'bg-gradient-to-br from-[#1F5A5C] to-[#1b5e62] text-white shadow-sm' : 'text-[#64748b] hover:text-[#0f172a]'}`}
             >
               <Grid3X3 size={15} />
             </button>
             <button
               onClick={() => updateFilters({ view: 'table', page: '1' })}
-              className={`rounded-lg p-1.5 transition-colors ${view === 'table' ? 'bg-gradient-to-br from-[#004649] to-[#1b5e62] text-white shadow-sm' : 'text-[#6f7979] hover:text-[#1a1c1c]'}`}
+              className={`rounded-lg p-1.5 transition-colors ${view === 'table' ? 'bg-gradient-to-br from-[#1F5A5C] to-[#1b5e62] text-white shadow-sm' : 'text-[#64748b] hover:text-[#0f172a]'}`}
             >
               <List size={15} />
             </button>
@@ -999,17 +998,17 @@ export default function AdminTeachersPageClient({
             {Array.from({ length: 6 }).map((_, i) => <SkeletonCard key={i} />)}
           </div>
         ) : (
-          <div className={`${CARD_CLS} animate-pulse p-8 text-center text-sm text-[#6f7979]`}>
+          <div className={`${CARD_CLS} animate-pulse p-8 text-center text-sm text-[#64748b]`}>
             Loading teachers…
           </div>
         )
       ) : filtered.length === 0 ? (
         <div className={`${CARD_CLS} flex flex-col items-center justify-center px-4 py-16 text-center`}>
           <Users size={40} className="mb-3 text-[#d1d5db]" />
-          <p className="mb-1 font-semibold text-[#1a1c1c]">
+          <p className="mb-1 font-semibold text-[#0f172a]">
             {search ? 'No teachers matched' : 'No teachers yet'}
           </p>
-          <p className="mb-5 text-sm text-[#6f7979]">
+          <p className="mb-5 text-sm text-[#64748b]">
             {search ? 'Try a different search term.' : 'Add your first teacher to get started.'}
           </p>
           {!search && (
@@ -1033,8 +1032,8 @@ export default function AdminTeachersPageClient({
                       {initials(t.user.fullName)}
                     </div>
                     <div className="min-w-0">
-                      <p className="truncate font-bold text-[#1a1c1c]">{t.user.fullName}</p>
-                      <p className="truncate text-xs text-[#6f7979]">{t.specialization || 'No position'}</p>
+                      <p className="truncate font-bold text-[#0f172a]">{t.user.fullName}</p>
+                      <p className="truncate text-xs text-[#64748b]">{t.specialization || 'No position'}</p>
                     </div>
                   </div>
                   <div className="flex shrink-0 items-center gap-2">
@@ -1055,7 +1054,7 @@ export default function AdminTeachersPageClient({
                     <button
                       type="button"
                       onClick={() => setMobileActionTeacher(t)}
-                      className="rounded-lg p-1.5 text-[#6f7979] hover:bg-[#f3f4f5] hover:text-[#1a1c1c] md:hidden"
+                      className="rounded-lg p-1.5 text-[#64748b] hover:bg-[#f3f4f5] hover:text-[#0f172a] md:hidden"
                       aria-label="Open teacher actions"
                     >
                       <MoreVertical size={16} />
@@ -1064,7 +1063,7 @@ export default function AdminTeachersPageClient({
                 </div>
 
                 {t.qualification && (
-                  <span className="mb-2 self-start rounded-lg bg-[#f3f4f5] px-2 py-0.5 text-[10px] text-[#6f7979]">
+                  <span className="mb-2 self-start rounded-lg bg-[#f3f4f5] px-2 py-0.5 text-[10px] text-[#64748b]">
                     {t.qualification}
                   </span>
                 )}
@@ -1073,13 +1072,13 @@ export default function AdminTeachersPageClient({
                   {t.classAssignments.slice(0, 3).map(ca => (
                     <span
                       key={ca.classId}
-                      className="rounded-lg border border-[#004649]/20 bg-[#004649]/10 px-2 py-0.5 text-[10px] font-medium text-[#004649]"
+                      className="rounded-lg border border-[#1F5A5C]/20 bg-[#1F5A5C]/10 px-2 py-0.5 text-[10px] font-medium text-[#1F5A5C]"
                     >
                       {ca.class.name}-{ca.class.section}
                     </span>
                   ))}
                   {t.classAssignments.length > 3 && (
-                    <span className="rounded-lg bg-[#f3f4f5] px-2 py-0.5 text-[10px] text-[#6f7979]">
+                    <span className="rounded-lg bg-[#f3f4f5] px-2 py-0.5 text-[10px] text-[#64748b]">
                       +{t.classAssignments.length - 3}
                     </span>
                   )}
@@ -1089,8 +1088,8 @@ export default function AdminTeachersPageClient({
                 </div>
 
                 <div className="mt-auto flex items-center justify-between border-t border-[#f3f4f5] pt-3">
-                  <span className="text-xs text-[#6f7979]">Net Salary</span>
-                  <span className="text-sm font-bold text-[#1a1c1c]">
+                  <span className="text-xs text-[#64748b]">Net Salary</span>
+                  <span className="text-sm font-bold text-[#0f172a]">
                     {fmtCurrency(t.compensation?.netSalary ?? 0)}
                   </span>
                 </div>
@@ -1106,7 +1105,7 @@ export default function AdminTeachersPageClient({
                 {['Teacher', 'Position', 'Classes', 'Net Salary', 'Status', ''].map(col => (
                   <th
                     key={col}
-                    className="whitespace-nowrap px-4 py-3 text-left text-xs font-bold uppercase tracking-widest text-[#6f7979]"
+                    className="whitespace-nowrap px-4 py-3 text-left text-xs font-bold uppercase tracking-widest text-[#64748b]"
                   >
                     {col}
                   </th>
@@ -1130,36 +1129,36 @@ export default function AdminTeachersPageClient({
                           {initials(t.user.fullName)}
                         </div>
                         <div>
-                          <p className="font-semibold text-[#1a1c1c]">{t.user.fullName}</p>
-                          <p className="text-xs text-[#6f7979]">{t.user.email}</p>
+                          <p className="font-semibold text-[#0f172a]">{t.user.fullName}</p>
+                          <p className="text-xs text-[#64748b]">{t.user.email}</p>
                         </div>
                       </div>
                     </td>
-                    <td className="max-w-[140px] truncate px-4 py-3 text-[#6f7979]">
+                    <td className="max-w-[140px] truncate px-4 py-3 text-[#64748b]">
                       {t.specialization || '—'}
                     </td>
                     <td className="px-4 py-3">
                       <div className="flex flex-wrap gap-1">
                         {t.classAssignments.slice(0, 2).map(ca => (
-                          <span key={ca.classId} className="rounded bg-[#004649]/10 px-1.5 py-0.5 text-[10px] text-[#004649]">
+                          <span key={ca.classId} className="rounded bg-[#1F5A5C]/10 px-1.5 py-0.5 text-[10px] text-[#1F5A5C]">
                             {ca.class.name}-{ca.class.section}
                           </span>
                         ))}
                         {t.classAssignments.length > 2 && (
-                          <span className="rounded bg-[#f3f4f5] px-1.5 py-0.5 text-[10px] text-[#6f7979]">
+                          <span className="rounded bg-[#f3f4f5] px-1.5 py-0.5 text-[10px] text-[#64748b]">
                             +{t.classAssignments.length - 2}
                           </span>
                         )}
                         {t.classAssignments.length === 0 && <span className="text-xs text-[#9ca3af]">—</span>}
                       </div>
                     </td>
-                    <td className="whitespace-nowrap px-4 py-3 font-semibold text-[#1a1c1c]">
+                    <td className="whitespace-nowrap px-4 py-3 font-semibold text-[#0f172a]">
                       {fmtCurrency(t.compensation?.netSalary ?? 0)}
                     </td>
                     <td className="px-4 py-3">
                       <span
                         className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-[10px] font-bold ${
-                          t.user.isActive ? 'bg-[#dcfce7] text-[#15803d]' : 'bg-[#f3f4f5] text-[#6f7979]'
+                          t.user.isActive ? 'bg-[#dcfce7] text-[#15803d]' : 'bg-[#f3f4f5] text-[#64748b]'
                         }`}
                       >
                         <span className={`h-1.5 w-1.5 rounded-full ${t.user.isActive ? 'bg-[#22c55e]' : 'bg-[#9ca3af]'}`} />
@@ -1181,7 +1180,7 @@ export default function AdminTeachersPageClient({
                       <button
                         type="button"
                         onClick={() => setMobileActionTeacher(t)}
-                        className="rounded-lg p-1.5 text-[#6f7979] hover:bg-[#f3f4f5] hover:text-[#1a1c1c] md:hidden"
+                        className="rounded-lg p-1.5 text-[#64748b] hover:bg-[#f3f4f5] hover:text-[#0f172a] md:hidden"
                         aria-label="Open teacher actions"
                       >
                         <MoreVertical size={16} />
@@ -1198,14 +1197,14 @@ export default function AdminTeachersPageClient({
       {/* Pagination */}
       {totalPages > 1 && (
         <div className="flex items-center justify-between">
-          <p className="text-xs text-[#6f7979]">
+          <p className="text-xs text-[#64748b]">
             {(page - 1) * PAGE_SIZE + 1}–{Math.min(page * PAGE_SIZE, filtered.length)} of {filtered.length}
           </p>
           <div className="flex items-center gap-1">
             <button
               onClick={() => updateFilters({ page: String(Math.max(1, page - 1)) })}
               disabled={page === 1}
-              className="rounded-lg p-2 text-[#6f7979] hover:bg-[#f3f4f5] hover:text-[#1a1c1c] disabled:cursor-not-allowed disabled:opacity-40"
+              className="rounded-lg p-2 text-[#64748b] hover:bg-[#f3f4f5] hover:text-[#0f172a] disabled:cursor-not-allowed disabled:opacity-40"
             >
               <ChevronLeft size={15} />
             </button>
@@ -1218,15 +1217,15 @@ export default function AdminTeachersPageClient({
               }, [])
               .map((n, i) =>
                 n === '…' ? (
-                  <span key={`el-${i}`} className="px-1 text-xs text-[#6f7979]">…</span>
+                  <span key={`el-${i}`} className="px-1 text-xs text-[#64748b]">…</span>
                 ) : (
                   <button
                     key={n}
                     onClick={() => setPage(n as number)}
                     className={`h-8 w-8 rounded-lg text-xs font-semibold transition-colors ${
                       page === n
-                        ? 'bg-gradient-to-br from-[#004649] to-[#1b5e62] text-white shadow-sm'
-                        : 'text-[#6f7979] hover:bg-[#f3f4f5] hover:text-[#1a1c1c]'
+                        ? 'bg-gradient-to-br from-[#1F5A5C] to-[#1b5e62] text-white shadow-sm'
+                        : 'text-[#64748b] hover:bg-[#f3f4f5] hover:text-[#0f172a]'
                     }`}
                   >
                     {n}
@@ -1236,7 +1235,7 @@ export default function AdminTeachersPageClient({
             <button
               onClick={() => updateFilters({ page: String(Math.min(totalPages, page + 1)) })}
               disabled={page === totalPages}
-              className="rounded-lg p-2 text-[#6f7979] hover:bg-[#f3f4f5] hover:text-[#1a1c1c] disabled:cursor-not-allowed disabled:opacity-40"
+              className="rounded-lg p-2 text-[#64748b] hover:bg-[#f3f4f5] hover:text-[#0f172a] disabled:cursor-not-allowed disabled:opacity-40"
             >
               <ChevronRight size={15} />
             </button>

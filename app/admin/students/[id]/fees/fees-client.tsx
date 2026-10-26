@@ -128,7 +128,7 @@ function Field({ label, children }: { label: string; children: React.ReactNode }
   );
 }
 
-const INPUT = 'h-10 w-full rounded-xl bg-[#f8fafc] border border-[#cbd5e1] px-3 text-sm text-[#0f172a] outline-none focus:ring-2 focus:ring-[#004649]/20 focus:border-[#004649] transition';
+const INPUT = 'h-10 w-full rounded-xl bg-[#f8fafc] border border-[#cbd5e1] px-3 text-sm text-[#0f172a] outline-none focus:ring-2 focus:ring-[#1F5A5C]/20 focus:border-[#1F5A5C] transition';
 
 // ─── Main Component ───────────────────────────────────────────────────────────
 
@@ -620,7 +620,7 @@ export default function StudentFeesClient({
         <div className="flex items-center justify-between">
           <Link
             href={`/admin/students/${student.id}`}
-            className="inline-flex items-center gap-1.5 text-xs sm:text-sm font-semibold text-[#004649] hover:text-[#1b5e62] transition"
+            className="inline-flex items-center gap-1.5 text-xs sm:text-sm font-semibold text-[#1F5A5C] hover:text-[#2D7578] transition"
           >
             <ChevronLeft className="h-4 w-4" />
             <span>Back to Profile</span>
@@ -633,7 +633,7 @@ export default function StudentFeesClient({
         {/* Student Identity Card */}
         <div className="rounded-2xl bg-white border border-[#e2e8f0] shadow-sm p-4 sm:p-5">
           <div className="flex items-center gap-3.5 sm:gap-4">
-            <div className="flex h-12 w-12 sm:h-14 sm:w-14 shrink-0 items-center justify-center rounded-2xl bg-gradient-to-br from-[#004649] to-[#1b5e62] text-base sm:text-lg font-bold text-white shadow-xs">
+            <div className="flex h-12 w-12 sm:h-14 sm:w-14 shrink-0 items-center justify-center rounded-2xl bg-gradient-to-br from-[#1F5A5C] to-[#2D7578] text-base sm:text-lg font-bold text-white shadow-xs">
               {initials(student.user.fullName)}
             </div>
             <div className="flex-1 min-w-0">
@@ -652,7 +652,7 @@ export default function StudentFeesClient({
               <p className="mt-0.5 text-xs sm:text-sm text-[#64748b] truncate">
                 {classInfo} • Admission: <span className="font-semibold text-[#0f172a]">{student.admissionNo}</span>
                 {student.joinDate && (
-                  <span className="ml-2 pl-2 border-l border-[#cbd5e1] text-[#004649] font-medium">
+                  <span className="ml-2 pl-2 border-l border-[#cbd5e1] text-[#1F5A5C] font-medium">
                     Joined: {fmtDate(student.joinDate)}
                   </span>
                 )}
@@ -737,7 +737,7 @@ export default function StudentFeesClient({
                   setShowStudentPay(true);
                 }}
                 disabled={totalRemaining <= 0}
-                className="inline-flex items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-[#004649] to-[#1b5e62] px-5 py-3 text-xs sm:text-sm font-bold text-white shadow-sm hover:brightness-110 active:scale-[0.98] transition disabled:opacity-50 disabled:cursor-not-allowed"
+                className="inline-flex items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-[#1F5A5C] to-[#2D7578] px-5 py-3 text-xs sm:text-sm font-bold text-white shadow-sm hover:brightness-110 active:scale-[0.98] transition disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 <CreditCard className="h-4 w-4" />
                 <span>Collect Fee</span>
@@ -804,7 +804,7 @@ export default function StudentFeesClient({
               <button
                 onClick={handleSyncFees}
                 disabled={syncing}
-                className="flex items-center gap-1.5 rounded-xl border border-[#004649]/20 bg-teal-50 px-2.5 py-1.5 text-xs font-semibold text-[#004649] hover:bg-teal-100 transition"
+                className="flex items-center gap-1.5 rounded-xl border border-[#1F5A5C]/20 bg-teal-50 px-2.5 py-1.5 text-xs font-semibold text-[#1F5A5C] hover:bg-teal-100 transition"
                 title="Auto-sync all missing monthly fee vouchers from student's join date"
               >
                 <RefreshCw className={`h-3.5 w-3.5 ${syncing ? 'animate-spin' : ''}`} />
@@ -812,7 +812,7 @@ export default function StudentFeesClient({
               </button>
               <button
                 onClick={openAddModal}
-                className="flex items-center gap-1.5 rounded-xl bg-[#004649] px-3 py-1.5 text-xs font-semibold text-white hover:bg-[#1b5e62] transition shadow-2xs"
+                className="flex items-center gap-1.5 rounded-xl bg-[#1F5A5C] px-3 py-1.5 text-xs font-semibold text-white hover:bg-[#2D7578] transition shadow-2xs"
               >
                 <Plus className="h-3.5 w-3.5" />
                 <span>Add Fee</span>
@@ -834,7 +834,7 @@ export default function StudentFeesClient({
                 </button>
                 <button
                   onClick={openAddModal}
-                  className="rounded-xl bg-[#004649] px-3 py-1.5 text-xs font-bold text-white hover:bg-[#1b5e62] transition"
+                  className="rounded-xl bg-[#1F5A5C] px-3 py-1.5 text-xs font-bold text-white hover:bg-[#2D7578] transition"
                 >
                   + Add First Fee
                 </button>
@@ -870,7 +870,7 @@ export default function StudentFeesClient({
                         <button
                           onClick={() => openEdit(f)}
                           title="Edit Fee"
-                          className="p-1.5 rounded-lg text-[#64748b] hover:text-[#004649] hover:bg-[#e0eff0] transition"
+                          className="p-1.5 rounded-lg text-[#64748b] hover:text-[#1F5A5C] hover:bg-[#e0eff0] transition"
                         >
                           <Pencil className="h-4 w-4" />
                         </button>
@@ -924,7 +924,7 @@ export default function StudentFeesClient({
                             setPayErr('');
                             setPayForm({ amount: String(remaining), method: 'CASH', ref: '' });
                           }}
-                          className="h-9 flex flex-1 items-center justify-center gap-1.5 rounded-xl bg-[#004649] text-white text-xs font-semibold hover:bg-[#1b5e62] transition shadow-2xs"
+                          className="h-9 flex flex-1 items-center justify-center gap-1.5 rounded-xl bg-[#1F5A5C] text-white text-xs font-semibold hover:bg-[#2D7578] transition shadow-2xs"
                         >
                           <CreditCard className="h-3.5 w-3.5" />
                           <span>Record Payment</span>
@@ -996,7 +996,7 @@ export default function StudentFeesClient({
           <PrintButton label="Print / PDF Voucher" orientation="portrait" />
           <button
             onClick={handleDownload}
-            className="h-11 flex flex-1 items-center justify-center gap-2 rounded-xl bg-[#004649] text-white font-semibold text-xs sm:text-sm hover:bg-[#1b5e62] transition shadow-xs"
+            className="h-11 flex flex-1 items-center justify-center gap-2 rounded-xl bg-[#1F5A5C] text-white font-semibold text-xs sm:text-sm hover:bg-[#2D7578] transition shadow-xs"
           >
             <Download className="h-4 w-4" />
             <span>Download CSV</span>
@@ -1145,7 +1145,7 @@ export default function StudentFeesClient({
             <button
               onClick={handleStudentPayment}
               disabled={studentPaySaving || !studentPayAmount || Number(studentPayAmount) <= 0}
-              className="w-full flex items-center justify-center gap-2 h-11 rounded-xl bg-gradient-to-r from-[#004649] to-[#1b5e62] text-white font-bold text-sm hover:brightness-110 active:scale-[0.98] transition disabled:opacity-50"
+              className="w-full flex items-center justify-center gap-2 h-11 rounded-xl bg-gradient-to-r from-[#1F5A5C] to-[#2D7578] text-white font-bold text-sm hover:brightness-110 active:scale-[0.98] transition disabled:opacity-50"
             >
               {studentPaySaving ? <Loader2 className="h-4 w-4 animate-spin" /> : <Check className="h-4 w-4" />}
               <span>Confirm Payment</span>
@@ -1217,7 +1217,7 @@ export default function StudentFeesClient({
               <Sparkles className="h-4 w-4 text-teal-700 shrink-0" />
               <div className="truncate">
                 <span className="font-semibold text-teal-800">Title: </span>
-                <span className="font-bold text-[#004649]">{computedAddTitle || '(Enter title above)'}</span>
+                <span className="font-bold text-[#1F5A5C]">{computedAddTitle || '(Enter title above)'}</span>
               </div>
             </div>
 
@@ -1262,7 +1262,7 @@ export default function StudentFeesClient({
             <button
               onClick={handleAddFee}
               disabled={addSaving || !computedAddTitle || !addAmount}
-              className="mt-2 flex w-full items-center justify-center gap-2 h-11 rounded-xl bg-[#004649] text-white font-semibold hover:bg-[#1b5e62] transition disabled:opacity-60"
+              className="mt-2 flex w-full items-center justify-center gap-2 h-11 rounded-xl bg-[#1F5A5C] text-white font-semibold hover:bg-[#2D7578] transition disabled:opacity-60"
             >
               {addSaving ? <Loader2 className="h-4 w-4 animate-spin" /> : <Plus className="h-4 w-4" />}
               <span>Create Fee Voucher</span>
@@ -1316,7 +1316,7 @@ export default function StudentFeesClient({
             <button
               onClick={handleEditFee}
               disabled={editSaving}
-              className="mt-1 flex w-full items-center justify-center gap-2 h-11 rounded-xl bg-[#004649] text-white font-semibold hover:bg-[#1b5e62] transition disabled:opacity-60"
+              className="mt-1 flex w-full items-center justify-center gap-2 h-11 rounded-xl bg-[#1F5A5C] text-white font-semibold hover:bg-[#2D7578] transition disabled:opacity-60"
             >
               {editSaving ? <Loader2 className="h-4 w-4 animate-spin" /> : <Check className="h-4 w-4" />}
               <span>Save Changes</span>
@@ -1392,7 +1392,7 @@ export default function StudentFeesClient({
             <button
               onClick={handleAddPayment}
               disabled={paySaving}
-              className="mt-1 flex w-full items-center justify-center gap-2 h-11 rounded-xl bg-[#004649] text-white font-semibold hover:bg-[#1b5e62] transition disabled:opacity-60"
+              className="mt-1 flex w-full items-center justify-center gap-2 h-11 rounded-xl bg-[#1F5A5C] text-white font-semibold hover:bg-[#2D7578] transition disabled:opacity-60"
             >
               {paySaving ? <Loader2 className="h-4 w-4 animate-spin" /> : <Check className="h-4 w-4" />}
               <span>Record Payment</span>

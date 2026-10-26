@@ -156,7 +156,7 @@ export default function AdminNotificationsWorkspace({
       <section className="rounded-2xl bg-white p-4 shadow-[0_12px_40px_rgba(0,70,73,0.06)] sm:p-5">
         <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
           <div>
-            <h2 className="font-headline text-2xl font-semibold tracking-tight text-slate-900 sm:text-3xl">Notifications</h2>
+            <h2 className="text-2xl font-semibold tracking-tight text-slate-900 sm:text-3xl">Notifications</h2>
             <p className="mt-1 text-sm text-slate-500">Inbox-style broadcasts with faster compose and tracking.</p>
           </div>
           <Button type="button" onClick={() => setShowPanel((prev) => !prev)}>
@@ -322,12 +322,12 @@ export default function AdminNotificationsWorkspace({
                 name="title"
                 required
                 placeholder="Title"
-                className="h-11 w-full rounded-xl bg-[#edeeef] border-none px-3 text-sm outline-none transition focus:ring-2 focus:ring-[#004649]/20"
+                className="h-11 w-full rounded-xl bg-[#edeeef] border-none px-3 text-sm outline-none transition focus:ring-2 focus:ring-[#1F5A5C]/20"
               />
 
               <select
                 name="type"
-                className="h-11 w-full rounded-xl bg-[#edeeef] border-none px-3 text-sm outline-none transition focus:ring-2 focus:ring-[#004649]/20"
+                className="h-11 w-full rounded-xl bg-[#edeeef] border-none px-3 text-sm outline-none transition focus:ring-2 focus:ring-[#1F5A5C]/20"
               >
                 <option value="SYSTEM">System</option>
                 <option value="ACADEMIC">Academic</option>
@@ -338,7 +338,7 @@ export default function AdminNotificationsWorkspace({
 
               <select
                 name="targetRole"
-                className="h-11 w-full rounded-xl bg-[#edeeef] border-none px-3 text-sm outline-none transition focus:ring-2 focus:ring-[#004649]/20"
+                className="h-11 w-full rounded-xl bg-[#edeeef] border-none px-3 text-sm outline-none transition focus:ring-2 focus:ring-[#1F5A5C]/20"
               >
                 <option value="ALL">All Roles</option>
                 <option value="STUDENT">Student</option>
@@ -352,7 +352,7 @@ export default function AdminNotificationsWorkspace({
                 required
                 rows={5}
                 placeholder="Write a concise message..."
-                className="w-full rounded-xl bg-[#edeeef] border-none p-3 text-sm outline-none transition focus:ring-2 focus:ring-[#004649]/20"
+                className="w-full rounded-xl bg-[#edeeef] border-none p-3 text-sm outline-none transition focus:ring-2 focus:ring-[#1F5A5C]/20"
               />
 
               <Button type="submit" fullWidth size="lg">

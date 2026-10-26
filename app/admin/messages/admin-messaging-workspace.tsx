@@ -532,7 +532,7 @@ export default function AdminMessagingWorkspace({
             type="button"
             onClick={() => setActiveTab('messages')}
             className={`rounded-xl px-3 py-2 text-sm font-semibold transition sm:text-sm ${
-              activeTab === 'messages' ? 'bg-[#004649] text-white shadow-sm' : 'text-[#4b5563] hover:bg-[#f3f7f6]'
+              activeTab === 'messages' ? 'bg-[#1F5A5C] text-white shadow-sm' : 'text-[#4b5563] hover:bg-[#f3f7f6]'
             }`}
           >
             Messages
@@ -541,7 +541,7 @@ export default function AdminMessagingWorkspace({
             type="button"
             onClick={() => setActiveTab('compose')}
             className={`rounded-xl px-3 py-2 text-sm font-semibold transition sm:text-sm ${
-              activeTab === 'compose' ? 'bg-[#004649] text-white shadow-sm' : 'text-[#4b5563] hover:bg-[#f3f7f6]'
+              activeTab === 'compose' ? 'bg-[#1F5A5C] text-white shadow-sm' : 'text-[#4b5563] hover:bg-[#f3f7f6]'
             }`}
           >
             Compose
@@ -551,7 +551,7 @@ export default function AdminMessagingWorkspace({
           <button
             type="button"
             onClick={() => setActiveTab('compose')}
-            className="inline-flex w-full basis-full items-center justify-center gap-2 rounded-xl bg-[#004649] px-3 py-2 text-xs font-semibold text-white hover:bg-[#005a5e] sm:w-auto sm:basis-auto"
+            className="inline-flex w-full basis-full items-center justify-center gap-2 rounded-xl bg-[#1F5A5C] px-3 py-2 text-xs font-semibold text-white hover:bg-[#005a5e] sm:w-auto sm:basis-auto"
           >
             <MessageSquarePlus className="h-4 w-4" />
             New Message
@@ -596,7 +596,7 @@ export default function AdminMessagingWorkspace({
                         }`}
                       >
                         <div className="flex min-w-0 items-start gap-3">
-                          <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-[#e6f4f1] text-sm font-bold text-[#004649]">
+                          <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-[#e6f4f1] text-sm font-bold text-[#1F5A5C]">
                             {initials(conversation.participantName)}
                           </div>
                           <div className="min-w-0 flex-1">
@@ -606,7 +606,7 @@ export default function AdminMessagingWorkspace({
                             </div>
                             <p className="mt-0.5 max-w-full truncate text-[13px] leading-5 text-[#6b7280] sm:text-xs">{conversation.latestPreview}</p>
                             <div className="mt-1 flex items-center justify-end">
-                              {conversation.unreadCount > 0 ? <CircleDot className="h-4 w-4 text-[#004649]" /> : null}
+                              {conversation.unreadCount > 0 ? <CircleDot className="h-4 w-4 text-[#1F5A5C]" /> : null}
                             </div>
                           </div>
                         </div>
@@ -630,7 +630,7 @@ export default function AdminMessagingWorkspace({
                     >
                       Back
                     </button>
-                    <div className="flex h-10 w-10 items-center justify-center rounded-full bg-[#e6f4f1] text-sm font-bold text-[#004649]">
+                    <div className="flex h-10 w-10 items-center justify-center rounded-full bg-[#e6f4f1] text-sm font-bold text-[#1F5A5C]">
                       {initials(activeConversation.participantName)}
                     </div>
                     <div>
@@ -649,7 +649,7 @@ export default function AdminMessagingWorkspace({
                           className={`max-w-[88%] rounded-2xl px-3 py-2 shadow-sm sm:max-w-[80%] ${
                             incoming
                               ? 'rounded-bl-sm bg-white text-[#1f2937]'
-                              : 'rounded-br-sm bg-[#004649] text-white'
+                              : 'rounded-br-sm bg-[#1F5A5C] text-white'
                           }`}
                         >
                           <p className="text-sm leading-relaxed">{message.body}</p>
@@ -683,12 +683,12 @@ export default function AdminMessagingWorkspace({
                         }
                       }}
                       placeholder="Write a message"
-                      className="h-11 flex-1 rounded-xl border border-[#d7e3df] bg-[#f7fbfa] px-3 text-sm outline-none focus:border-[#004649]"
+                      className="h-11 flex-1 rounded-xl border border-[#d7e3df] bg-[#f7fbfa] px-3 text-sm outline-none focus:border-[#1F5A5C]"
                     />
                     <button
                       type="button"
                       onClick={() => void handleQuickSend()}
-                      className="inline-flex h-11 shrink-0 items-center justify-center gap-2 rounded-xl bg-[#004649] px-3 text-sm font-semibold text-white hover:bg-[#005a5e] sm:px-4"
+                      className="inline-flex h-11 shrink-0 items-center justify-center gap-2 rounded-xl bg-[#1F5A5C] px-3 text-sm font-semibold text-white hover:bg-[#005a5e] sm:px-4"
                     >
                       <SendHorizontal className="h-4 w-4" />
                       <span className="hidden sm:inline">Send</span>
@@ -698,7 +698,7 @@ export default function AdminMessagingWorkspace({
               </>
             ) : (
               <div className="flex h-full flex-col items-center justify-center px-6 text-center">
-                <div className="mb-3 rounded-full bg-[#e6f4f1] p-4 text-[#004649]">
+                <div className="mb-3 rounded-full bg-[#e6f4f1] p-4 text-[#1F5A5C]">
                   <MessageSquarePlus className="h-6 w-6" />
                 </div>
                 <p className="text-base font-semibold text-[#111827]">Select a conversation</p>
@@ -738,7 +738,7 @@ export default function AdminMessagingWorkspace({
                     onClick={() => setComposeMode('individual_student')}
                     className={`inline-flex items-center justify-center gap-2 rounded-xl border px-3 py-2.5 text-sm font-semibold transition ${
                       composeMode === 'individual_student'
-                        ? 'border-[#004649] bg-[#e8f5f0] text-[#004649] shadow-sm'
+                        ? 'border-[#1F5A5C] bg-[#e8f5f0] text-[#1F5A5C] shadow-sm'
                         : 'border-transparent bg-white text-[#334155] hover:border-[#d7e3df]'
                     }`}
                   >
@@ -750,7 +750,7 @@ export default function AdminMessagingWorkspace({
                     onClick={() => setComposeMode('class')}
                     className={`inline-flex items-center justify-center gap-2 rounded-xl border px-3 py-2.5 text-sm font-semibold transition ${
                       composeMode === 'class'
-                        ? 'border-[#004649] bg-[#e8f5f0] text-[#004649] shadow-sm'
+                        ? 'border-[#1F5A5C] bg-[#e8f5f0] text-[#1F5A5C] shadow-sm'
                         : 'border-transparent bg-white text-[#334155] hover:border-[#d7e3df]'
                     }`}
                   >
@@ -762,7 +762,7 @@ export default function AdminMessagingWorkspace({
                     onClick={() => setComposeMode('announcement')}
                     className={`inline-flex items-center justify-center gap-2 rounded-xl border px-3 py-2.5 text-sm font-semibold transition ${
                       composeMode === 'announcement'
-                        ? 'border-[#004649] bg-[#e8f5f0] text-[#004649] shadow-sm'
+                        ? 'border-[#1F5A5C] bg-[#e8f5f0] text-[#1F5A5C] shadow-sm'
                         : 'border-transparent bg-white text-[#334155] hover:border-[#d7e3df]'
                     }`}
                   >
@@ -804,7 +804,7 @@ export default function AdminMessagingWorkspace({
                             onClick={() => setStudentRecipientId(student.user.id)}
                             className={`w-full rounded-xl border px-3 py-2.5 text-left transition ${
                               active
-                                ? 'border-[#004649] bg-[#e8f5f0]'
+                                ? 'border-[#1F5A5C] bg-[#e8f5f0]'
                                 : 'border-transparent bg-white hover:border-[#d7e3df]'
                             }`}
                           >
@@ -832,7 +832,7 @@ export default function AdminMessagingWorkspace({
                           type="button"
                           onClick={() => setClassId(item.id)}
                           className={`rounded-xl border p-3 text-left transition ${
-                            active ? 'border-[#004649] bg-[#e8f5f0]' : 'border-[#d7e3df] bg-[#f7fbfa] hover:bg-white'
+                            active ? 'border-[#1F5A5C] bg-[#e8f5f0]' : 'border-[#d7e3df] bg-[#f7fbfa] hover:bg-white'
                           }`}
                         >
                           <p className="text-sm font-semibold text-[#111827]">
@@ -847,7 +847,7 @@ export default function AdminMessagingWorkspace({
 
               {composeMode === 'announcement' ? (
                 <>
-                  <div className="rounded-xl border border-dashed border-[#7dcdb6] bg-[#e7f6f2] p-3 text-sm text-[#004649]">
+                  <div className="rounded-xl border border-dashed border-[#7dcdb6] bg-[#e7f6f2] p-3 text-sm text-[#1F5A5C]">
                     This announcement will be sent to all active students.
                   </div>
                 </>
@@ -861,7 +861,7 @@ export default function AdminMessagingWorkspace({
                   onChange={(event) => setComposeBody(event.target.value)}
                   rows={8}
                   placeholder="Write a clear, polite and actionable message..."
-                  className="w-full rounded-xl border border-[#d7e3df] bg-white p-3 text-sm text-[#111827] outline-none focus:border-[#004649]"
+                  className="w-full rounded-xl border border-[#d7e3df] bg-white p-3 text-sm text-[#111827] outline-none focus:border-[#1F5A5C]"
                 />
               </div>
               {composeError ? (
@@ -882,7 +882,7 @@ export default function AdminMessagingWorkspace({
                   </button>
                 </div>
 
-                <button disabled={sending} className="inline-flex items-center gap-2 rounded-xl bg-[#004649] px-5 py-2.5 text-sm font-semibold text-white shadow-sm hover:bg-[#005a5e] disabled:cursor-not-allowed disabled:opacity-60">
+                <button disabled={sending} className="inline-flex items-center gap-2 rounded-xl bg-[#1F5A5C] px-5 py-2.5 text-sm font-semibold text-white shadow-sm hover:bg-[#005a5e] disabled:cursor-not-allowed disabled:opacity-60">
                   <SendHorizontal className="h-4 w-4" />
                   {sending ? 'Sending...' : 'Send Message'}
                 </button>
@@ -892,7 +892,7 @@ export default function AdminMessagingWorkspace({
 
           <section className="h-fit rounded-2xl border border-[#d7e3df] bg-white p-4 shadow-sm sm:sticky sm:top-20 sm:p-5">
             <div className="mb-3 flex items-center gap-2">
-              <GraduationCap className="h-5 w-5 text-[#004649]" />
+              <GraduationCap className="h-5 w-5 text-[#1F5A5C]" />
               <h4 className="text-base font-bold text-[#111827]">Sent Messages</h4>
             </div>
             <div className="space-y-2.5">
@@ -918,7 +918,7 @@ export default function AdminMessagingWorkspace({
                     </div>
                     <div className="mt-2 flex items-center justify-between text-xs text-[#475569]">
                       <span>{card.recipients} recipient(s)</span>
-                      <span className="rounded-full bg-[#e8f5f0] px-2 py-0.5 font-semibold text-[#004649]">{card.type}</span>
+                      <span className="rounded-full bg-[#e8f5f0] px-2 py-0.5 font-semibold text-[#1F5A5C]">{card.type}</span>
                     </div>
                     <p className="mt-1 text-[11px] text-[#6b7280]">{new Date(card.createdAt).toLocaleString('en-US')}</p>
                   </article>

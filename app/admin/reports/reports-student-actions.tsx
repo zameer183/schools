@@ -34,7 +34,7 @@ export function StudentReportActions({
     <div className="flex gap-1.5">
       <Link
         href={`/admin/reports/students/${studentId}`}
-        className="h-11 flex-1 sm:flex-none flex items-center justify-center gap-1 rounded-xl bg-gradient-to-br from-[#004649] to-[#1b5e62] px-2 text-xs font-semibold text-white hover:scale-105 active:scale-[0.98] transition-all"
+        className="h-11 flex-1 sm:flex-none flex items-center justify-center gap-1 rounded-xl bg-gradient-to-br from-[#1F5A5C] to-[#1b5e62] px-2 text-xs font-semibold text-white hover:scale-105 active:scale-[0.98] transition-all"
         title="View full report"
       >
         <LinkIcon className="h-3.5 w-3.5" />
@@ -47,7 +47,7 @@ export function StudentReportActions({
         className={`h-11 flex-1 sm:flex-none flex items-center justify-center gap-1 rounded-xl px-2 text-xs font-semibold transition-all ${
           hasWaPhone
             ? 'bg-[#25d366] text-white hover:scale-105 active:scale-[0.98]'
-            : 'bg-[#f0f2f5] text-[#6f7979] cursor-not-allowed opacity-60'
+            : 'bg-[#f0f2f5] text-[#64748b] cursor-not-allowed opacity-60'
         }`}
       >
         <MessageCircle className="h-3.5 w-3.5" />
