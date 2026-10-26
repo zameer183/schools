@@ -4,9 +4,9 @@ import { useEffect, useMemo, useState, useTransition } from 'react';
 import { useRouter } from 'next/navigation';
 import {
   CalendarDays, ChevronLeft, ChevronRight, Search, Check, X,
-  AlertCircle, Clock, Users, UserCheck, UserX, UserMinus, RotateCcw,
+  AlertCircle, Clock, Users, UserCheck, UserX, RotateCcw,
   Sparkles, Loader2, Save, Filter, TrendingUp, BookOpen, GraduationCap,
-  Calendar, CheckCheck, Briefcase, Info, CheckCircle2, Award
+  Calendar, CheckCheck, Briefcase, Info, CheckCircle2, Award, ArrowRightLeft
 } from 'lucide-react';
 
 export type TabKey = 'overview' | 'students' | 'teachers';
@@ -48,13 +48,22 @@ export type MonthDayStatus = {
   count: number;
 };
 
-export type AttendanceDetailRow = {
+export type StudentDetailRow = {
   id: string;
   date: string;
   status: 'PRESENT' | 'ABSENT' | 'LATE' | 'EXCUSED';
   remarks: string | null;
   student: { admissionNo: string; user: { fullName: string } };
   class: { name: string; section: string };
+};
+
+export type StaffDetailRow = {
+  id: string;
+  teacherId: string;
+  date: string;
+  status: 'PRESENT' | 'ABSENT' | 'LATE' | 'EXCUSED';
+  note: string | null;
+  fullName: string;
 };
 
 export type StaffOverview = {
@@ -201,7 +210,8 @@ export default function AttendanceDashboardClient({
   teacherMonthlySummary,
   overview,
   staffOverview,
-  monthStatusByDay
+  monthStatusByDay,
+  staffMonthStatusByDay = []
 }: {
   initialTab: 'overview' | 'students' | 'teachers';
   selectedDate: string;
@@ -213,6 +223,7 @@ export default function AttendanceDashboardClient({
   overview: { present: number; absent: number; late: number; percentage: number };
   staffOverview?: StaffOverview;
   monthStatusByDay: MonthDayStatus[];
+  staffMonthStatusByDay?: MonthDayStatus[];
   page?: number;
 }) {
   const router = useRouter();
@@ -223,14 +234,19 @@ export default function AttendanceDashboardClient({
     return initialTab === 'teachers' ? 'teachers' : 'students';
   });
 
+  // Calendar Mode toggle: 'students' vs 'teachers'
+  const [calendarMode, setCalendarMode] = useState<'students' | 'teachers'>(() => {
+    return initialTab === 'teachers' ? 'teachers' : 'students';
+  });
+
   // Sub-views
   // Students sub-view: 'calendar' (Monthly Heatmap & Insights) | 'marking' (Daily Register)
   const [studentView, setStudentView] = useState<'calendar' | 'marking'>(() => {
     return initialTab === 'students' ? 'marking' : 'calendar';
   });
 
-  // Teachers sub-view: 'marking' (Daily Staff Marking) | 'summary' (Monthly Register)
-  const [teacherView, setTeacherView] = useState<'marking' | 'summary'>('marking');
+  // Teachers sub-view: 'calendar' | 'marking' | 'summary'
+  const [teacherView, setTeacherView] = useState<'calendar' | 'marking' | 'summary'>('calendar');
 
   // Attendance state maps
   const [studentStatusMap, setStudentStatusMap] = useState<Record<string, string | null>>(
@@ -253,11 +269,12 @@ export default function AttendanceDashboardClient({
   const [teacherSearch, setTeacherSearch] = useState('');
   const [teacherStatusFilter, setTeacherStatusFilter] = useState<StatusFilter>('ALL');
 
-  // Day Inspector Modal (for Student Calendar)
+  // Day Inspector Modal (for Calendar)
   const [selectedDay, setSelectedDay] = useState<string | null>(null);
   const [selectedDayLoading, setSelectedDayLoading] = useState(false);
   const [selectedDayError, setSelectedDayError] = useState('');
-  const [selectedDayRows, setSelectedDayRows] = useState<AttendanceDetailRow[]>([]);
+  const [selectedDayStudentRows, setSelectedDayStudentRows] = useState<StudentDetailRow[]>([]);
+  const [selectedDayStaffRows, setSelectedDayStaffRows] = useState<StaffDetailRow[]>([]);
   const [modalFilter, setModalFilter] = useState<'ALL' | 'PRESENT' | 'ABSENT' | 'LATE' | 'EXCUSED'>('ALL');
 
   // Sync state if props change
@@ -276,7 +293,8 @@ export default function AttendanceDashboardClient({
     [teacherMonthlySummary]
   );
 
-  const monthMap = useMemo(() => {
+  // Student monthly calendar aggregation map
+  const studentMonthMap = useMemo(() => {
     const map = new Map<string, { present: number; absent: number; late: number; excused: number }>();
     for (const row of monthStatusByDay) {
       const current = map.get(row.date) ?? { present: 0, absent: 0, late: 0, excused: 0 };
@@ -289,6 +307,20 @@ export default function AttendanceDashboardClient({
     return map;
   }, [monthStatusByDay]);
 
+  // Staff monthly calendar aggregation map
+  const staffMonthMap = useMemo(() => {
+    const map = new Map<string, { present: number; absent: number; late: number; excused: number }>();
+    for (const row of staffMonthStatusByDay) {
+      const current = map.get(row.date) ?? { present: 0, absent: 0, late: 0, excused: 0 };
+      if (row.status === 'PRESENT') current.present += row.count;
+      if (row.status === 'ABSENT') current.absent += row.count;
+      if (row.status === 'LATE') current.late += row.count;
+      if (row.status === 'EXCUSED' || row.status === 'LEAVE') current.excused += row.count;
+      map.set(row.date, current);
+    }
+    return map;
+  }, [staffMonthStatusByDay]);
+
   const studentsById = useMemo(() => new Map(students.map((item) => [item.id, item])), [students]);
 
   const studentChangedCount = Object.keys(dirtyStudents).length;
@@ -299,7 +331,7 @@ export default function AttendanceDashboardClient({
   // ── Navigation helpers ──
   function navigateTo(date: string, classId: string, targetPersona: 'students' | 'teachers' = persona, targetSubView?: string) {
     if (studentChangedCount > 0 || teacherChangedCount > 0) {
-      const ok = window.confirm('آپ نے حاضری تبدیل کی ہے جو ابھی محفوظ نہیں ہوئی۔ کیا آپ بغیر محفوظ کیے آگے بڑھنا چاہتے ہیں؟ (You have unsaved changes)');
+      const ok = window.confirm('You have unsaved attendance changes. Discard them and proceed?');
       if (!ok) return;
     }
     const params = new URLSearchParams();
@@ -339,6 +371,7 @@ export default function AttendanceDashboardClient({
       if (!ok) return;
     }
     setPersona(nextPersona);
+    setCalendarMode(nextPersona);
     setFlash(null);
     navigateTo(selectedDate, selectedClassId, nextPersona);
   }
@@ -399,10 +432,10 @@ export default function AttendanceDashboardClient({
       }
 
       setDirtyStudents({});
-      setFlash({ message: `کامیابی کے ساتھ ${studentChangedCount} طلباء کی حاضری محفوظ ہو گئی۔ (Saved successfully)`, type: 'success' });
+      setFlash({ message: `Successfully saved attendance for ${studentChangedCount} student(s).`, type: 'success' });
       router.refresh();
     } catch (error) {
-      setFlash({ message: error instanceof Error ? error.message : 'طلباء کی حاضری محفوظ کرنے میں مسئلہ پیش آیا۔', type: 'error' });
+      setFlash({ message: error instanceof Error ? error.message : 'Failed to save student attendance.', type: 'error' });
     } finally {
       setSavingStudents(false);
     }
@@ -452,10 +485,10 @@ export default function AttendanceDashboardClient({
 
       await Promise.all(tasks);
       setDirtyTeachers({});
-      setFlash({ message: `کامیابی کے ساتھ ${teacherChangedCount} اساتذہ کی حاضری محفوظ ہو گئی۔ (Saved successfully)`, type: 'success' });
+      setFlash({ message: `Successfully saved attendance for ${teacherChangedCount} staff member(s).`, type: 'success' });
       router.refresh();
     } catch (error) {
-      setFlash({ message: error instanceof Error ? error.message : 'اساتذہ کی حاضری محفوظ نہیں ہو سکی۔', type: 'error' });
+      setFlash({ message: error instanceof Error ? error.message : 'Failed to save teacher attendance.', type: 'error' });
     } finally {
       setSavingTeachers(false);
     }
@@ -537,7 +570,8 @@ export default function AttendanceDashboardClient({
   // ── Day Inspector Modal Data Fetching ──
   useEffect(() => {
     if (!selectedDay) {
-      setSelectedDayRows([]);
+      setSelectedDayStudentRows([]);
+      setSelectedDayStaffRows([]);
       setSelectedDayError('');
       setSelectedDayLoading(false);
       return;
@@ -550,20 +584,35 @@ export default function AttendanceDashboardClient({
       if (!selectedDay) return;
       setSelectedDayLoading(true);
       setSelectedDayError('');
+
       try {
-        const params = new URLSearchParams({ limit: '500', date: selectedDay });
-        if (selectedClassId) params.set('classId', selectedClassId);
-        const res = await fetch(`/api/attendance?${params.toString()}`, { signal: controller.signal, cache: 'no-store' });
-        if (!res.ok) {
-          const data = await res.json().catch(() => ({}));
-          throw new Error(data?.error || 'Unable to load day details');
+        if (calendarMode === 'students') {
+          const params = new URLSearchParams({ limit: '500', date: selectedDay });
+          if (selectedClassId) params.set('classId', selectedClassId);
+          const res = await fetch(`/api/attendance?${params.toString()}`, { signal: controller.signal, cache: 'no-store' });
+          if (!res.ok) {
+            const data = await res.json().catch(() => ({}));
+            throw new Error(data?.error || 'Unable to load student day details');
+          }
+          const data = (await res.json()) as StudentDetailRow[];
+          if (cancelled) return;
+          setSelectedDayStudentRows(data);
+        } else {
+          // Teacher mode
+          const params = new URLSearchParams({ date: selectedDay });
+          const res = await fetch(`/api/staff-attendance?${params.toString()}`, { signal: controller.signal, cache: 'no-store' });
+          if (!res.ok) {
+            const data = await res.json().catch(() => ({}));
+            throw new Error(data?.error || 'Unable to load staff day details');
+          }
+          const data = (await res.json()) as StaffDetailRow[];
+          if (cancelled) return;
+          setSelectedDayStaffRows(data);
         }
-        const data = (await res.json()) as AttendanceDetailRow[];
-        if (cancelled) return;
-        setSelectedDayRows(data);
       } catch (error) {
         if (cancelled || controller.signal.aborted) return;
-        setSelectedDayRows([]);
+        setSelectedDayStudentRows([]);
+        setSelectedDayStaffRows([]);
         setSelectedDayError(error instanceof Error ? error.message : 'Unable to load day details');
       } finally {
         if (!cancelled) setSelectedDayLoading(false);
@@ -575,7 +624,7 @@ export default function AttendanceDashboardClient({
       cancelled = true;
       controller.abort();
     };
-  }, [selectedDay, selectedClassId]);
+  }, [selectedDay, selectedClassId, calendarMode]);
 
   // Calendar calculations
   const [currentYear, currentMonth] = selectedDate.split('-').map(Number);
@@ -586,14 +635,22 @@ export default function AttendanceDashboardClient({
     year: 'numeric'
   });
 
-  const selectedDayStats = selectedDay ? monthMap.get(selectedDay) ?? { present: 0, absent: 0, late: 0, excused: 0 } : null;
+  // Current active calendar map depending on calendarMode
+  const activeMonthMap = calendarMode === 'students' ? studentMonthMap : staffMonthMap;
+
+  const selectedDayStats = selectedDay ? activeMonthMap.get(selectedDay) ?? { present: 0, absent: 0, late: 0, excused: 0 } : null;
   const selectedDayTotal = selectedDayStats ? selectedDayStats.present + selectedDayStats.absent + selectedDayStats.late + selectedDayStats.excused : 0;
   const selectedDayRate = selectedDayTotal > 0 ? Math.round(((selectedDayStats?.present ?? 0) / selectedDayTotal) * 100) : 0;
 
-  const modalFilteredRows = useMemo(() => {
-    if (modalFilter === 'ALL') return selectedDayRows;
-    return selectedDayRows.filter((r) => r.status === modalFilter);
-  }, [selectedDayRows, modalFilter]);
+  const modalFilteredStudentRows = useMemo(() => {
+    if (modalFilter === 'ALL') return selectedDayStudentRows;
+    return selectedDayStudentRows.filter((r) => r.status === modalFilter);
+  }, [selectedDayStudentRows, modalFilter]);
+
+  const modalFilteredStaffRows = useMemo(() => {
+    if (modalFilter === 'ALL') return selectedDayStaffRows;
+    return selectedDayStaffRows.filter((r) => r.status === modalFilter);
+  }, [selectedDayStaffRows, modalFilter]);
 
   // Selected Class details
   const activeClassObj = useMemo(() => {
@@ -621,10 +678,7 @@ export default function AttendanceDashboardClient({
               }`}
             >
               <Users className="h-4 w-4 sm:h-5 sm:w-5 shrink-0" />
-              <div className="flex flex-col items-start leading-tight">
-                <span>Students Attendance</span>
-                <span className="text-[10px] font-normal opacity-85">طلباء کی حاضری</span>
-              </div>
+              <span>Students Attendance</span>
               <span className={`ml-1.5 rounded-full px-2 py-0.5 text-[11px] font-bold ${
                 persona === 'students' ? 'bg-white/20 text-white' : 'bg-[#E2E8F0] text-[#475569]'
               }`}>
@@ -643,10 +697,7 @@ export default function AttendanceDashboardClient({
               }`}
             >
               <GraduationCap className="h-4 w-4 sm:h-5 sm:w-5 shrink-0" />
-              <div className="flex flex-col items-start leading-tight">
-                <span>Teachers & Staff</span>
-                <span className="text-[10px] font-normal opacity-85">اساتذہ و عملہ کی حاضری</span>
-              </div>
+              <span>Teachers & Staff</span>
               <span className={`ml-1.5 rounded-full px-2 py-0.5 text-[11px] font-bold ${
                 persona === 'teachers' ? 'bg-white/20 text-white' : 'bg-[#E2E8F0] text-[#475569]'
               }`}>
@@ -709,7 +760,7 @@ export default function AttendanceDashboardClient({
                   onChange={handleClassChange}
                   className="h-10 w-full appearance-none rounded-xl border border-[#E2E8F0] bg-white pl-3.5 pr-8 text-xs font-bold text-[#0F172A] shadow-xs outline-none focus:ring-2 focus:ring-[#1F5A5C]/20 transition-all cursor-pointer"
                 >
-                  <option value="">All Student Classes ({classes.length})</option>
+                  <option value="">All Registered Classes ({classes.length})</option>
                   {classes.map((c) => (
                     <option key={c.id} value={c.id}>
                       {c.name} - {c.section}
@@ -723,7 +774,7 @@ export default function AttendanceDashboardClient({
             ) : (
               <div className="inline-flex items-center gap-1.5 rounded-xl border border-[#CCFBF1] bg-[#F0FDFA] px-3 py-2 text-xs font-bold text-[#0F766E]">
                 <Briefcase className="h-3.5 w-3.5" />
-                <span>All Faculty Members (مکمل اساتذہ)</span>
+                <span>All Faculty Members ({teachers.length})</span>
               </div>
             )}
           </div>
@@ -767,7 +818,10 @@ export default function AttendanceDashboardClient({
             <div className="flex items-center gap-2">
               <button
                 type="button"
-                onClick={() => setStudentView('calendar')}
+                onClick={() => {
+                  setStudentView('calendar');
+                  setCalendarMode('students');
+                }}
                 className={`flex items-center gap-2 rounded-xl px-3.5 py-2 text-xs font-bold transition-all ${
                   studentView === 'calendar'
                     ? 'bg-[#1F5A5C] text-white shadow-xs'
@@ -775,7 +829,7 @@ export default function AttendanceDashboardClient({
                 }`}
               >
                 <CalendarDays className="h-4 w-4" />
-                <span>Monthly Calendar (ماہانہ کیلنڈر)</span>
+                <span>Monthly Calendar</span>
               </button>
 
               <button
@@ -788,7 +842,7 @@ export default function AttendanceDashboardClient({
                 }`}
               >
                 <CheckCheck className="h-4 w-4" />
-                <span>Daily Marking Register (روزانہ حاضری لگائیں)</span>
+                <span>Daily Marking Register</span>
               </button>
             </div>
 
@@ -804,15 +858,31 @@ export default function AttendanceDashboardClient({
           {/* ──────────────────────────────────────────────────────────────────── */}
           {studentView === 'calendar' && (
             <div className="space-y-4">
-              {/* Informative Guidance Banner */}
-              <div className="flex items-start gap-3 rounded-2xl border border-[#BBF7D0] bg-gradient-to-r from-[#F0FDF4] to-[#ECFDF3] p-3.5 sm:p-4 text-[#166534]">
-                <Info className="h-5 w-5 shrink-0 text-[#15803D] mt-0.5" />
-                <div className="text-xs sm:text-sm">
-                  <span className="font-bold">Student Monthly Attendance Calendar (طلباء کا ماہانہ ریکارڈ):</span>
-                  <p className="mt-0.5 text-xs text-[#15803D]/90">
-                    یہ کیلنڈر صرف اور صرف داخل شدہ طلباء کی حاضری ظاہر کر رہا ہے۔ اساتذہ کا ریکارڈ الگ سیکشن میں ہے۔ کسی بھی تاریخ پر کلک کر کے طلباء کی فہرست ملاحظہ کریں۔
-                  </p>
+              {/* Dedicated Calendar Switcher Pill & Notice */}
+              <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 rounded-2xl border border-[#BBF7D0] bg-gradient-to-r from-[#F0FDF4] to-[#ECFDF3] p-3.5 sm:p-4 text-[#166534]">
+                <div className="flex items-start gap-3">
+                  <Info className="h-5 w-5 shrink-0 text-[#15803D] mt-0.5" />
+                  <div className="text-xs sm:text-sm">
+                    <span className="font-bold">Student Monthly Attendance Calendar:</span>
+                    <p className="mt-0.5 text-xs text-[#15803D]/90">
+                      This calendar strictly displays attendance records for enrolled students only. Faculty records are completely separate. Tap any date to inspect individual student names.
+                    </p>
+                  </div>
                 </div>
+
+                {/* Quick Switch to Teacher Calendar */}
+                <button
+                  type="button"
+                  onClick={() => {
+                    handlePersonaSwitch('teachers');
+                    setTeacherView('calendar');
+                    setCalendarMode('teachers');
+                  }}
+                  className="inline-flex items-center gap-1.5 self-start sm:self-center shrink-0 rounded-xl bg-white border border-[#BBF7D0] px-3 py-1.5 text-xs font-bold text-[#15803D] shadow-xs hover:bg-[#F0FDF4] transition-all"
+                >
+                  <ArrowRightLeft className="h-3.5 w-3.5" />
+                  <span>Switch to Teacher Calendar</span>
+                </button>
               </div>
 
               {/* Student KPI Cards */}
@@ -823,7 +893,7 @@ export default function AttendanceDashboardClient({
                     <UserCheck className="h-4 w-4 text-[#15803D]" />
                   </div>
                   <p className="mt-2 text-2xl font-black text-[#0F172A] sm:text-3xl">{overview.present}</p>
-                  <p className="mt-1 text-[11px] font-medium text-[#15803D]">حاضر طلباء</p>
+                  <p className="mt-1 text-[11px] font-medium text-[#15803D]">Total attended today</p>
                 </div>
 
                 <div className="rounded-2xl border border-[#FECACA] bg-gradient-to-br from-[#FEF2F2] to-[#FFF5F5] p-4 shadow-xs">
@@ -832,7 +902,7 @@ export default function AttendanceDashboardClient({
                     <UserX className="h-4 w-4 text-[#B91C1C]" />
                   </div>
                   <p className="mt-2 text-2xl font-black text-[#0F172A] sm:text-3xl">{overview.absent}</p>
-                  <p className="mt-1 text-[11px] font-medium text-[#B91C1C]">غیر حاضر طلباء</p>
+                  <p className="mt-1 text-[11px] font-medium text-[#B91C1C]">Unexcused absences</p>
                 </div>
 
                 <div className="rounded-2xl border border-[#FDE68A] bg-gradient-to-br from-[#FFFBEB] to-[#FFFDF5] p-4 shadow-xs">
@@ -841,7 +911,7 @@ export default function AttendanceDashboardClient({
                     <Clock className="h-4 w-4 text-[#B45309]" />
                   </div>
                   <p className="mt-2 text-2xl font-black text-[#0F172A] sm:text-3xl">{overview.late}</p>
-                  <p className="mt-1 text-[11px] font-medium text-[#B45309]">دیر سے آنے والے</p>
+                  <p className="mt-1 text-[11px] font-medium text-[#B45309]">Tardy check-ins</p>
                 </div>
 
                 <div className="rounded-2xl border border-[#CCFBF1] bg-gradient-to-br from-[#F0FDFA] to-[#F5FEFD] p-4 shadow-xs">
@@ -850,13 +920,13 @@ export default function AttendanceDashboardClient({
                     <TrendingUp className="h-4 w-4 text-[#0F766E]" />
                   </div>
                   <p className="mt-2 text-2xl font-black text-[#0F172A] sm:text-3xl">{overview.percentage}%</p>
-                  <p className="mt-1 text-[11px] font-medium text-[#0F766E]">طلباء کی حاضری کی شرح</p>
+                  <p className="mt-1 text-[11px] font-medium text-[#0F766E]">Overall compliance</p>
                 </div>
               </div>
 
               {/* Monthly Calendar Heatmap */}
               <div className="rounded-2xl border border-[#E2E8F0] bg-white p-4 shadow-sm sm:p-6">
-                <div className="mb-4 flex flex-wrap items-center justify-between gap-2 border-b border-[#F1F5F9] pb-4">
+                <div className="mb-4 flex flex-wrap items-center justify-between gap-3 border-b border-[#F1F5F9] pb-4">
                   <div className="flex items-center gap-2.5">
                     <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-[#1F5A5C]/10 text-[#1F5A5C]">
                       <CalendarDays className="h-5 w-5" />
@@ -866,10 +936,11 @@ export default function AttendanceDashboardClient({
                         {monthName} Student Attendance Calendar
                       </h3>
                       <p className="text-xs text-[#64748B]">
-                        {activeClassObj ? `Class: ${activeClassObj.name} - ${activeClassObj.section}` : 'Scope: All Registered Classes'}
+                        {activeClassObj ? `Scope: ${activeClassObj.name} - ${activeClassObj.section}` : 'Scope: All Registered Classes'}
                       </p>
                     </div>
                   </div>
+
                   <div className="flex items-center gap-3 text-xs font-medium text-[#64748B]">
                     <span className="flex items-center gap-1.5">
                       <span className="h-2.5 w-2.5 rounded-full bg-[#15803D]" />
@@ -902,7 +973,7 @@ export default function AttendanceDashboardClient({
                   {/* Month Days */}
                   {Array.from({ length: daysInMonth }, (_, index) => index + 1).map((day) => {
                     const dateStr = `${currentYear}-${String(currentMonth).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
-                    const stats = monthMap.get(dateStr) ?? { present: 0, absent: 0, late: 0, excused: 0 };
+                    const stats = studentMonthMap.get(dateStr) ?? { present: 0, absent: 0, late: 0, excused: 0 };
                     const totalMarked = stats.present + stats.absent + stats.late + stats.excused;
                     const isSelected = selectedDay === dateStr || (!selectedDay && selectedDate === dateStr);
 
@@ -927,7 +998,10 @@ export default function AttendanceDashboardClient({
                       <button
                         key={dateStr}
                         type="button"
-                        onClick={() => setSelectedDay(dateStr)}
+                        onClick={() => {
+                          setCalendarMode('students');
+                          setSelectedDay(dateStr);
+                        }}
                         className={`min-h-[58px] sm:min-h-[76px] rounded-xl p-1.5 sm:p-2 text-left transition-all relative flex flex-col justify-between ${cellTone} ${
                           isSelected ? 'ring-2 ring-[#1F5A5C] ring-offset-2' : ''
                         }`}
@@ -972,7 +1046,7 @@ export default function AttendanceDashboardClient({
                       </span>
                     </div>
                     <p className="mt-0.5 text-xs text-[#64748B]">
-                      {liveStudentStats.markedTotal} of {liveStudentStats.total} students marked for {formatDateDisplay(selectedDate)}
+                      {liveStudentStats.markedTotal} of {liveStudentStats.total} students recorded for {formatDateDisplay(selectedDate)}
                     </p>
                   </div>
 
@@ -985,7 +1059,7 @@ export default function AttendanceDashboardClient({
                       className="flex items-center gap-1.5 rounded-xl bg-gradient-to-br from-[#1F5A5C] to-[#2D7578] px-3.5 py-2 text-xs font-bold text-white shadow-xs hover:scale-[1.02] active:scale-[0.98] transition-all disabled:opacity-50"
                     >
                       <CheckCheck className="h-3.5 w-3.5" />
-                      <span>Mark All Present (سب کو حاضر لگائیں)</span>
+                      <span>Mark All Present</span>
                     </button>
 
                     <button
@@ -1212,7 +1286,7 @@ export default function AttendanceDashboardClient({
                   <div className="flex items-center gap-2">
                     <span className="flex h-2.5 w-2.5 rounded-full bg-[#10B981] animate-pulse" />
                     <p className="text-xs sm:text-sm font-semibold">
-                      {studentChangedCount} طلباء کی نئی تبدیلیاں محفوظ کریں
+                      {studentChangedCount} unsaved student record{studentChangedCount > 1 ? 's' : ''}
                     </p>
                   </div>
 
@@ -1261,6 +1335,22 @@ export default function AttendanceDashboardClient({
             <div className="flex items-center gap-2">
               <button
                 type="button"
+                onClick={() => {
+                  setTeacherView('calendar');
+                  setCalendarMode('teachers');
+                }}
+                className={`flex items-center gap-2 rounded-xl px-3.5 py-2 text-xs font-bold transition-all ${
+                  teacherView === 'calendar'
+                    ? 'bg-[#1F5A5C] text-white shadow-xs'
+                    : 'bg-[#F1F5F9] text-[#64748B] hover:text-[#0F172A] hover:bg-[#E2E8F0]'
+                }`}
+              >
+                <CalendarDays className="h-4 w-4" />
+                <span>Monthly Calendar</span>
+              </button>
+
+              <button
+                type="button"
                 onClick={() => setTeacherView('marking')}
                 className={`flex items-center gap-2 rounded-xl px-3.5 py-2 text-xs font-bold transition-all ${
                   teacherView === 'marking'
@@ -1269,7 +1359,7 @@ export default function AttendanceDashboardClient({
                 }`}
               >
                 <CheckCheck className="h-4 w-4" />
-                <span>Daily Staff Marking (اساتذہ کی حاضری لگائیں)</span>
+                <span>Daily Staff Marking</span>
               </button>
 
               <button
@@ -1282,7 +1372,7 @@ export default function AttendanceDashboardClient({
                 }`}
               >
                 <Award className="h-4 w-4" />
-                <span>Faculty Monthly Register (ماہانہ رپورٹ)</span>
+                <span>Faculty Monthly Register</span>
               </button>
             </div>
 
@@ -1303,7 +1393,7 @@ export default function AttendanceDashboardClient({
               <p className="mt-2 text-2xl font-black text-[#0F172A] sm:text-3xl">
                 {staffOverview?.present ?? liveTeacherStats.present}
               </p>
-              <p className="mt-1 text-[11px] font-medium text-[#15803D]">حاضر اساتذہ</p>
+              <p className="mt-1 text-[11px] font-medium text-[#15803D]">Faculty on duty today</p>
             </div>
 
             <div className="rounded-2xl border border-[#FECACA] bg-gradient-to-br from-[#FEF2F2] to-[#FFF5F5] p-4 shadow-xs">
@@ -1314,7 +1404,7 @@ export default function AttendanceDashboardClient({
               <p className="mt-2 text-2xl font-black text-[#0F172A] sm:text-3xl">
                 {staffOverview?.absent ?? liveTeacherStats.absent}
               </p>
-              <p className="mt-1 text-[11px] font-medium text-[#B91C1C]">غیر حاضر اساتذہ</p>
+              <p className="mt-1 text-[11px] font-medium text-[#B91C1C]">Unrecorded / absent</p>
             </div>
 
             <div className="rounded-2xl border border-[#FDE68A] bg-gradient-to-br from-[#FFFBEB] to-[#FFFDF5] p-4 shadow-xs">
@@ -1325,7 +1415,7 @@ export default function AttendanceDashboardClient({
               <p className="mt-2 text-2xl font-black text-[#0F172A] sm:text-3xl">
                 {(staffOverview?.leave ?? 0) + (staffOverview?.late ?? liveTeacherStats.late)}
               </p>
-              <p className="mt-1 text-[11px] font-medium text-[#B45309]">رخصت یا تاخیر</p>
+              <p className="mt-1 text-[11px] font-medium text-[#B45309]">Approved leave or late</p>
             </div>
 
             <div className="rounded-2xl border border-[#CCFBF1] bg-gradient-to-br from-[#F0FDFA] to-[#F5FEFD] p-4 shadow-xs">
@@ -1336,9 +1426,147 @@ export default function AttendanceDashboardClient({
               <p className="mt-2 text-2xl font-black text-[#0F172A] sm:text-3xl">
                 {staffOverview?.percentage ?? liveTeacherStats.rate}%
               </p>
-              <p className="mt-1 text-[11px] font-medium text-[#0F766E]">اساتذہ کی حاضری شرح</p>
+              <p className="mt-1 text-[11px] font-medium text-[#0F766E]">Staff attendance rate</p>
             </div>
           </div>
+
+          {/* ──────────────────────────────────────────────────────────────────── */}
+          {/* ── TEACHER SUB-VIEW: MONTHLY CALENDAR ────────────────────────────── */}
+          {/* ──────────────────────────────────────────────────────────────────── */}
+          {teacherView === 'calendar' && (
+            <div className="space-y-4">
+              {/* Guidance Notice & Switcher */}
+              <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 rounded-2xl border border-[#CCFBF1] bg-gradient-to-r from-[#F0FDFA] to-[#F5FEFD] p-3.5 sm:p-4 text-[#0F766E]">
+                <div className="flex items-start gap-3">
+                  <Info className="h-5 w-5 shrink-0 text-[#0F766E] mt-0.5" />
+                  <div className="text-xs sm:text-sm">
+                    <span className="font-bold">Faculty Monthly Attendance Calendar:</span>
+                    <p className="mt-0.5 text-xs text-[#0F766E]/90">
+                      This calendar displays daily attendance records strictly for teachers and staff members. Tap any date to view individual faculty member statuses.
+                    </p>
+                  </div>
+                </div>
+
+                {/* Quick Switch to Student Calendar */}
+                <button
+                  type="button"
+                  onClick={() => {
+                    handlePersonaSwitch('students');
+                    setStudentView('calendar');
+                    setCalendarMode('students');
+                  }}
+                  className="inline-flex items-center gap-1.5 self-start sm:self-center shrink-0 rounded-xl bg-white border border-[#CCFBF1] px-3 py-1.5 text-xs font-bold text-[#0F766E] shadow-xs hover:bg-[#F0FDFA] transition-all"
+                >
+                  <ArrowRightLeft className="h-3.5 w-3.5" />
+                  <span>Switch to Student Calendar</span>
+                </button>
+              </div>
+
+              {/* Monthly Calendar Heatmap for Teachers */}
+              <div className="rounded-2xl border border-[#E2E8F0] bg-white p-4 shadow-sm sm:p-6">
+                <div className="mb-4 flex flex-wrap items-center justify-between gap-3 border-b border-[#F1F5F9] pb-4">
+                  <div className="flex items-center gap-2.5">
+                    <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-[#0F766E]/10 text-[#0F766E]">
+                      <CalendarDays className="h-5 w-5" />
+                    </div>
+                    <div>
+                      <h3 className="text-base font-bold text-[#0F172A] sm:text-lg">
+                        {monthName} Faculty Attendance Calendar
+                      </h3>
+                      <p className="text-xs text-[#64748B]">
+                        Scope: All Teaching and Administrative Staff ({teachers.length} Members)
+                      </p>
+                    </div>
+                  </div>
+
+                  <div className="flex items-center gap-3 text-xs font-medium text-[#64748B]">
+                    <span className="flex items-center gap-1.5">
+                      <span className="h-2.5 w-2.5 rounded-full bg-[#15803D]" />
+                      <span>90%+ Present</span>
+                    </span>
+                    <span className="flex items-center gap-1.5">
+                      <span className="h-2.5 w-2.5 rounded-full bg-[#D97706]" />
+                      <span>70-89%</span>
+                    </span>
+                    <span className="flex items-center gap-1.5">
+                      <span className="h-2.5 w-2.5 rounded-full bg-[#DC2626]" />
+                      <span>&lt;70%</span>
+                    </span>
+                  </div>
+                </div>
+
+                {/* Calendar Grid */}
+                <div className="grid grid-cols-7 gap-1.5 sm:gap-2">
+                  {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map((d) => (
+                    <div key={d} className="text-center text-[11px] font-bold uppercase tracking-wider text-[#94A3B8] pb-1">
+                      {d}
+                    </div>
+                  ))}
+
+                  {/* Leading Empty Cells */}
+                  {Array.from({ length: firstDayWeekday }).map((_, i) => (
+                    <div key={`empty-${i}`} className="min-h-[58px] sm:min-h-[76px] rounded-xl bg-transparent" />
+                  ))}
+
+                  {/* Month Days */}
+                  {Array.from({ length: daysInMonth }, (_, index) => index + 1).map((day) => {
+                    const dateStr = `${currentYear}-${String(currentMonth).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+                    const stats = staffMonthMap.get(dateStr) ?? { present: 0, absent: 0, late: 0, excused: 0 };
+                    const totalMarked = stats.present + stats.absent + stats.late + stats.excused;
+                    const isSelected = selectedDay === dateStr || (!selectedDay && selectedDate === dateStr);
+
+                    let cellTone = 'bg-[#F8FAFC] text-[#64748B] hover:bg-[#F1F5F9] border border-[#F1F5F9]';
+                    let indicatorDot = null;
+
+                    if (totalMarked > 0) {
+                      const rate = Math.round((stats.present / totalMarked) * 100);
+                      if (rate >= 90) {
+                        cellTone = 'bg-[#ECFDF3] text-[#15803D] hover:bg-[#DCFCE7] border border-[#BBF7D0]';
+                        indicatorDot = 'bg-[#15803D]';
+                      } else if (rate >= 70) {
+                        cellTone = 'bg-[#FFFBEB] text-[#B45309] hover:bg-[#FEF3C7] border border-[#FDE68A]';
+                        indicatorDot = 'bg-[#D97706]';
+                      } else {
+                        cellTone = 'bg-[#FEF2F2] text-[#B91C1C] hover:bg-[#FEE2E2] border border-[#FECACA]';
+                        indicatorDot = 'bg-[#DC2626]';
+                      }
+                    }
+
+                    return (
+                      <button
+                        key={dateStr}
+                        type="button"
+                        onClick={() => {
+                          setCalendarMode('teachers');
+                          setSelectedDay(dateStr);
+                        }}
+                        className={`min-h-[58px] sm:min-h-[76px] rounded-xl p-1.5 sm:p-2 text-left transition-all relative flex flex-col justify-between ${cellTone} ${
+                          isSelected ? 'ring-2 ring-[#0F766E] ring-offset-2' : ''
+                        }`}
+                      >
+                        <div className="flex items-center justify-between">
+                          <span className="text-xs sm:text-sm font-bold">{day}</span>
+                          {indicatorDot && (
+                            <span className={`h-1.5 w-1.5 sm:h-2 sm:w-2 rounded-full ${indicatorDot}`} />
+                          )}
+                        </div>
+
+                        {totalMarked > 0 ? (
+                          <div className="mt-1 text-[10px] sm:text-[11px] font-bold leading-tight truncate">
+                            <span className="text-[#15803D]">{stats.present}P</span>
+                            {stats.absent > 0 && <span className="ml-1 text-[#B91C1C]">{stats.absent}A</span>}
+                            {stats.late > 0 && <span className="ml-1 text-[#B45309]">{stats.late}L</span>}
+                          </div>
+                        ) : (
+                          <span className="text-[10px] text-[#94A3B8]">—</span>
+                        )}
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+            </div>
+          )}
 
           {/* ──────────────────────────────────────────────────────────────────── */}
           {/* ── TEACHER SUB-VIEW: DAILY MARKING ───────────────────────────────── */}
@@ -1545,7 +1773,7 @@ export default function AttendanceDashboardClient({
                   <div className="flex items-center gap-2">
                     <span className="flex h-2.5 w-2.5 rounded-full bg-[#10B981] animate-pulse" />
                     <p className="text-xs sm:text-sm font-semibold">
-                      {teacherChangedCount} اساتذہ کی نئی تبدیلیاں محفوظ کریں
+                      {teacherChangedCount} unsaved staff record{teacherChangedCount > 1 ? 's' : ''}
                     </p>
                   </div>
 
@@ -1590,7 +1818,7 @@ export default function AttendanceDashboardClient({
               <div className="flex items-center justify-between border-b border-[#F1F5F9] pb-4">
                 <div>
                   <h3 className="text-base font-bold text-[#0F172A] sm:text-lg">
-                    Faculty Monthly Attendance Register (اساتذہ کا ماہانہ ریکارڈ)
+                    Faculty Monthly Attendance Register
                   </h3>
                   <p className="text-xs text-[#64748B]">
                     Monthly attendance breakdown for each staff member for {monthName}
@@ -1663,11 +1891,21 @@ export default function AttendanceDashboardClient({
         </div>
       )}
 
-      {/* ── Day Details Inspector Modal (Student Attendance) ── */}
+      {/* ── Day Details Inspector Modal ── */}
       <Modal
         open={Boolean(selectedDay)}
-        title={selectedDay ? `Student Attendance on ${formatDateDisplay(selectedDay)}` : 'Student Attendance Details'}
-        subtitle={selectedClassId ? `Filtered by class: ${activeClassObj?.name} - ${activeClassObj?.section}` : 'Showing all enrolled classes'}
+        title={
+          selectedDay
+            ? `${calendarMode === 'students' ? 'Student' : 'Faculty'} Attendance on ${formatDateDisplay(selectedDay)}`
+            : 'Attendance Details'
+        }
+        subtitle={
+          calendarMode === 'students'
+            ? selectedClassId
+              ? `Filtered by class: ${activeClassObj?.name} - ${activeClassObj?.section}`
+              : 'Showing all enrolled classes'
+            : 'Showing all faculty & staff members'
+        }
         onClose={() => setSelectedDay(null)}
       >
         {selectedDay && (
@@ -1710,44 +1948,79 @@ export default function AttendanceDashboardClient({
               ))}
             </div>
 
-            {/* Modal Student Rows */}
+            {/* Modal Rows: Student or Staff */}
             {selectedDayLoading ? (
               <div className="flex items-center justify-center py-10 text-[#64748B]">
                 <Loader2 className="h-5 w-5 animate-spin mr-2 text-[#1F5A5C]" />
-                <span className="text-sm font-semibold">طلباء کا ریکارڈ لوڈ ہو رہا ہے…</span>
+                <span className="text-sm font-semibold">Loading attendance records…</span>
               </div>
             ) : selectedDayError ? (
               <div className="rounded-xl bg-[#FEF2F2] p-4 text-xs font-semibold text-[#B91C1C]">
                 {selectedDayError}
               </div>
-            ) : modalFilteredRows.length === 0 ? (
-              <p className="py-8 text-center text-xs font-medium text-[#64748B]">
-                اس فلٹر یا تاریخ کے لیے کوئی طالب علم موجود نہیں۔
-              </p>
-            ) : (
-              <div className="space-y-2 max-h-[380px] overflow-y-auto pr-1">
-                {modalFilteredRows.map((row) => (
-                  <div
-                    key={row.id}
-                    className="flex items-center justify-between gap-3 rounded-xl border border-[#F1F5F9] bg-[#F8FAFC] px-3.5 py-2.5"
-                  >
-                    <div className="min-w-0">
-                      <p className="truncate text-xs sm:text-sm font-bold text-[#0F172A]" dir="auto">
-                        {row.student.user.fullName}
-                      </p>
-                      <p className="truncate text-[11px] text-[#64748B]">
-                        #{row.student.admissionNo} · {row.class.name} - {row.class.section}
-                      </p>
-                      {row.remarks && (
-                        <p className="mt-0.5 text-[10px] text-[#B45309]">Note: {row.remarks}</p>
-                      )}
+            ) : calendarMode === 'students' ? (
+              modalFilteredStudentRows.length === 0 ? (
+                <p className="py-8 text-center text-xs font-medium text-[#64748B]">
+                  No student records found matching this filter for this date.
+                </p>
+              ) : (
+                <div className="space-y-2 max-h-[380px] overflow-y-auto pr-1">
+                  {modalFilteredStudentRows.map((row) => (
+                    <div
+                      key={row.id}
+                      className="flex items-center justify-between gap-3 rounded-xl border border-[#F1F5F9] bg-[#F8FAFC] px-3.5 py-2.5"
+                    >
+                      <div className="min-w-0">
+                        <p className="truncate text-xs sm:text-sm font-bold text-[#0F172A]" dir="auto">
+                          {row.student.user.fullName}
+                        </p>
+                        <p className="truncate text-[11px] text-[#64748B]">
+                          #{row.student.admissionNo} · {row.class.name} - {row.class.section}
+                        </p>
+                        {row.remarks && (
+                          <p className="mt-0.5 text-[10px] text-[#B45309]">Note: {row.remarks}</p>
+                        )}
+                      </div>
+                      <span className={`shrink-0 rounded-full px-2.5 py-0.5 text-[10px] font-bold ${statusPillTone(row.status)}`}>
+                        {row.status}
+                      </span>
                     </div>
-                    <span className={`shrink-0 rounded-full px-2.5 py-0.5 text-[10px] font-bold ${statusPillTone(row.status)}`}>
-                      {row.status}
-                    </span>
-                  </div>
-                ))}
-              </div>
+                  ))}
+                </div>
+              )
+            ) : (
+              // Teacher Modal Rows
+              modalFilteredStaffRows.length === 0 ? (
+                <p className="py-8 text-center text-xs font-medium text-[#64748B]">
+                  No staff records found matching this filter for this date.
+                </p>
+              ) : (
+                <div className="space-y-2 max-h-[380px] overflow-y-auto pr-1">
+                  {modalFilteredStaffRows.map((row) => (
+                    <div
+                      key={row.id}
+                      className="flex items-center justify-between gap-3 rounded-xl border border-[#F1F5F9] bg-[#F8FAFC] px-3.5 py-2.5"
+                    >
+                      <div className="flex items-center gap-2.5 min-w-0">
+                        <div className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-lg text-xs font-black shadow-xs ${avatarTone(row.status)}`}>
+                          {nameInitials(row.fullName)}
+                        </div>
+                        <div className="min-w-0">
+                          <p className="truncate text-xs sm:text-sm font-bold text-[#0F172A]" dir="auto">
+                            {row.fullName}
+                          </p>
+                          {row.note && (
+                            <p className="mt-0.5 text-[10px] text-[#B45309]">Note: {row.note}</p>
+                          )}
+                        </div>
+                      </div>
+                      <span className={`shrink-0 rounded-full px-2.5 py-0.5 text-[10px] font-bold ${statusPillTone(row.status)}`}>
+                        {row.status}
+                      </span>
+                    </div>
+                  ))}
+                </div>
+              )
             )}
           </div>
         )}

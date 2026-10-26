@@ -27,6 +27,12 @@ type StaffMonthlyRow = {
   count: number;
 };
 
+type StaffMonthDayRow = {
+  date: Date | string;
+  status: AttendanceStatus;
+  count: number;
+};
+
 type AttendancePayload = {
   classes: Array<{ id: string; name: string; section: string }>;
   dailyRows: Array<{
@@ -44,6 +50,7 @@ type AttendancePayload = {
   teachers: Array<{ id: string; userId: string; user: { fullName: string } }>;
   staffDailyRows: StaffDailyRow[];
   staffMonthlyRows: StaffMonthlyRow[];
+  staffMonthStatusByDay: StaffMonthDayRow[];
 };
 
 function startOfMonth(date: Date) {
@@ -211,7 +218,20 @@ async function getAttendanceData(
             GROUP BY sa."teacherId", sa."status"
             ORDER BY sa."teacherId" ASC, sa."status" ASC;
           `
-          : Promise.resolve([] as StaffMonthlyRow[])
+          : Promise.resolve([] as StaffMonthlyRow[]),
+        staffAttendanceEnabled
+          ? tx.$queryRaw<StaffMonthDayRow[]>`
+            SELECT
+              sa."date",
+              sa."status",
+              COUNT(*)::int as "count"
+            FROM "StaffAttendance" sa
+            WHERE sa."date" >= ${monthStart}::date
+              AND sa."date" <= ${dayDate}::date
+            GROUP BY sa."date", sa."status"
+            ORDER BY sa."date" ASC, sa."status" ASC;
+          `
+          : Promise.resolve([] as StaffMonthDayRow[])
       ]);
 
       return {
@@ -222,7 +242,8 @@ async function getAttendanceData(
         classStudents,
         teachers,
         staffDailyRows,
-        staffMonthlyRows
+        staffMonthlyRows,
+        staffMonthStatusByDay
       };
     });
 }
@@ -270,8 +291,8 @@ async function loadAttendanceViaRest(
       select: 'teacherId,status,note',
       date: `eq.${selectedDate}`
     }).catch(() => []),
-    supabaseRest<{ teacherId: string; status: AttendanceStatus }>('StaffAttendance', {
-      select: 'teacherId,status',
+    supabaseRest<{ teacherId: string; status: AttendanceStatus; date?: string }>('StaffAttendance', {
+      select: 'teacherId,status,date',
       date: [`gte.${monthStartIso}`, `lte.${dayDateIso}`]
     }).catch(() => [])
   ]);
@@ -368,6 +389,28 @@ async function loadAttendanceViaRest(
       teacherId,
       status,
       count: counts[status] ?? 0
+    }))
+  );
+
+  const staffMonthCountMap = new Map<string, Record<AttendanceStatus, number>>();
+  for (const row of staffMonthlyRowsRaw) {
+    if (!row.date) continue;
+    const key = toDateKey(row.date, selectedDate);
+    const current = staffMonthCountMap.get(key) ?? {
+      [AttendanceStatus.PRESENT]: 0,
+      [AttendanceStatus.ABSENT]: 0,
+      [AttendanceStatus.LATE]: 0,
+      [AttendanceStatus.EXCUSED]: 0
+    };
+    current[row.status] = (current[row.status] ?? 0) + 1;
+    staffMonthCountMap.set(key, current);
+  }
+
+  const staffMonthStatusByDay: StaffMonthDayRow[] = Array.from(staffMonthCountMap.entries()).flatMap(([date, counts]) =>
+    (Object.keys(counts) as AttendanceStatus[]).map((status) => ({
+      date,
+      status,
+      count: counts[status]
     }))
   );
 
@@ -498,6 +541,12 @@ async function AttendanceContent({ searchParams }: { searchParams?: Promise<Sear
   const staffTotalMarked = staffPresentCount + staffAbsentCount + staffLateCount + staffLeaveCount;
   const staffPercentage = staffTotalMarked ? Math.round((staffPresentCount / staffTotalMarked) * 100) : 0;
 
+  const serializedStaffMonthStatusByDay = (staffMonthStatusByDay || []).map((row) => ({
+    date: toDateKey(row.date as Date | string, selectedDate),
+    status: row.status,
+    count: Number(row.count)
+  }));
+
   return (
     <AttendanceDashboardClient
       initialTab={initialTab}
@@ -542,6 +591,7 @@ async function AttendanceContent({ searchParams }: { searchParams?: Promise<Sear
         percentage: staffPercentage
       }}
       monthStatusByDay={serializedMonthStatusByDay}
+      staffMonthStatusByDay={serializedStaffMonthStatusByDay}
     />
   );
 }

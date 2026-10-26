@@ -12,6 +12,7 @@ type StaffAttendanceRow = {
   date: Date;
   status: string;
   note: string | null;
+  fullName?: string | null;
 };
 
 async function ensureTeacherStaffAttendanceAccess(userId: string) {
@@ -79,10 +80,12 @@ export async function GET(request: Request) {
 
     const rows = await prisma.$queryRawUnsafe<StaffAttendanceRow[]>(
       `
-        SELECT sa."id", sa."teacherId", sa."date", sa."status", sa."note"
+        SELECT sa."id", sa."teacherId", sa."date", sa."status", sa."note", u."fullName"
         FROM "StaffAttendance" sa
+        LEFT JOIN "Teacher" t ON t."id" = sa."teacherId"
+        LEFT JOIN "User" u ON u."id" = t."userId"
         ${whereSql}
-        ORDER BY sa."date" DESC
+        ORDER BY sa."date" DESC, u."fullName" ASC
         LIMIT 500
       `,
       ...values
@@ -94,7 +97,8 @@ export async function GET(request: Request) {
         teacherId: row.teacherId,
         date: row.date.toISOString().slice(0, 10),
         status: row.status,
-        note: row.note
+        note: row.note,
+        fullName: row.fullName ?? 'Staff Member'
       }))
     );
   } catch (error) {
