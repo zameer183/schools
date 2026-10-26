@@ -405,6 +405,15 @@ export async function POST(req: NextRequest) {
           }
         }
 
+        if (user.studentProfile?.id) {
+          try {
+            const { runFeeAutomation } = await import('@/lib/fee-automation');
+            await runFeeAutomation(new Date(), user.studentProfile.id);
+          } catch (feeErr) {
+            console.error('Auto-fee sync error on enrollment:', feeErr);
+          }
+        }
+
         return NextResponse.json({
           id: user.id,
           admissionNo,
