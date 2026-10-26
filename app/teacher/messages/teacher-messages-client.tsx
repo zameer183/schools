@@ -481,6 +481,11 @@ export function TeacherMessagesClient({ messages, recipients }: TeacherMessagesC
     sent: visibleConversations.filter((item) => item.category === 'sent' || item.category === 'both').length,
   }), [visibleConversations]);
 
+  const totalUnreadCount = useMemo(
+    () => visibleConversations.reduce((sum, item) => sum + item.unreadCount, 0),
+    [visibleConversations]
+  );
+
   if (!mounted) {
     return (
       <div className="flex h-[60vh] items-center justify-center">
@@ -753,52 +758,74 @@ export function TeacherMessagesClient({ messages, recipients }: TeacherMessagesC
   ];
 
   const leftPanel = (
-    <div className="rounded-[24px] border border-white/80 bg-white p-4 shadow-[0_16px_36px_rgba(15,23,42,0.08)]">
+    <div className="rounded-2xl border border-slate-200/80 bg-white p-4 shadow-sm sm:rounded-[24px] lg:border-white lg:shadow-[0_16px_36px_rgba(15,23,42,0.08)]">
       <div className="mb-3 flex items-center justify-between">
-        <h3 className="font-headline text-sm font-bold text-[#0F172A]">Categories</h3>
-        <button
-          onClick={() => setShowCompose(true)}
-          className="inline-flex items-center gap-1 rounded-xl bg-[#084750] px-3 py-2 text-xs font-black text-white shadow-[0_10px_22px_rgba(8,71,80,0.22)] transition-all active:scale-[0.98]"
-        >
-          <MessageSquarePlus className="h-3.5 w-3.5" />
-          New
-        </button>
+        <h3 className="text-sm font-bold text-[#0F172A]">Categories</h3>
+        <div className="flex items-center gap-1.5">
+          <button
+            type="button"
+            onClick={() => setShowCompose(true)}
+            className="inline-flex items-center gap-1 rounded-xl bg-[#007A70] px-3 py-1.5 text-xs font-bold text-white shadow-xs hover:bg-[#005a53] transition active:scale-95"
+          >
+            <MessageSquarePlus className="h-3.5 w-3.5" />
+            New
+          </button>
+          <button
+            type="button"
+            onClick={() => setShowMobileFilters(false)}
+            className="rounded-lg p-1 text-slate-400 hover:text-slate-600 lg:hidden"
+            title="Close filters"
+            aria-label="Close filters"
+          >
+            <X className="h-4 w-4" />
+          </button>
+        </div>
       </div>
       <div className="space-y-1.5">
         {categories.map((item) => (
           <button
             key={item.key}
-            onClick={() => setCategory(item.key)}
-            className={`flex w-full items-center justify-between rounded-xl border-l-4 px-3 py-2 text-left text-sm transition ${
+            onClick={() => {
+              setCategory(item.key);
+              setShowMobileFilters(false);
+            }}
+            className={`flex w-full items-center justify-between rounded-xl px-3.5 py-2.5 text-left text-sm transition ${
               category === item.key
-                ? 'border-l-[#007A70] bg-[#7BE4D4] text-[#005C55]'
-                : 'border-l-transparent bg-[#F3F6F8] text-[#4B5563] hover:bg-[#EEF2F7]'
+                ? 'bg-[#007A70] font-bold text-white shadow-xs'
+                : 'bg-slate-50 font-medium text-slate-600 hover:bg-slate-100'
             }`}
           >
-            <span className="font-medium">{item.label}</span>
-            <span className="rounded-full bg-white/70 px-2 py-0.5 text-xs font-bold text-[#64748B]">{item.count}</span>
+            <span>{item.label}</span>
+            <span
+              className={`rounded-full px-2 py-0.5 text-xs font-bold ${
+                category === item.key ? 'bg-white/20 text-white' : 'bg-white text-slate-500'
+              }`}
+            >
+              {item.count}
+            </span>
           </button>
         ))}
       </div>
 
       {recipients.length > 0 ? (
-        <div className="mt-4 border-t border-[#e9f0f4] pt-4">
-          <p className="mb-3 text-[10px] font-bold uppercase tracking-widest text-[#64748B]">Your Students</p>
+        <div className="mt-5 border-t border-slate-100 pt-4">
+          <p className="mb-3 text-[10px] font-bold uppercase tracking-wider text-slate-400">Your Students</p>
           <div className="flex flex-wrap gap-2">
-            {recipients.slice(0, 8).map((recipient) => (
+            {recipients.slice(0, 10).map((recipient) => (
               <button
                 key={recipient.userId}
                 onClick={() => {
                   setSelectedRecipients(new Set([recipient.userId]));
                   setShowCompose(true);
+                  setShowMobileFilters(false);
                 }}
                 title={recipient.fullName}
-                className="group flex flex-col items-center gap-1"
+                className="group flex flex-col items-center gap-1 active:scale-95 transition"
               >
-                <div className="flex h-9 w-9 items-center justify-center rounded-full bg-[#004D47]/10 text-xs font-bold text-[#004D47] ring-2 ring-white transition-all group-hover:ring-[#D9A253]/40">
+                <div className="flex h-9 w-9 items-center justify-center rounded-full bg-gradient-to-tr from-[#00507D] to-[#007A70] text-xs font-bold text-white ring-2 ring-white shadow-xs group-hover:scale-105 transition-all">
                   {initials(recipient.fullName)}
                 </div>
-                <span className="max-w-[36px] truncate text-center text-[9px] leading-none text-[#64748B]">
+                <span className="max-w-[40px] truncate text-center text-[9px] leading-tight text-slate-600">
                   {recipient.fullName.split(' ')[0]}
                 </span>
               </button>
@@ -810,85 +837,167 @@ export function TeacherMessagesClient({ messages, recipients }: TeacherMessagesC
   );
 
   const middlePanel = (
-    <div className="rounded-[24px] border border-white bg-white p-4 shadow-[0_16px_36px_rgba(15,23,42,0.08)]">
-      <div className="relative mb-3">
-        <Search className="pointer-events-none absolute left-4 top-1/2 h-5 w-5 -translate-y-1/2 text-[#4B5563]" />
-        <input
-          value={search}
-          onChange={(event) => setSearch(event.target.value)}
-          placeholder="Search students, parents, or messages."
-          className="h-14 w-full rounded-2xl border border-[#CBD5E1] bg-white pl-12 pr-4 text-sm text-[#111827] outline-none focus:border-[#007A70] focus:ring-4 focus:ring-[#7BE4D4]/25"
-        />
-      </div>
+    <div className="overflow-hidden rounded-2xl border border-slate-200/80 bg-white shadow-sm sm:rounded-[24px] lg:border-white lg:shadow-[0_16px_36px_rgba(15,23,42,0.08)]">
+      {/* Search and Filter Area */}
+      <div className="border-b border-slate-100 p-3 sm:p-4 bg-white">
+        <div className="relative">
+          <Search className="pointer-events-none absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
+          <input
+            value={search}
+            onChange={(event) => setSearch(event.target.value)}
+            placeholder="Search students, parents, or messages..."
+            className="h-10 sm:h-11 w-full rounded-xl border border-slate-200 bg-slate-50/80 pl-10 pr-9 text-xs sm:text-sm text-slate-900 outline-none transition focus:border-[#007A70] focus:bg-white focus:ring-4 focus:ring-[#7BE4D4]/25"
+          />
+          {search ? (
+            <button
+              type="button"
+              onClick={() => setSearch('')}
+              className="absolute right-2.5 top-1/2 -translate-y-1/2 rounded-full p-1 text-slate-400 hover:text-slate-600"
+            >
+              <X className="h-3.5 w-3.5" />
+            </button>
+          ) : null}
+        </div>
 
-      <div className="mb-4 flex gap-2 overflow-x-auto pb-1">
-        {categories.map((item) => (
-          <button
-            key={item.key}
-            onClick={() => setCategory(item.key)}
-            className={`shrink-0 rounded-full px-4 py-2 text-sm font-bold transition ${
-              category === item.key
-                ? 'bg-[#7BE4D4] text-[#006A61]'
-                : 'bg-[#E5E7EB] text-[#4B5563] hover:bg-[#DDE3EA]'
-            }`}
-          >
-            {item.label}
-          </button>
-        ))}
+        {/* Filter Pills */}
+        <div className="mt-3 flex items-center gap-1.5 overflow-x-auto pb-0.5 no-scrollbar">
+          {categories.map((item) => {
+            const isActive = category === item.key;
+            return (
+              <button
+                key={item.key}
+                type="button"
+                onClick={() => setCategory(item.key)}
+                className={`inline-flex shrink-0 items-center gap-1.5 rounded-full px-3.5 py-1.5 text-xs font-bold transition active:scale-95 ${
+                  isActive
+                    ? 'bg-[#007A70] text-white shadow-xs'
+                    : 'bg-slate-100 text-slate-600 hover:bg-slate-200/80'
+                }`}
+              >
+                <span>{item.label}</span>
+                <span
+                  className={`rounded-full px-1.5 py-0.2 text-[10px] font-extrabold ${
+                    isActive ? 'bg-white/20 text-white' : 'bg-white text-slate-500'
+                  }`}
+                >
+                  {item.count}
+                </span>
+              </button>
+            );
+          })}
+        </div>
+
+        {/* Quick Student Avatars Strip on Mobile */}
+        {recipients.length > 0 && !search && (
+          <div className="mt-3 pt-2.5 border-t border-slate-100 sm:hidden">
+            <p className="text-[10px] font-bold uppercase tracking-wider text-slate-400 mb-2">Quick Message</p>
+            <div className="flex items-center gap-3 overflow-x-auto pb-1 no-scrollbar">
+              {recipients.slice(0, 10).map((recipient) => (
+                <button
+                  key={recipient.userId}
+                  type="button"
+                  onClick={() => {
+                    setSelectedRecipients(new Set([recipient.userId]));
+                    setShowCompose(true);
+                  }}
+                  className="group flex flex-col items-center gap-1 shrink-0 active:scale-95 transition"
+                  title={`Message ${recipient.fullName}`}
+                >
+                  <div className="relative flex h-10 w-10 items-center justify-center rounded-full bg-gradient-to-tr from-[#00507D] to-[#007A70] text-xs font-extrabold text-white shadow-xs">
+                    {initials(recipient.fullName)}
+                  </div>
+                  <span className="max-w-[48px] truncate text-[10px] font-medium text-slate-600">
+                    {recipient.fullName.split(' ')[0]}
+                  </span>
+                </button>
+              ))}
+            </div>
+          </div>
+        )}
       </div>
 
       {authError ? (
-        <div className="mb-3 rounded-2xl border border-[#fed7aa] bg-[#fff7ed] px-3 py-2 text-xs font-medium text-[#9a3412]">
+        <div className="m-3 rounded-xl border border-red-200 bg-red-50 px-3 py-2 text-xs font-medium text-red-700">
           {authError}
         </div>
       ) : null}
 
-      <div className="max-h-[62vh] space-y-3 overflow-auto pr-1">
-        {filteredConversations.map((conversation) => (
-          <button
-            key={conversation.personId}
-            onClick={() => {
-              setActiveId(conversation.personId);
-              setShowMobileFilters(false);
-            }}
-            className={`w-full rounded-[18px] border p-4 text-left shadow-[0_8px_20px_rgba(15,23,42,0.06)] transition active:scale-[0.99] ${
-              activeId === conversation.personId
-                ? 'border-l-4 border-l-[#007A70] border-[#D7EDEA] bg-white'
-                : 'border-white bg-white hover:bg-[#F8FAFC]'
-            }`}
-          >
-            <div className="flex items-start gap-3">
-              <div className="relative grid h-12 w-12 place-items-center rounded-full bg-[#7BE4D4] text-sm font-black text-[#006A61]">
-                {initials(conversation.personName)}
-                {conversation.unreadCount > 0 ? <span className="absolute bottom-0 right-0 h-3 w-3 rounded-full border-2 border-white bg-[#084750]" /> : null}
-              </div>
-              <div className="min-w-0 flex-1">
-                <div className="flex items-start justify-between gap-2">
-                  <p className="truncate text-sm font-black text-[#111827]">{conversation.personName}</p>
-                  <p className="shrink-0 text-[11px] text-[#64748B]" suppressHydrationWarning>
-                    {mounted ? formatTime(conversation.latestAt) : ''}
-                  </p>
+      {/* Conversation List Rows (Clean WhatsApp / iOS style) */}
+      <div className="divide-y divide-slate-100 lg:max-h-[calc(75vh-160px)] lg:overflow-y-auto">
+        {filteredConversations.map((conversation) => {
+          const isSelected = activeId === conversation.personId;
+          const personClass = recipientClassNameMap.get(conversation.personId);
+          return (
+            <button
+              key={conversation.personId}
+              type="button"
+              onClick={() => {
+                setActiveId(conversation.personId);
+                setShowMobileFilters(false);
+              }}
+              className={`w-full p-3 sm:p-3.5 text-left transition flex items-start gap-3 active:bg-slate-100 ${
+                isSelected
+                  ? 'bg-[#F0FDF4]/80 border-l-4 border-l-[#007A70]'
+                  : 'hover:bg-slate-50/80'
+              }`}
+            >
+              {/* Avatar with unread indicator */}
+              <div className="relative shrink-0">
+                <div className="grid h-11 w-11 sm:h-12 sm:w-12 place-items-center rounded-full bg-gradient-to-br from-[#E6F4F2] to-[#D0ECE7] text-sm font-black text-[#00507D] shadow-xs">
+                  {initials(conversation.personName)}
                 </div>
-                <p className="mt-1 truncate text-base text-[#4B5563]">{conversation.latestPreview}</p>
+                {conversation.unreadCount > 0 ? (
+                  <span className="absolute -top-0.5 -right-0.5 h-3.5 w-3.5 rounded-full border-2 border-white bg-[#007A70]" />
+                ) : null}
               </div>
-            </div>
-            {conversation.unreadCount > 0 ? (
-              <div className="mt-2 flex justify-end">
-                <span className="inline-flex min-h-5 min-w-5 items-center justify-center rounded-full bg-[#D9A253] px-1 text-[10px] font-bold text-[#0F172A]">
-                  {conversation.unreadCount}
-                </span>
+
+              {/* Text content */}
+              <div className="min-w-0 flex-1">
+                <div className="flex items-center justify-between gap-1.5">
+                  <p className="truncate text-sm font-bold text-slate-900">{conversation.personName}</p>
+                  <span className="shrink-0 text-[11px] font-medium text-slate-400" suppressHydrationWarning>
+                    {mounted ? formatTime(conversation.latestAt) : ''}
+                  </span>
+                </div>
+
+                {personClass ? (
+                  <p className="truncate text-[10px] font-semibold text-[#007A70] mt-0.5">
+                    {personClass}
+                  </p>
+                ) : null}
+
+                <div className="mt-1 flex items-center justify-between gap-2">
+                  <p className={`truncate text-xs leading-relaxed ${conversation.unreadCount > 0 ? 'font-semibold text-slate-800' : 'text-slate-500'}`}>
+                    {conversation.latestPreview}
+                  </p>
+                  {conversation.unreadCount > 0 ? (
+                    <span className="shrink-0 inline-flex min-h-[18px] min-w-[18px] items-center justify-center rounded-full bg-[#007A70] px-1.5 text-[10px] font-extrabold text-white">
+                      {conversation.unreadCount}
+                    </span>
+                  ) : null}
+                </div>
               </div>
-            ) : null}
-          </button>
-        ))}
+            </button>
+          );
+        })}
 
         {filteredConversations.length === 0 ? (
-          <div className="rounded-[20px] border border-dashed border-[#D7E2E7] bg-gradient-to-br from-[#FBFDFC] to-[#F4F8F7] p-6 text-center shadow-inner">
-            <div className="mx-auto mb-3 grid h-11 w-11 place-items-center rounded-2xl bg-white text-[#004D47] shadow-[0_10px_24px_rgba(15,23,42,0.07)]">
-              <MessageSquarePlus className="h-5 w-5" />
+          <div className="p-8 text-center">
+            <div className="mx-auto mb-3 grid h-12 w-12 place-items-center rounded-2xl bg-slate-100 text-[#00507D]">
+              <MessageSquarePlus className="h-6 w-6" />
             </div>
-            <p className="text-sm font-black text-[#0F172A]">No conversations in this filter.</p>
-            <p className="mt-1 text-xs leading-5 text-[#64748B]">Start a new message or switch filters to see chats.</p>
+            <h4 className="text-sm font-bold text-slate-900">No conversations found</h4>
+            <p className="mt-1 text-xs text-slate-500 max-w-xs mx-auto">
+              {search ? 'No messages match your search. Try a different keyword.' : 'Start a new message to chat with students or administrators.'}
+            </p>
+            <button
+              type="button"
+              onClick={() => setShowCompose(true)}
+              className="mt-4 inline-flex items-center gap-1.5 rounded-xl bg-[#007A70] px-4 py-2 text-xs font-bold text-white shadow-sm hover:bg-[#005a53] transition active:scale-95"
+            >
+              <MessageSquarePlus className="h-3.5 w-3.5" />
+              New Message
+            </button>
           </div>
         ) : null}
       </div>
@@ -1041,20 +1150,69 @@ export function TeacherMessagesClient({ messages, recipients }: TeacherMessagesC
   );
 
   return (
-    <div className={`-mx-4 -my-6 min-h-screen space-y-3 overflow-x-hidden bg-[#F8F6F3] px-3 py-3 sm:-mx-6 sm:px-6 sm:py-5 lg:-mx-8 lg:px-8 ${activeConversation ? 'pb-2 sm:pb-32' : 'pb-32'}`}>
-      <div className={`overflow-hidden rounded-[24px] border border-white/80 bg-white p-4 shadow-[0_16px_36px_rgba(15,23,42,0.08)] sm:p-5 ${activeConversation ? 'hidden lg:block' : 'block'}`}>
+    <div className={`-mx-4 -my-6 min-h-screen space-y-3 overflow-x-hidden bg-[#F8F6F3] px-3 py-3 sm:-mx-6 sm:px-6 sm:py-5 lg:-mx-8 lg:px-8 ${activeConversation ? 'pb-2 sm:pb-32' : 'pb-28'}`}>
+      {/* Mobile Top App Bar (Sleek, Modern WhatsApp/iOS style) */}
+      <div className={`overflow-hidden rounded-2xl border border-white/80 bg-white p-3.5 shadow-sm sm:p-4 lg:hidden ${activeConversation ? 'hidden' : 'block'}`}>
+        <div className="flex items-center justify-between">
+          <div>
+            <div className="flex items-center gap-2">
+              <h1 className="text-xl font-black tracking-tight text-[#00507D]">Messages</h1>
+              {totalUnreadCount > 0 ? (
+                <span className="inline-flex items-center rounded-full bg-[#007A70] px-2 py-0.5 text-[11px] font-extrabold text-white">
+                  {totalUnreadCount} new
+                </span>
+              ) : (
+                <span className="text-xs font-semibold text-slate-400">
+                  ({visibleConversations.length})
+                </span>
+              )}
+            </div>
+            <p className="mt-0.5 text-xs text-slate-500">Student & staff communications</p>
+          </div>
+          <div className="flex items-center gap-1.5">
+            <button
+              type="button"
+              onClick={() => setShowMobileFilters((prev) => !prev)}
+              className={`inline-flex h-9 w-9 items-center justify-center rounded-xl border transition active:scale-95 ${
+                showMobileFilters
+                  ? 'border-[#007A70] bg-[#E6F4F2] text-[#007A70]'
+                  : 'border-slate-200 bg-slate-50 text-slate-600 hover:bg-slate-100'
+              }`}
+              title="Filters & Categories"
+              aria-label="Filter chats"
+            >
+              <SlidersHorizontal className="h-4 w-4" />
+            </button>
+            <button
+              type="button"
+              onClick={() => setShowCompose(true)}
+              className="inline-flex h-9 w-9 items-center justify-center rounded-xl bg-[#007A70] text-white shadow-sm hover:bg-[#005a53] transition active:scale-95"
+              title="New Message"
+              aria-label="New message"
+            >
+              <MessageSquarePlus className="h-4 w-4" />
+            </button>
+          </div>
+        </div>
+      </div>
+
+      {/* Desktop Banner Header */}
+      <div className="hidden lg:block overflow-hidden rounded-[24px] border border-white/80 bg-white p-5 shadow-[0_16px_36px_rgba(15,23,42,0.08)]">
         <div className="flex items-start justify-between gap-3">
           <div className="min-w-0 flex-1">
-            <p className="text-[10px] font-black uppercase tracking-[0.24em] text-[#004D47]">Manarah Institute</p>
-            <h2 className="mt-2 max-w-[250px] text-[31px] font-black leading-[0.96] tracking-[-0.05em] text-[#00507D] sm:max-w-none sm:text-5xl">Communications Hub</h2>
-            <p className="mt-4 max-w-sm text-sm leading-6 text-[#64748B] sm:text-base sm:leading-7">Modern chat experience for seamless class communication and student engagement.</p>
+            <p className="text-[10px] font-black uppercase tracking-[0.24em] text-[#007A70]">Manarah Institute</p>
+            <h2 className="mt-1.5 text-3xl font-black tracking-[-0.03em] text-[#00507D]">Communications Hub</h2>
+            <p className="mt-1 max-w-xl text-sm leading-relaxed text-[#64748B]">
+              Direct communication for classroom announcements, student inquiries, and administration updates.
+            </p>
           </div>
           <button
-            onClick={() => setShowMobileFilters((prev) => !prev)}
-            className="inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl border border-[#E7ECEF] bg-[#F7FAFB] text-[#004D47] shadow-[0_10px_20px_rgba(15,23,42,0.08)] transition active:scale-[0.96] lg:hidden"
-            aria-label="Toggle message panels"
+            type="button"
+            onClick={() => setShowCompose(true)}
+            className="inline-flex items-center gap-2 rounded-xl bg-[#084750] px-4 py-2.5 text-xs font-black text-white shadow-[0_10px_22px_rgba(8,71,80,0.22)] transition-all hover:bg-[#06353C] active:scale-[0.98]"
           >
-            <SlidersHorizontal className="h-4 w-4" />
+            <MessageSquarePlus className="h-4 w-4" />
+            New Message
           </button>
         </div>
       </div>
@@ -1069,8 +1227,9 @@ export function TeacherMessagesClient({ messages, recipients }: TeacherMessagesC
         <button
           type="button"
           onClick={() => setShowCompose(true)}
-          className="fixed bottom-[104px] right-5 z-40 inline-flex h-14 w-14 items-center justify-center rounded-2xl bg-gradient-to-br from-[#2E2B78] to-[#004D47] text-white shadow-[0_16px_30px_rgba(46,43,120,0.28)] transition active:scale-[0.96] lg:hidden"
+          className="fixed bottom-24 right-5 z-40 inline-flex h-13 w-13 sm:h-14 sm:w-14 items-center justify-center rounded-full bg-gradient-to-tr from-[#00507D] to-[#007A70] text-white shadow-[0_10px_25px_rgba(0,80,125,0.35)] hover:shadow-xl transition active:scale-95 lg:hidden"
           aria-label="Compose new message"
+          title="New Message"
         >
           <MessageSquarePlus className="h-6 w-6" />
         </button>
