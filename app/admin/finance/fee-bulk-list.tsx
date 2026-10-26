@@ -451,7 +451,7 @@ export function FeeBulkList({
             </p>
           </div>
           <span className="rounded-full bg-[#f3f4f5] px-3 py-1 text-xs font-semibold text-[#374151]">
-            {fees.length} records
+            {groupedFees.length} students
           </span>
         </div>
 
@@ -465,7 +465,7 @@ export function FeeBulkList({
             </div>
             <button
               type="button"
-              onClick={() => openWhatsAppForRows(fees.filter((fee) => fee.status !== 'PAID'))}
+              onClick={() => openWhatsAppForRows(feesList.filter((fee) => fee.status !== 'PAID'))}
               className="h-9 rounded-xl bg-[#b45309] px-3.5 text-xs font-bold text-white transition hover:bg-[#92400e]"
             >
               Send Due Reminders (WhatsApp)
@@ -473,7 +473,7 @@ export function FeeBulkList({
           </div>
         ) : null}
 
-        {fees.length > 0 ? (
+        {feesList.length > 0 ? (
           <>
             <div className="mb-3 flex flex-col gap-3 rounded-xl bg-[#f8fafc] px-4 py-3 lg:flex-row lg:items-center lg:justify-between">
               <label className="flex cursor-pointer items-center gap-2.5 text-xs font-semibold text-[#3d4a4a]">
@@ -484,7 +484,7 @@ export function FeeBulkList({
                   onChange={toggleAll}
                   className="h-4 w-4 cursor-pointer accent-[#004649]"
                 />
-                {selected.size > 0 ? `Selected (${selected.size})` : `Select all (${fees.length})`}
+                {selected.size > 0 ? `Selected (${selected.size})` : `Select all (${feesList.length})`}
               </label>
 
               <div className="flex flex-wrap items-center gap-2">

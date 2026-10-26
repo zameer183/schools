@@ -98,7 +98,7 @@ async function getFinanceData(
   selectedMonth: string,
   page: number
 ) {
-  const pageSize = 40;
+  const pageSize = 100;
   const skip = (page - 1) * pageSize;
   const now = new Date();
   const rangeStart = new Date(now.getFullYear(), now.getMonth(), 1, 0, 0, 0, 0);
@@ -147,11 +147,11 @@ async function getFinanceData(
 
   const classWhere = selectedClassId !== 'all' ? { student: { classId: selectedClassId } } : {};
   const combinedWhere = { ...feeStatusWhere, ...classWhere };
-  let orderBy: Prisma.FeeOrderByWithRelationInput[] = [{ status: 'desc' }, { dueDate: 'asc' }];
+  let orderBy: Prisma.FeeOrderByWithRelationInput[] = [{ dueDate: 'desc' }, { createdAt: 'desc' }];
   if (selectedSort === 'amount') {
     orderBy = [{ amount: 'desc' }];
   } else if (selectedSort === 'name') {
-    orderBy = [{ student: { user: { fullName: 'asc' } } }];
+    orderBy = [{ student: { user: { fullName: 'asc' } } }, { dueDate: 'desc' }];
   }
 
   const feeWhere: Prisma.FeeWhereInput = {
@@ -165,7 +165,7 @@ async function getFinanceData(
     ...(periodDueDateWhere ? { paidAt: periodDueDateWhere } : {})
   };
 
-  const [classes, feeAgg, paidAgg, recentPayments, totalDuesCount, dues] = await Promise.all([
+  const [classes, feeAgg, paidAgg, recentPayments, totalDuesCount, dues, totalUnpaidStudentsCount] = await Promise.all([
     prisma.class.findMany({
       select: { id: true, name: true, section: true },
       orderBy: { name: 'asc' }
@@ -220,6 +220,17 @@ async function getFinanceData(
       orderBy,
       skip,
       take: pageSize
+    }),
+    prisma.student.count({
+      where: {
+        user: { isActive: true },
+        ...(selectedClassId !== 'all' ? { classId: selectedClassId } : {}),
+        fees: {
+          some: {
+            status: { in: [PaymentStatus.PENDING, PaymentStatus.PARTIAL, PaymentStatus.OVERDUE] }
+          }
+        }
+      }
     })
   ]);
 
@@ -244,7 +255,7 @@ async function getFinanceData(
       })
     : [];
 
-  return { classes, feeAgg, paidAgg, recentPayments, totalDuesCount, dues, allStudentUnpaidFees };
+  return { classes, feeAgg, paidAgg, recentPayments, totalDuesCount, dues, allStudentUnpaidFees, totalUnpaidStudentsCount };
 }
 
 export default async function AdminFinancePage({ searchParams }: AdminFinancePageProps) {
@@ -290,7 +301,7 @@ export default async function AdminFinancePage({ searchParams }: AdminFinancePag
     );
   }
 
-  const { classes, feeAgg, paidAgg, recentPayments, totalDuesCount, dues, allStudentUnpaidFees = [] } = data;
+  const { classes, feeAgg, paidAgg, recentPayments, totalDuesCount, dues, allStudentUnpaidFees = [], totalUnpaidStudentsCount = 0 } = data;
   const totalBilled = Number(feeAgg._sum.amount ?? 0) - Number(feeAgg._sum.discount ?? 0);
   const totalPaid = Number(paidAgg._sum.amountPaid ?? 0);
   const totalDueKpi = Math.max(totalBilled - totalPaid, 0);
@@ -380,13 +391,11 @@ export default async function AdminFinancePage({ searchParams }: AdminFinancePag
     );
   }
 
-  const dueCount = serializedDues.filter((fee) => fee.status !== PaymentStatus.PAID).length;
-
   const kpis = [
     { label: 'Total Billed',     value: formatCurrency(totalBilled) },
     { label: 'Total Collected',  value: formatCurrency(totalPaid) },
     { label: 'Due',              value: formatCurrency(totalDueKpi) },
-    { label: 'Due Records',      value: String(dueCount) },
+    { label: 'Due Students',     value: String(totalUnpaidStudentsCount) },
     { label: 'Collection Rate',  value: `${collectionRate}%` }
   ];
   const recentPaymentRows = recentPayments.map((item) => {
@@ -466,11 +475,11 @@ export default async function AdminFinancePage({ searchParams }: AdminFinancePag
         {/* Fee Records — PRIMARY */}
         <FeeBulkList
           fees={serializedDues}
-          overdueCount={dueCount}
+          overdueCount={totalUnpaidStudentsCount}
           selectedFeeStatus={selectedStatus}
           currentPage={page}
           totalDuesCount={totalDuesCount}
-          pageSize={40}
+          pageSize={100}
         />
 
         {/* Recent Transactions — SECONDARY */}
