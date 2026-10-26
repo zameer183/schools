@@ -9,6 +9,12 @@ import {
   Phone, BookOpen,
 } from 'lucide-react';
 import { KpiCard, Button } from '@/components/ui';
+import {
+  type WhatsAppClientType,
+  getStoredWhatsAppClientType,
+  setStoredWhatsAppClientType,
+  openWhatsAppDirect,
+} from '@/lib/whatsapp-client';
 
 // ── Types ───────────────────────────────────────────────────────────────────
 export type TeacherAccess = {
@@ -148,6 +154,16 @@ function ShareModal({ teacher, onClose }: { teacher: TeacherItem; onClose: () =>
   const [showPwd, setShowPwd] = useState(false);
   const [saving, setSaving] = useState(false);
   const [done, setDone] = useState(false);
+  const [appType, setAppType] = useState<WhatsAppClientType>('regular');
+
+  useEffect(() => {
+    setAppType(getStoredWhatsAppClientType());
+  }, []);
+
+  const handleSelectAppType = (type: WhatsAppClientType) => {
+    setAppType(type);
+    setStoredWhatsAppClientType(type);
+  };
 
   const rawPhone = (teacher.user.phone ?? '').replace(/\D/g, '');
   const hasPhone = rawPhone.length >= 7;
@@ -166,7 +182,11 @@ function ShareModal({ teacher, onClose }: { teacher: TeacherItem; onClose: () =>
       if (!res.ok) return;
       setDone(true);
       if (hasPhone) {
-        window.open(`https://wa.me/${rawPhone}?text=${encodeURIComponent(msg)}`, '_blank', 'noopener,noreferrer');
+        openWhatsAppDirect({
+          phone: rawPhone,
+          message: msg,
+          clientType: appType,
+        });
       }
     } finally {
       setSaving(false);
@@ -209,6 +229,52 @@ function ShareModal({ teacher, onClose }: { teacher: TeacherItem; onClose: () =>
           {hasPhone ? `WhatsApp: +${rawPhone}` : 'No phone — WhatsApp unavailable'}
         </div>
 
+        {/* WhatsApp App Type: Regular vs Business */}
+        {hasPhone && (
+          <div className="mb-3 space-y-1.5">
+            <label className="block text-[11px] font-semibold uppercase tracking-wider text-[#475569]">
+              WhatsApp App Type / واٹس ایپ کا انتخاب
+            </label>
+            <div className="grid grid-cols-2 gap-2">
+              <button
+                type="button"
+                onClick={() => handleSelectAppType('regular')}
+                className={`flex items-center gap-2.5 rounded-xl border p-2.5 text-left transition-all active:scale-[0.98] ${
+                  appType === 'regular'
+                    ? 'border-[#16a34a] bg-[#f0fdf4] text-[#15803d] ring-2 ring-[#16a34a]/30 shadow-xs'
+                    : 'border-[#e2e8f0] bg-white text-[#64748b] hover:bg-[#f8fafc]'
+                }`}
+              >
+                <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-[#16a34a] text-white text-xs font-black shadow-xs">
+                  WA
+                </span>
+                <div className="min-w-0">
+                  <p className="text-xs font-bold leading-tight text-[#0f172a]">WhatsApp</p>
+                  <p className="text-[10px] text-[#16a34a] font-medium">Simple / سادہ</p>
+                </div>
+              </button>
+
+              <button
+                type="button"
+                onClick={() => handleSelectAppType('business')}
+                className={`flex items-center gap-2.5 rounded-xl border p-2.5 text-left transition-all active:scale-[0.98] ${
+                  appType === 'business'
+                    ? 'border-[#004649] bg-[#e0eff0] text-[#004649] ring-2 ring-[#004649]/30 shadow-xs'
+                    : 'border-[#e2e8f0] bg-white text-[#64748b] hover:bg-[#f8fafc]'
+                }`}
+              >
+                <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-[#004649] text-white text-xs font-black shadow-xs">
+                  WB
+                </span>
+                <div className="min-w-0">
+                  <p className="text-xs font-bold leading-tight text-[#0f172a]">WA Business</p>
+                  <p className="text-[10px] text-[#004649] font-medium">Business / بزنس</p>
+                </div>
+              </button>
+            </div>
+          </div>
+        )}
+
         <div className="mb-3">
           <label className={LABEL_CLS}>Email</label>
           <input
@@ -243,17 +309,52 @@ function ShareModal({ teacher, onClose }: { teacher: TeacherItem; onClose: () =>
         </div>
 
         {done ? (
-          <div className="flex items-center gap-2 rounded-xl bg-[#dcfce7] px-4 py-3 text-sm text-[#15803d]">
-            <CheckCircle2 size={15} /> Credentials saved{hasPhone ? '. WhatsApp opened.' : '.'}
+          <div className="space-y-3">
+            <div className="flex items-center gap-2 rounded-xl bg-[#dcfce7] px-4 py-3 text-sm text-[#15803d]">
+              <CheckCircle2 size={15} /> Credentials saved{hasPhone ? ` & ${appType === 'business' ? 'WhatsApp Business' : 'WhatsApp'} opened.` : '.'}
+            </div>
+            {hasPhone && (
+              <button
+                type="button"
+                onClick={() => {
+                  openWhatsAppDirect({
+                    phone: rawPhone,
+                    message: msg,
+                    clientType: appType,
+                  });
+                }}
+                className={`w-full rounded-xl py-2.5 text-xs font-bold text-white shadow-sm active:scale-[0.98] ${
+                  appType === 'business' ? 'bg-[#004649]' : 'bg-[#16a34a]'
+                }`}
+              >
+                Re-open {appType === 'business' ? 'WhatsApp Business' : 'WhatsApp'}
+              </button>
+            )}
+            <button
+              type="button"
+              onClick={onClose}
+              className="w-full rounded-xl border border-[#e2e8f0] py-2 text-xs font-semibold text-[#6f7979] hover:bg-[#f8fafc]"
+            >
+              Done / مکمل
+            </button>
           </div>
         ) : (
           <button
             onClick={handleShare}
             disabled={saving || password.length < 6}
-            className="w-full rounded-xl py-3 text-sm font-bold text-white disabled:opacity-50 transition-opacity"
-            style={{ backgroundColor: hasPhone ? '#25D366' : '#004649' }}
+            className={`w-full rounded-xl py-3 text-sm font-bold text-white disabled:opacity-50 transition-opacity ${
+              hasPhone
+                ? appType === 'business' ? 'bg-[#004649]' : 'bg-[#25D366]'
+                : 'bg-[#004649]'
+            }`}
           >
-            {saving ? 'Saving…' : hasPhone ? 'Save & Open WhatsApp' : 'Save Credentials'}
+            {saving
+              ? 'Saving…'
+              : hasPhone
+              ? appType === 'business'
+                ? 'Save & Open WA Business'
+                : 'Save & Open WhatsApp'
+              : 'Save Credentials'}
           </button>
         )}
       </div>

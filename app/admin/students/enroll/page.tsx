@@ -9,6 +9,13 @@ import {
   BadgeCheck, DollarSign
 } from 'lucide-react';
 import { Button } from '@/components/ui';
+import {
+  type WhatsAppClientType,
+  getStoredWhatsAppClientType,
+  setStoredWhatsAppClientType,
+  openWhatsAppDirect,
+  formatCredentialsWhatsAppMessage,
+} from '@/lib/whatsapp-client';
 
 const SESSION_EXPIRED_MESSAGE = 'Session expire ho gayi hai. Please admin login dubara karein.';
 
@@ -462,6 +469,41 @@ export default function EnrollStudentPage() {
               <p className="mt-0.5 text-sm text-[#374151]"><span className="font-semibold">Password:</span> Pass@123</p>
               <p className="mt-2 text-xs text-[#94a3b8]">Student should change password on first login.</p>
             </div>
+
+            {form2.whatsappNumber.trim() ? (
+              <div className="rounded-xl border border-[#bbf7d0] bg-[#f0fdf4] p-4 text-left space-y-3">
+                <div className="flex items-center justify-between">
+                  <p className="text-xs font-bold text-[#15803d]">Share via WhatsApp / واٹس ایپ پر بھیجیں</p>
+                  <span className="text-[10px] font-semibold text-[#16a34a]">{form2.whatsappCode} {form2.whatsappNumber}</span>
+                </div>
+                <div className="grid grid-cols-2 gap-2">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      const cleanDigits = form2.whatsappNumber.replace(/\D/g, '').replace(/^0+/, '');
+                      const phone = (form2.whatsappCode || '+92') + cleanDigits;
+                      const msg = formatCredentialsWhatsAppMessage({ email: result.email, password: 'Pass@123' });
+                      openWhatsAppDirect({ phone, message: msg, clientType: 'regular' });
+                    }}
+                    className="flex items-center justify-center gap-1.5 rounded-lg bg-[#16a34a] py-2.5 px-3 text-xs font-bold text-white shadow-xs hover:bg-[#15803d] active:scale-[0.98]"
+                  >
+                    <span>WhatsApp (سادہ)</span>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      const cleanDigits = form2.whatsappNumber.replace(/\D/g, '').replace(/^0+/, '');
+                      const phone = (form2.whatsappCode || '+92') + cleanDigits;
+                      const msg = formatCredentialsWhatsAppMessage({ email: result.email, password: 'Pass@123' });
+                      openWhatsAppDirect({ phone, message: msg, clientType: 'business' });
+                    }}
+                    className="flex items-center justify-center gap-1.5 rounded-lg bg-[#004649] py-2.5 px-3 text-xs font-bold text-white shadow-xs hover:bg-[#1b5e62] active:scale-[0.98]"
+                  >
+                    <span>WA Business (بزنس)</span>
+                  </button>
+                </div>
+              </div>
+            ) : null}
           </div>
 
           <div className="mt-6 flex gap-3">

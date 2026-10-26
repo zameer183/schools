@@ -12,6 +12,12 @@ import {
   TrendingUp, User, UserCheck, UserPlus, Users, X
 } from 'lucide-react';
 import { KpiCard } from '@/components/ui';
+import {
+  type WhatsAppClientType,
+  getStoredWhatsAppClientType,
+  setStoredWhatsAppClientType,
+  openWhatsAppDirect,
+} from '@/lib/whatsapp-client';
 
 export type ClassItem = { id: string; name: string; section: string };
 export type StudentItem = {
@@ -680,7 +686,18 @@ function ShareCredentialsModal({
   const [showPwd, setShowPwd] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+  const [appType, setAppType] = useState<WhatsAppClientType>('regular');
+  const [sentSuccess, setSentSuccess] = useState(false);
   const shareTarget = (student.whatsApp?.trim() || student.guardianPhone?.trim() || '').trim();
+
+  useEffect(() => {
+    setAppType(getStoredWhatsAppClientType());
+  }, []);
+
+  const handleSelectAppType = (type: WhatsAppClientType) => {
+    setAppType(type);
+    setStoredWhatsAppClientType(type);
+  };
 
   const handleShare = async () => {
     if (!shareTarget) {
@@ -693,7 +710,9 @@ function ShareCredentialsModal({
       return;
     }
 
-    const popup = window.open('about:blank', '_blank', 'noopener,noreferrer');
+    // On mobile devices, avoid opening about:blank popup because mobile browsers block it or leave a blank tab
+    const isMobile = typeof navigator !== 'undefined' && /android|iphone|ipad|ipod/i.test(navigator.userAgent);
+    const popup = isMobile ? null : window.open('about:blank', '_blank', 'noopener,noreferrer');
 
     setLoading(true);
     setError('');
@@ -724,8 +743,6 @@ function ShareCredentialsModal({
         return;
       }
 
-      // Strip non-digits (handles +92... → 92...)
-      const phone = shareTarget.replace(/\D/g, '');
       const msg =
         `Your online profile successfully generated on\n` +
         `Manarah Institute\n\n` +
@@ -736,14 +753,14 @@ function ShareCredentialsModal({
         `Here is your password\n\n` +
         `${creds.password}`;
 
-      const waUrl = `https://wa.me/${phone}?text=${encodeURIComponent(msg)}`;
-      if (popup && !popup.closed) {
-        popup.location.href = waUrl;
-        popup.focus();
-      } else {
-        window.location.href = waUrl;
-      }
-      onCancel();
+      openWhatsAppDirect({
+        phone: shareTarget,
+        message: msg,
+        clientType: appType,
+        popupWindow: popup,
+      });
+
+      setSentSuccess(true);
     } catch {
       if (popup && !popup.closed) popup.close();
       setError('Network error. Please try again.');
@@ -773,7 +790,9 @@ function ShareCredentialsModal({
           </div>
           <div className="min-w-0">
             <p className="font-semibold leading-tight text-[#0f172a]">Share Credentials</p>
-            <p className="truncate text-xs text-[#94a3b8]">via WhatsApp</p>
+            <p className="truncate text-xs text-[#94a3b8]">
+              {appType === 'business' ? 'via WhatsApp Business' : 'via WhatsApp'}
+            </p>
           </div>
           <button
             type="button"
@@ -784,80 +803,162 @@ function ShareCredentialsModal({
           </button>
         </div>
 
-        <div className="px-5 py-4 space-y-4">
-
-          {/* Student identity */}
-          <div className="flex items-center gap-3 rounded-2xl bg-[#f8fafc] px-4 py-3">
-            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-[#dcfce7] text-sm font-bold text-[#15803d]">
-              {initials(student.user.fullName)}
+        {sentSuccess ? (
+          <div className="p-6 text-center space-y-4">
+            <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-full bg-[#f0fdf4] text-[#16a34a]">
+              <Check className="h-7 w-7 stroke-[2.5]" />
             </div>
-            <div className="min-w-0">
-              <p className="truncate font-semibold text-[#111827]">{student.user.fullName}</p>
-              <p className="font-mono text-[11px] text-[#9ca3af]">{student.admissionNo}</p>
-            </div>
-          </div>
-
-          {/* WhatsApp destination */}
-          <div className={`flex items-center gap-3 rounded-xl px-4 py-3 ${shareTarget ? 'bg-[#f0fdf4]' : 'bg-[#fef2f2]'}`}>
-            <MessageSquare className={`h-4 w-4 shrink-0 ${shareTarget ? 'text-[#16a34a]' : 'text-[#ef4444]'}`} />
-            <div className="min-w-0">
-              <p className="text-[10px] font-bold uppercase tracking-wider text-[#9ca3af]">WhatsApp Number</p>
-              {shareTarget ? (
-                <p className="font-semibold text-sm text-[#15803d]">{shareTarget}</p>
-              ) : (
-                <p className="text-sm font-semibold text-[#ef4444]">No WhatsApp number</p>
-              )}
-            </div>
-          </div>
-
-          {/* Fields */}
-          <div className="space-y-3">
-            {/* Email — read-only */}
             <div>
-              <label className="mb-1.5 block text-[11px] font-semibold uppercase tracking-wider text-[#475569]">
-                Email
-              </label>
-              <div className="relative">
-                <Mail className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-[#94a3b8]" />
-                <input
-                  value={student.user.email}
-                  readOnly
-                  className="h-12 w-full rounded-xl border-none bg-[#f1f5f9] pl-9 pr-4 text-sm text-[#0f172a] outline-none cursor-default"
-                />
-              </div>
+              <h3 className="font-bold text-lg text-[#0f172a]">Credentials Saved & Sent!</h3>
+              <p className="mt-1 text-xs text-[#64748b]">
+                {appType === 'business' ? 'WhatsApp Business' : 'WhatsApp'} has been launched for {student.user.fullName}.
+              </p>
             </div>
-
-            {/* Password */}
-            <div>
-              <label className="mb-1.5 block text-[11px] font-semibold uppercase tracking-wider text-[#475569]">
-                Password
-              </label>
-              <div className="relative">
-                <Lock className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-[#94a3b8]" />
-                <input
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  type={showPwd ? 'text' : 'password'}
-                  placeholder="Min. 6 characters"
-                  autoComplete="new-password"
-                  className="h-12 w-full rounded-xl border-none bg-[#f1f5f9] pl-9 pr-16 text-sm text-[#0f172a] outline-none transition-all focus:bg-white focus:ring-2 focus:ring-[#16a34a]/25"
-                />
-                <button
-                  type="button"
-                  onClick={() => setShowPwd((p) => !p)}
-                  className="absolute right-3 top-1/2 -translate-y-1/2 rounded-lg px-2 py-1 text-xs font-semibold text-[#94a3b8] transition hover:bg-[#e2e8f0] hover:text-[#475569]"
-                >
-                  {showPwd ? 'Hide' : 'Show'}
-                </button>
-              </div>
-              <p className="mt-1 text-[11px] text-[#94a3b8]">Student&apos;s password will be updated to this value.</p>
+            <div className="flex flex-col gap-2 pt-2">
+              <button
+                type="button"
+                onClick={() => {
+                  openWhatsAppDirect({
+                    phone: shareTarget,
+                    message: `Your online profile successfully generated on\nManarah Institute\n\nHere is your app link\n\nANDROID:\n${APP_LOGIN_URL}\n\nHere is your Institute gmail\n\n${student.user.email}\n\nHere is your password\n\n${password}`,
+                    clientType: appType,
+                  });
+                }}
+                className={`flex items-center justify-center gap-2 rounded-xl py-3 text-sm font-bold text-white shadow-md active:scale-[0.98] ${
+                  appType === 'business' ? 'bg-[#004649] hover:bg-[#1b5e62]' : 'bg-[#16a34a] hover:bg-[#15803d]'
+                }`}
+              >
+                <MessageSquare className="h-4 w-4" />
+                <span>Re-open {appType === 'business' ? 'WhatsApp Business' : 'WhatsApp'}</span>
+              </button>
+              <button
+                type="button"
+                onClick={onCancel}
+                className="rounded-xl border border-[#e2e8f0] py-2.5 text-sm font-semibold text-[#64748b] hover:bg-[#f8fafc]"
+              >
+                Done / مکمل
+              </button>
             </div>
           </div>
+        ) : (
+          <>
+            <div className="px-5 py-4 space-y-4">
+              {/* Student identity */}
+              <div className="flex items-center gap-3 rounded-2xl bg-[#f8fafc] px-4 py-3">
+                <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-[#dcfce7] text-sm font-bold text-[#15803d]">
+                  {initials(student.user.fullName)}
+                </div>
+                <div className="min-w-0">
+                  <p className="truncate font-semibold text-[#111827]">{student.user.fullName}</p>
+                  <p className="font-mono text-[11px] text-[#9ca3af]">{student.admissionNo}</p>
+                </div>
+              </div>
 
-          {/* Message preview */}
-          <div className="rounded-xl bg-[#f8fafc] px-4 py-3">
-            <p className="mb-2 text-[10px] font-bold uppercase tracking-wider text-[#9ca3af]">Message Preview</p>
-            <pre className="whitespace-pre-wrap text-xs leading-relaxed text-[#374151]">
+              {/* WhatsApp destination */}
+              <div className={`flex items-center gap-3 rounded-xl px-4 py-3 ${shareTarget ? 'bg-[#f0fdf4]' : 'bg-[#fef2f2]'}`}>
+                <MessageSquare className={`h-4 w-4 shrink-0 ${shareTarget ? 'text-[#16a34a]' : 'text-[#ef4444]'}`} />
+                <div className="min-w-0">
+                  <p className="text-[10px] font-bold uppercase tracking-wider text-[#9ca3af]">WhatsApp Number</p>
+                  {shareTarget ? (
+                    <p className="font-semibold text-sm text-[#15803d]">{shareTarget}</p>
+                  ) : (
+                    <p className="text-sm font-semibold text-[#ef4444]">No WhatsApp number</p>
+                  )}
+                </div>
+              </div>
+
+              {/* WhatsApp App Type Selection (Simple WhatsApp vs WhatsApp Business) */}
+              <div className="space-y-1.5">
+                <label className="block text-[11px] font-semibold uppercase tracking-wider text-[#475569]">
+                  Select WhatsApp App / واٹس ایپ منتخب کریں
+                </label>
+                <div className="grid grid-cols-2 gap-2">
+                  <button
+                    type="button"
+                    onClick={() => handleSelectAppType('regular')}
+                    className={`flex items-center gap-2.5 rounded-xl border p-2.5 text-left transition-all active:scale-[0.98] ${
+                      appType === 'regular'
+                        ? 'border-[#16a34a] bg-[#f0fdf4] text-[#15803d] ring-2 ring-[#16a34a]/30 shadow-xs'
+                        : 'border-[#e2e8f0] bg-white text-[#64748b] hover:bg-[#f8fafc]'
+                    }`}
+                  >
+                    <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-[#16a34a] text-white text-xs font-black shadow-xs">
+                      WA
+                    </span>
+                    <div className="min-w-0">
+                      <p className="text-xs font-bold leading-tight text-[#0f172a]">WhatsApp</p>
+                      <p className="text-[10px] text-[#16a34a] font-medium">Simple / سادہ</p>
+                    </div>
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => handleSelectAppType('business')}
+                    className={`flex items-center gap-2.5 rounded-xl border p-2.5 text-left transition-all active:scale-[0.98] ${
+                      appType === 'business'
+                        ? 'border-[#004649] bg-[#e0eff0] text-[#004649] ring-2 ring-[#004649]/30 shadow-xs'
+                        : 'border-[#e2e8f0] bg-white text-[#64748b] hover:bg-[#f8fafc]'
+                    }`}
+                  >
+                    <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-[#004649] text-white text-xs font-black shadow-xs">
+                      WB
+                    </span>
+                    <div className="min-w-0">
+                      <p className="text-xs font-bold leading-tight text-[#0f172a]">WA Business</p>
+                      <p className="text-[10px] text-[#004649] font-medium">Business / بزنس</p>
+                    </div>
+                  </button>
+                </div>
+              </div>
+
+              {/* Fields */}
+              <div className="space-y-3">
+                {/* Email — read-only */}
+                <div>
+                  <label className="mb-1.5 block text-[11px] font-semibold uppercase tracking-wider text-[#475569]">
+                    Email
+                  </label>
+                  <div className="relative">
+                    <Mail className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-[#94a3b8]" />
+                    <input
+                      value={student.user.email}
+                      readOnly
+                      className="h-12 w-full rounded-xl border-none bg-[#f1f5f9] pl-9 pr-4 text-sm text-[#0f172a] outline-none cursor-default"
+                    />
+                  </div>
+                </div>
+
+                {/* Password */}
+                <div>
+                  <label className="mb-1.5 block text-[11px] font-semibold uppercase tracking-wider text-[#475569]">
+                    Password
+                  </label>
+                  <div className="relative">
+                    <Lock className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-[#94a3b8]" />
+                    <input
+                      value={password}
+                      onChange={(e) => setPassword(e.target.value)}
+                      type={showPwd ? 'text' : 'password'}
+                      placeholder="Min. 6 characters"
+                      autoComplete="new-password"
+                      className="h-12 w-full rounded-xl border-none bg-[#f1f5f9] pl-9 pr-16 text-sm text-[#0f172a] outline-none transition-all focus:bg-white focus:ring-2 focus:ring-[#16a34a]/25"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setShowPwd((p) => !p)}
+                      className="absolute right-3 top-1/2 -translate-y-1/2 rounded-lg px-2 py-1 text-xs font-semibold text-[#94a3b8] transition hover:bg-[#e2e8f0] hover:text-[#475569]"
+                    >
+                      {showPwd ? 'Hide' : 'Show'}
+                    </button>
+                  </div>
+                  <p className="mt-1 text-[11px] text-[#94a3b8]">Student&apos;s password will be updated to this value.</p>
+                </div>
+              </div>
+
+              {/* Message preview */}
+              <div className="rounded-xl bg-[#f8fafc] px-4 py-3">
+                <p className="mb-2 text-[10px] font-bold uppercase tracking-wider text-[#9ca3af]">Message Preview</p>
+                <pre className="whitespace-pre-wrap text-xs leading-relaxed text-[#374151]">
 {`Your online profile successfully generated on
 Manarah Institute
 
@@ -873,53 +974,55 @@ ${student.user.email}
 Here is your password
 
 ${showPwd ? password : '********'}`}
-            </pre>
-            <p className="hidden">
-              <span className="mb-1 block">App Link: {APP_LOGIN_URL}</span>
-              {`Assalamualaikum ${student.user.fullName},\nYour login credentials are:\nEmail: ${student.user.email}\nPassword: ${showPwd ? password : '••••••••'}\nPlease login and keep your credentials secure.`}
-            </p>
-          </div>
+                </pre>
+              </div>
 
-          {error ? (
-            <div className="flex items-start gap-2 rounded-xl bg-[#fef2f2] px-4 py-3 text-sm font-medium text-[#ef4444]">
-              <AlertCircle className="mt-0.5 h-4 w-4 shrink-0" />
-              {error}
+              {error ? (
+                <div className="flex items-start gap-2 rounded-xl bg-[#fef2f2] px-4 py-3 text-sm font-medium text-[#ef4444]">
+                  <AlertCircle className="mt-0.5 h-4 w-4 shrink-0" />
+                  {error}
+                </div>
+              ) : null}
             </div>
-          ) : null}
-        </div>
 
-        {/* Footer buttons */}
-        <div className="flex gap-2 border-t border-[#f1f5f9] px-5 py-4">
-          <button
-            type="button"
-            onClick={onCancel}
-            disabled={loading || password.length < 6}
-            className="flex-1 rounded-xl border border-[#e5e7eb] py-3 text-sm font-semibold text-[#374151] transition hover:bg-[#f9fafb] active:scale-[0.98] disabled:opacity-60"
-          >
-            Cancel
-          </button>
-          <button
-            type="button"
-            onClick={() => void handleShare()}
-            disabled={loading}
-            className="flex flex-[2] items-center justify-center gap-2 rounded-xl bg-[#16a34a] py-3 text-sm font-semibold text-white shadow-[0_4px_12px_rgba(22,163,74,0.25)] transition hover:bg-[#15803d] active:scale-[0.98] disabled:opacity-60"
-          >
-            {loading ? (
-              <>
-                <svg className="h-4 w-4 animate-spin" fill="none" viewBox="0 0 24 24">
-                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
-                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
-                </svg>
-                Sending…
-              </>
-            ) : (
-              <>
-                <MessageSquare className="h-4 w-4" />
-                Send on WhatsApp
-              </>
-            )}
-          </button>
-        </div>
+            {/* Footer buttons */}
+            <div className="flex gap-2 border-t border-[#f1f5f9] px-5 py-4">
+              <button
+                type="button"
+                onClick={onCancel}
+                disabled={loading || password.length < 6}
+                className="flex-1 rounded-xl border border-[#e5e7eb] py-3 text-sm font-semibold text-[#374151] transition hover:bg-[#f9fafb] active:scale-[0.98] disabled:opacity-60"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                onClick={() => void handleShare()}
+                disabled={loading}
+                className={`flex flex-[2] items-center justify-center gap-2 rounded-xl py-3 text-sm font-semibold text-white shadow-[0_4px_12px_rgba(22,163,74,0.25)] transition active:scale-[0.98] disabled:opacity-60 ${
+                  appType === 'business'
+                    ? 'bg-[#004649] hover:bg-[#1b5e62]'
+                    : 'bg-[#16a34a] hover:bg-[#15803d]'
+                }`}
+              >
+                {loading ? (
+                  <>
+                    <svg className="h-4 w-4 animate-spin" fill="none" viewBox="0 0 24 24">
+                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
+                    </svg>
+                    Sending…
+                  </>
+                ) : (
+                  <>
+                    <MessageSquare className="h-4 w-4" />
+                    {appType === 'business' ? 'Send on WA Business' : 'Send on WhatsApp'}
+                  </>
+                )}
+              </button>
+            </div>
+          </>
+        )}
       </div>
     </div>
   );
