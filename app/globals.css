@@ -3,14 +3,14 @@
 @tailwind utilities;
 
 :root {
-  /* Brand Colors — from Manarah Institute logo */
-  --brand-primary: #004D47;
-  --brand-primary-hover: #003D38;
-  --brand-primary-light: #0F766E;
+  /* Brand Colors — unified modern palette */
+  --brand-primary: #1F5A5C;
+  --brand-primary-hover: #174548;
+  --brand-primary-light: #2D7578;
   --brand-indigo: #2E2B78;
-  --brand-accent: #D9A253;
+  --brand-accent: #D69E3F;
   --brand-accent-hover: #B8862E;
-  --brand-accent-light: #F7E8CF;
+  --brand-accent-light: #F5E6CC;
 
   /* Neutrals */
   --bg-primary: #F8FAFC;
@@ -43,8 +43,8 @@
   --on-surface-variant: #64748B;
   --outline: #9CA3AF;
   --outline-variant: #D1D5DB;
-  --primary: #004D47;
-  --primary-container: #0F766E;
+  --primary: #1F5A5C;
+  --primary-container: #2D7578;
   --primary-fixed: #E0EBEC;
   --primary-fixed-dim: #C8DBDD;
   --secondary: #D69E3F;
@@ -73,19 +73,14 @@ body {
   letter-spacing: -0.025em;
 }
 
-:where(h1, h2, h3) {
-  font-family: var(--font-garamond), Georgia, 'Times New Roman', serif;
-  letter-spacing: -0.025em;
-}
-
-:where(h4, h5, h6, p, button, input, textarea, select, label) {
+:where(h1, h2, h3, h4, h5, h6, p, button, input, textarea, select, label) {
   font-family: var(--font-manrope), var(--font-inter), 'Segoe UI', system-ui, -apple-system, sans-serif;
 }
 
 .card {
   border-radius: 1.5rem;
   background: var(--surface-container-lowest);
-  box-shadow: 0 12px 40px rgba(0, 70, 73, 0.06);
+  box-shadow: 0 12px 40px rgba(31, 90, 92, 0.06);
 }
 
 .tonal-button {
@@ -99,7 +94,7 @@ body {
 .surface-card {
   border-radius: 1.5rem;
   background: var(--surface-container-lowest);
-  box-shadow: 0 12px 40px rgba(0, 70, 73, 0.06);
+  box-shadow: 0 12px 40px rgba(31, 90, 92, 0.06);
 }
 
 .editorial-gradient {
@@ -112,7 +107,7 @@ body {
 }
 
 .tonal-layer {
-  box-shadow: 0 12px 40px rgba(0, 70, 73, 0.06);
+  box-shadow: 0 12px 40px rgba(31, 90, 92, 0.06);
 }
 
 /* ── next-route-announcer a11y fix ── */

@@ -17,7 +17,7 @@ import {
   formatCredentialsWhatsAppMessage,
 } from '@/lib/whatsapp-client';
 
-const SESSION_EXPIRED_MESSAGE = 'Session expire ho gayi hai. Please admin login dubara karein.';
+const SESSION_EXPIRED_MESSAGE = 'Your session has expired. Please log in again as administrator.';
 
 function redirectToAdminLogin() {
   if (typeof window === 'undefined') return;
@@ -377,12 +377,32 @@ export default function EnrollStudentPage() {
     return Object.keys(errs).length === 0;
   };
 
-  const handleNext = () => { if (validateStep()) goStep((step + 1) as Step); };
+  const scrollToFirstError = () => {
+    if (typeof window === 'undefined') return;
+    window.setTimeout(() => {
+      const firstErr = document.querySelector('[aria-invalid="true"], .ring-2, input:invalid, select:invalid') as HTMLElement | null;
+      if (firstErr) {
+        firstErr.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        firstErr.focus?.();
+      }
+    }, 60);
+  };
+
+  const handleNext = () => {
+    if (validateStep()) {
+      goStep((step + 1) as Step);
+    } else {
+      scrollToFirstError();
+    }
+  };
   const handleBack = () => goStep((step - 1) as Step);
 
   // ── Submit ─────────────────────────────────────────────────────────────────
   const handleSubmit = async () => {
-    if (!validateStep()) return;
+    if (!validateStep()) {
+      scrollToFirstError();
+      return;
+    }
     setLoading(true);
     setApiError('');
     try {

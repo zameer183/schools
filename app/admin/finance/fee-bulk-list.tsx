@@ -125,10 +125,20 @@ export function FeeBulkList({
   }
 
   const [feesList, setFeesList] = useState<SerializedFeeItem[]>(fees);
+  const [currentOverdueCount, setCurrentOverdueCount] = useState(overdueCount);
+  const [currentTotalDuesCount, setCurrentTotalDuesCount] = useState(totalDuesCount);
 
   useEffect(() => {
     setFeesList(fees);
   }, [fees]);
+
+  useEffect(() => {
+    setCurrentOverdueCount(overdueCount);
+  }, [overdueCount]);
+
+  useEffect(() => {
+    setCurrentTotalDuesCount(totalDuesCount);
+  }, [totalDuesCount]);
 
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [loading, setLoading] = useState(false);
@@ -185,7 +195,8 @@ export function FeeBulkList({
       });
       const data = await res.json();
       if (res.ok) {
-        // Optimistically update feesList so UI updates INSTANTLY
+        // Optimistically update feesList and dues counts so UI updates INSTANTLY
+        let studentRemainingAfter = 0;
         setFeesList((prevList) => {
           let leftToPay = amountNum;
           return prevList.map((item) => {
@@ -195,6 +206,7 @@ export function FeeBulkList({
             const newPaid = item.paidAmount + apply;
             const newRem = Math.max(item.remaining - apply, 0);
             const newTotalDue = Math.max((item.totalStudentDue ?? item.remaining) - amountNum, 0);
+            studentRemainingAfter = newTotalDue;
             const newStatus = newRem <= 0 ? 'PAID' : (newPaid > 0 ? 'PARTIAL' : item.status);
             return {
               ...item,
@@ -202,6 +214,7 @@ export function FeeBulkList({
               remaining: newRem,
               totalStudentDue: newTotalDue,
               status: newStatus,
+              studentDueMonthCount: newTotalDue <= 0 ? 0 : Math.max(0, (item.studentDueMonthCount || 1) - 1),
               unpaidMonths: item.unpaidMonths
                 ? item.unpaidMonths
                     .map((m) => {
@@ -215,6 +228,11 @@ export function FeeBulkList({
             };
           });
         });
+
+        if (studentRemainingAfter <= 0) {
+          setCurrentOverdueCount((prev) => Math.max(0, prev - 1));
+          setCurrentTotalDuesCount((prev) => Math.max(0, prev - 1));
+        }
 
         setToast({
           message: `Payment of ${formatCurrency(amountNum)} recorded successfully for ${payTarget.studentName}!`,
@@ -445,7 +463,7 @@ export function FeeBulkList({
       <section className="rounded-2xl bg-white p-4 shadow-[0_4px_12px_rgba(0,0,0,0.08)] sm:p-6">
         <div className="mb-4 flex flex-wrap items-start justify-between gap-3">
           <div>
-            <h3 className="font-headline text-lg font-bold text-[#1a1c1c]">{title}</h3>
+            <h3 className="text-lg font-bold text-[#0f172a]">{title}</h3>
             <p className="mt-1 text-xs text-[#6f7979]">
               Manage monthly tuition, outstanding dues, partial collections, and payment history in one place.
             </p>
@@ -455,12 +473,12 @@ export function FeeBulkList({
           </span>
         </div>
 
-        {overdueCount > 0 ? (
+        {currentOverdueCount > 0 ? (
           <div className="mb-4 flex flex-wrap items-center justify-between gap-3 rounded-xl border border-[#fca5a5] bg-[#fef2f2] px-4 py-3">
             <div className="flex items-center gap-2">
               <AlertCircle className="h-5 w-5 text-[#b45309]" />
               <p className="text-sm font-semibold text-[#b45309]">
-                {overdueCount} students have outstanding fees pending collection.
+                {currentOverdueCount} students have outstanding fees pending collection.
               </p>
             </div>
             <button
@@ -848,8 +866,8 @@ export function FeeBulkList({
               <div className="flex items-center justify-between border-t border-[#edf0f2] bg-[#f8fafc] px-4 py-3 mt-4 rounded-xl">
                 <div className="text-sm text-[#6b7280]">
                   Showing <span className="font-semibold text-[#111827]">{(currentPage - 1) * pageSize + 1}</span> to{' '}
-                  <span className="font-semibold text-[#111827]">{Math.min(currentPage * pageSize, totalDuesCount)}</span> of{' '}
-                  <span className="font-semibold text-[#111827]">{totalDuesCount}</span> records
+                  <span className="font-semibold text-[#111827]">{Math.min(currentPage * pageSize, currentTotalDuesCount)}</span> of{' '}
+                  <span className="font-semibold text-[#111827]">{currentTotalDuesCount}</span> records
                 </div>
                 <div className="flex gap-2">
                   {currentPage > 1 ? (
@@ -893,13 +911,13 @@ export function FeeBulkList({
         <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-5 bg-black/60 backdrop-blur-xs overflow-y-auto">
           <div className="relative w-full max-w-lg rounded-2xl bg-white shadow-2xl border border-slate-200 overflow-hidden flex flex-col my-auto max-h-[92vh] animate-in fade-in zoom-in-95 duration-150">
             {/* Modal Header (Sticky) */}
-            <div className="flex items-center justify-between px-5 sm:px-6 py-4 bg-gradient-to-r from-[#004649] to-[#1b5e62] text-white shrink-0">
+            <div className="flex items-center justify-between px-5 sm:px-6 py-4 bg-gradient-to-r from-[#1F5A5C] to-[#2D7578] text-white shrink-0">
               <div className="flex items-center gap-2.5">
                 <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-white/10 backdrop-blur-xs text-emerald-300 border border-white/15">
                   <Coins className="h-5 w-5" />
                 </div>
                 <div>
-                  <h3 className="font-headline font-bold text-base sm:text-lg text-white leading-tight">Collect Fee Payment</h3>
+                  <h3 className="font-bold text-base sm:text-lg text-white leading-tight">Collect Fee Payment</h3>
                   <p className="text-xs text-emerald-200/90">Record partial or full payment into ledger</p>
                 </div>
               </div>
@@ -919,9 +937,9 @@ export function FeeBulkList({
               <div className="rounded-2xl border border-[#cceded] bg-gradient-to-br from-[#f0f9f9] to-[#e6f4f4]/60 p-4 shadow-xs">
                 <div className="flex justify-between items-start gap-3">
                   <div className="min-w-0">
-                    <span className="text-[10px] font-bold uppercase tracking-wider text-[#004649]/80 block">Student</span>
-                    <h4 className="font-headline font-bold text-base text-[#0f172a] truncate">{payTarget.studentName}</h4>
-                    <span className="inline-flex items-center gap-1 mt-1 text-xs font-semibold text-[#004649] bg-white px-2.5 py-0.5 rounded-lg border border-[#cceded]">
+                    <span className="text-[10px] font-bold uppercase tracking-wider text-[#1F5A5C]/80 block">Student</span>
+                    <h4 className="font-bold text-base text-[#0f172a] truncate">{payTarget.studentName}</h4>
+                    <span className="inline-flex items-center gap-1 mt-1 text-xs font-semibold text-[#1F5A5C] bg-white px-2.5 py-0.5 rounded-lg border border-[#cceded]">
                       {payTarget.classLabel ?? 'Unassigned Class'}
                     </span>
                   </div>

@@ -292,7 +292,7 @@ export default async function AdminFinancePage({ searchParams }: AdminFinancePag
   if (!data) {
     return (
       <div className="rounded-2xl bg-white p-6 shadow-[0_4px_12px_rgba(0,0,0,0.08)]">
-        <h1 className="font-headline text-2xl font-bold text-[#1a1c1c]">Finance</h1>
+        <h1 className="text-2xl font-bold text-[#0f172a]">Finance</h1>
         <h2 className="mt-3 text-lg font-bold text-[#111827]">Database Unreachable</h2>
         <p className="mt-2 text-sm text-[#6b7280]">
           Finance data is temporarily unavailable. Please refresh once the connection recovers.
@@ -429,9 +429,9 @@ export default async function AdminFinancePage({ searchParams }: AdminFinancePag
       {/* ── Header ── */}
       <div className="rounded-2xl bg-white p-4 shadow-[0_4px_12px_rgba(0,0,0,0.08)] sm:p-6">
         <div>
-          <p className="text-[10px] font-bold uppercase tracking-widest text-[#6f7979]">Admin</p>
-          <h1 className="font-headline mt-0.5 text-2xl font-extrabold text-[#1a1c1c] sm:text-3xl">Finance</h1>
-          <p className="mt-1 text-sm text-[#6f7979]">Track fee collection, outstanding amounts, and transaction health.</p>
+          <p className="text-[10px] font-bold uppercase tracking-widest text-[#64748B]">Admin</p>
+          <h1 className="mt-0.5 text-2xl font-extrabold text-[#0f172a] sm:text-3xl">Finance</h1>
+          <p className="mt-1 text-sm text-[#64748B]">Track fee collection, outstanding amounts, and transaction health.</p>
         </div>
       </div>
 
@@ -484,7 +484,7 @@ export default async function AdminFinancePage({ searchParams }: AdminFinancePag
 
         {/* Recent Transactions — SECONDARY */}
         <div className="rounded-2xl bg-white p-4 shadow-[0_4px_12px_rgba(0,0,0,0.08)] sm:p-6">
-          <h3 className="font-headline mb-4 text-lg font-bold text-[#1a1c1c]">Recent Transactions</h3>
+          <h3 className="mb-4 text-lg font-bold text-[#0f172a]">Recent Transactions</h3>
 
           {/* Mobile cards */}
           <div className="space-y-3 md:hidden">

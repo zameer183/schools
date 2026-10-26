@@ -115,7 +115,7 @@ type StatusFilter = 'all' | 'active' | 'inactive' | 'pending';
 
 const BASE_PAGE_SIZE = 25;
 const APP_LOGIN_URL = `${process.env.NEXT_PUBLIC_APP_URL ?? 'https://schools-plum.vercel.app'}/login`;
-const SESSION_EXPIRED_MESSAGE = 'Session expire ho gayi hai. Please admin login dubara karein.';
+const SESSION_EXPIRED_MESSAGE = 'Your session has expired. Please log in again as administrator.';
 
 const emptyEditForm: EditFormState = {
   id: '', fullName: '', fatherName: '', dateOfBirth: '', aadharNo: '', gender: '',
@@ -1478,7 +1478,7 @@ export default function AdminStudentsPageClient({
                   onClick={() => updateFilters({ status: filter.value, page: '1' })}
                   className={`shrink-0 inline-flex h-9 items-center justify-center rounded-xl px-3 text-xs font-bold transition-all active:scale-95 ${
                     statusFilter === filter.value
-                      ? 'bg-gradient-to-r from-[#004649] to-[#1b5e62] text-white shadow-2xs'
+                      ? 'bg-gradient-to-r from-[#1F5A5C] to-[#2D7578] text-white shadow-2xs'
                       : 'bg-[#f8fafc] border border-[#e2e8f0] text-[#64748b] hover:bg-[#f1f5f9] hover:text-[#0f172a]'
                   }`}
                 >
@@ -1507,7 +1507,7 @@ export default function AdminStudentsPageClient({
                 onClick={() => updateFilters({ view: 'grid', page: '1' })}
                 className={`flex h-8 w-8 items-center justify-center rounded-lg transition-all ${
                   view === 'grid'
-                    ? 'bg-white text-[#004649] shadow-xs'
+                    ? 'bg-white text-[#1F5A5C] shadow-xs'
                     : 'text-[#64748b] hover:text-[#0f172a]'
                 }`}
                 title="Grid View"

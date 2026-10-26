@@ -41,7 +41,7 @@ import {
 } from 'lucide-react';
 import { formatCurrency } from '@/lib/utils';
 
-const SESSION_EXPIRED_MESSAGE = 'Session expire ho gayi hai. Please admin login dubara karein.';
+const SESSION_EXPIRED_MESSAGE = 'Your session has expired. Please log in again as administrator.';
 
 function redirectToAdminLogin() {
   if (typeof window === 'undefined') return;

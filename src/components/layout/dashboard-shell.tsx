@@ -1,4 +1,4 @@
-﻿'use client';
+'use client';
 
 import type { UserRole } from '@prisma/client';
 import Image from 'next/image';
@@ -337,8 +337,8 @@ export function DashboardShell({
                 }}
                 className={`flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium transition-all ${
                   active
-                    ? 'bg-gradient-to-r from-[#004649] to-[#1b5e62] text-white shadow-sm'
-                    : 'text-[#3d4a4a] hover:bg-white hover:shadow-sm hover:text-[#004649]'
+                    ? 'bg-gradient-to-r from-[#1F5A5C] to-[#2D7578] text-white shadow-sm'
+                    : 'text-[#3d4a4a] hover:bg-white hover:shadow-sm hover:text-[#1F5A5C]'
                 }`}
               >
                 <Icon className="h-[18px] w-[18px] shrink-0" />
@@ -361,7 +361,7 @@ export function DashboardShell({
           <button
             onClick={doLogout}
             disabled={pending}
-            className="flex w-full items-center justify-center gap-2 rounded-xl bg-gradient-to-br from-[#004649] to-[#1b5e62] border-0 px-3 py-2 text-sm font-semibold text-white transition hover:opacity-90 disabled:opacity-60"
+            className="flex w-full items-center justify-center gap-2 rounded-xl bg-gradient-to-br from-[#1F5A5C] to-[#2D7578] border-0 px-3 py-2 text-sm font-semibold text-white transition hover:opacity-90 disabled:opacity-60"
           >
             <LogOut className="h-4 w-4" />
             {t('Logout')}
@@ -400,7 +400,7 @@ export function DashboardShell({
               />
             </Link>
             <div className="hidden md:block">
-              <p className="text-[10px] font-semibold uppercase tracking-[0.15em] text-[#6f7979]">{roleLabel}</p>
+              <p className="text-[10px] font-semibold uppercase tracking-[0.15em] text-[#64748B]">{roleLabel}</p>
               <p className="text-sm font-semibold text-[#1a1c1c]">{t('Manarah Institute')}</p>
             </div>
           </div>
@@ -429,10 +429,10 @@ export function DashboardShell({
             <div className="hidden md:block">
               {role !== 'ADMIN' ? (
                 <div
-                  className="inline-flex h-8 shrink-0 items-center gap-1 rounded-full bg-[#004649] pl-1 pr-2 text-xs font-bold text-white"
+                  className="inline-flex h-8 shrink-0 items-center gap-1 rounded-full bg-[#1F5A5C] pl-1 pr-2 text-xs font-bold text-white"
                   title={fullName}
                 >
-                  <span className="inline-flex h-6 w-6 items-center justify-center rounded-full bg-[#005a5e]">{initials}</span>
+                  <span className="inline-flex h-6 w-6 items-center justify-center rounded-full bg-[#2D7578]">{initials}</span>
                 </div>
               ) : null}
             </div>
@@ -442,7 +442,7 @@ export function DashboardShell({
             <button
               onClick={doLogout}
               disabled={pending}
-              className="hidden items-center gap-1.5 rounded-xl bg-gradient-to-br from-[#004649] to-[#1b5e62] border-0 px-3 py-1.5 text-xs font-semibold text-white hover:opacity-90 disabled:opacity-60 md:flex"
+              className="hidden items-center gap-1.5 rounded-xl bg-gradient-to-br from-[#1F5A5C] to-[#2D7578] border-0 px-3 py-1.5 text-xs font-semibold text-white hover:opacity-90 disabled:opacity-60 md:flex"
             >
               <LogOut className="h-3.5 w-3.5" />
               {t('Logout')}

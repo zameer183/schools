@@ -1,4 +1,4 @@
-﻿'use client';
+'use client';
 
 import Link from 'next/link';
 import { useState, useMemo } from 'react';
@@ -67,11 +67,7 @@ export function MobileBottomNav({
 
   return (
     <>
-      <nav className={`fixed z-40 grid grid-cols-5 backdrop-blur-xl md:hidden ${
-        role === 'TEACHER'
-          ? 'bottom-0 left-0 right-0 h-[86px] border-t border-[#E2E8F0] bg-white/90 px-6 pb-6 pt-2 shadow-[0_-10px_26px_rgba(15,23,42,0.05)]'
-          : 'bottom-3 left-3 right-3 h-[74px] rounded-[24px] border border-[#E6ECF2] bg-white/95 p-1.5 shadow-[0_12px_28px_rgba(15,23,42,0.14)]'
-      }`}>
+      <nav className="fixed bottom-3 left-3 right-3 z-40 grid grid-cols-5 h-[74px] rounded-[24px] border border-[#E6ECF2] bg-white/95 p-1.5 shadow-[0_12px_28px_rgba(15,23,42,0.14)] backdrop-blur-xl md:hidden">
         {primaryItems.map((item) => {
           const Icon = item.icon;
           const active = isActive(item.href);
@@ -84,24 +80,16 @@ export function MobileBottomNav({
                 e.preventDefault();
                 onNavigate(item.href);
               }}
-              className={`relative flex flex-col items-center justify-center gap-0.5 rounded-2xl px-1 text-[10px] font-medium leading-tight transition ${
-                role === 'TEACHER'
-                  ? active
-                    ? 'text-[#084750]'
-                    : 'text-[#64748B] hover:text-[#0F172A]'
-                  : active
-                    ? 'bg-[#E6F4F1] text-[#1F5A5C]'
-                    : 'text-[#64748B] hover:text-[#1F5A5C]'
+              className={`relative flex flex-col items-center justify-center gap-0.5 rounded-2xl px-1 text-[10px] font-semibold leading-tight transition ${
+                active
+                  ? 'bg-[#E6F4F1] text-[#1F5A5C]'
+                  : 'text-[#64748B] hover:text-[#1F5A5C]'
               }`}
             >
-              <Icon className={`h-5 w-5 ${
-                role === 'TEACHER'
-                  ? active ? 'text-[#084750]' : 'text-[#94A3B8]'
-                  : active ? 'text-[#1F5A5C]' : 'text-[#64748B]'
-              }`} />
+              <Icon className={`h-5 w-5 ${active ? 'text-[#1F5A5C]' : 'text-[#64748B]'}`} />
               <span className="truncate max-w-full">{compactLabel[item.label] ?? item.label}</span>
               {active ? (
-                <span className={`absolute -bottom-1 h-1 rounded-full ${role === 'TEACHER' ? 'w-1 bg-[#084750] shadow-[0_0_10px_rgba(8,71,80,0.3)]' : 'w-8 bg-[#1F5A5C]'}`} />
+                <span className="absolute -bottom-1 h-1 w-8 rounded-full bg-[#1F5A5C]" />
               ) : null}
             </Link>
           );
@@ -110,9 +98,7 @@ export function MobileBottomNav({
         {/* More button */}
         <button
           onClick={() => setMoreSheetOpen(true)}
-          className={`flex flex-col items-center justify-center gap-0.5 rounded-2xl px-1 text-[10px] font-medium leading-tight transition-colors ${
-            role === 'TEACHER' ? 'text-[#64748B] hover:text-[#0F172A]' : 'text-[#64748B] hover:text-[#1F5A5C]'
-          }`}
+          className="flex flex-col items-center justify-center gap-0.5 rounded-2xl px-1 text-[10px] font-semibold leading-tight text-[#64748B] hover:text-[#1F5A5C] transition-colors"
         >
           <MoreHorizontal className="h-5 w-5" />
           <span>More</span>
@@ -137,11 +123,11 @@ export function MobileBottomNav({
                 }}
                 className={`flex items-center gap-4 rounded-lg px-4 py-3 text-sm font-medium transition-all ${
                   active
-                    ? 'bg-[#f0f6f6] text-[#1F5A5C]'
-                    : 'text-[#3d4a4a] hover:bg-[#f0f6f6]'
+                    ? 'bg-[#E6F4F1] text-[#1F5A5C]'
+                    : 'text-[#3d4a4a] hover:bg-[#F8FAFC]'
                 }`}
               >
-                <Icon className={`h-5 w-5 shrink-0 ${active ? 'text-[#1F5A5C]' : 'text-[#6f7979]'}`} />
+                <Icon className={`h-5 w-5 shrink-0 ${active ? 'text-[#1F5A5C]' : 'text-[#64748B]'}`} />
                 <span>{item.label}</span>
               </Link>
             );
@@ -164,5 +150,3 @@ export function MobileBottomNav({
     </>
   );
 }
-
-
