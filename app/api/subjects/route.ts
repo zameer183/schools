@@ -66,20 +66,40 @@ export async function DELETE(request: Request) {
 
   const { searchParams } = new URL(request.url);
   const id = searchParams.get('id');
+  const force = searchParams.get('force') === '1';
   if (!id) return NextResponse.json({ error: 'id is required' }, { status: 400 });
 
   const subject = await prisma.subject.findUnique({
     where: { id },
-    select: { id: true, _count: { select: { assignments: true, results: true } } }
+    select: {
+      id: true,
+      name: true,
+      _count: { select: { assignments: true, results: true, exams: true } }
+    }
   });
 
   if (!subject) return NextResponse.json({ error: 'Subject not found' }, { status: 404 });
 
-  if (subject._count.assignments > 0 || subject._count.results > 0) {
-    return NextResponse.json(
-      { error: 'Cannot delete subject with linked assignments/results.' },
-      { status: 409 }
-    );
+  const hasLinked = subject._count.assignments > 0 || subject._count.results > 0 || subject._count.exams > 0;
+  if (hasLinked) {
+    if (!force) {
+      return NextResponse.json(
+        {
+          error: `Subject has linked records (${subject._count.exams} exams, ${subject._count.results} results, ${subject._count.assignments} assignments). Force delete required to permanently purge all associated data.`
+        },
+        { status: 409 }
+      );
+    }
+
+    // Permanently purge all dependent records and the subject from the database
+    await prisma.$transaction([
+      prisma.result.deleteMany({ where: { subjectId: id } }),
+      prisma.assignment.deleteMany({ where: { subjectId: id } }),
+      prisma.exam.deleteMany({ where: { subjectId: id } }),
+      prisma.subject.delete({ where: { id } })
+    ]);
+
+    return NextResponse.json({ success: true, forceDeleted: true });
   }
 
   await prisma.subject.delete({ where: { id } });

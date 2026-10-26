@@ -1,6 +1,6 @@
 'use client';
 
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useMemo, useState } from 'react';
 import {
   Award,
   BookOpen,
@@ -140,6 +140,7 @@ export default function AdminAcademicsPageClient({
   const [isExamModalOpen, setIsExamModalOpen] = useState(false);
   const [isSubjectModalOpen, setIsSubjectModalOpen] = useState(false);
   const [examToDelete, setExamToDelete] = useState<ExamItem | null>(null);
+  const [subjectToDelete, setSubjectToDelete] = useState<SubjectItem | null>(null);
 
   // Notification Toast
   const [toast, setToast] = useState<{ type: 'success' | 'error'; message: string } | null>(null);
@@ -150,6 +151,7 @@ export default function AdminAcademicsPageClient({
   const [resultSaving, setResultSaving] = useState(false);
   const [resultLoading, setResultLoading] = useState(false);
   const [examDeleting, setExamDeleting] = useState(false);
+  const [subjectDeleting, setSubjectDeleting] = useState(false);
 
   // Results State
   const [resultRows, setResultRows] = useState<ResultRow[]>([]);
@@ -404,7 +406,7 @@ export default function AdminAcademicsPageClient({
       let data = await res.json().catch(() => ({}));
 
       if (!res.ok && res.status === 409) {
-        const force = window.confirm('This exam already has student results. Permanently delete the exam and all student grades?');
+        const force = window.confirm('This exam already has student results. Permanently delete the exam and all student grades from the database?');
         if (!force) {
           setExamDeleting(false);
           setExamToDelete(null);
@@ -419,7 +421,7 @@ export default function AdminAcademicsPageClient({
         return;
       }
 
-      showToast('success', 'Exam deleted successfully.');
+      showToast('success', 'Exam permanently deleted from database.');
       setExamToDelete(null);
       if (resultForm.examId === examToDelete.id) {
         setResultForm({ examId: '', studentId: '', marksObtained: '', remarks: '' });
@@ -428,6 +430,39 @@ export default function AdminAcademicsPageClient({
       void load();
     } finally {
       setExamDeleting(false);
+    }
+  };
+
+  const confirmDeleteSubject = async () => {
+    if (!subjectToDelete) return;
+    setSubjectDeleting(true);
+    try {
+      let res = await fetch(`/api/subjects?id=${subjectToDelete.id}`, { method: 'DELETE' });
+      let data = await res.json().catch(() => ({}));
+
+      if (!res.ok && res.status === 409) {
+        const force = window.confirm(
+          `Subject "${subjectToDelete.name}" has linked exams or student results. Permanently delete this subject and all associated records from the database?`
+        );
+        if (!force) {
+          setSubjectDeleting(false);
+          setSubjectToDelete(null);
+          return;
+        }
+        res = await fetch(`/api/subjects?id=${subjectToDelete.id}&force=1`, { method: 'DELETE' });
+        data = await res.json().catch(() => ({}));
+      }
+
+      if (!res.ok) {
+        showToast('error', (data as { error?: string })?.error ?? 'Unable to delete subject');
+        return;
+      }
+
+      showToast('success', 'Subject permanently deleted from database.');
+      setSubjectToDelete(null);
+      void load();
+    } finally {
+      setSubjectDeleting(false);
     }
   };
 
@@ -474,7 +509,7 @@ export default function AdminAcademicsPageClient({
         showToast('error', (data as { error?: string })?.error ?? 'Unable to delete result');
         return;
       }
-      showToast('success', 'Result entry removed.');
+      showToast('success', 'Result entry permanently deleted from database.');
       await loadResultRows(resultForm.examId);
       await load();
     } catch {
@@ -489,7 +524,6 @@ export default function AdminAcademicsPageClient({
       marksObtained: String(Math.round(Number(row.marksObtained))),
       remarks: row.remarks ?? ''
     });
-    // Smooth scroll to result form if on mobile
     window.scrollTo({ top: 300, behavior: 'smooth' });
   };
 
@@ -811,6 +845,7 @@ export default function AdminAcademicsPageClient({
                           onClick={() => setExamToDelete(exam)}
                           className="rounded-xl border border-[#FEE2E2] bg-[#FEF2F2] p-2 text-[#DC2626] hover:bg-[#FEE2E2] transition"
                           aria-label="Delete Exam"
+                          title="Permanently Delete Exam"
                         >
                           <Trash2 className="h-3.5 w-3.5" />
                         </button>
@@ -902,7 +937,7 @@ export default function AdminAcademicsPageClient({
                                 <button
                                   onClick={() => setExamToDelete(exam)}
                                   className="rounded-lg border border-[#FEE2E2] bg-[#FEF2F2] p-1 text-[#DC2626] hover:bg-[#FEE2E2] transition"
-                                  title="Delete Exam"
+                                  title="Permanently Delete Exam"
                                 >
                                   <Trash2 className="h-3.5 w-3.5" />
                                 </button>
@@ -1105,6 +1140,7 @@ export default function AdminAcademicsPageClient({
                             <button
                               onClick={() => handleDeleteResult(row.id)}
                               className="rounded-lg border border-[#FEE2E2] bg-[#FEF2F2] px-2.5 py-1 text-xs font-semibold text-[#DC2626] hover:bg-[#FEE2E2]"
+                              title="Permanently Delete Result"
                             >
                               Delete
                             </button>
@@ -1150,7 +1186,7 @@ export default function AdminAcademicsPageClient({
                                   <button
                                     onClick={() => handleDeleteResult(row.id)}
                                     className="rounded-lg border border-[#FEE2E2] bg-[#FEF2F2] p-1 text-[#DC2626] hover:bg-[#FEE2E2] transition"
-                                    title="Delete Result"
+                                    title="Permanently Delete Result"
                                   >
                                     <Trash2 className="h-3.5 w-3.5" />
                                   </button>
@@ -1179,9 +1215,13 @@ export default function AdminAcademicsPageClient({
                 <h3 className="text-base font-bold text-[#0F172A]">Classes Directory</h3>
                 <p className="text-xs text-[#64748B]">Active academic class sections and rosters</p>
               </div>
-              <span className="rounded-full bg-[#EAF2F2] px-2.5 py-0.5 text-xs font-bold text-[#1F5A5C]">
-                {classes.length} Classes
-              </span>
+              <a
+                href="/admin/classes"
+                className="inline-flex items-center gap-1 rounded-xl border border-[#E2E8F0] bg-white px-3 py-1.5 text-xs font-semibold text-[#0F172A] shadow-sm hover:bg-[#F8FAFC] transition"
+              >
+                <span>Manage in Classes</span>
+                <ChevronRight className="h-3.5 w-3.5" />
+              </a>
             </div>
 
             <div className="space-y-2.5 max-h-[600px] overflow-y-auto pr-1">
@@ -1203,6 +1243,13 @@ export default function AdminAcademicsPageClient({
                     <span className="rounded-lg bg-white border border-[#E2E8F0] px-2.5 py-1 text-xs font-semibold text-[#1F5A5C]">
                       {cls._count?.subjects ?? 0} Subjects
                     </span>
+                    <a
+                      href="/admin/classes"
+                      className="rounded-lg border border-[#E2E8F0] bg-white p-1 text-[#64748B] hover:text-[#0F172A] transition"
+                      title="Manage Class"
+                    >
+                      <ChevronRight className="h-3.5 w-3.5" />
+                    </a>
                   </div>
                 </div>
               ))}
@@ -1241,11 +1288,18 @@ export default function AdminAcademicsPageClient({
                       {sub.class ? `${sub.class.name} ${sub.class.section}` : 'Unassigned Class'}
                     </p>
                   </div>
-                  <div className="shrink-0 text-right">
+                  <div className="shrink-0 flex items-center gap-2">
                     <span className="inline-flex items-center gap-1 text-xs font-semibold text-[#0F172A]">
                       <UserCheck className="h-3.5 w-3.5 text-[#1F5A5C]" />
                       {sub.teacher?.user.fullName ?? 'No Teacher'}
                     </span>
+                    <button
+                      onClick={() => setSubjectToDelete(sub)}
+                      className="rounded-lg border border-[#FEE2E2] bg-[#FEF2F2] p-1.5 text-[#DC2626] hover:bg-[#FEE2E2] transition"
+                      title="Permanently Delete Subject"
+                    >
+                      <Trash2 className="h-3.5 w-3.5" />
+                    </button>
                   </div>
                 </div>
               ))}
@@ -1560,7 +1614,7 @@ export default function AdminAcademicsPageClient({
             <div>
               <h3 className="font-bold text-base text-[#0F172A]">Delete Examination?</h3>
               <p className="mt-1 text-xs text-[#64748B]">
-                Are you sure you want to delete <span className="font-semibold text-[#0F172A]">&ldquo;{examToDelete.title}&rdquo;</span>?
+                Are you sure you want to permanently delete <span className="font-semibold text-[#0F172A]">&ldquo;{examToDelete.title}&rdquo;</span> from the database?
               </p>
             </div>
             <div className="flex justify-center gap-2 pt-2">
@@ -1578,6 +1632,41 @@ export default function AdminAcademicsPageClient({
                 className="flex-1 inline-flex items-center justify-center gap-1.5 rounded-xl bg-[#DC2626] py-2.5 text-xs font-semibold text-white hover:bg-[#B91C1C] transition disabled:opacity-60"
               >
                 {examDeleting ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Trash2 className="h-3.5 w-3.5" />}
+                Delete
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Delete Subject Confirmation Modal */}
+      {subjectToDelete && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm p-4">
+          <div className="w-full max-w-sm rounded-2xl bg-white shadow-2xl border border-[#E2E8F0] p-6 text-center space-y-4">
+            <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-[#FEF2F2] text-[#DC2626]">
+              <Trash2 className="h-6 w-6" />
+            </div>
+            <div>
+              <h3 className="font-bold text-base text-[#0F172A]">Delete Subject?</h3>
+              <p className="mt-1 text-xs text-[#64748B]">
+                Are you sure you want to permanently delete <span className="font-semibold text-[#0F172A]">&ldquo;{subjectToDelete.name}&rdquo;</span> ({subjectToDelete.code}) from the database?
+              </p>
+            </div>
+            <div className="flex justify-center gap-2 pt-2">
+              <button
+                type="button"
+                onClick={() => setSubjectToDelete(null)}
+                className="flex-1 rounded-xl border border-[#E2E8F0] py-2.5 text-xs font-semibold text-[#0F172A] hover:bg-[#F8FAFC] transition"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                onClick={confirmDeleteSubject}
+                disabled={subjectDeleting}
+                className="flex-1 inline-flex items-center justify-center gap-1.5 rounded-xl bg-[#DC2626] py-2.5 text-xs font-semibold text-white hover:bg-[#B91C1C] transition disabled:opacity-60"
+              >
+                {subjectDeleting ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Trash2 className="h-3.5 w-3.5" />}
                 Delete
               </button>
             </div>
