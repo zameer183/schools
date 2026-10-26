@@ -1,6 +1,30 @@
 'use client';
 
 import { useCallback, useEffect, useMemo, useState } from 'react';
+import {
+  Award,
+  BookOpen,
+  Calendar,
+  Check,
+  CheckCircle2,
+  ChevronRight,
+  ClipboardList,
+  Edit3,
+  Filter,
+  GraduationCap,
+  Layers,
+  Loader2,
+  Plus,
+  Search,
+  Trash2,
+  Users,
+  X,
+  AlertCircle,
+  BarChart3,
+  Sparkles,
+  Building2,
+  UserCheck
+} from 'lucide-react';
 
 export type ClassItem = {
   id: string;
@@ -38,12 +62,14 @@ export type ExamItem = {
   class: { name: string; section: string };
   subject: { name: string };
 };
+
 export type StudentItem = {
   id: string;
   classId: string | null;
   admissionNo: string;
   fullName: string;
 };
+
 type ResultRow = {
   id: string;
   examId: string;
@@ -67,6 +93,25 @@ function classLabel(item: Partial<ClassItem>) {
   return 'Unnamed Class';
 }
 
+function gradeBadgeClass(grade: string) {
+  switch (grade) {
+    case 'A+':
+      return 'bg-[#dcfce7] text-[#15803d] border-[#bbf7d0]';
+    case 'A':
+      return 'bg-[#f0fdf4] text-[#16a34a] border-[#bbf7d0]';
+    case 'B':
+      return 'bg-[#eff6ff] text-[#2563eb] border-[#bfdbfe]';
+    case 'C':
+      return 'bg-[#fef9c3] text-[#a16207] border-[#fef08a]';
+    case 'D':
+      return 'bg-[#ffedd5] text-[#c2410c] border-[#fed7aa]';
+    case 'F':
+      return 'bg-[#fef2f2] text-[#dc2626] border-[#fecaca]';
+    default:
+      return 'bg-[#f1f5f9] text-[#64748b] border-[#e2e8f0]';
+  }
+}
+
 export default function AdminAcademicsPageClient({
   initialClasses,
   initialSubjects,
@@ -82,14 +127,36 @@ export default function AdminAcademicsPageClient({
   const [subjects, setSubjects] = useState<SubjectItem[]>(initialSubjects);
   const [teachers, setTeachers] = useState<TeacherItem[]>(initialTeachers);
   const [exams, setExams] = useState<ExamItem[]>(initialExams);
-  const [message, setMessage] = useState('');
+
+  // Active view tab
+  const [activeTab, setActiveTab] = useState<'exams' | 'results' | 'curriculum'>('exams');
+
+  // Filters & Search
+  const [examSearch, setExamSearch] = useState('');
+  const [examClassFilter, setExamClassFilter] = useState('all');
+  const [examStatusFilter, setExamStatusFilter] = useState<'all' | 'completed' | 'pending'>('all');
+
+  // Modals
+  const [isExamModalOpen, setIsExamModalOpen] = useState(false);
+  const [isSubjectModalOpen, setIsSubjectModalOpen] = useState(false);
+  const [examToDelete, setExamToDelete] = useState<ExamItem | null>(null);
+
+  // Notification Toast
+  const [toast, setToast] = useState<{ type: 'success' | 'error'; message: string } | null>(null);
+
+  // Loading States
   const [examSaving, setExamSaving] = useState(false);
+  const [subjectSaving, setSubjectSaving] = useState(false);
   const [resultSaving, setResultSaving] = useState(false);
-  const [resultRows, setResultRows] = useState<ResultRow[]>([]);
   const [resultLoading, setResultLoading] = useState(false);
+  const [examDeleting, setExamDeleting] = useState(false);
+
+  // Results State
+  const [resultRows, setResultRows] = useState<ResultRow[]>([]);
   const [studentOptionsByClassId, setStudentOptionsByClassId] = useState<Record<string, StudentItem[]>>({});
   const [studentOptionsLoadingClassId, setStudentOptionsLoadingClassId] = useState<string | null>(null);
 
+  // Forms
   const [subjectForm, setSubjectForm] = useState({ name: '', code: '', classId: '', teacherId: '', creditHours: 3 });
   const [examForm, setExamForm] = useState({
     id: '',
@@ -109,11 +176,13 @@ export default function AdminAcademicsPageClient({
     remarks: ''
   });
 
-  const filteredSubjects = useMemo(
-    () => subjects.filter((subject) => !examForm.classId || subject.classId === examForm.classId),
-    [subjects, examForm.classId]
-  );
-  const selectedExam = useMemo(() => exams.find((e) => e.id === resultForm.examId) ?? null, [exams, resultForm.examId]);
+  const showToast = useCallback((type: 'success' | 'error', message: string) => {
+    setToast({ type, message });
+    setTimeout(() => {
+      setToast(null);
+    }, 3500);
+  }, []);
+
   const classStudentCount = useMemo(() => {
     const map = new Map<string, number>();
     for (const item of classes) {
@@ -121,11 +190,27 @@ export default function AdminAcademicsPageClient({
     }
     return map;
   }, [classes]);
+
+  const totalEnrolledStudents = useMemo(() => {
+    return classes.reduce((sum, c) => sum + (c._count?.students ?? 0), 0);
+  }, [classes]);
+
+  const totalEvaluations = useMemo(() => {
+    return exams.reduce((sum, e) => sum + (e.resultsCount ?? 0), 0);
+  }, [exams]);
+
+  const filteredSubjectsForExamForm = useMemo(
+    () => subjects.filter((subject) => !examForm.classId || subject.classId === examForm.classId),
+    [subjects, examForm.classId]
+  );
+
+  const selectedExam = useMemo(() => exams.find((e) => e.id === resultForm.examId) ?? null, [exams, resultForm.examId]);
   const examStudents = selectedExam ? studentOptionsByClassId[selectedExam.classId] ?? [] : [];
   const examStudentsLoaded = selectedExam ? Object.prototype.hasOwnProperty.call(studentOptionsByClassId, selectedExam.classId) : false;
   const loadingExamStudents = Boolean(selectedExam && studentOptionsLoadingClassId === selectedExam.classId && !examStudentsLoaded);
 
   const gradeFor = (marks: number, total: number) => {
+    if (total <= 0) return 'F';
     const pct = (marks / total) * 100;
     if (pct >= 90) return 'A+';
     if (pct >= 80) return 'A';
@@ -135,18 +220,29 @@ export default function AdminAcademicsPageClient({
     return 'F';
   };
 
-  const load = async () => {
-    const [classesRes, subjectsRes, teachersRes, examsRes] = await Promise.all([
-      fetch('/api/classes'),
-      fetch('/api/subjects'),
-      fetch('/api/teachers'),
-      fetch('/api/exams')
-    ]);
+  const previewGrade = useMemo(() => {
+    if (!selectedExam || resultForm.marksObtained === '') return null;
+    const marks = Number(resultForm.marksObtained);
+    if (Number.isNaN(marks)) return null;
+    return gradeFor(marks, selectedExam.totalMarks);
+  }, [selectedExam, resultForm.marksObtained]);
 
-    setClasses(classesRes.ok ? await classesRes.json() : []);
-    setSubjects(subjectsRes.ok ? await subjectsRes.json() : []);
-    setTeachers(teachersRes.ok ? await teachersRes.json() : []);
-    setExams(examsRes.ok ? await examsRes.json() : []);
+  const load = async () => {
+    try {
+      const [classesRes, subjectsRes, teachersRes, examsRes] = await Promise.all([
+        fetch('/api/classes'),
+        fetch('/api/subjects'),
+        fetch('/api/teachers'),
+        fetch('/api/exams')
+      ]);
+
+      if (classesRes.ok) setClasses(await classesRes.json());
+      if (subjectsRes.ok) setSubjects(await subjectsRes.json());
+      if (teachersRes.ok) setTeachers(await teachersRes.json());
+      if (examsRes.ok) setExams(await examsRes.json());
+    } catch {
+      // transient network fallback
+    }
   };
 
   const loadStudentsForClass = useCallback(async (classId: string) => {
@@ -175,71 +271,48 @@ export default function AdminAcademicsPageClient({
     }
   }, [studentOptionsByClassId]);
 
-  const addSubject = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setMessage('');
-
-    const payload = { ...subjectForm, creditHours: Number(subjectForm.creditHours) };
-    const res = await fetch('/api/subjects', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(payload)
-    });
-
-    const data = await res.json().catch(() => ({}));
-    if (!res.ok) {
-      setMessage(data?.error ?? 'Unable to add subject');
+  const loadResultRows = async (examId: string) => {
+    if (!examId) {
+      setResultRows([]);
       return;
     }
-
-    setMessage('Subject added.');
-    setSubjectForm({ name: '', code: '', classId: '', teacherId: '', creditHours: 3 });
-    void load();
+    setResultLoading(true);
+    try {
+      const res = await fetch(`/api/results?examId=${examId}`);
+      const data = (await res.json().catch(() => [])) as ResultRow[];
+      setResultRows(res.ok ? data : []);
+    } finally {
+      setResultLoading(false);
+    }
   };
 
-  const saveExam = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setMessage('');
-    setExamSaving(true);
-
-    const payload = {
-      ...examForm,
-      totalMarks: Number(examForm.totalMarks),
-      passingMarks: Number(examForm.passingMarks)
-    };
-
-    const method = examForm.id ? 'PUT' : 'POST';
-    const res = await fetch('/api/exams', {
-      method,
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(payload)
-    });
-
-    const data = await res.json().catch(() => ({}));
-    if (!res.ok) {
-      setMessage(data?.error ?? 'Unable to save exam');
-      setExamSaving(false);
-      return;
+  const handleSelectExamForStudents = (examId: string) => {
+    const exam = exams.find((item) => item.id === examId) ?? null;
+    setResultForm((f) => ({ ...f, examId, studentId: '', marksObtained: '', remarks: '' }));
+    if (exam) {
+      void loadStudentsForClass(exam.classId);
+      void loadResultRows(examId);
+    } else {
+      setResultRows([]);
     }
+  };
 
-    setMessage(examForm.id ? 'Exam updated.' : 'Exam added.');
+  const openAddExamModal = () => {
     setExamForm({
       id: '',
       title: '',
       examType: 'One Juzz',
-      classId: '',
+      classId: classes[0]?.id ?? '',
       subjectId: '',
-      dueDate: '',
+      dueDate: new Date().toISOString().slice(0, 10),
       totalMarks: '100',
       passingMarks: '50',
-      createdByTeacherId: ''
+      createdByTeacherId: teachers[0]?.id ?? ''
     });
-
-    setExamSaving(false);
-    void load();
+    setIsExamModalOpen(true);
   };
 
-  const editExam = (exam: ExamItem) => {
+  const openEditExamModal = (exam: ExamItem) => {
     setExamForm({
       id: exam.id,
       title: exam.title,
@@ -251,378 +324,1266 @@ export default function AdminAcademicsPageClient({
       passingMarks: String(exam.passingMarks),
       createdByTeacherId: exam.createdById
     });
+    setIsExamModalOpen(true);
   };
 
-  const removeExam = async (id: string) => {
-    setMessage('');
-    let res = await fetch(`/api/exams?id=${id}`, { method: 'DELETE' });
-    let data = await res.json().catch(() => ({}));
-    if (!res.ok && res.status === 409) {
-      const yes = window.confirm('This exam has saved results. Delete exam and all linked results?');
-      if (!yes) return;
-      res = await fetch(`/api/exams?id=${id}&force=1`, { method: 'DELETE' });
-      data = await res.json().catch(() => ({}));
-    }
-    if (!res.ok) {
-      setMessage((data as { error?: string })?.error ?? 'Unable to delete exam');
-      return;
-    }
+  const openAddSubjectModal = () => {
+    setSubjectForm({
+      name: '',
+      code: '',
+      classId: classes[0]?.id ?? '',
+      teacherId: teachers[0]?.id ?? '',
+      creditHours: 3
+    });
+    setIsSubjectModalOpen(true);
+  };
 
-    setMessage('Exam deleted.');
-    if (examForm.id === id) {
-      setExamForm({
-        id: '',
-        title: '',
-        examType: 'One Juzz',
-        classId: '',
-        subjectId: '',
-        dueDate: '',
-        totalMarks: '100',
-        passingMarks: '50',
-        createdByTeacherId: ''
+  const handleSaveExam = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setExamSaving(true);
+
+    const payload = {
+      ...examForm,
+      totalMarks: Number(examForm.totalMarks),
+      passingMarks: Number(examForm.passingMarks)
+    };
+
+    const method = examForm.id ? 'PUT' : 'POST';
+    try {
+      const res = await fetch('/api/exams', {
+        method,
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload)
       });
+
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        showToast('error', data?.error ?? 'Unable to save exam');
+        return;
+      }
+
+      showToast('success', examForm.id ? 'Exam updated successfully.' : 'New exam scheduled successfully.');
+      setIsExamModalOpen(false);
+      void load();
+    } finally {
+      setExamSaving(false);
     }
-    void load();
   };
 
-  const saveResult = async (e: React.FormEvent) => {
+  const handleSaveSubject = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setSubjectSaving(true);
+
+    const payload = { ...subjectForm, creditHours: Number(subjectForm.creditHours) };
+    try {
+      const res = await fetch('/api/subjects', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload)
+      });
+
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        showToast('error', data?.error ?? 'Unable to add subject');
+        return;
+      }
+
+      showToast('success', 'Subject created successfully.');
+      setIsSubjectModalOpen(false);
+      void load();
+    } finally {
+      setSubjectSaving(false);
+    }
+  };
+
+  const confirmDeleteExam = async () => {
+    if (!examToDelete) return;
+    setExamDeleting(true);
+    try {
+      let res = await fetch(`/api/exams?id=${examToDelete.id}`, { method: 'DELETE' });
+      let data = await res.json().catch(() => ({}));
+
+      if (!res.ok && res.status === 409) {
+        const force = window.confirm('This exam already has student results. Permanently delete the exam and all student grades?');
+        if (!force) {
+          setExamDeleting(false);
+          setExamToDelete(null);
+          return;
+        }
+        res = await fetch(`/api/exams?id=${examToDelete.id}&force=1`, { method: 'DELETE' });
+        data = await res.json().catch(() => ({}));
+      }
+
+      if (!res.ok) {
+        showToast('error', (data as { error?: string })?.error ?? 'Unable to delete exam');
+        return;
+      }
+
+      showToast('success', 'Exam deleted successfully.');
+      setExamToDelete(null);
+      if (resultForm.examId === examToDelete.id) {
+        setResultForm({ examId: '', studentId: '', marksObtained: '', remarks: '' });
+        setResultRows([]);
+      }
+      void load();
+    } finally {
+      setExamDeleting(false);
+    }
+  };
+
+  const handleSaveResult = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!selectedExam) return;
     setResultSaving(true);
-    setMessage('');
     const marks = Number(resultForm.marksObtained);
-    const res = await fetch('/api/results', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        examId: resultForm.examId,
-        studentId: resultForm.studentId,
-        subjectId: selectedExam.subjectId,
-        marksObtained: marks,
-        grade: gradeFor(marks, selectedExam.totalMarks),
-        remarks: resultForm.remarks
-      })
-    });
-    const data = await res.json().catch(() => ({}));
-    if (!res.ok) {
-      setMessage(data?.error ?? 'Unable to save result');
+
+    try {
+      const res = await fetch('/api/results', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          examId: resultForm.examId,
+          studentId: resultForm.studentId,
+          subjectId: selectedExam.subjectId,
+          marksObtained: marks,
+          grade: gradeFor(marks, selectedExam.totalMarks),
+          remarks: resultForm.remarks
+        })
+      });
+
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        showToast('error', data?.error ?? 'Unable to record result');
+        return;
+      }
+
+      showToast('success', 'Student grade saved and published.');
+      setResultForm((f) => ({ ...f, studentId: '', marksObtained: '', remarks: '' }));
+      await loadResultRows(resultForm.examId);
+      await load();
+    } finally {
       setResultSaving(false);
-      return;
     }
-    setMessage('Result saved. Student can now see this in Results page.');
-    setResultForm((f) => ({ ...f, studentId: '', marksObtained: '', remarks: '' }));
-    setResultSaving(false);
-    await loadResultRows(resultForm.examId);
-    await load();
   };
 
-  const loadResultRows = async (examId: string) => {
-    if (!examId) {
-      setResultRows([]);
-      return;
+  const handleDeleteResult = async (id: string) => {
+    try {
+      const res = await fetch(`/api/results?id=${id}`, { method: 'DELETE' });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        showToast('error', (data as { error?: string })?.error ?? 'Unable to delete result');
+        return;
+      }
+      showToast('success', 'Result entry removed.');
+      await loadResultRows(resultForm.examId);
+      await load();
+    } catch {
+      showToast('error', 'Network error deleting result.');
     }
-    setResultLoading(true);
-    const res = await fetch(`/api/results?examId=${examId}`);
-    const data = (await res.json().catch(() => [])) as ResultRow[];
-    setResultRows(res.ok ? data : []);
-    setResultLoading(false);
   };
 
-  const editResult = (row: ResultRow) => {
+  const handleEditResult = (row: ResultRow) => {
     setResultForm({
       examId: row.examId,
       studentId: row.studentId,
       marksObtained: String(Math.round(Number(row.marksObtained))),
       remarks: row.remarks ?? ''
     });
+    // Smooth scroll to result form if on mobile
+    window.scrollTo({ top: 300, behavior: 'smooth' });
   };
 
-  const deleteResult = async (id: string) => {
-    const res = await fetch(`/api/results?id=${id}`, { method: 'DELETE' });
-    const data = await res.json().catch(() => ({}));
-    if (!res.ok) {
-      setMessage((data as { error?: string })?.error ?? 'Unable to delete result');
-      return;
-    }
-    setMessage('Result deleted.');
-    await loadResultRows(resultForm.examId);
-    await load();
-  };
+  // Filtered exams for Tab 1
+  const filteredExams = useMemo(() => {
+    return exams.filter((exam) => {
+      const matchSearch =
+        exam.title.toLowerCase().includes(examSearch.toLowerCase()) ||
+        exam.subject.name.toLowerCase().includes(examSearch.toLowerCase()) ||
+        exam.class.name.toLowerCase().includes(examSearch.toLowerCase());
 
-  const selectedExamClassId = selectedExam?.classId ?? '';
+      const matchClass = examClassFilter === 'all' || exam.classId === examClassFilter;
 
-  const handleSelectExamForStudents = (examId: string) => {
-    const exam = exams.find((item) => item.id === examId) ?? null;
-    if (!exam) {
-      setResultForm((f) => ({ ...f, examId, studentId: '' }));
-      return;
-    }
+      const total = classStudentCount.get(exam.classId) ?? 0;
+      const entered = exam.resultsCount ?? 0;
+      const isDone = total > 0 && entered >= total;
 
-    setResultForm((f) => ({ ...f, examId, studentId: '' }));
-    void loadStudentsForClass(exam.classId);
-    void loadResultRows(examId);
-  };
+      const matchStatus =
+        examStatusFilter === 'all' ||
+        (examStatusFilter === 'completed' && isDone) ||
+        (examStatusFilter === 'pending' && !isDone);
 
-  useEffect(() => {
-    if (selectedExamClassId) {
-      void loadStudentsForClass(selectedExamClassId);
-    }
-  }, [loadStudentsForClass, selectedExamClassId]);
+      return matchSearch && matchClass && matchStatus;
+    });
+  }, [exams, examSearch, examClassFilter, examStatusFilter, classStudentCount]);
 
   return (
-    <div className="space-y-4">
-      <div className="rounded-2xl bg-white shadow-[0_4px_16px_rgba(15,23,42,0.06)] border border-[#edf2f7] p-6">
-        <h2 className="text-3xl font-bold text-[#0f172a]">Classes, Subjects &amp; Exams</h2>
-        <p className="mt-1 text-sm text-[#64748b]">Manage complete academic structure with exam planning and control.</p>
-
-        <div className="mt-5 grid gap-4 lg:grid-cols-1">
-          <form onSubmit={addSubject} className="rounded-xl bg-[#f3f4f5] p-4">
-            <h3 className="font-semibold text-[#0f172a] mb-3">Create Subject</h3>
-            <p className="mb-3 text-xs text-[#64748b]">
-              Create new classes from <span className="font-semibold">Classes</span> page. Here you can map subjects and exams.
-            </p>
-            <div className="grid gap-3 sm:grid-cols-2">
-              <input className="h-10 rounded-xl bg-white border border-[#cbd5e1] px-3.5 text-sm text-[#0f172a] outline-none focus:border-[#1F5A5C] focus:ring-2 focus:ring-[#1F5A5C]/20" placeholder="Subject Name" value={subjectForm.name} onChange={(e) => setSubjectForm((f) => ({ ...f, name: e.target.value }))} required />
-              <input className="h-10 rounded-xl bg-white border border-[#cbd5e1] px-3.5 text-sm text-[#0f172a] outline-none focus:border-[#1F5A5C] focus:ring-2 focus:ring-[#1F5A5C]/20" placeholder="Code" value={subjectForm.code} onChange={(e) => setSubjectForm((f) => ({ ...f, code: e.target.value }))} required />
-              <select className="h-10 rounded-xl bg-white border border-[#cbd5e1] px-3.5 text-sm text-[#0f172a] outline-none focus:border-[#1F5A5C] focus:ring-2 focus:ring-[#1F5A5C]/20" value={subjectForm.classId} onChange={(e) => setSubjectForm((f) => ({ ...f, classId: e.target.value }))} required>
-                <option value="">Select Class</option>
-                {classes.map((c) => <option key={c.id} value={c.id}>{classLabel(c)}</option>)}
-              </select>
-              <select className="h-10 rounded-xl bg-white border border-[#cbd5e1] px-3.5 text-sm text-[#0f172a] outline-none focus:border-[#1F5A5C] focus:ring-2 focus:ring-[#1F5A5C]/20" value={subjectForm.teacherId} onChange={(e) => setSubjectForm((f) => ({ ...f, teacherId: e.target.value }))}>
-                <option value="">Assign Teacher (optional)</option>
-                {teachers.map((t) => <option key={t.id} value={t.id}>{t.user.fullName}</option>)}
-              </select>
-              <input className="h-10 rounded-xl bg-white border border-[#cbd5e1] px-3.5 text-sm text-[#0f172a] outline-none focus:border-[#1F5A5C] focus:ring-2 focus:ring-[#1F5A5C]/20 sm:col-span-2" type="number" min={1} value={subjectForm.creditHours} onChange={(e) => setSubjectForm((f) => ({ ...f, creditHours: Number(e.target.value) }))} />
-            </div>
-            <button className="mt-3 rounded-xl bg-gradient-to-br from-[#1F5A5C] to-[#2D7578] px-4 py-2 text-sm font-semibold text-white hover:opacity-90">Add Subject</button>
-          </form>
-        </div>
-
-        <form onSubmit={saveExam} className="mt-4 rounded-xl bg-[#f3f4f5] p-4">
-          <div className="flex flex-wrap items-center justify-between gap-2 mb-3">
-            <h3 className="font-semibold text-[#0f172a]">Exam Manager (Add / Edit / Delete)</h3>
-            {examForm.id ? (
-              <button type="button" onClick={() => setExamForm({ id: '', title: '', examType: 'One Juzz', classId: '', subjectId: '', dueDate: '', totalMarks: '100', passingMarks: '50', createdByTeacherId: '' })} className="rounded-xl border border-[#e0e5e5] px-3 py-1.5 text-xs font-semibold text-[#0f172a] hover:bg-white">
-                Cancel Edit
-              </button>
-            ) : null}
-          </div>
-
-          <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-            <input className="h-10 rounded-xl bg-white border border-[#cbd5e1] px-3.5 text-sm text-[#0f172a] outline-none focus:border-[#1F5A5C] focus:ring-2 focus:ring-[#1F5A5C]/20" placeholder="Exam title" value={examForm.title} onChange={(e) => setExamForm((f) => ({ ...f, title: e.target.value }))} required />
-
-            <select className="h-10 rounded-xl bg-white border border-[#cbd5e1] px-3.5 text-sm text-[#0f172a] outline-none focus:border-[#1F5A5C] focus:ring-2 focus:ring-[#1F5A5C]/20" value={examForm.examType} onChange={(e) => setExamForm((f) => ({ ...f, examType: e.target.value }))}>
-              {EXAM_TYPES.map((item) => <option key={item} value={item}>{item}</option>)}
-            </select>
-
-            <select className="h-10 rounded-xl bg-white border border-[#cbd5e1] px-3.5 text-sm text-[#0f172a] outline-none focus:border-[#1F5A5C] focus:ring-2 focus:ring-[#1F5A5C]/20" value={examForm.classId} onChange={(e) => setExamForm((f) => ({ ...f, classId: e.target.value, subjectId: '' }))} required>
-              <option value="">Select Class</option>
-              {classes.map((c) => <option key={c.id} value={c.id}>{classLabel(c)}</option>)}
-            </select>
-
-            <select className="h-10 rounded-xl bg-white border border-[#cbd5e1] px-3.5 text-sm text-[#0f172a] outline-none focus:border-[#1F5A5C] focus:ring-2 focus:ring-[#1F5A5C]/20" value={examForm.subjectId} onChange={(e) => setExamForm((f) => ({ ...f, subjectId: e.target.value }))} required>
-              <option value="">Select Subject</option>
-              {filteredSubjects.map((s) => <option key={s.id} value={s.id}>{s.name} ({s.code})</option>)}
-            </select>
-
-            <input className="h-10 rounded-xl bg-white border border-[#cbd5e1] px-3.5 text-sm text-[#0f172a] outline-none focus:border-[#1F5A5C] focus:ring-2 focus:ring-[#1F5A5C]/20" type="date" value={examForm.dueDate} onChange={(e) => setExamForm((f) => ({ ...f, dueDate: e.target.value }))} required />
-
-            <input className="h-10 rounded-xl bg-white border border-[#cbd5e1] px-3.5 text-sm text-[#0f172a] outline-none focus:border-[#1F5A5C] focus:ring-2 focus:ring-[#1F5A5C]/20" type="number" min={1} placeholder="Total marks" value={examForm.totalMarks} onChange={(e) => setExamForm((f) => ({ ...f, totalMarks: e.target.value }))} required />
-
-            <input className="h-10 rounded-xl bg-white border border-[#cbd5e1] px-3.5 text-sm text-[#0f172a] outline-none focus:border-[#1F5A5C] focus:ring-2 focus:ring-[#1F5A5C]/20" type="number" min={0} placeholder="Passing marks" value={examForm.passingMarks} onChange={(e) => setExamForm((f) => ({ ...f, passingMarks: e.target.value }))} required />
-
-            <select className="h-10 rounded-xl bg-white border border-[#cbd5e1] px-3.5 text-sm text-[#0f172a] outline-none focus:border-[#1F5A5C] focus:ring-2 focus:ring-[#1F5A5C]/20" value={examForm.createdByTeacherId} onChange={(e) => setExamForm((f) => ({ ...f, createdByTeacherId: e.target.value }))} required>
-              <option value="">Teacher who added exam</option>
-              {teachers.map((teacher) => <option key={teacher.id} value={teacher.id}>{teacher.user.fullName}</option>)}
-            </select>
-          </div>
-
-          <button disabled={examSaving} className="mt-3 rounded-xl bg-gradient-to-br from-[#1F5A5C] to-[#2D7578] px-4 py-2 text-sm font-semibold text-white hover:opacity-90 disabled:opacity-60">
-            {examSaving ? 'Saving...' : examForm.id ? 'Update Exam' : 'Add Exam'}
+    <div className="space-y-5 pb-32 sm:pb-12">
+      {/* Toast Notification */}
+      {toast && (
+        <div
+          className={`fixed top-20 right-4 z-50 flex items-center gap-2.5 rounded-xl border px-4 py-3 text-sm font-semibold shadow-xl transition-all duration-300 ${
+            toast.type === 'success'
+              ? 'bg-[#1F5A5C] text-white border-[#2D7578]'
+              : 'bg-[#dc2626] text-white border-[#b91c1c]'
+          }`}
+        >
+          {toast.type === 'success' ? <CheckCircle2 className="h-4 w-4 shrink-0" /> : <AlertCircle className="h-4 w-4 shrink-0" />}
+          <span>{toast.message}</span>
+          <button onClick={() => setToast(null)} className="ml-2 opacity-70 hover:opacity-100">
+            <X className="h-4 w-4" />
           </button>
-        </form>
+        </div>
+      )}
 
-        {message ? (
-          <p className={`mt-3 text-sm ${message.toLowerCase().includes('unable') || message.toLowerCase().includes('error') ? 'text-[#ba1a1a]' : 'text-[#1F5A5C]'}`}>
-            {message}
-          </p>
-        ) : null}
+      {/* ── 1. Header Banner ────────────────────────────────────────────────── */}
+      <div className="rounded-2xl bg-white p-5 shadow-[0_4px_16px_rgba(15,23,42,0.05)] border border-[#E2E8F0] sm:p-6">
+        <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+          <div>
+            <div className="inline-flex items-center gap-1.5 rounded-full bg-[#EAF2F2] px-2.5 py-1 text-[11px] font-bold text-[#1F5A5C]">
+              <Sparkles className="h-3 w-3" />
+              Academic Management
+            </div>
+            <h1 className="mt-1 text-2xl font-bold tracking-tight text-[#0F172A] sm:text-3xl">Academics & Examination</h1>
+            <p className="mt-1 text-xs text-[#64748B] sm:text-sm">
+              Manage curriculum structure, plan evaluation exams, allocate subjects, and record student grades.
+            </p>
+          </div>
+
+          {/* Quick Actions */}
+          <div className="flex flex-wrap items-center gap-2.5">
+            <button
+              onClick={openAddSubjectModal}
+              className="inline-flex items-center gap-1.5 rounded-xl border border-[#E2E8F0] bg-white px-3.5 py-2.5 text-xs font-semibold text-[#0F172A] shadow-sm hover:bg-[#F8FAFC] active:scale-[0.98] transition"
+            >
+              <BookOpen className="h-3.5 w-3.5 text-[#1F5A5C]" />
+              Add Subject
+            </button>
+            <button
+              onClick={openAddExamModal}
+              className="inline-flex items-center gap-1.5 rounded-xl bg-gradient-to-r from-[#1F5A5C] to-[#2D7578] px-4 py-2.5 text-xs font-semibold text-white shadow-[0_4px_12px_rgba(31,90,92,0.25)] hover:opacity-95 active:scale-[0.98] transition"
+            >
+              <Plus className="h-4 w-4" />
+              Schedule Exam
+            </button>
+          </div>
+        </div>
       </div>
 
-      <div className="grid gap-4 lg:grid-cols-2">
-        <div className="rounded-2xl bg-white shadow-[0_4px_16px_rgba(15,23,42,0.06)] border border-[#edf2f7] p-6">
-          <h3 className="font-semibold text-[#0f172a] mb-4">Classes</h3>
-          <div className="space-y-2">
-            {classes.map((item) => (
-              <div key={item.id} className="rounded-xl bg-[#f3f4f5] px-4 py-3">
-                <p className="font-semibold text-[#0f172a]">{item.name} - {item.section}</p>
-                <p className="text-xs text-[#64748b] mt-0.5">Year: {item.academicYear} | Room: {item.roomNo ?? '-'} | Students: {item._count?.students ?? 0} | Subjects: {item._count?.subjects ?? 0}</p>
-              </div>
-            ))}
-            {classes.length === 0 ? <p className="text-sm text-[#64748b]">No classes created yet.</p> : null}
+      {/* ── 2. KPI Metrics Grid ──────────────────────────────────────────────── */}
+      <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
+        {/* Classes KPI */}
+        <div className="rounded-2xl bg-white p-4 shadow-[0_2px_8px_rgba(0,0,0,0.04)] border border-[#E2E8F0] flex items-center gap-3.5">
+          <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-[#EAF2F2] text-[#1F5A5C]">
+            <Building2 className="h-5 w-5" />
+          </div>
+          <div className="min-w-0">
+            <p className="text-[11px] font-bold uppercase tracking-wider text-[#64748B]">Classes</p>
+            <p className="text-xl font-bold text-[#0F172A] sm:text-2xl">{classes.length}</p>
+            <p className="text-[11px] text-[#64748B] truncate">{totalEnrolledStudents} students enrolled</p>
           </div>
         </div>
 
-        <div className="rounded-2xl bg-white shadow-[0_4px_16px_rgba(15,23,42,0.06)] border border-[#edf2f7] p-6">
-          <h3 className="font-semibold text-[#0f172a] mb-4">Subjects</h3>
-          <div className="space-y-2">
-            {subjects.map((item) => (
-              <div key={item.id} className="rounded-xl bg-[#f3f4f5] px-4 py-3">
-                <p className="font-semibold text-[#0f172a]">{item.name} ({item.code})</p>
-                <p className="text-xs text-[#64748b] mt-0.5">Class: {item.class ? `${item.class.name} - ${item.class.section}` : '-'} | Teacher: {item.teacher?.user.fullName ?? 'Unassigned'}</p>
-              </div>
-            ))}
-            {subjects.length === 0 ? <p className="text-sm text-[#64748b]">No subjects created yet.</p> : null}
+        {/* Subjects KPI */}
+        <div className="rounded-2xl bg-white p-4 shadow-[0_2px_8px_rgba(0,0,0,0.04)] border border-[#E2E8F0] flex items-center gap-3.5">
+          <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-[#EFF6FF] text-[#2563EB]">
+            <BookOpen className="h-5 w-5" />
+          </div>
+          <div className="min-w-0">
+            <p className="text-[11px] font-bold uppercase tracking-wider text-[#64748B]">Subjects</p>
+            <p className="text-xl font-bold text-[#0F172A] sm:text-2xl">{subjects.length}</p>
+            <p className="text-[11px] text-[#64748B] truncate">{teachers.length} teachers assigned</p>
+          </div>
+        </div>
+
+        {/* Exams KPI */}
+        <div className="rounded-2xl bg-white p-4 shadow-[0_2px_8px_rgba(0,0,0,0.04)] border border-[#E2E8F0] flex items-center gap-3.5">
+          <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-[#FEF3C7] text-[#D97706]">
+            <Calendar className="h-5 w-5" />
+          </div>
+          <div className="min-w-0">
+            <p className="text-[11px] font-bold uppercase tracking-wider text-[#64748B]">Exams</p>
+            <p className="text-xl font-bold text-[#0F172A] sm:text-2xl">{exams.length}</p>
+            <p className="text-[11px] text-[#64748B] truncate">Planned & completed</p>
+          </div>
+        </div>
+
+        {/* Evaluations KPI */}
+        <div className="rounded-2xl bg-white p-4 shadow-[0_2px_8px_rgba(0,0,0,0.04)] border border-[#E2E8F0] flex items-center gap-3.5">
+          <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-[#DCFCE7] text-[#15803D]">
+            <Award className="h-5 w-5" />
+          </div>
+          <div className="min-w-0">
+            <p className="text-[11px] font-bold uppercase tracking-wider text-[#64748B]">Evaluations</p>
+            <p className="text-xl font-bold text-[#0F172A] sm:text-2xl">{totalEvaluations}</p>
+            <p className="text-[11px] text-[#64748B] truncate">Student papers graded</p>
           </div>
         </div>
       </div>
 
-      <div className="rounded-2xl bg-white shadow-[0_4px_16px_rgba(15,23,42,0.06)] border border-[#edf2f7] p-6">
-        <h3 className="font-semibold text-[#0f172a] mb-4">Exam List</h3>
-        {exams.length === 0 ? (
-          <p className="text-sm text-[#64748b]">No exams created yet.</p>
-        ) : (
-          <div className="overflow-x-auto">
-            <table className="w-full min-w-[900px] text-sm">
-              <thead>
-                <tr className="border-b border-[#e2e8e8]">
-                  <th className="pb-2 text-left text-[10px] font-bold uppercase tracking-widest text-[#64748b]">Title</th>
-                  <th className="pb-2 text-left text-[10px] font-bold uppercase tracking-widest text-[#64748b]">Exam Type</th>
-                  <th className="pb-2 text-left text-[10px] font-bold uppercase tracking-widest text-[#64748b]">Class</th>
-                  <th className="pb-2 text-left text-[10px] font-bold uppercase tracking-widest text-[#64748b]">Subject</th>
-                  <th className="pb-2 text-left text-[10px] font-bold uppercase tracking-widest text-[#64748b]">Due Date</th>
-                  <th className="pb-2 text-left text-[10px] font-bold uppercase tracking-widest text-[#64748b]">Teacher</th>
-                  <th className="pb-2 text-left text-[10px] font-bold uppercase tracking-widest text-[#64748b]">Marks</th>
-                  <th className="pb-2 text-left text-[10px] font-bold uppercase tracking-widest text-[#64748b]">Results Status</th>
-                  <th className="pb-2 text-right text-[10px] font-bold uppercase tracking-widest text-[#64748b]">Action</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-[#e2e8e8]">
-                {exams.map((exam) => (
-                  <tr key={exam.id}>
-                    <td className="py-3 font-medium text-[#0f172a]">{exam.title}</td>
-                    <td className="py-3 text-[#64748b]">{exam.examType ?? 'Custom'}</td>
-                    <td className="py-3 text-[#64748b]">{exam.class.name} - {exam.class.section}</td>
-                    <td className="py-3 text-[#64748b]">{exam.subject.name}</td>
-                    <td className="py-3 text-[#64748b]">{new Date(exam.dueDate ?? exam.examDate).toISOString().slice(0, 10)}</td>
-                    <td className="py-3 text-[#0f172a]">{exam.teacherName ?? '-'}</td>
-                    <td className="py-3 text-[#0f172a]">{exam.passingMarks}/{exam.totalMarks}</td>
-                    <td className="py-3 text-[#0f172a]">
-                      {(() => {
-                        const total = classStudentCount.get(exam.classId) ?? 0;
-                        const entered = exam.resultsCount ?? 0;
-                        const done = total > 0 && entered >= total;
-                        return (
-                          <div className="flex items-center gap-2">
-                            <span className="text-xs font-semibold">{entered}/{total}</span>
-                            <span className={`rounded-full px-2 py-0.5 text-[10px] font-bold ${done ? 'bg-[#dcfce7] text-[#166534]' : 'bg-[#fff7ed] text-[#9a3412]'}`}>
-                              {done ? 'Completed' : 'Pending'}
-                            </span>
-                          </div>
-                        );
-                      })()}
-                    </td>
-                    <td className="py-3 text-right">
-                      <div className="inline-flex gap-2">
-                        <button type="button" onClick={() => editExam(exam)} className="rounded-xl border border-[#e0e5e5] px-3 py-1.5 text-xs font-semibold text-[#0f172a] hover:bg-[#f3f4f5]">Edit</button>
-                        <button type="button" onClick={() => void removeExam(exam.id)} className="rounded-xl border border-[#f3b3b3] px-3 py-1.5 text-xs font-semibold text-[#ba1a1a] hover:bg-[#fde8e8]">Delete</button>
-                      </div>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        )}
-      </div>
-
-      <form onSubmit={saveResult} className="rounded-2xl bg-white shadow-[0_4px_16px_rgba(15,23,42,0.06)] border border-[#edf2f7] p-6">
-        <h3 className="font-semibold text-[#0f172a] mb-4">Add Student Result</h3>
-        {exams.length === 0 ? (
-          <p className="mb-3 rounded-xl bg-[#fff7ed] px-3 py-2 text-xs text-[#9a3412]">
-            No exams found. Please create an exam first in Exam Manager.
-          </p>
-        ) : null}
-        {!selectedExam ? (
-          <p className="mb-3 rounded-xl bg-[#f3f4f5] px-3 py-2 text-xs text-[#64748b]">
-            Step 1: Select exam. Step 2: Select student from that class. Step 3: Enter obtained marks and save.
-          </p>
-        ) : null}
-        {selectedExam ? (
-          <div className="mb-3 flex flex-wrap items-center gap-2">
-            <span className="rounded-full bg-[#e8f4f5] px-3 py-1 text-xs font-semibold text-[#1a5058]">
-              Total Marks: {selectedExam.totalMarks}
-            </span>
-            <span className="rounded-full bg-[#fff7ed] px-3 py-1 text-xs font-semibold text-[#9a3412]">
-              Passing Marks: {selectedExam.passingMarks}
-            </span>
-          </div>
-        ) : null}
-        <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-          <select
-            className="h-10 rounded-xl bg-[#edeeef] border-none px-3 text-sm outline-none"
-            value={resultForm.examId}
-            onChange={(e) => {
-              handleSelectExamForStudents(e.target.value);
-            }}
-            required
-            disabled={exams.length === 0}
-          >
-            <option value="">Select Exam</option>
-            {exams.map((exam) => <option key={exam.id} value={exam.id}>{exam.title} - {exam.class.name} {exam.class.section}</option>)}
-          </select>
-          <select className="h-10 rounded-xl bg-[#edeeef] border-none px-3 text-sm outline-none" value={resultForm.studentId} onChange={(e) => setResultForm((f) => ({ ...f, studentId: e.target.value }))} required disabled={!selectedExam || loadingExamStudents}>
-            <option value="">{!selectedExam ? 'Select Exam First' : loadingExamStudents ? 'Loading Students...' : 'Select Student'}</option>
-            {examStudents.map((student) => <option key={student.id} value={student.id}>{student.fullName} ({student.admissionNo})</option>)}
-          </select>
-          <input className="h-10 rounded-xl bg-[#edeeef] border-none px-3 text-sm outline-none disabled:opacity-60" type="number" min={0} max={selectedExam?.totalMarks ?? 100} placeholder={selectedExam ? `Obtained marks (0-${selectedExam.totalMarks})` : 'Select exam first'} value={resultForm.marksObtained} onChange={(e) => setResultForm((f) => ({ ...f, marksObtained: e.target.value }))} required disabled={!selectedExam} />
-          <input className="h-10 rounded-xl bg-[#edeeef] border-none px-3 text-sm outline-none disabled:opacity-60" placeholder={selectedExam ? 'Remarks (optional)' : 'Select exam first'} value={resultForm.remarks} onChange={(e) => setResultForm((f) => ({ ...f, remarks: e.target.value }))} disabled={!selectedExam} />
-        </div>
-        <button disabled={exams.length === 0 || resultSaving || !selectedExam || !resultForm.studentId} className="mt-3 rounded-xl bg-gradient-to-br from-[#1F5A5C] to-[#2D7578] px-4 py-2 text-sm font-semibold text-white hover:opacity-90 disabled:opacity-60">
-          {resultSaving ? 'Saving...' : 'Save Result'}
+      {/* ── 3. Segmented Navigation Tabs ─────────────────────────────────────── */}
+      <div className="flex items-center gap-1.5 rounded-2xl bg-[#E2E8F0]/50 p-1.5 backdrop-blur-sm">
+        <button
+          onClick={() => setActiveTab('exams')}
+          className={`flex flex-1 items-center justify-center gap-2 rounded-xl py-2.5 text-xs font-bold transition-all ${
+            activeTab === 'exams'
+              ? 'bg-white text-[#1F5A5C] shadow-sm'
+              : 'text-[#64748B] hover:text-[#0F172A]'
+          }`}
+        >
+          <ClipboardList className="h-4 w-4" />
+          <span>Exams</span>
+          <span className={`rounded-full px-1.5 py-0.2 text-[10px] ${activeTab === 'exams' ? 'bg-[#EAF2F2] text-[#1F5A5C]' : 'bg-[#E2E8F0] text-[#64748B]'}`}>
+            {exams.length}
+          </span>
         </button>
 
-        <div className="mt-5 border-t border-[#e2e8e8] pt-4">
-          <h4 className="font-semibold text-[#0f172a] mb-3">Saved Results ({resultRows.length})</h4>
-          {!resultForm.examId ? (
-            <p className="text-sm text-[#64748b]">Select an exam to view/edit/delete results.</p>
-          ) : resultLoading ? (
-            <p className="text-sm text-[#64748b]">Loading results...</p>
-          ) : resultRows.length === 0 ? (
-            <p className="text-sm text-[#64748b]">No results saved for this exam yet.</p>
-          ) : (
-            <div className="overflow-x-auto">
-              <table className="w-full min-w-[700px] text-sm">
-                <thead>
-                  <tr className="border-b border-[#e2e8e8]">
-                    <th className="pb-2 text-left text-[10px] font-bold uppercase tracking-widest text-[#64748b]">Student</th>
-                    <th className="pb-2 text-left text-[10px] font-bold uppercase tracking-widest text-[#64748b]">Marks</th>
-                    <th className="pb-2 text-left text-[10px] font-bold uppercase tracking-widest text-[#64748b]">Grade</th>
-                    <th className="pb-2 text-left text-[10px] font-bold uppercase tracking-widest text-[#64748b]">Remarks</th>
-                    <th className="pb-2 text-right text-[10px] font-bold uppercase tracking-widest text-[#64748b]">Action</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-[#e2e8e8]">
-                  {resultRows.map((row) => (
-                    <tr key={row.id}>
-                      <td className="py-3 font-medium text-[#0f172a]">{row.student.user.fullName}</td>
-                      <td className="py-3 text-[#0f172a]">{Math.round(Number(row.marksObtained))}/{selectedExam?.totalMarks ?? '-'}</td>
-                      <td className="py-3 text-[#0f172a]">{row.grade}</td>
-                      <td className="py-3 text-[#64748b]">{row.remarks || '-'}</td>
-                      <td className="py-3 text-right">
-                        <div className="inline-flex gap-2">
-                          <button type="button" onClick={() => editResult(row)} className="rounded-xl border border-[#e0e5e5] px-3 py-1.5 text-xs font-semibold text-[#0f172a] hover:bg-[#f3f4f5]">Edit</button>
-                          <button type="button" onClick={() => void deleteResult(row.id)} className="rounded-xl border border-[#f3b3b3] px-3 py-1.5 text-xs font-semibold text-[#ba1a1a] hover:bg-[#fde8e8]">Delete</button>
-                        </div>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
+        <button
+          onClick={() => setActiveTab('results')}
+          className={`flex flex-1 items-center justify-center gap-2 rounded-xl py-2.5 text-xs font-bold transition-all ${
+            activeTab === 'results'
+              ? 'bg-white text-[#1F5A5C] shadow-sm'
+              : 'text-[#64748B] hover:text-[#0F172A]'
+          }`}
+        >
+          <Award className="h-4 w-4" />
+          <span>Results &amp; Grades</span>
+          <span className={`rounded-full px-1.5 py-0.2 text-[10px] ${activeTab === 'results' ? 'bg-[#EAF2F2] text-[#1F5A5C]' : 'bg-[#E2E8F0] text-[#64748B]'}`}>
+            {totalEvaluations}
+          </span>
+        </button>
+
+        <button
+          onClick={() => setActiveTab('curriculum')}
+          className={`flex flex-1 items-center justify-center gap-2 rounded-xl py-2.5 text-xs font-bold transition-all ${
+            activeTab === 'curriculum'
+              ? 'bg-white text-[#1F5A5C] shadow-sm'
+              : 'text-[#64748B] hover:text-[#0F172A]'
+          }`}
+        >
+          <Layers className="h-4 w-4" />
+          <span>Classes &amp; Subjects</span>
+          <span className={`rounded-full px-1.5 py-0.2 text-[10px] ${activeTab === 'curriculum' ? 'bg-[#EAF2F2] text-[#1F5A5C]' : 'bg-[#E2E8F0] text-[#64748B]'}`}>
+            {subjects.length}
+          </span>
+        </button>
+      </div>
+
+      {/* ── 4. TAB 1: EXAMS DIRECTORY ────────────────────────────────────────── */}
+      {activeTab === 'exams' && (
+        <div className="space-y-4">
+          {/* Controls Bar */}
+          <div className="rounded-2xl bg-white p-4 shadow-[0_2px_8px_rgba(0,0,0,0.04)] border border-[#E2E8F0]">
+            <div className="grid gap-3 sm:grid-cols-3">
+              {/* Search */}
+              <div className="relative">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-[#94A3B8]" />
+                <input
+                  type="text"
+                  placeholder="Search exams, subjects..."
+                  value={examSearch}
+                  onChange={(e) => setExamSearch(e.target.value)}
+                  className="h-10 w-full rounded-xl border border-[#E2E8F0] bg-white pl-9 pr-3 text-xs text-[#0F172A] outline-none focus:border-[#1F5A5C] focus:ring-1 focus:ring-[#1F5A5C] transition"
+                />
+              </div>
+
+              {/* Class Filter */}
+              <select
+                value={examClassFilter}
+                onChange={(e) => setExamClassFilter(e.target.value)}
+                className="h-10 w-full rounded-xl border border-[#E2E8F0] bg-white px-3 text-xs text-[#0F172A] outline-none focus:border-[#1F5A5C] focus:ring-1 focus:ring-[#1F5A5C] transition"
+              >
+                <option value="all">All Classes</option>
+                {classes.map((c) => (
+                  <option key={c.id} value={c.id}>
+                    {classLabel(c)}
+                  </option>
+                ))}
+              </select>
+
+              {/* Status Filter */}
+              <select
+                value={examStatusFilter}
+                onChange={(e) => setExamStatusFilter(e.target.value as 'all' | 'completed' | 'pending')}
+                className="h-10 w-full rounded-xl border border-[#E2E8F0] bg-white px-3 text-xs text-[#0F172A] outline-none focus:border-[#1F5A5C] focus:ring-1 focus:ring-[#1F5A5C] transition"
+              >
+                <option value="all">All Statuses</option>
+                <option value="pending">Evaluation In Progress</option>
+                <option value="completed">All Results Entered</option>
+              </select>
             </div>
+          </div>
+
+          {/* Exam List Container */}
+          {filteredExams.length === 0 ? (
+            <div className="rounded-2xl bg-white p-10 text-center shadow-[0_2px_8px_rgba(0,0,0,0.04)] border border-[#E2E8F0]">
+              <Calendar className="mx-auto h-10 w-10 text-[#94A3B8] opacity-60" />
+              <h3 className="mt-3 text-sm font-bold text-[#0F172A]">No exams match your filters</h3>
+              <p className="mt-1 text-xs text-[#64748B]">Try clearing your search terms or schedule a new exam.</p>
+              <button
+                onClick={openAddExamModal}
+                className="mt-4 inline-flex items-center gap-1.5 rounded-xl bg-[#1F5A5C] px-3.5 py-2 text-xs font-semibold text-white shadow-sm hover:bg-[#2D7578] transition"
+              >
+                <Plus className="h-3.5 w-3.5" /> Schedule New Exam
+              </button>
+            </div>
+          ) : (
+            <>
+              {/* Mobile Card List (Hidden on md+) */}
+              <div className="space-y-3 md:hidden">
+                {filteredExams.map((exam) => {
+                  const total = classStudentCount.get(exam.classId) ?? 0;
+                  const entered = exam.resultsCount ?? 0;
+                  const isDone = total > 0 && entered >= total;
+                  const pct = total > 0 ? Math.min(100, Math.round((entered / total) * 100)) : 0;
+
+                  return (
+                    <div
+                      key={exam.id}
+                      className="rounded-2xl bg-white p-4 shadow-[0_2px_8px_rgba(0,0,0,0.04)] border border-[#E2E8F0] space-y-3"
+                    >
+                      <div className="flex items-start justify-between gap-2">
+                        <div>
+                          <span className="inline-block rounded-md bg-[#EAF2F2] px-2 py-0.5 text-[10px] font-bold text-[#1F5A5C] uppercase">
+                            {exam.examType ?? 'Custom'}
+                          </span>
+                          <h3 className="mt-1 font-bold text-sm text-[#0F172A]">{exam.title}</h3>
+                          <p className="text-xs text-[#64748B]">
+                            {exam.class.name} {exam.class.section} • {exam.subject.name}
+                          </p>
+                        </div>
+                        <span
+                          className={`rounded-full px-2 py-0.5 text-[10px] font-bold border ${
+                            isDone ? 'bg-[#dcfce7] text-[#15803d] border-[#bbf7d0]' : 'bg-[#fef3c7] text-[#b45309] border-[#fde68a]'
+                          }`}
+                        >
+                          {isDone ? 'Completed' : 'Pending'}
+                        </span>
+                      </div>
+
+                      {/* Marks & Teacher info */}
+                      <div className="grid grid-cols-2 gap-2 text-xs text-[#64748B] pt-1 border-t border-[#F1F5F9]">
+                        <div>
+                          <span className="block text-[10px] uppercase font-semibold text-[#94A3B8]">Due Date</span>
+                          <span className="font-medium text-[#0F172A]">
+                            {new Date(exam.dueDate ?? exam.examDate).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
+                          </span>
+                        </div>
+                        <div>
+                          <span className="block text-[10px] uppercase font-semibold text-[#94A3B8]">Passing / Total</span>
+                          <span className="font-medium text-[#0F172A]">
+                            {exam.passingMarks} / {exam.totalMarks} Marks
+                          </span>
+                        </div>
+                      </div>
+
+                      {/* Progress Bar */}
+                      <div>
+                        <div className="flex items-center justify-between text-[11px] text-[#64748B] mb-1">
+                          <span>Evaluation Progress</span>
+                          <span className="font-semibold text-[#0F172A]">{entered} / {total} graded</span>
+                        </div>
+                        <div className="h-2 w-full rounded-full bg-[#E2E8F0] overflow-hidden">
+                          <div
+                            className={`h-full transition-all duration-300 ${isDone ? 'bg-[#15803d]' : 'bg-[#1F5A5C]'}`}
+                            style={{ width: `${pct}%` }}
+                          />
+                        </div>
+                      </div>
+
+                      {/* Action buttons */}
+                      <div className="flex items-center gap-2 pt-2 border-t border-[#F1F5F9]">
+                        <button
+                          onClick={() => {
+                            handleSelectExamForStudents(exam.id);
+                            setActiveTab('results');
+                          }}
+                          className="flex-1 rounded-xl bg-[#EAF2F2] py-2 text-xs font-semibold text-[#1F5A5C] hover:bg-[#d5e7e7] transition text-center"
+                        >
+                          Enter Grades
+                        </button>
+                        <button
+                          onClick={() => openEditExamModal(exam)}
+                          className="rounded-xl border border-[#E2E8F0] px-3 py-2 text-xs font-semibold text-[#0F172A] hover:bg-[#F8FAFC] transition"
+                        >
+                          Edit
+                        </button>
+                        <button
+                          onClick={() => setExamToDelete(exam)}
+                          className="rounded-xl border border-[#FEE2E2] bg-[#FEF2F2] p-2 text-[#DC2626] hover:bg-[#FEE2E2] transition"
+                          aria-label="Delete Exam"
+                        >
+                          <Trash2 className="h-3.5 w-3.5" />
+                        </button>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+
+              {/* Desktop Table View (Hidden on mobile) */}
+              <div className="hidden md:block rounded-2xl bg-white shadow-[0_2px_8px_rgba(0,0,0,0.04)] border border-[#E2E8F0] overflow-hidden">
+                <div className="overflow-x-auto">
+                  <table className="w-full text-xs text-left">
+                    <thead>
+                      <tr className="bg-[#F8FAFC] border-b border-[#E2E8F0] text-[10px] font-bold uppercase tracking-wider text-[#64748B]">
+                        <th className="px-4 py-3.5">Title &amp; Type</th>
+                        <th className="px-4 py-3.5">Class &amp; Subject</th>
+                        <th className="px-4 py-3.5">Due Date</th>
+                        <th className="px-4 py-3.5">Teacher</th>
+                        <th className="px-4 py-3.5">Marks Criteria</th>
+                        <th className="px-4 py-3.5">Evaluation Progress</th>
+                        <th className="px-4 py-3.5 text-right">Actions</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-[#E2E8F0]">
+                      {filteredExams.map((exam) => {
+                        const total = classStudentCount.get(exam.classId) ?? 0;
+                        const entered = exam.resultsCount ?? 0;
+                        const isDone = total > 0 && entered >= total;
+                        const pct = total > 0 ? Math.min(100, Math.round((entered / total) * 100)) : 0;
+
+                        return (
+                          <tr key={exam.id} className="hover:bg-[#F8FAFC] transition-colors">
+                            <td className="px-4 py-3 font-semibold text-[#0F172A]">
+                              <div className="flex items-center gap-2">
+                                <span className="inline-block rounded-md bg-[#EAF2F2] px-2 py-0.5 text-[10px] font-bold text-[#1F5A5C] uppercase">
+                                  {exam.examType ?? 'Custom'}
+                                </span>
+                                <span>{exam.title}</span>
+                              </div>
+                            </td>
+                            <td className="px-4 py-3 text-[#64748B]">
+                              <span className="font-semibold text-[#0F172A]">{exam.class.name} {exam.class.section}</span>
+                              <span className="block text-[11px] text-[#94A3B8]">{exam.subject.name}</span>
+                            </td>
+                            <td className="px-4 py-3 text-[#64748B]">
+                              {new Date(exam.dueDate ?? exam.examDate).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
+                            </td>
+                            <td className="px-4 py-3 font-medium text-[#0F172A]">{exam.teacherName ?? '—'}</td>
+                            <td className="px-4 py-3 text-[#0F172A]">
+                              <span className="font-semibold">{exam.passingMarks}</span>
+                              <span className="text-[#94A3B8]"> / {exam.totalMarks}</span>
+                            </td>
+                            <td className="px-4 py-3 min-w-[150px]">
+                              <div className="flex items-center justify-between gap-2 mb-1">
+                                <span className="text-[11px] font-semibold text-[#0F172A]">{entered} / {total}</span>
+                                <span
+                                  className={`rounded-full px-2 py-0.2 text-[9px] font-bold border ${
+                                    isDone ? 'bg-[#dcfce7] text-[#15803d] border-[#bbf7d0]' : 'bg-[#fef3c7] text-[#b45309] border-[#fde68a]'
+                                  }`}
+                                >
+                                  {isDone ? 'Complete' : 'Pending'}
+                                </span>
+                              </div>
+                              <div className="h-1.5 w-full rounded-full bg-[#E2E8F0] overflow-hidden">
+                                <div
+                                  className={`h-full ${isDone ? 'bg-[#15803d]' : 'bg-[#1F5A5C]'}`}
+                                  style={{ width: `${pct}%` }}
+                                />
+                              </div>
+                            </td>
+                            <td className="px-4 py-3 text-right">
+                              <div className="inline-flex items-center gap-1.5">
+                                <button
+                                  onClick={() => {
+                                    handleSelectExamForStudents(exam.id);
+                                    setActiveTab('results');
+                                  }}
+                                  className="rounded-lg bg-[#EAF2F2] px-2.5 py-1 text-xs font-bold text-[#1F5A5C] hover:bg-[#d9ecec] transition"
+                                >
+                                  Grades
+                                </button>
+                                <button
+                                  onClick={() => openEditExamModal(exam)}
+                                  className="rounded-lg border border-[#E2E8F0] px-2.5 py-1 text-xs font-semibold text-[#0F172A] hover:bg-white transition"
+                                >
+                                  Edit
+                                </button>
+                                <button
+                                  onClick={() => setExamToDelete(exam)}
+                                  className="rounded-lg border border-[#FEE2E2] bg-[#FEF2F2] p-1 text-[#DC2626] hover:bg-[#FEE2E2] transition"
+                                  title="Delete Exam"
+                                >
+                                  <Trash2 className="h-3.5 w-3.5" />
+                                </button>
+                              </div>
+                            </td>
+                          </tr>
+                        );
+                      })}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            </>
           )}
         </div>
-      </form>
+      )}
+
+      {/* ── 5. TAB 2: RESULTS & EVALUATION ───────────────────────────────────── */}
+      {activeTab === 'results' && (
+        <div className="space-y-4">
+          {/* Exam Selection Header Card */}
+          <div className="rounded-2xl bg-white p-5 shadow-[0_2px_8px_rgba(0,0,0,0.04)] border border-[#E2E8F0]">
+            <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+              <div className="flex-1 max-w-md">
+                <label className="block text-[11px] font-bold uppercase tracking-wider text-[#64748B] mb-1.5">
+                  Select Exam to Evaluate
+                </label>
+                <select
+                  value={resultForm.examId}
+                  onChange={(e) => handleSelectExamForStudents(e.target.value)}
+                  className="h-10 w-full rounded-xl border border-[#E2E8F0] bg-white px-3 text-xs font-semibold text-[#0F172A] outline-none focus:border-[#1F5A5C] focus:ring-1 focus:ring-[#1F5A5C] transition"
+                >
+                  <option value="">-- Choose an examination --</option>
+                  {exams.map((exam) => (
+                    <option key={exam.id} value={exam.id}>
+                      {exam.title} — {exam.class.name} {exam.class.section} ({exam.subject.name})
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              {selectedExam && (
+                <div className="flex flex-wrap items-center gap-2 pt-2 sm:pt-0">
+                  <div className="rounded-xl bg-[#F8FAFC] border border-[#E2E8F0] px-3 py-1.5 text-xs text-[#0F172A]">
+                    <span className="text-[#64748B]">Passing:</span> <span className="font-bold">{selectedExam.passingMarks}</span> / {selectedExam.totalMarks}
+                  </div>
+                  <div className="rounded-xl bg-[#EAF2F2] border border-[#bbf7d0]/40 px-3 py-1.5 text-xs text-[#1F5A5C] font-semibold">
+                    {resultRows.length} / {classStudentCount.get(selectedExam.classId) ?? 0} Evaluated
+                  </div>
+                </div>
+              )}
+            </div>
+          </div>
+
+          {!selectedExam ? (
+            <div className="rounded-2xl bg-white p-12 text-center shadow-[0_2px_8px_rgba(0,0,0,0.04)] border border-[#E2E8F0]">
+              <Award className="mx-auto h-12 w-12 text-[#94A3B8] opacity-50" />
+              <h3 className="mt-3 text-base font-bold text-[#0F172A]">Select an Exam Above</h3>
+              <p className="mt-1 text-xs text-[#64748B] max-w-sm mx-auto">
+                Select any scheduled examination from the dropdown menu to enter student marks, calculate automated grades, and review evaluations.
+              </p>
+            </div>
+          ) : (
+            <>
+              {/* Grading Entry Card */}
+              <div className="rounded-2xl bg-white p-5 shadow-[0_2px_8px_rgba(0,0,0,0.04)] border border-[#E2E8F0]">
+                <h3 className="text-sm font-bold text-[#0F172A] mb-3 flex items-center gap-2">
+                  <Award className="h-4 w-4 text-[#1F5A5C]" />
+                  Grade Student
+                </h3>
+
+                <form onSubmit={handleSaveResult} className="space-y-3">
+                  <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+                    {/* Student Picker */}
+                    <div>
+                      <label className="block text-[11px] font-bold uppercase tracking-wider text-[#64748B] mb-1">
+                        Student
+                      </label>
+                      <select
+                        value={resultForm.studentId}
+                        onChange={(e) => setResultForm((f) => ({ ...f, studentId: e.target.value }))}
+                        required
+                        disabled={loadingExamStudents}
+                        className="h-10 w-full rounded-xl border border-[#E2E8F0] bg-white px-3 text-xs text-[#0F172A] outline-none focus:border-[#1F5A5C] focus:ring-1 focus:ring-[#1F5A5C] transition disabled:opacity-60"
+                      >
+                        <option value="">{loadingExamStudents ? 'Loading students...' : '-- Select Student --'}</option>
+                        {examStudents.map((st) => (
+                          <option key={st.id} value={st.id}>
+                            {st.fullName} ({st.admissionNo})
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+
+                    {/* Marks Input & Dynamic Grade Preview */}
+                    <div>
+                      <div className="flex items-center justify-between mb-1">
+                        <label className="block text-[11px] font-bold uppercase tracking-wider text-[#64748B]">
+                          Obtained Marks (max {selectedExam.totalMarks})
+                        </label>
+                        {previewGrade && (
+                          <span className={`rounded px-1.5 py-0.2 text-[10px] font-bold border ${gradeBadgeClass(previewGrade)}`}>
+                            Grade: {previewGrade}
+                          </span>
+                        )}
+                      </div>
+                      <input
+                        type="number"
+                        min={0}
+                        max={selectedExam.totalMarks}
+                        placeholder={`0 - ${selectedExam.totalMarks}`}
+                        value={resultForm.marksObtained}
+                        onChange={(e) => setResultForm((f) => ({ ...f, marksObtained: e.target.value }))}
+                        required
+                        className="h-10 w-full rounded-xl border border-[#E2E8F0] bg-white px-3 text-xs text-[#0F172A] outline-none focus:border-[#1F5A5C] focus:ring-1 focus:ring-[#1F5A5C] transition"
+                      />
+                    </div>
+
+                    {/* Remarks Input */}
+                    <div className="sm:col-span-2">
+                      <label className="block text-[11px] font-bold uppercase tracking-wider text-[#64748B] mb-1">
+                        Teacher Remarks / Notes
+                      </label>
+                      <input
+                        type="text"
+                        placeholder="e.g. Excellent recitation, needs tajweed revision"
+                        value={resultForm.remarks}
+                        onChange={(e) => setResultForm((f) => ({ ...f, remarks: e.target.value }))}
+                        className="h-10 w-full rounded-xl border border-[#E2E8F0] bg-white px-3 text-xs text-[#0F172A] outline-none focus:border-[#1F5A5C] focus:ring-1 focus:ring-[#1F5A5C] transition"
+                      />
+                    </div>
+                  </div>
+
+                  <div className="flex justify-end pt-2">
+                    <button
+                      type="submit"
+                      disabled={resultSaving || !resultForm.studentId || resultForm.marksObtained === ''}
+                      className="inline-flex items-center gap-1.5 rounded-xl bg-gradient-to-r from-[#1F5A5C] to-[#2D7578] px-5 py-2.5 text-xs font-semibold text-white shadow-sm hover:opacity-95 active:scale-[0.98] transition disabled:opacity-50 disabled:cursor-not-allowed"
+                    >
+                      {resultSaving ? (
+                        <>
+                          <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                          Saving...
+                        </>
+                      ) : (
+                        <>
+                          <Check className="h-3.5 w-3.5" />
+                          Save Grade
+                        </>
+                      )}
+                    </button>
+                  </div>
+                </form>
+              </div>
+
+              {/* Evaluated Students Table / Cards */}
+              <div className="rounded-2xl bg-white shadow-[0_2px_8px_rgba(0,0,0,0.04)] border border-[#E2E8F0] overflow-hidden">
+                <div className="border-b border-[#E2E8F0] px-5 py-3.5 flex items-center justify-between">
+                  <h3 className="text-sm font-bold text-[#0F172A]">
+                    Evaluated Students ({resultRows.length})
+                  </h3>
+                  {resultLoading && <Loader2 className="h-4 w-4 animate-spin text-[#1F5A5C]" />}
+                </div>
+
+                {resultRows.length === 0 ? (
+                  <div className="p-8 text-center text-xs text-[#64748B]">
+                    No student results recorded for this exam yet. Use the form above to add results.
+                  </div>
+                ) : (
+                  <>
+                    {/* Mobile Cards View */}
+                    <div className="divide-y divide-[#E2E8F0] md:hidden">
+                      {resultRows.map((row) => (
+                        <div key={row.id} className="p-4 space-y-2">
+                          <div className="flex items-start justify-between gap-2">
+                            <div>
+                              <p className="font-bold text-sm text-[#0F172A]">{row.student.user.fullName}</p>
+                              <p className="text-xs text-[#64748B] mt-0.5">
+                                Marks: <span className="font-semibold text-[#0F172A]">{Math.round(Number(row.marksObtained))}</span> / {selectedExam.totalMarks}
+                              </p>
+                            </div>
+                            <span className={`rounded-md px-2 py-0.5 text-xs font-bold border ${gradeBadgeClass(row.grade)}`}>
+                              {row.grade}
+                            </span>
+                          </div>
+
+                          {row.remarks && (
+                            <p className="text-xs text-[#64748B] italic bg-[#F8FAFC] rounded-lg p-2 border border-[#E2E8F0]">
+                              &ldquo;{row.remarks}&rdquo;
+                            </p>
+                          )}
+
+                          <div className="flex items-center justify-end gap-2 pt-1">
+                            <button
+                              onClick={() => handleEditResult(row)}
+                              className="rounded-lg border border-[#E2E8F0] px-2.5 py-1 text-xs font-semibold text-[#0F172A] hover:bg-[#F8FAFC]"
+                            >
+                              Edit
+                            </button>
+                            <button
+                              onClick={() => handleDeleteResult(row.id)}
+                              className="rounded-lg border border-[#FEE2E2] bg-[#FEF2F2] px-2.5 py-1 text-xs font-semibold text-[#DC2626] hover:bg-[#FEE2E2]"
+                            >
+                              Delete
+                            </button>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+
+                    {/* Desktop Table View */}
+                    <div className="hidden md:block overflow-x-auto">
+                      <table className="w-full text-xs text-left">
+                        <thead>
+                          <tr className="bg-[#F8FAFC] border-b border-[#E2E8F0] text-[10px] font-bold uppercase tracking-wider text-[#64748B]">
+                            <th className="px-5 py-3">Student Name</th>
+                            <th className="px-5 py-3">Marks Obtained</th>
+                            <th className="px-5 py-3">Grade</th>
+                            <th className="px-5 py-3">Remarks</th>
+                            <th className="px-5 py-3 text-right">Actions</th>
+                          </tr>
+                        </thead>
+                        <tbody className="divide-y divide-[#E2E8F0]">
+                          {resultRows.map((row) => (
+                            <tr key={row.id} className="hover:bg-[#F8FAFC] transition-colors">
+                              <td className="px-5 py-3 font-semibold text-[#0F172A]">{row.student.user.fullName}</td>
+                              <td className="px-5 py-3 font-bold text-[#0F172A]">
+                                {Math.round(Number(row.marksObtained))}
+                                <span className="font-normal text-[#94A3B8]"> / {selectedExam.totalMarks}</span>
+                              </td>
+                              <td className="px-5 py-3">
+                                <span className={`inline-block rounded-md px-2 py-0.5 text-xs font-bold border ${gradeBadgeClass(row.grade)}`}>
+                                  {row.grade}
+                                </span>
+                              </td>
+                              <td className="px-5 py-3 text-[#64748B] max-w-xs truncate">{row.remarks || '—'}</td>
+                              <td className="px-5 py-3 text-right">
+                                <div className="inline-flex items-center gap-1.5">
+                                  <button
+                                    onClick={() => handleEditResult(row)}
+                                    className="rounded-lg border border-[#E2E8F0] px-2.5 py-1 text-xs font-semibold text-[#0F172A] hover:bg-white transition"
+                                  >
+                                    Edit
+                                  </button>
+                                  <button
+                                    onClick={() => handleDeleteResult(row.id)}
+                                    className="rounded-lg border border-[#FEE2E2] bg-[#FEF2F2] p-1 text-[#DC2626] hover:bg-[#FEE2E2] transition"
+                                    title="Delete Result"
+                                  >
+                                    <Trash2 className="h-3.5 w-3.5" />
+                                  </button>
+                                </div>
+                              </td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                  </>
+                )}
+              </div>
+            </>
+          )}
+        </div>
+      )}
+
+      {/* ── 6. TAB 3: CLASSES & SUBJECTS CURRICULUM ─────────────────────────── */}
+      {activeTab === 'curriculum' && (
+        <div className="grid gap-5 lg:grid-cols-2">
+          {/* Classes Directory Card */}
+          <div className="rounded-2xl bg-white p-5 shadow-[0_2px_8px_rgba(0,0,0,0.04)] border border-[#E2E8F0]">
+            <div className="flex items-center justify-between mb-4">
+              <div>
+                <h3 className="text-base font-bold text-[#0F172A]">Classes Directory</h3>
+                <p className="text-xs text-[#64748B]">Active academic class sections and rosters</p>
+              </div>
+              <span className="rounded-full bg-[#EAF2F2] px-2.5 py-0.5 text-xs font-bold text-[#1F5A5C]">
+                {classes.length} Classes
+              </span>
+            </div>
+
+            <div className="space-y-2.5 max-h-[600px] overflow-y-auto pr-1">
+              {classes.map((cls) => (
+                <div
+                  key={cls.id}
+                  className="rounded-xl border border-[#E2E8F0] bg-[#F8FAFC] p-3.5 flex items-center justify-between gap-3 hover:border-[#1F5A5C]/40 transition"
+                >
+                  <div className="min-w-0">
+                    <p className="font-bold text-sm text-[#0F172A]">{cls.name} – {cls.section}</p>
+                    <p className="text-xs text-[#64748B] mt-0.5">
+                      Session {cls.academicYear} {cls.roomNo ? `• Room ${cls.roomNo}` : ''}
+                    </p>
+                  </div>
+                  <div className="flex items-center gap-2 shrink-0">
+                    <span className="rounded-lg bg-white border border-[#E2E8F0] px-2.5 py-1 text-xs font-semibold text-[#0F172A]">
+                      {cls._count?.students ?? 0} Students
+                    </span>
+                    <span className="rounded-lg bg-white border border-[#E2E8F0] px-2.5 py-1 text-xs font-semibold text-[#1F5A5C]">
+                      {cls._count?.subjects ?? 0} Subjects
+                    </span>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {/* Subjects Directory Card */}
+          <div className="rounded-2xl bg-white p-5 shadow-[0_2px_8px_rgba(0,0,0,0.04)] border border-[#E2E8F0]">
+            <div className="flex items-center justify-between mb-4">
+              <div>
+                <h3 className="text-base font-bold text-[#0F172A]">Curriculum Subjects</h3>
+                <p className="text-xs text-[#64748B]">Subjects mapped to teachers and classes</p>
+              </div>
+              <button
+                onClick={openAddSubjectModal}
+                className="inline-flex items-center gap-1 rounded-xl bg-[#1F5A5C] px-3 py-1.5 text-xs font-semibold text-white shadow-sm hover:bg-[#2D7578] transition"
+              >
+                <Plus className="h-3.5 w-3.5" /> Add
+              </button>
+            </div>
+
+            <div className="space-y-2.5 max-h-[600px] overflow-y-auto pr-1">
+              {subjects.map((sub) => (
+                <div
+                  key={sub.id}
+                  className="rounded-xl border border-[#E2E8F0] bg-[#F8FAFC] p-3.5 flex items-center justify-between gap-3 hover:border-[#1F5A5C]/40 transition"
+                >
+                  <div className="min-w-0">
+                    <div className="flex items-center gap-2">
+                      <span className="rounded bg-white border border-[#E2E8F0] px-1.5 py-0.5 text-[10px] font-mono font-bold text-[#64748B]">
+                        {sub.code}
+                      </span>
+                      <p className="font-bold text-sm text-[#0F172A] truncate">{sub.name}</p>
+                    </div>
+                    <p className="text-xs text-[#64748B] mt-1">
+                      {sub.class ? `${sub.class.name} ${sub.class.section}` : 'Unassigned Class'}
+                    </p>
+                  </div>
+                  <div className="shrink-0 text-right">
+                    <span className="inline-flex items-center gap-1 text-xs font-semibold text-[#0F172A]">
+                      <UserCheck className="h-3.5 w-3.5 text-[#1F5A5C]" />
+                      {sub.teacher?.user.fullName ?? 'No Teacher'}
+                    </span>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ── 7. MODALS ────────────────────────────────────────────────────────── */}
+
+      {/* Exam Scheduling Modal */}
+      {isExamModalOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm p-4 overflow-y-auto">
+          <div className="w-full max-w-lg rounded-2xl bg-white shadow-2xl border border-[#E2E8F0] p-6 space-y-4 my-8">
+            <div className="flex items-center justify-between border-b border-[#E2E8F0] pb-3">
+              <div>
+                <h3 className="font-bold text-base text-[#0F172A]">
+                  {examForm.id ? 'Edit Examination' : 'Schedule Examination'}
+                </h3>
+                <p className="text-xs text-[#64748B]">Configure exam criteria, passing thresholds, and target class.</p>
+              </div>
+              <button
+                onClick={() => setIsExamModalOpen(false)}
+                className="rounded-lg p-1 text-[#94A3B8] hover:text-[#0F172A]"
+              >
+                <X className="h-5 w-5" />
+              </button>
+            </div>
+
+            <form onSubmit={handleSaveExam} className="space-y-3.5">
+              <div>
+                <label className="block text-[11px] font-bold uppercase tracking-wider text-[#64748B] mb-1">
+                  Exam Title
+                </label>
+                <input
+                  type="text"
+                  placeholder="e.g. Midterm Evaluation, 1st Quarter Test"
+                  value={examForm.title}
+                  onChange={(e) => setExamForm((f) => ({ ...f, title: e.target.value }))}
+                  required
+                  className="h-10 w-full rounded-xl border border-[#E2E8F0] bg-white px-3 text-xs text-[#0F172A] outline-none focus:border-[#1F5A5C] focus:ring-1 focus:ring-[#1F5A5C] transition"
+                />
+              </div>
+
+              <div className="grid gap-3 sm:grid-cols-2">
+                <div>
+                  <label className="block text-[11px] font-bold uppercase tracking-wider text-[#64748B] mb-1">
+                    Exam Type
+                  </label>
+                  <select
+                    value={examForm.examType}
+                    onChange={(e) => setExamForm((f) => ({ ...f, examType: e.target.value }))}
+                    className="h-10 w-full rounded-xl border border-[#E2E8F0] bg-white px-3 text-xs text-[#0F172A] outline-none focus:border-[#1F5A5C] focus:ring-1 focus:ring-[#1F5A5C] transition"
+                  >
+                    {EXAM_TYPES.map((type) => (
+                      <option key={type} value={type}>
+                        {type}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+
+                <div>
+                  <label className="block text-[11px] font-bold uppercase tracking-wider text-[#64748B] mb-1">
+                    Target Class
+                  </label>
+                  <select
+                    value={examForm.classId}
+                    onChange={(e) => setExamForm((f) => ({ ...f, classId: e.target.value, subjectId: '' }))}
+                    required
+                    className="h-10 w-full rounded-xl border border-[#E2E8F0] bg-white px-3 text-xs text-[#0F172A] outline-none focus:border-[#1F5A5C] focus:ring-1 focus:ring-[#1F5A5C] transition"
+                  >
+                    <option value="">-- Choose Class --</option>
+                    {classes.map((cls) => (
+                      <option key={cls.id} value={cls.id}>
+                        {classLabel(cls)}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+
+                <div>
+                  <label className="block text-[11px] font-bold uppercase tracking-wider text-[#64748B] mb-1">
+                    Subject
+                  </label>
+                  <select
+                    value={examForm.subjectId}
+                    onChange={(e) => setExamForm((f) => ({ ...f, subjectId: e.target.value }))}
+                    required
+                    className="h-10 w-full rounded-xl border border-[#E2E8F0] bg-white px-3 text-xs text-[#0F172A] outline-none focus:border-[#1F5A5C] focus:ring-1 focus:ring-[#1F5A5C] transition"
+                  >
+                    <option value="">-- Choose Subject --</option>
+                    {filteredSubjectsForExamForm.map((sub) => (
+                      <option key={sub.id} value={sub.id}>
+                        {sub.name} ({sub.code})
+                      </option>
+                    ))}
+                  </select>
+                </div>
+
+                <div>
+                  <label className="block text-[11px] font-bold uppercase tracking-wider text-[#64748B] mb-1">
+                    Due / Exam Date
+                  </label>
+                  <input
+                    type="date"
+                    value={examForm.dueDate}
+                    onChange={(e) => setExamForm((f) => ({ ...f, dueDate: e.target.value }))}
+                    required
+                    className="h-10 w-full rounded-xl border border-[#E2E8F0] bg-white px-3 text-xs text-[#0F172A] outline-none focus:border-[#1F5A5C] focus:ring-1 focus:ring-[#1F5A5C] transition"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-[11px] font-bold uppercase tracking-wider text-[#64748B] mb-1">
+                    Total Marks
+                  </label>
+                  <input
+                    type="number"
+                    min={1}
+                    value={examForm.totalMarks}
+                    onChange={(e) => setExamForm((f) => ({ ...f, totalMarks: e.target.value }))}
+                    required
+                    className="h-10 w-full rounded-xl border border-[#E2E8F0] bg-white px-3 text-xs text-[#0F172A] outline-none focus:border-[#1F5A5C] focus:ring-1 focus:ring-[#1F5A5C] transition"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-[11px] font-bold uppercase tracking-wider text-[#64748B] mb-1">
+                    Passing Marks
+                  </label>
+                  <input
+                    type="number"
+                    min={0}
+                    max={Number(examForm.totalMarks) || 100}
+                    value={examForm.passingMarks}
+                    onChange={(e) => setExamForm((f) => ({ ...f, passingMarks: e.target.value }))}
+                    required
+                    className="h-10 w-full rounded-xl border border-[#E2E8F0] bg-white px-3 text-xs text-[#0F172A] outline-none focus:border-[#1F5A5C] focus:ring-1 focus:ring-[#1F5A5C] transition"
+                  />
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-[11px] font-bold uppercase tracking-wider text-[#64748B] mb-1">
+                  Responsible Teacher
+                </label>
+                <select
+                  value={examForm.createdByTeacherId}
+                  onChange={(e) => setExamForm((f) => ({ ...f, createdByTeacherId: e.target.value }))}
+                  required
+                  className="h-10 w-full rounded-xl border border-[#E2E8F0] bg-white px-3 text-xs text-[#0F172A] outline-none focus:border-[#1F5A5C] focus:ring-1 focus:ring-[#1F5A5C] transition"
+                >
+                  <option value="">-- Assign Teacher --</option>
+                  {teachers.map((t) => (
+                    <option key={t.id} value={t.id}>
+                      {t.user.fullName}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              <div className="flex justify-end gap-2 pt-3 border-t border-[#E2E8F0]">
+                <button
+                  type="button"
+                  onClick={() => setIsExamModalOpen(false)}
+                  className="rounded-xl border border-[#E2E8F0] px-4 py-2 text-xs font-semibold text-[#0F172A] hover:bg-[#F8FAFC] transition"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  disabled={examSaving}
+                  className="inline-flex items-center gap-1.5 rounded-xl bg-gradient-to-r from-[#1F5A5C] to-[#2D7578] px-5 py-2 text-xs font-semibold text-white shadow-sm hover:opacity-95 transition disabled:opacity-60"
+                >
+                  {examSaving ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Check className="h-3.5 w-3.5" />}
+                  {examForm.id ? 'Save Changes' : 'Schedule Exam'}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* Subject Modal */}
+      {isSubjectModalOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm p-4">
+          <div className="w-full max-w-md rounded-2xl bg-white shadow-2xl border border-[#E2E8F0] p-6 space-y-4">
+            <div className="flex items-center justify-between border-b border-[#E2E8F0] pb-3">
+              <div>
+                <h3 className="font-bold text-base text-[#0F172A]">Add New Subject</h3>
+                <p className="text-xs text-[#64748B]">Map subject to class and assigned teacher.</p>
+              </div>
+              <button
+                onClick={() => setIsSubjectModalOpen(false)}
+                className="rounded-lg p-1 text-[#94A3B8] hover:text-[#0F172A]"
+              >
+                <X className="h-5 w-5" />
+              </button>
+            </div>
+
+            <form onSubmit={handleSaveSubject} className="space-y-3.5">
+              <div>
+                <label className="block text-[11px] font-bold uppercase tracking-wider text-[#64748B] mb-1">
+                  Subject Name
+                </label>
+                <input
+                  type="text"
+                  placeholder="e.g. Hifz Al-Quran, Tajweed, Islamic Studies"
+                  value={subjectForm.name}
+                  onChange={(e) => setSubjectForm((f) => ({ ...f, name: e.target.value }))}
+                  required
+                  className="h-10 w-full rounded-xl border border-[#E2E8F0] bg-white px-3 text-xs text-[#0F172A] outline-none focus:border-[#1F5A5C] focus:ring-1 focus:ring-[#1F5A5C] transition"
+                />
+              </div>
+
+              <div className="grid gap-3 sm:grid-cols-2">
+                <div>
+                  <label className="block text-[11px] font-bold uppercase tracking-wider text-[#64748B] mb-1">
+                    Subject Code
+                  </label>
+                  <input
+                    type="text"
+                    placeholder="e.g. HIFZ-101"
+                    value={subjectForm.code}
+                    onChange={(e) => setSubjectForm((f) => ({ ...f, code: e.target.value }))}
+                    required
+                    className="h-10 w-full rounded-xl border border-[#E2E8F0] bg-white px-3 text-xs text-[#0F172A] outline-none focus:border-[#1F5A5C] focus:ring-1 focus:ring-[#1F5A5C] transition"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-[11px] font-bold uppercase tracking-wider text-[#64748B] mb-1">
+                    Credit Hours
+                  </label>
+                  <input
+                    type="number"
+                    min={1}
+                    value={subjectForm.creditHours}
+                    onChange={(e) => setSubjectForm((f) => ({ ...f, creditHours: Number(e.target.value) }))}
+                    className="h-10 w-full rounded-xl border border-[#E2E8F0] bg-white px-3 text-xs text-[#0F172A] outline-none focus:border-[#1F5A5C] focus:ring-1 focus:ring-[#1F5A5C] transition"
+                  />
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-[11px] font-bold uppercase tracking-wider text-[#64748B] mb-1">
+                  Target Class
+                </label>
+                <select
+                  value={subjectForm.classId}
+                  onChange={(e) => setSubjectForm((f) => ({ ...f, classId: e.target.value }))}
+                  required
+                  className="h-10 w-full rounded-xl border border-[#E2E8F0] bg-white px-3 text-xs text-[#0F172A] outline-none focus:border-[#1F5A5C] focus:ring-1 focus:ring-[#1F5A5C] transition"
+                >
+                  <option value="">-- Choose Class --</option>
+                  {classes.map((cls) => (
+                    <option key={cls.id} value={cls.id}>
+                      {classLabel(cls)}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              <div>
+                <label className="block text-[11px] font-bold uppercase tracking-wider text-[#64748B] mb-1">
+                  Assign Teacher (Optional)
+                </label>
+                <select
+                  value={subjectForm.teacherId}
+                  onChange={(e) => setSubjectForm((f) => ({ ...f, teacherId: e.target.value }))}
+                  className="h-10 w-full rounded-xl border border-[#E2E8F0] bg-white px-3 text-xs text-[#0F172A] outline-none focus:border-[#1F5A5C] focus:ring-1 focus:ring-[#1F5A5C] transition"
+                >
+                  <option value="">-- None / Unassigned --</option>
+                  {teachers.map((t) => (
+                    <option key={t.id} value={t.id}>
+                      {t.user.fullName}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              <div className="flex justify-end gap-2 pt-3 border-t border-[#E2E8F0]">
+                <button
+                  type="button"
+                  onClick={() => setIsSubjectModalOpen(false)}
+                  className="rounded-xl border border-[#E2E8F0] px-4 py-2 text-xs font-semibold text-[#0F172A] hover:bg-[#F8FAFC] transition"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  disabled={subjectSaving}
+                  className="inline-flex items-center gap-1.5 rounded-xl bg-gradient-to-r from-[#1F5A5C] to-[#2D7578] px-5 py-2 text-xs font-semibold text-white shadow-sm hover:opacity-95 transition disabled:opacity-60"
+                >
+                  {subjectSaving ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Check className="h-3.5 w-3.5" />}
+                  Create Subject
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* Delete Exam Confirmation Modal */}
+      {examToDelete && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm p-4">
+          <div className="w-full max-w-sm rounded-2xl bg-white shadow-2xl border border-[#E2E8F0] p-6 text-center space-y-4">
+            <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-[#FEF2F2] text-[#DC2626]">
+              <Trash2 className="h-6 w-6" />
+            </div>
+            <div>
+              <h3 className="font-bold text-base text-[#0F172A]">Delete Examination?</h3>
+              <p className="mt-1 text-xs text-[#64748B]">
+                Are you sure you want to delete <span className="font-semibold text-[#0F172A]">&ldquo;{examToDelete.title}&rdquo;</span>?
+              </p>
+            </div>
+            <div className="flex justify-center gap-2 pt-2">
+              <button
+                type="button"
+                onClick={() => setExamToDelete(null)}
+                className="flex-1 rounded-xl border border-[#E2E8F0] py-2.5 text-xs font-semibold text-[#0F172A] hover:bg-[#F8FAFC] transition"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                onClick={confirmDeleteExam}
+                disabled={examDeleting}
+                className="flex-1 inline-flex items-center justify-center gap-1.5 rounded-xl bg-[#DC2626] py-2.5 text-xs font-semibold text-white hover:bg-[#B91C1C] transition disabled:opacity-60"
+              >
+                {examDeleting ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Trash2 className="h-3.5 w-3.5" />}
+                Delete
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
