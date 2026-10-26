@@ -2,11 +2,13 @@ import React from 'react';
 import { DashboardRouteLoading } from '@/components/ui/dashboard-route-loading';
 import { PageHeader } from '@/components/ui';
 import { AttendanceStatus, UserRole } from '@prisma/client';
-import { unstable_cache } from 'next/cache';
 import { requireAuth } from '@/lib/auth';
 import { prisma } from '@/lib/prisma';
 import { ensureStaffAttendanceTable } from '@/lib/staff-attendance';
 import AttendanceDashboardClient from './attendance-dashboard-client';
+
+export const dynamic = 'force-dynamic';
+export const revalidate = 0;
 
 
 type SearchParams = { date?: string; classId?: string; tab?: string; page?: string; };
@@ -108,15 +110,14 @@ function inFilter(ids: string[]) {
   return `in.(${ids.join(',')})`;
 }
 
-const getCachedAttendanceData = unstable_cache(
-  async (
-    selectedDate: string,
-    selectedClassId: string,
-    dayDateIso: string,
-    monthStartIso: string,
-    staffEnabledFlag: '1' | '0',
-    page: number
-  ) => {
+async function getAttendanceData(
+  selectedDate: string,
+  selectedClassId: string,
+  dayDateIso: string,
+  monthStartIso: string,
+  staffEnabledFlag: '1' | '0',
+  page: number
+) {
     const pageSize = 50;
     const skip = (page - 1) * pageSize;
     const dayDate = new Date(dayDateIso);
@@ -224,10 +225,7 @@ const getCachedAttendanceData = unstable_cache(
         staffMonthlyRows
       };
     });
-  },
-  ['admin-attendance-dashboard-data'],
-  { revalidate: 20 }
-);
+}
 
 async function loadAttendanceViaRest(
   selectedDate: string,
@@ -416,7 +414,7 @@ async function AttendanceContent({ searchParams }: { searchParams?: Promise<Sear
       console.warn('[admin/attendance] staff attendance bootstrap failed', error);
       if (!isDatabaseConnectionError(error)) throw error;
     }
-    const data = await getCachedAttendanceData(
+    const data = await getAttendanceData(
       selectedDate,
       selectedClassId,
       dayDate.toISOString(),
@@ -493,6 +491,13 @@ async function AttendanceContent({ searchParams }: { searchParams?: Promise<Sear
   const totalCount = dailyStatusCounts.reduce((acc, item) => acc + item._count._all, 0);
   const percentage = totalCount ? Math.round((presentCount / totalCount) * 100) : 0;
 
+  const staffPresentCount = staffDailyRows.filter((r) => r.status === 'PRESENT').length;
+  const staffAbsentCount = staffDailyRows.filter((r) => r.status === 'ABSENT').length;
+  const staffLateCount = staffDailyRows.filter((r) => r.status === 'LATE').length;
+  const staffLeaveCount = staffDailyRows.filter((r) => r.status === 'EXCUSED' || r.status === 'LEAVE').length;
+  const staffTotalMarked = staffPresentCount + staffAbsentCount + staffLateCount + staffLeaveCount;
+  const staffPercentage = staffTotalMarked ? Math.round((staffPresentCount / staffTotalMarked) * 100) : 0;
+
   return (
     <AttendanceDashboardClient
       initialTab={initialTab}
@@ -527,6 +532,14 @@ async function AttendanceContent({ searchParams }: { searchParams?: Promise<Sear
         absent: absentCount,
         late: lateCount,
         percentage
+      }}
+      staffOverview={{
+        total: teachers.length,
+        present: staffPresentCount,
+        absent: staffAbsentCount,
+        late: staffLateCount,
+        leave: staffLeaveCount,
+        percentage: staffPercentage
       }}
       monthStatusByDay={serializedMonthStatusByDay}
     />
