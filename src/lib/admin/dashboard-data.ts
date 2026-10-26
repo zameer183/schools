@@ -1,4 +1,4 @@
-﻿import { prisma } from '@/lib/prisma';
+import { prisma } from '@/lib/prisma';
 
 export type AdminKpi = {
   totalStudents: number;
@@ -202,4 +202,39 @@ export async function getAttendanceClassAverages(limit = 4): Promise<AttendanceC
   if (withData.length > 0) return withData;
 
   return [];
+}
+
+export type DashboardFeeOverview = {
+  pendingDue: number;
+  unpaidCount: number;
+  collected: number;
+  paidCount: number;
+};
+
+export async function getDashboardFeeOverview(): Promise<DashboardFeeOverview> {
+  const [feeAgg, paidAgg, unpaidFeesCount, paidFeesCount] = await Promise.all([
+    prisma.fee.aggregate({ _sum: { amount: true, discount: true } }),
+    prisma.payment.aggregate({ _sum: { amountPaid: true } }),
+    prisma.fee.count({
+      where: {
+        status: { in: ['PENDING', 'PARTIAL', 'OVERDUE'] }
+      }
+    }),
+    prisma.fee.count({
+      where: {
+        status: 'PAID'
+      }
+    })
+  ]);
+
+  const totalBilled = Number(feeAgg._sum.amount ?? 0) - Number(feeAgg._sum.discount ?? 0);
+  const totalCollected = Number(paidAgg._sum.amountPaid ?? 0);
+  const totalPendingDue = Math.max(totalBilled - totalCollected, 0);
+
+  return {
+    pendingDue: totalPendingDue,
+    unpaidCount: unpaidFeesCount,
+    collected: totalCollected,
+    paidCount: paidFeesCount
+  };
 }

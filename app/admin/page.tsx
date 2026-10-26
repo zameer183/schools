@@ -1,7 +1,6 @@
 import { DashboardRouteLoading } from '@/components/ui/dashboard-route-loading';
 import React from 'react';
 import Link from 'next/link';
-import { unstable_cache } from 'next/cache';
 import {
   BookOpen,
   GraduationCap,
@@ -22,9 +21,13 @@ import {
   getEnrollmentTrend,
   getRecentInvoices,
   type RecentInvoiceItem,
+  getDashboardFeeOverview,
+  type DashboardFeeOverview,
 } from '@/lib/admin/dashboard-data';
 import { formatCurrency } from '@/lib/utils';
 import { PageHeader, KpiCard, Card, SectionTitle, StatusBadge } from '@/components/ui';
+
+export const dynamic = 'force-dynamic';
 
 
 type RestStudent = {
@@ -199,22 +202,26 @@ async function getAdminDashboardDataViaSupabaseRest() {
     };
   });
 
-  return { kpi, enrollmentData, attendanceSummary, invoices };
+  const feeOverview: DashboardFeeOverview = {
+    pendingDue: 0,
+    unpaidCount: 0,
+    collected: kpi.revenue,
+    paidCount: payments.length
+  };
+
+  return { kpi, enrollmentData, attendanceSummary, invoices, feeOverview };
 }
 
-const getCachedAdminDashboardData = unstable_cache(
-  async () => {
-    const [kpi, enrollmentData, attendanceSummary, invoices] = await Promise.all([
-      getAdminKpis(),
-      getEnrollmentTrend(),
-      getAttendanceSummary(),
-      getRecentInvoices(6),
-    ]);
-    return { kpi, enrollmentData, attendanceSummary, invoices };
-  },
-  ['admin-dashboard-page-data'],
-  { revalidate: 3600 }
-);
+async function getAdminDashboardData() {
+  const [kpi, enrollmentData, attendanceSummary, invoices, feeOverview] = await Promise.all([
+    getAdminKpis(),
+    getEnrollmentTrend(),
+    getAttendanceSummary(),
+    getRecentInvoices(6),
+    getDashboardFeeOverview()
+  ]);
+  return { kpi, enrollmentData, attendanceSummary, invoices, feeOverview };
+}
 
 function DbOfflineBanner() {
   return (
@@ -241,11 +248,11 @@ function DbOfflineBanner() {
 }
 
 async function DashboardContent() {
-  let data: Awaited<ReturnType<typeof getCachedAdminDashboardData>> | null = null;
+  let data: Awaited<ReturnType<typeof getAdminDashboardData>> | null = null;
   try {
     data = process.env.FORCE_SUPABASE_REST_DATA_FALLBACK === '1'
       ? await getAdminDashboardDataViaSupabaseRest()
-      : await getCachedAdminDashboardData();
+      : await getAdminDashboardData();
   } catch (error) {
     console.error('[ADMIN PAGE ERROR]', error);
     if (!isDatabaseConnectionError(error)) {
@@ -260,7 +267,7 @@ async function DashboardContent() {
     }
   }
 
-  const { kpi, enrollmentData, attendanceSummary, invoices } = data;
+  const { kpi, enrollmentData, attendanceSummary, invoices, feeOverview } = data;
 
   const toDate = (value: Date | string) => (value instanceof Date ? value : new Date(value));
 
@@ -272,14 +279,6 @@ async function DashboardContent() {
       : 0;
 
   const staffEngagement = Math.max(0, Math.min(100, Math.round(avgAttendance * 0.9)));
-
-  const activeDue = invoices
-    .filter((inv) => inv.status !== 'PAID')
-    .reduce((sum, inv) => sum + inv.amountPaid, 0);
-
-  const collected = invoices
-    .filter((inv) => inv.status === 'PAID')
-    .reduce((sum, inv) => sum + inv.amountPaid, 0);
 
   const quickActions = [
     { label: 'Enroll Student', href: '/admin/students/enroll', icon: GraduationCap, color: 'text-[#10B981]', bg: 'bg-[#D1FAE5]' },
@@ -436,16 +435,16 @@ async function DashboardContent() {
           <div className="grid grid-cols-2 gap-4">
             <div className="rounded-lg bg-[#FEE2E2] p-4">
               <p className="text-[11px] font-bold uppercase tracking-wide text-[#991B1B]">Pending / Overdue</p>
-              <p className="mt-2 text-2xl font-bold text-[#991B1B]">{formatCurrency(activeDue)}</p>
+              <p className="mt-2 text-2xl font-bold text-[#991B1B]">{formatCurrency(feeOverview.pendingDue)}</p>
               <p className="mt-1 text-xs text-[#DC2626]">
-                {invoices.filter((i) => i.status !== 'PAID').length} unpaid records
+                {feeOverview.unpaidCount} unpaid records
               </p>
             </div>
             <div className="rounded-lg bg-[#D1FAE5] p-4">
               <p className="text-[11px] font-bold uppercase tracking-wide text-[#065F46]">Collected</p>
-              <p className="mt-2 text-2xl font-bold text-[#065F46]">{formatCurrency(collected)}</p>
+              <p className="mt-2 text-2xl font-bold text-[#065F46]">{formatCurrency(feeOverview.collected)}</p>
               <p className="mt-1 text-xs text-[#10B981]">
-                {invoices.filter((i) => i.status === 'PAID').length} paid records
+                {feeOverview.paidCount} paid records
               </p>
             </div>
           </div>
