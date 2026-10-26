@@ -80,7 +80,7 @@ export default async function StudentDetailPage({ params }: StudentDetailPagePro
   const latestProgress = progress[0];
 
   return (
-    <div className="space-y-4 pb-24 sm:pb-6">
+    <div className="space-y-4 pb-44 sm:pb-6">
       {/* ── Header ── */}
       <div className="rounded-2xl bg-white p-4 shadow-[0_4px_12px_rgba(0,0,0,0.08)] sm:p-6">
         <Link href="/admin/reports" className="mb-4 inline-flex items-center gap-1 text-xs font-semibold text-[#1F5A5C] hover:text-[#1b5e62]">
@@ -244,7 +244,7 @@ export default async function StudentDetailPage({ params }: StudentDetailPagePro
       </div>
 
       {/* ── Action Bar (sticky mobile) ── */}
-      <div className="fixed bottom-0 left-0 right-0 sm:static border-t border-[#e2e8e8] bg-white p-4 shadow-[0_-4px_12px_rgba(0,0,0,0.08)] sm:rounded-2xl sm:shadow-[0_4px_12px_rgba(0,0,0,0.08)] sm:border-none">
+      <div className="fixed bottom-[88px] sm:static left-0 right-0 z-40 border-t border-[#e2e8e8] bg-white p-4 shadow-[0_-4px_12px_rgba(0,0,0,0.08)] sm:rounded-2xl sm:shadow-[0_4px_12px_rgba(0,0,0,0.08)] sm:border-none">
         <StudentReportDetailActions
           studentId={studentId}
           whatsApp={student.user.phone ?? null}

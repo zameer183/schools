@@ -413,7 +413,7 @@ export default function StudentAttendanceClient({
             <div>
               <label className="text-[10px] font-semibold uppercase tracking-wider text-[#9ca3af]">Remarks (optional)</label>
               <input
-                className="mt-1 h-10 w-full rounded-xl bg-[#f3f4f5] border-none px-3 text-sm text-[#111827] outline-none focus:ring-2 focus:ring-[#1F5A5C]/30"
+                className="mt-1 h-10 w-full rounded-xl border border-[#E2E8F0] bg-white px-3 text-sm text-[#111827] outline-none focus:border-[#1F5A5C] focus:ring-2 focus:ring-[#1F5A5C]/20 transition"
                 placeholder="e.g. Sick leave"
                 value={remarks}
                 onChange={(e) => setRemarks(e.target.value)}

@@ -478,7 +478,7 @@ export default function AddTeacherPage() {
       </div>
 
       {/* ── SECTIONS ── */}
-      <div className="mx-auto max-w-2xl space-y-4 px-4 py-4 pb-32 sm:px-6 sm:py-5 bg-[#F5F1E8]">
+      <div className="mx-auto max-w-2xl space-y-4 px-4 py-4 pb-48 sm:pb-28 sm:px-6 sm:py-5 bg-[#F5F1E8]">
 
         {/* ─── 1. Personal ───────────────────────────────────────────────── */}
         <Card id="personal" icon={User} title="Personal Details" subtitle="Basic identity information">
@@ -777,7 +777,7 @@ export default function AddTeacherPage() {
       </div>
 
       {/* ── STICKY SAVE BUTTON ── */}
-      <div className="fixed bottom-0 left-0 right-0 z-40 border-t border-[#e5e7eb] bg-white/95 p-4 backdrop-blur-md">
+      <div className="fixed bottom-[88px] sm:bottom-0 left-0 right-0 z-40 border-t border-[#e5e7eb] bg-white/95 p-4 backdrop-blur-md shadow-lg sm:shadow-none">
         <div className="mx-auto max-w-2xl">
           <Button type="button" fullWidth onClick={() => void handleSubmit()} disabled={loading} size="lg">
             {loading ? (

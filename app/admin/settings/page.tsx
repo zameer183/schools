@@ -20,48 +20,48 @@ const categories = [
     title: 'Profile',
     href: '/admin/settings/profile',
     icon: UserRound,
-    iconBg: 'bg-[#fdf6e9]',
-    iconColor: 'text-[#C9952A]',
+    iconBg: 'bg-[#EAF2F2]',
+    iconColor: 'text-[#1F5A5C]',
     description: 'Name, email, phone, avatar',
   },
   {
     title: 'Institution',
     href: '/admin/settings/institution',
     icon: Building2,
-    iconBg: 'bg-[#f0f7f3]',
-    iconColor: 'text-[#0C3D2E]',
+    iconBg: 'bg-[#EAF2F2]',
+    iconColor: 'text-[#1F5A5C]',
     description: 'Brand, address, contact info',
   },
   {
     title: 'Security',
     href: '/admin/settings/security',
     icon: ShieldCheck,
-    iconBg: 'bg-[#fdf6e9]',
-    iconColor: 'text-[#C9952A]',
+    iconBg: 'bg-[#EAF2F2]',
+    iconColor: 'text-[#1F5A5C]',
     description: 'Password, 2FA, access control',
   },
   {
     title: 'SMS Templates',
     href: '/admin/settings/sms-templates',
     icon: MessageSquare,
-    iconBg: 'bg-[#f0f7f3]',
-    iconColor: 'text-[#0C3D2E]',
+    iconBg: 'bg-[#EAF2F2]',
+    iconColor: 'text-[#1F5A5C]',
     description: 'WhatsApp & SMS message bodies',
   },
   {
     title: 'System',
     href: '/admin/settings/system',
     icon: BarChart3,
-    iconBg: 'bg-[#fdf6e9]',
-    iconColor: 'text-[#C9952A]',
+    iconBg: 'bg-[#EAF2F2]',
+    iconColor: 'text-[#1F5A5C]',
     description: 'Usage stats and platform health',
   },
   {
     title: 'Roles & Permissions',
     href: '/admin/roles',
     icon: Lock,
-    iconBg: 'bg-[#f0f7f3]',
-    iconColor: 'text-[#0C3D2E]',
+    iconBg: 'bg-[#EAF2F2]',
+    iconColor: 'text-[#1F5A5C]',
     description: 'Manage admin access levels',
   },
 ];
@@ -82,7 +82,7 @@ export default async function AdminSettingsPage() {
   return (
     <div className="space-y-6">
       {/* Hero banner */}
-      <div className="rounded-2xl bg-gradient-to-r from-[#0C3D2E] to-[#1a5c41] px-6 py-8 sm:px-8 shadow-[0_4px_20px_rgba(12,61,46,0.25)]">
+      <div className="rounded-2xl bg-gradient-to-r from-[#1F5A5C] to-[#2D7578] px-6 py-8 sm:px-8 shadow-[0_4px_20px_rgba(31,90,92,0.25)]">
         <div className="flex items-center gap-4">
           <div className="relative h-16 w-16 shrink-0 overflow-hidden rounded-2xl border-2 border-white/20 bg-white/10">
             {avatarUrl ? (
@@ -110,16 +110,16 @@ export default async function AdminSettingsPage() {
             <Link
               key={cat.href}
               href={cat.href}
-              className="group rounded-2xl bg-white border border-[#e5e7eb] p-5 hover:shadow-[0_4px_16px_rgba(12,61,46,0.10)] hover:border-l-4 hover:border-l-[#C9952A] transition-all cursor-pointer flex items-center gap-4"
+              className="group rounded-2xl bg-white border border-[#e5e7eb] p-5 hover:shadow-[0_4px_16px_rgba(31,90,92,0.12)] hover:border-l-4 hover:border-l-[#1F5A5C] transition-all cursor-pointer flex items-center gap-4"
             >
               <div className={`shrink-0 inline-flex h-12 w-12 items-center justify-center rounded-xl ${cat.iconBg}`}>
                 <Icon className={`h-5 w-5 ${cat.iconColor}`} />
               </div>
               <div className="flex-1 min-w-0">
-                <p className="text-sm font-semibold text-[#0f172a] group-hover:text-[#0C3D2E] transition">{cat.title}</p>
+                <p className="text-sm font-semibold text-[#0f172a] group-hover:text-[#1F5A5C] transition">{cat.title}</p>
                 <p className="mt-0.5 text-xs text-[#64748b]">{cat.description}</p>
               </div>
-              <ArrowRight className="h-4 w-4 shrink-0 text-[#94a3b8] group-hover:text-[#C9952A] transition" />
+              <ArrowRight className="h-4 w-4 shrink-0 text-[#94a3b8] group-hover:text-[#1F5A5C] transition" />
             </Link>
           );
         })}

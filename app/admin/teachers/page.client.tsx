@@ -279,7 +279,7 @@ function ShareModal({ teacher, onClose }: { teacher: TeacherItem; onClose: () =>
           <input
             readOnly
             value={teacher.user.email}
-            className="w-full rounded-xl bg-[#f3f4f5] border-none px-3 py-2 text-sm text-[#64748b] outline-none"
+            className="w-full rounded-xl border border-[#E2E8F0] bg-[#f8fafc] px-3 py-2 text-sm text-[#64748b] outline-none"
           />
         </div>
 
@@ -290,7 +290,7 @@ function ShareModal({ teacher, onClose }: { teacher: TeacherItem; onClose: () =>
               type={showPwd ? 'text' : 'password'}
               value={password}
               onChange={e => setPassword(e.target.value)}
-              className="w-full rounded-xl bg-[#f8fafc] border-none px-3 py-2 pr-10 text-sm text-[#0f172a] outline-none focus:ring-2 focus:ring-[#1F5A5C]/20"
+              className="w-full rounded-xl border border-[#E2E8F0] bg-white px-3 py-2 pr-10 text-sm text-[#0f172a] outline-none focus:border-[#1F5A5C] focus:ring-2 focus:ring-[#1F5A5C]/20 transition"
             />
             <button
               type="button"

@@ -54,12 +54,12 @@ export default function ProfileClient({
   return (
     <div className="space-y-5 pb-8">
       {/* Back */}
-      <Link href="/admin/settings" className="inline-flex items-center gap-1.5 text-sm font-semibold text-[#0C3D2E] hover:text-[#1a5c41] transition">
+      <Link href="/admin/settings" className="inline-flex items-center gap-1.5 text-sm font-semibold text-[#1F5A5C] hover:text-[#174749] transition">
         <ArrowLeft className="h-4 w-4" /> Back to Settings
       </Link>
 
       {/* Page header banner */}
-      <div className="rounded-2xl bg-gradient-to-r from-[#0C3D2E] to-[#1a5c41] p-5 text-white shadow-[0_4px_20px_rgba(12,61,46,0.3)]">
+      <div className="rounded-2xl bg-gradient-to-r from-[#1F5A5C] to-[#2D7578] p-5 text-white shadow-[0_4px_20px_rgba(31,90,92,0.25)]">
         <div className="flex items-center gap-4">
           <div className="relative flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl bg-white/20 text-lg font-bold backdrop-blur-sm ring-2 ring-white/30 overflow-hidden">
             {avatarPreview
@@ -76,21 +76,21 @@ export default function ProfileClient({
 
       <form action={formAction} className="space-y-4">
         {/* Avatar card */}
-        <div className="rounded-2xl bg-white p-5 border border-[#e5e7eb] shadow-[0_2px_8px_rgba(12,61,46,0.06)]">
+        <div className="rounded-2xl bg-white p-5 border border-[#e5e7eb] shadow-[0_2px_8px_rgba(0,0,0,0.06)]">
           <div className="flex items-center gap-2 mb-4">
-            <div className="h-3.5 w-1 rounded-full bg-[#C9952A]" />
+            <div className="h-3.5 w-1 rounded-full bg-[#1F5A5C]" />
             <p className="text-xs font-bold uppercase tracking-widest text-[#64748b]">Avatar</p>
           </div>
           <div className="flex items-center gap-5">
-            <div className="relative h-20 w-20 shrink-0 overflow-hidden rounded-2xl border-2 border-[#d4c5a0] bg-[#fdf6e9]">
+            <div className="relative h-20 w-20 shrink-0 overflow-hidden rounded-2xl border-2 border-[#1F5A5C]/20 bg-[#EAF2F2]">
               {avatarPreview
                 ? <Image src={avatarPreview} alt="Avatar" fill className="object-cover" />
-                : <div className="flex h-full w-full items-center justify-center text-2xl font-black text-[#0C3D2E]">{initials(admin.fullName) || 'AD'}</div>
+                : <div className="flex h-full w-full items-center justify-center text-2xl font-black text-[#1F5A5C]">{initials(admin.fullName) || 'AD'}</div>
               }
             </div>
             <div className="space-y-2">
-              <label className="inline-flex cursor-pointer items-center gap-2 rounded-xl border border-[#C9952A]/40 bg-[#fdf6e9] px-4 py-2.5 text-sm font-semibold text-[#0C3D2E] hover:bg-[#f5eddc] transition">
-                <Camera className="h-4 w-4 text-[#C9952A]" />
+              <label className="inline-flex cursor-pointer items-center gap-2 rounded-xl border border-[#1F5A5C]/30 bg-[#EAF2F2] px-4 py-2.5 text-sm font-semibold text-[#1F5A5C] hover:bg-[#d9ecec] transition">
+                <Camera className="h-4 w-4 text-[#1F5A5C]" />
                 Upload Photo
                 <input type="file" accept="image/*" className="hidden" onChange={handleAvatarFile} />
               </label>
@@ -101,9 +101,9 @@ export default function ProfileClient({
         </div>
 
         {/* Info card */}
-        <div className="rounded-2xl bg-white p-5 border border-[#e5e7eb] shadow-[0_2px_8px_rgba(12,61,46,0.06)]">
+        <div className="rounded-2xl bg-white p-5 border border-[#e5e7eb] shadow-[0_2px_8px_rgba(0,0,0,0.06)]">
           <div className="flex items-center gap-2 mb-4">
-            <div className="h-3.5 w-1 rounded-full bg-[#C9952A]" />
+            <div className="h-3.5 w-1 rounded-full bg-[#1F5A5C]" />
             <p className="text-xs font-bold uppercase tracking-widest text-[#64748b]">Personal Info</p>
           </div>
           <div className="grid gap-4 sm:grid-cols-2">
@@ -112,23 +112,23 @@ export default function ProfileClient({
                 <User className="h-3.5 w-3.5" /> Full Name
               </label>
               <input name="fullName" defaultValue={admin.fullName} required
-                className="h-11 w-full rounded-xl border border-[#e5e7eb] bg-[#f8f7f4] px-4 text-sm text-[#0f172a] outline-none focus:border-[#C9952A] focus:ring-2 focus:ring-[#C9952A]/15 transition" />
+                className="h-11 w-full rounded-xl border border-[#e5e7eb] bg-[#f8fafc] px-4 text-sm text-[#0f172a] outline-none focus:border-[#1F5A5C] focus:ring-2 focus:ring-[#1F5A5C]/15 transition" />
             </div>
             <div>
               <label className="mb-1.5 flex items-center gap-1.5 text-[11px] font-bold uppercase tracking-wider text-[#64748b]">
                 <Mail className="h-3.5 w-3.5" /> Email Address
               </label>
               <input name="email" type="email" defaultValue={admin.email} required
-                className="h-11 w-full rounded-xl border border-[#e5e7eb] bg-[#f8f7f4] px-4 text-sm text-[#0f172a] outline-none focus:border-[#C9952A] focus:ring-2 focus:ring-[#C9952A]/15 transition" />
+                className="h-11 w-full rounded-xl border border-[#e5e7eb] bg-[#f8fafc] px-4 text-sm text-[#0f172a] outline-none focus:border-[#1F5A5C] focus:ring-2 focus:ring-[#1F5A5C]/15 transition" />
             </div>
             <div>
               <label className="mb-1.5 flex items-center gap-1.5 text-[11px] font-bold uppercase tracking-wider text-[#64748b]">
                 <Phone className="h-3.5 w-3.5" /> Phone
               </label>
               <input name="phone" defaultValue={admin.phone}
-                className="h-11 w-full rounded-xl border border-[#e5e7eb] bg-[#f8f7f4] px-4 text-sm text-[#0f172a] outline-none focus:border-[#C9952A] focus:ring-2 focus:ring-[#C9952A]/15 transition" />
+                className="h-11 w-full rounded-xl border border-[#e5e7eb] bg-[#f8fafc] px-4 text-sm text-[#0f172a] outline-none focus:border-[#1F5A5C] focus:ring-2 focus:ring-[#1F5A5C]/15 transition" />
             </div>
-            <div className="sm:col-span-2 flex items-center gap-2 rounded-xl bg-[#f8f7f4] border border-[#e5e7eb] px-4 py-3">
+            <div className="sm:col-span-2 flex items-center gap-2 rounded-xl bg-[#f8fafc] border border-[#e5e7eb] px-4 py-3">
               <Calendar className="h-4 w-4 text-[#94a3b8]" />
               <p className="text-xs text-[#64748b]">Account created <span className="font-semibold text-[#334155]">{admin.createdAtLabel}</span></p>
             </div>
@@ -138,14 +138,14 @@ export default function ProfileClient({
         {/* Save bar */}
         <div className="flex justify-end">
           <button type="submit" disabled={isPending}
-            className="inline-flex items-center gap-2 rounded-xl bg-gradient-to-r from-[#C9952A] to-[#e0aa38] px-6 py-2.5 text-sm font-semibold text-white shadow-[0_4px_12px_rgba(201,149,42,0.35)] hover:shadow-[0_6px_20px_rgba(201,149,42,0.45)] disabled:opacity-60 disabled:cursor-not-allowed transition">
+            className="inline-flex items-center gap-2 rounded-xl bg-gradient-to-r from-[#1F5A5C] to-[#2D7578] px-6 py-2.5 text-sm font-semibold text-white shadow-[0_4px_12px_rgba(31,90,92,0.3)] hover:shadow-[0_6px_20px_rgba(31,90,92,0.4)] disabled:opacity-60 disabled:cursor-not-allowed transition">
             {isPending ? 'Saving…' : 'Save Profile'}
           </button>
         </div>
       </form>
 
       {toastOpen && state.message && (
-        <div className={`fixed right-4 top-20 z-50 rounded-xl px-4 py-2.5 text-sm font-semibold text-white shadow-xl transition ${state.ok ? 'bg-[#0C3D2E]' : 'bg-[#dc2626]'}`}>
+        <div className={`fixed right-4 top-20 z-50 rounded-xl px-4 py-2.5 text-sm font-semibold text-white shadow-xl transition ${state.ok ? 'bg-[#1F5A5C]' : 'bg-[#dc2626]'}`}>
           {state.message}
         </div>
       )}

@@ -23,29 +23,29 @@ export default async function SystemPage() {
       label: 'Total Users',
       value: String(totalUsers),
       icon: Users,
-      gradient: 'from-[#0C3D2E] to-[#1a5c41]',
-      shadow: 'shadow-[0_4px_16px_rgba(12,61,46,0.25)]',
+      gradient: 'from-[#1F5A5C] to-[#2D7578]',
+      shadow: 'shadow-[0_4px_16px_rgba(31,90,92,0.25)]',
     },
     {
       label: 'Teachers',
       value: String(teacherCount),
       icon: BookOpen,
-      gradient: 'from-[#0C3D2E] to-[#1a5c41]',
-      shadow: 'shadow-[0_4px_16px_rgba(12,61,46,0.25)]',
+      gradient: 'from-[#1F5A5C] to-[#2D7578]',
+      shadow: 'shadow-[0_4px_16px_rgba(31,90,92,0.25)]',
     },
     {
       label: 'Students',
       value: String(studentCount),
       icon: GraduationCap,
-      gradient: 'from-[#0C3D2E] to-[#1a5c41]',
-      shadow: 'shadow-[0_4px_16px_rgba(12,61,46,0.25)]',
+      gradient: 'from-[#1F5A5C] to-[#2D7578]',
+      shadow: 'shadow-[0_4px_16px_rgba(31,90,92,0.25)]',
     },
     {
       label: 'Storage Used',
       value: `${storageMb} MB`,
       icon: HardDrive,
-      gradient: 'from-[#C9952A] to-[#e0aa38]',
-      shadow: 'shadow-[0_4px_16px_rgba(201,149,42,0.3)]',
+      gradient: 'from-[#0F766E] to-[#14B8A6]',
+      shadow: 'shadow-[0_4px_16px_rgba(15,118,110,0.25)]',
     },
   ];
 
@@ -59,12 +59,12 @@ export default async function SystemPage() {
   return (
     <div className="space-y-5 pb-8">
       {/* Back */}
-      <Link href="/admin/settings" className="inline-flex items-center gap-1.5 text-sm font-semibold text-[#0C3D2E] hover:text-[#1a5c41] transition">
+      <Link href="/admin/settings" className="inline-flex items-center gap-1.5 text-sm font-semibold text-[#1F5A5C] hover:text-[#174749] transition">
         <ArrowLeft className="h-4 w-4" /> Back to Settings
       </Link>
 
       {/* Header banner */}
-      <div className="rounded-2xl bg-gradient-to-r from-[#0C3D2E] to-[#1a5c41] p-5 text-white shadow-[0_4px_20px_rgba(12,61,46,0.25)]">
+      <div className="rounded-2xl bg-gradient-to-r from-[#1F5A5C] to-[#2D7578] p-5 text-white shadow-[0_4px_20px_rgba(31,90,92,0.25)]">
         <div className="flex items-center gap-4">
           <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-white/20 backdrop-blur-sm ring-2 ring-white/30">
             <Server className="h-7 w-7" />
@@ -105,7 +105,7 @@ export default async function SystemPage() {
       {/* Platform health */}
       <div className="rounded-2xl bg-white p-5 shadow-[0_4px_12px_rgba(0,0,0,0.06)] border border-[#e5e7eb]">
         <div className="mb-4 flex items-center gap-2">
-          <div className="h-1 w-4 rounded-full bg-[#C9952A]" />
+          <div className="h-1 w-4 rounded-full bg-[#1F5A5C]" />
           <p className="text-xs font-bold uppercase tracking-widest text-[#94a3b8]">Platform Health</p>
         </div>
 

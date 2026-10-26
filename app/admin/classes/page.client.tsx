@@ -822,7 +822,7 @@ export default function AdminClassesPageClient({
       {/* ── Mobile FAB ── */}
       <button
         onClick={openAdd}
-        className="fixed bottom-20 right-5 z-40 flex h-14 w-14 items-center justify-center rounded-full text-white shadow-[0_8px_20px_rgba(15,118,110,0.38)] active:scale-[0.96] transition-all sm:hidden"
+        className="fixed bottom-[96px] right-4 z-40 flex h-14 w-14 items-center justify-center rounded-full text-white shadow-[0_8px_20px_rgba(15,118,110,0.38)] active:scale-[0.96] transition-all sm:hidden"
         style={{ backgroundColor: TEAL }}
         aria-label="Add class"
       >

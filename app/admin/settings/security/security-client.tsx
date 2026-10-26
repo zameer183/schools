@@ -30,12 +30,12 @@ export default function SecurityClient({
   return (
     <div className="space-y-5 pb-8">
       {/* Back */}
-      <Link href="/admin/settings" className="inline-flex items-center gap-1.5 text-sm font-semibold text-[#0C3D2E] hover:text-[#1a5c41] transition">
+      <Link href="/admin/settings" className="inline-flex items-center gap-1.5 text-sm font-semibold text-[#1F5A5C] hover:text-[#174749] transition">
         <ArrowLeft className="h-4 w-4" /> Back to Settings
       </Link>
 
       {/* Header banner */}
-      <div className="rounded-2xl bg-gradient-to-r from-[#0C3D2E] to-[#1a5c41] p-5 text-white shadow-[0_4px_20px_rgba(12,61,46,0.25)]">
+      <div className="rounded-2xl bg-gradient-to-r from-[#1F5A5C] to-[#2D7578] p-5 text-white shadow-[0_4px_20px_rgba(31,90,92,0.25)]">
         <div className="flex items-center gap-4">
           <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-white/20 backdrop-blur-sm ring-2 ring-white/30">
             <ShieldCheck className="h-7 w-7" />
@@ -50,9 +50,9 @@ export default function SecurityClient({
 
       <form action={formAction} className="space-y-4">
         {/* Account info */}
-        <div className="flex items-center gap-3 rounded-2xl border border-[#f5eddc] bg-[#fdf6e9] px-5 py-4">
+        <div className="flex items-center gap-3 rounded-2xl border border-[#ccfbf1] bg-[#f0fdfa] px-5 py-4">
           <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-white">
-            <KeyRound className="h-4 w-4 text-[#C9952A]" />
+            <KeyRound className="h-4 w-4 text-[#1F5A5C]" />
           </div>
           <p className="text-sm text-[#64748b]">Account registered on <span className="font-semibold text-[#334155]">{createdAtLabel}</span></p>
         </div>
@@ -60,7 +60,7 @@ export default function SecurityClient({
         {/* Password card */}
         <div className="rounded-2xl bg-white p-5 shadow-[0_4px_12px_rgba(0,0,0,0.06)] border border-[#e5e7eb]">
           <div className="mb-4 flex items-center gap-2">
-            <div className="h-1 w-4 rounded-full bg-[#C9952A]" />
+            <div className="h-1 w-4 rounded-full bg-[#1F5A5C]" />
             <p className="text-xs font-bold uppercase tracking-widest text-[#94a3b8]">Change Password</p>
           </div>
           <div className="grid gap-4 sm:grid-cols-2">
@@ -69,9 +69,9 @@ export default function SecurityClient({
               <label className="mb-1.5 block text-[11px] font-bold uppercase tracking-wider text-[#64748b]">Current Password</label>
               <div className="relative">
                 <input name="currentPassword" type={showCurrent ? 'text' : 'password'} autoComplete="current-password"
-                  className="h-11 w-full rounded-xl border border-[#e5e7eb] bg-[#f8fafc] px-4 pr-10 text-sm text-[#0f172a] outline-none focus:border-[#C9952A] focus:ring-2 focus:ring-[#C9952A]/15 transition" />
+                  className="h-11 w-full rounded-xl border border-[#e5e7eb] bg-[#f8fafc] px-4 pr-10 text-sm text-[#0f172a] outline-none focus:border-[#1F5A5C] focus:ring-2 focus:ring-[#1F5A5C]/15 transition" />
                 <button type="button" onClick={() => setShowCurrent((p) => !p)}
-                  className="absolute right-3 top-1/2 -translate-y-1/2 text-[#94a3b8] hover:text-[#0C3D2E]">
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-[#94a3b8] hover:text-[#1F5A5C]">
                   {showCurrent ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
                 </button>
               </div>
@@ -80,9 +80,9 @@ export default function SecurityClient({
               <label className="mb-1.5 block text-[11px] font-bold uppercase tracking-wider text-[#64748b]">New Password</label>
               <div className="relative">
                 <input name="newPassword" type={showNew ? 'text' : 'password'} autoComplete="new-password"
-                  className="h-11 w-full rounded-xl border border-[#e5e7eb] bg-[#f8fafc] px-4 pr-10 text-sm text-[#0f172a] outline-none focus:border-[#C9952A] focus:ring-2 focus:ring-[#C9952A]/15 transition" />
+                  className="h-11 w-full rounded-xl border border-[#e5e7eb] bg-[#f8fafc] px-4 pr-10 text-sm text-[#0f172a] outline-none focus:border-[#1F5A5C] focus:ring-2 focus:ring-[#1F5A5C]/15 transition" />
                 <button type="button" onClick={() => setShowNew((p) => !p)}
-                  className="absolute right-3 top-1/2 -translate-y-1/2 text-[#94a3b8] hover:text-[#0C3D2E]">
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-[#94a3b8] hover:text-[#1F5A5C]">
                   {showNew ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
                 </button>
               </div>
@@ -91,9 +91,9 @@ export default function SecurityClient({
               <label className="mb-1.5 block text-[11px] font-bold uppercase tracking-wider text-[#64748b]">Confirm Password</label>
               <div className="relative">
                 <input name="confirmPassword" type={showConfirm ? 'text' : 'password'} autoComplete="new-password"
-                  className="h-11 w-full rounded-xl border border-[#e5e7eb] bg-[#f8fafc] px-4 pr-10 text-sm text-[#0f172a] outline-none focus:border-[#C9952A] focus:ring-2 focus:ring-[#C9952A]/15 transition" />
+                  className="h-11 w-full rounded-xl border border-[#e5e7eb] bg-[#f8fafc] px-4 pr-10 text-sm text-[#0f172a] outline-none focus:border-[#1F5A5C] focus:ring-2 focus:ring-[#1F5A5C]/15 transition" />
                 <button type="button" onClick={() => setShowConfirm((p) => !p)}
-                  className="absolute right-3 top-1/2 -translate-y-1/2 text-[#94a3b8] hover:text-[#0C3D2E]">
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-[#94a3b8] hover:text-[#1F5A5C]">
                   {showConfirm ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
                 </button>
               </div>
@@ -104,15 +104,15 @@ export default function SecurityClient({
         {/* 2FA card */}
         <div className="rounded-2xl bg-white p-5 shadow-[0_4px_12px_rgba(0,0,0,0.06)] border border-[#e5e7eb]">
           <div className="mb-4 flex items-center gap-2">
-            <div className="h-1 w-4 rounded-full bg-[#C9952A]" />
+            <div className="h-1 w-4 rounded-full bg-[#1F5A5C]" />
             <p className="text-xs font-bold uppercase tracking-widest text-[#94a3b8]">Two-Factor Authentication</p>
           </div>
-          <div className={`rounded-xl border p-4 transition ${twoFaEnabled ? 'border-[#C9952A]/40 bg-[#fdf6e9]' : 'border-[#e5e7eb] bg-[#f8fafc]'}`}>
+          <div className={`rounded-xl border p-4 transition ${twoFaEnabled ? 'border-[#1F5A5C]/30 bg-[#f0fdfa]' : 'border-[#e5e7eb] bg-[#f8fafc]'}`}>
             <div className="flex items-center justify-between gap-4">
               <div className="flex items-center gap-3">
-                <div className={`flex h-10 w-10 items-center justify-center rounded-xl transition ${twoFaEnabled ? 'bg-[#fdf6e9]' : 'bg-[#f1f5f9]'}`}>
+                <div className={`flex h-10 w-10 items-center justify-center rounded-xl transition ${twoFaEnabled ? 'bg-[#ccfbf1]' : 'bg-[#f1f5f9]'}`}>
                   {twoFaEnabled
-                    ? <ShieldCheck className="h-5 w-5 text-[#C9952A]" />
+                    ? <ShieldCheck className="h-5 w-5 text-[#1F5A5C]" />
                     : <ShieldOff className="h-5 w-5 text-[#94a3b8]" />
                   }
                 </div>
@@ -122,7 +122,7 @@ export default function SecurityClient({
                 </div>
               </div>
               <button type="button" onClick={() => setTwoFaEnabled((p) => !p)} aria-pressed={twoFaEnabled}
-                className={`relative h-7 w-13 min-w-[52px] rounded-full transition-colors duration-200 ${twoFaEnabled ? 'bg-[#C9952A]' : 'bg-[#cbd5e1]'}`}>
+                className={`relative h-7 w-13 min-w-[52px] rounded-full transition-colors duration-200 ${twoFaEnabled ? 'bg-[#1F5A5C]' : 'bg-[#cbd5e1]'}`}>
                 <span className={`absolute top-1 h-5 w-5 rounded-full bg-white shadow transition-all duration-200 ${twoFaEnabled ? 'left-[28px]' : 'left-1'}`} />
               </button>
             </div>
@@ -133,7 +133,7 @@ export default function SecurityClient({
         {/* Save */}
         <div className="flex justify-end">
           <button type="submit" disabled={isPending}
-            className="inline-flex items-center gap-2 rounded-xl bg-gradient-to-r from-[#C9952A] to-[#e0aa38] px-6 py-2.5 text-sm font-semibold text-white shadow-[0_4px_12px_rgba(201,149,42,0.3)] hover:shadow-[0_6px_20px_rgba(201,149,42,0.4)] disabled:opacity-60 disabled:cursor-not-allowed transition">
+            className="inline-flex items-center gap-2 rounded-xl bg-gradient-to-r from-[#1F5A5C] to-[#2D7578] px-6 py-2.5 text-sm font-semibold text-white shadow-[0_4px_12px_rgba(31,90,92,0.3)] hover:shadow-[0_6px_20px_rgba(31,90,92,0.4)] disabled:opacity-60 disabled:cursor-not-allowed transition">
             <Lock className="h-4 w-4" />
             {isPending ? 'Updating…' : 'Update Security'}
           </button>

@@ -1,4 +1,4 @@
-﻿import Link from 'next/link';
+import Link from 'next/link';
 import { prisma } from '@/lib/prisma';
 import { PrintButton } from '@/components/reports/print-button';
 
@@ -97,13 +97,13 @@ export default async function IndividualFinanceReportPage({ searchParams }: Page
         <form className="mt-4 grid gap-3 sm:grid-cols-3" method="get">
           <label className="text-xs font-semibold text-[#64748b] sm:col-span-2">
             Student
-            <select name="studentId" defaultValue={selectedStudentId} className="mt-1 h-10 w-full rounded-xl bg-[#f3f4f5] px-3 text-sm text-[#1f2937]">
+            <select name="studentId" defaultValue={selectedStudentId} className="mt-1 h-10 w-full rounded-xl border border-[#E2E8F0] bg-white px-3 text-sm text-[#0F172A] focus:border-[#1F5A5C] focus:outline-none focus:ring-1 focus:ring-[#1F5A5C] transition">
               {students.map((student) => <option key={student.id} value={student.id}>{student.user.fullName}</option>)}
             </select>
           </label>
           <label className="text-xs font-semibold text-[#64748b]">
             Year
-            <input name="year" type="number" min="2020" max="2100" defaultValue={year} className="mt-1 h-10 w-full rounded-xl bg-[#f3f4f5] px-3 text-sm text-[#1f2937]" />
+            <input name="year" type="number" min="2020" max="2100" defaultValue={year} className="mt-1 h-10 w-full rounded-xl border border-[#E2E8F0] bg-white px-3 text-sm text-[#0F172A] focus:border-[#1F5A5C] focus:outline-none focus:ring-1 focus:ring-[#1F5A5C] transition" />
           </label>
           <div className="sm:col-span-3"><button type="submit" className="h-10 w-full rounded-xl bg-gradient-to-br from-[#1F5A5C] to-[#2D7578] text-sm font-semibold text-white">Apply</button></div>
         </form>

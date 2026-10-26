@@ -179,7 +179,7 @@ export default function AttendanceReportClient({
               <select
                 value={selectedClassId}
                 onChange={(e) => navigate({ classId: e.target.value, studentId: '' })}
-                className="mt-1 h-10 w-full rounded-xl bg-[#f3f4f5] px-3 text-sm text-[#1f2937]"
+                className="mt-1 h-10 w-full rounded-xl border border-[#E2E8F0] bg-white px-3 text-sm text-[#0F172A] focus:border-[#1F5A5C] focus:outline-none focus:ring-1 focus:ring-[#1F5A5C] transition"
               >
                 <option value="all">All Classes</option>
                 {classes.map((c) => (
@@ -192,7 +192,7 @@ export default function AttendanceReportClient({
               <select
                 value={selectedStudentId}
                 onChange={(e) => navigate({ studentId: e.target.value })}
-                className="mt-1 h-10 w-full rounded-xl bg-[#f3f4f5] px-3 text-sm text-[#1f2937]"
+                className="mt-1 h-10 w-full rounded-xl border border-[#E2E8F0] bg-white px-3 text-sm text-[#0F172A] focus:border-[#1F5A5C] focus:outline-none focus:ring-1 focus:ring-[#1F5A5C] transition"
               >
                 {students.map((s) => (
                   <option key={s.id} value={s.id}>{s.fullName}</option>
@@ -205,7 +205,7 @@ export default function AttendanceReportClient({
                 type="month"
                 value={monthKey}
                 onChange={(e) => navigate({ month: e.target.value })}
-                className="mt-1 h-10 w-full rounded-xl bg-[#f3f4f5] px-3 text-sm text-[#1f2937]"
+                className="mt-1 h-10 w-full rounded-xl border border-[#E2E8F0] bg-white px-3 text-sm text-[#0F172A] focus:border-[#1F5A5C] focus:outline-none focus:ring-1 focus:ring-[#1F5A5C] transition"
               />
             </label>
           </div>
