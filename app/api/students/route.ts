@@ -1,5 +1,6 @@
 import { hash } from 'bcryptjs';
 import { Prisma, UserRole } from '@prisma/client';
+import { revalidatePath } from 'next/cache';
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { ensureApiRole } from '@/lib/rbac';
@@ -955,15 +956,34 @@ export async function DELETE(request: Request) {
     const student = await prisma.student.findUnique({ where: { id } });
     if (!student) return NextResponse.json({ error: 'Student not found' }, { status: 404 });
 
-    await prisma.notification.deleteMany({
-      where: {
-        OR: [{ userId: student.userId }, { studentId: id }]
+    await prisma.$transaction(async (tx) => {
+      await tx.$executeRaw`DELETE FROM "StudentClass" WHERE "studentId" = ${id}`.catch(() => {});
+      await tx.notification.deleteMany({
+        where: {
+          OR: [{ userId: student.userId }, { studentId: id }]
+        }
+      });
+      await tx.attendance.deleteMany({ where: { studentId: id } });
+      await tx.result.deleteMany({ where: { studentId: id } });
+      await tx.studentProgress.deleteMany({ where: { studentId: id } });
+      await tx.assignmentSubmission.deleteMany({ where: { studentId: id } });
+      await tx.parentStudent.deleteMany({ where: { studentId: id } });
+      await tx.campaignItem.deleteMany({ where: { studentId: id } });
+
+      const fees = await tx.fee.findMany({ where: { studentId: id }, select: { id: true } });
+      const feeIds = fees.map((f) => f.id);
+      if (feeIds.length > 0) {
+        await tx.payment.deleteMany({ where: { feeId: { in: feeIds } } });
       }
+      await tx.fee.deleteMany({ where: { studentId: id } });
+
+      await tx.student.delete({ where: { id } });
+      await tx.user.delete({ where: { id: student.userId } });
     });
 
-    await prisma.student.delete({ where: { id } });
-    await prisma.user.delete({ where: { id: student.userId } });
-
+    revalidatePath('/admin/students');
+    revalidatePath('/admin/attendance');
+    revalidatePath('/admin/academics');
     return NextResponse.json({ success: true });
   } catch (error) {
     if (!isDatabaseConnectionError(error)) {

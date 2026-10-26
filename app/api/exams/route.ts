@@ -1,9 +1,13 @@
 import { UserRole } from '@prisma/client';
 import { randomUUID } from 'crypto';
+import { revalidatePath } from 'next/cache';
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { ensureApiRole } from '@/lib/rbac';
 import { hasTeacherAccessByUserId } from '@/lib/teacher-access';
+
+export const dynamic = 'force-dynamic';
+export const revalidate = 0;
 
 const EXAM_TYPES = ['One Juzz', '5 Juzz', '10 Juzz', 'Full Revision', 'Custom'] as const;
 
@@ -319,7 +323,13 @@ export async function GET() {
     orderBy: { examDate: 'desc' }
   });
 
-  return NextResponse.json(exams.map((exam) => normalizeExamResponse(exam)));
+  return new NextResponse(JSON.stringify(exams.map((exam) => normalizeExamResponse(exam))), {
+    status: 200,
+    headers: {
+      'Content-Type': 'application/json',
+      'Cache-Control': 'no-store, no-cache, must-revalidate, proxy-revalidate'
+    }
+  });
 }
 
 export async function POST(request: Request) {
@@ -528,6 +538,7 @@ export async function POST(request: Request) {
     include: { class: true, subject: true, createdBy: { include: { user: true } } }
   });
 
+  revalidatePath('/admin/academics');
   return NextResponse.json(normalizeExamResponse(exam), { status: 201 });
 }
 
@@ -654,6 +665,7 @@ export async function PUT(request: Request) {
     include: { class: true, subject: true, createdBy: { include: { user: true } } }
   });
 
+  revalidatePath('/admin/academics');
   return NextResponse.json(normalizeExamResponse(exam));
 }
 
@@ -722,8 +734,8 @@ export async function DELETE(request: Request) {
     }
   }
 
-  if (exam._count.results > 0) {
-    if (!force) {
+  if (exam._count.results > 0 || force || auth.session.role === UserRole.ADMIN) {
+    if (exam._count.results > 0 && !force && auth.session.role !== UserRole.ADMIN) {
       return NextResponse.json({ error: 'Cannot delete exam with existing results.' }, { status: 409 });
     }
     if (auth.session.role === UserRole.TEACHER) {
@@ -736,9 +748,11 @@ export async function DELETE(request: Request) {
       prisma.result.deleteMany({ where: { examId: id } }),
       prisma.exam.delete({ where: { id } })
     ]);
+    revalidatePath('/admin/academics');
     return NextResponse.json({ ok: true, forceDeleted: true });
   }
 
   await prisma.exam.delete({ where: { id } });
+  revalidatePath('/admin/academics');
   return NextResponse.json({ ok: true });
 }

@@ -1,6 +1,7 @@
 'use client';
 
 import { useCallback, useMemo, useState } from 'react';
+import { useRouter } from 'next/navigation';
 import {
   Award,
   BookOpen,
@@ -123,6 +124,7 @@ export default function AdminAcademicsPageClient({
   initialTeachers: TeacherItem[];
   initialExams: ExamItem[];
 }) {
+  const router = useRouter();
   const [classes, setClasses] = useState<ClassItem[]>(initialClasses);
   const [subjects, setSubjects] = useState<SubjectItem[]>(initialSubjects);
   const [teachers, setTeachers] = useState<TeacherItem[]>(initialTeachers);
@@ -231,11 +233,12 @@ export default function AdminAcademicsPageClient({
 
   const load = async () => {
     try {
+      const stamp = Date.now();
       const [classesRes, subjectsRes, teachersRes, examsRes] = await Promise.all([
-        fetch('/api/classes'),
-        fetch('/api/subjects'),
-        fetch('/api/teachers'),
-        fetch('/api/exams')
+        fetch(`/api/classes?t=${stamp}`, { cache: 'no-store' }),
+        fetch(`/api/subjects?t=${stamp}`, { cache: 'no-store' }),
+        fetch(`/api/teachers?t=${stamp}`, { cache: 'no-store' }),
+        fetch(`/api/exams?t=${stamp}`, { cache: 'no-store' })
       ]);
 
       if (classesRes.ok) setClasses(await classesRes.json());
@@ -400,34 +403,33 @@ export default function AdminAcademicsPageClient({
 
   const confirmDeleteExam = async () => {
     if (!examToDelete) return;
+    const targetId = examToDelete.id;
     setExamDeleting(true);
     try {
-      let res = await fetch(`/api/exams?id=${examToDelete.id}`, { method: 'DELETE' });
-      let data = await res.json().catch(() => ({}));
-
-      if (!res.ok && res.status === 409) {
-        const force = window.confirm('This exam already has student results. Permanently delete the exam and all student grades from the database?');
-        if (!force) {
-          setExamDeleting(false);
-          setExamToDelete(null);
-          return;
-        }
-        res = await fetch(`/api/exams?id=${examToDelete.id}&force=1`, { method: 'DELETE' });
-        data = await res.json().catch(() => ({}));
-      }
+      const res = await fetch(`/api/exams?id=${encodeURIComponent(targetId)}&force=1`, {
+        method: 'DELETE',
+        headers: { 'Cache-Control': 'no-cache' }
+      });
+      const data = await res.json().catch(() => ({}));
 
       if (!res.ok) {
         showToast('error', (data as { error?: string })?.error ?? 'Unable to delete exam');
         return;
       }
 
-      showToast('success', 'Exam permanently deleted from database.');
-      setExamToDelete(null);
-      if (resultForm.examId === examToDelete.id) {
+      // Immediately purge from local React state so it vanishes instantly
+      setExams((prev) => prev.filter((item) => item.id !== targetId));
+      if (resultForm.examId === targetId) {
         setResultForm({ examId: '', studentId: '', marksObtained: '', remarks: '' });
         setResultRows([]);
       }
+      setExamToDelete(null);
+      showToast('success', 'Exam and related results permanently deleted from database.');
+
       void load();
+      router.refresh();
+    } catch {
+      showToast('error', 'Network error while deleting exam.');
     } finally {
       setExamDeleting(false);
     }
@@ -435,32 +437,30 @@ export default function AdminAcademicsPageClient({
 
   const confirmDeleteSubject = async () => {
     if (!subjectToDelete) return;
+    const targetId = subjectToDelete.id;
     setSubjectDeleting(true);
     try {
-      let res = await fetch(`/api/subjects?id=${subjectToDelete.id}`, { method: 'DELETE' });
-      let data = await res.json().catch(() => ({}));
-
-      if (!res.ok && res.status === 409) {
-        const force = window.confirm(
-          `Subject "${subjectToDelete.name}" has linked exams or student results. Permanently delete this subject and all associated records from the database?`
-        );
-        if (!force) {
-          setSubjectDeleting(false);
-          setSubjectToDelete(null);
-          return;
-        }
-        res = await fetch(`/api/subjects?id=${subjectToDelete.id}&force=1`, { method: 'DELETE' });
-        data = await res.json().catch(() => ({}));
-      }
+      const res = await fetch(`/api/subjects?id=${encodeURIComponent(targetId)}&force=1`, {
+        method: 'DELETE',
+        headers: { 'Cache-Control': 'no-cache' }
+      });
+      const data = await res.json().catch(() => ({}));
 
       if (!res.ok) {
         showToast('error', (data as { error?: string })?.error ?? 'Unable to delete subject');
         return;
       }
 
-      showToast('success', 'Subject permanently deleted from database.');
+      // Immediately purge from local React state so it vanishes instantly
+      setSubjects((prev) => prev.filter((item) => item.id !== targetId));
+      setExams((prev) => prev.filter((item) => item.subjectId !== targetId));
       setSubjectToDelete(null);
+      showToast('success', 'Subject and linked records permanently deleted from database.');
+
       void load();
+      router.refresh();
+    } catch {
+      showToast('error', 'Network error while deleting subject.');
     } finally {
       setSubjectDeleting(false);
     }
@@ -496,6 +496,7 @@ export default function AdminAcademicsPageClient({
       setResultForm((f) => ({ ...f, studentId: '', marksObtained: '', remarks: '' }));
       await loadResultRows(resultForm.examId);
       await load();
+      router.refresh();
     } finally {
       setResultSaving(false);
     }
@@ -503,15 +504,32 @@ export default function AdminAcademicsPageClient({
 
   const handleDeleteResult = async (id: string) => {
     try {
-      const res = await fetch(`/api/results?id=${id}`, { method: 'DELETE' });
+      const res = await fetch(`/api/results?id=${encodeURIComponent(id)}`, {
+        method: 'DELETE',
+        headers: { 'Cache-Control': 'no-cache' }
+      });
       const data = await res.json().catch(() => ({}));
       if (!res.ok) {
         showToast('error', (data as { error?: string })?.error ?? 'Unable to delete result');
         return;
       }
+
+      // Immediately purge from local React state
+      setResultRows((prev) => prev.filter((row) => row.id !== id));
+      if (resultForm.examId) {
+        setExams((prev) =>
+          prev.map((e) =>
+            e.id === resultForm.examId ? { ...e, resultsCount: Math.max(0, (e.resultsCount ?? 1) - 1) } : e
+          )
+        );
+      }
       showToast('success', 'Result entry permanently deleted from database.');
-      await loadResultRows(resultForm.examId);
-      await load();
+
+      if (resultForm.examId) {
+        void loadResultRows(resultForm.examId);
+      }
+      void load();
+      router.refresh();
     } catch {
       showToast('error', 'Network error deleting result.');
     }
@@ -1614,7 +1632,7 @@ export default function AdminAcademicsPageClient({
             <div>
               <h3 className="font-bold text-base text-[#0F172A]">Delete Examination?</h3>
               <p className="mt-1 text-xs text-[#64748B]">
-                Are you sure you want to permanently delete <span className="font-semibold text-[#0F172A]">&ldquo;{examToDelete.title}&rdquo;</span> from the database?
+                Are you sure you want to permanently delete <span className="font-semibold text-[#0F172A]">&ldquo;{examToDelete.title}&rdquo;</span>? All associated student evaluations and grades will also be permanently removed from the database.
               </p>
             </div>
             <div className="flex justify-center gap-2 pt-2">
@@ -1649,7 +1667,7 @@ export default function AdminAcademicsPageClient({
             <div>
               <h3 className="font-bold text-base text-[#0F172A]">Delete Subject?</h3>
               <p className="mt-1 text-xs text-[#64748B]">
-                Are you sure you want to permanently delete <span className="font-semibold text-[#0F172A]">&ldquo;{subjectToDelete.name}&rdquo;</span> ({subjectToDelete.code}) from the database?
+                Are you sure you want to permanently delete <span className="font-semibold text-[#0F172A]">&ldquo;{subjectToDelete.name}&rdquo;</span> ({subjectToDelete.code})? Any linked exams and results will also be permanently removed from the database.
               </p>
             </div>
             <div className="flex justify-center gap-2 pt-2">

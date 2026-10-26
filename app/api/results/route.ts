@@ -1,9 +1,13 @@
 import { UserRole } from '@prisma/client';
 import { randomUUID } from 'crypto';
+import { revalidatePath } from 'next/cache';
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { ensureApiRole } from '@/lib/rbac';
 import { hasTeacherAccessByUserId } from '@/lib/teacher-access';
+
+export const dynamic = 'force-dynamic';
+export const revalidate = 0;
 
 const ALLOWED_QUALITIES = ['Excellent', 'Good', 'Needs Practice'] as const;
 
@@ -139,7 +143,13 @@ export async function GET(request: Request) {
       orderBy: { createdAt: 'desc' }
     });
 
-    return NextResponse.json(results);
+    return new NextResponse(JSON.stringify(results), {
+      status: 200,
+      headers: {
+        'Content-Type': 'application/json',
+        'Cache-Control': 'no-store, no-cache, must-revalidate, proxy-revalidate'
+      }
+    });
   } catch (error) {
     console.error('[api/results][GET]', error);
     return NextResponse.json([]);
@@ -277,6 +287,7 @@ export async function POST(request: Request) {
     create: { examId, studentId, subjectId: subjectId || exam.subjectId, marksObtained, grade, remarks }
   });
 
+  revalidatePath('/admin/academics');
   return NextResponse.json(result, { status: 201 });
 }
 
@@ -303,5 +314,6 @@ export async function DELETE(request: Request) {
   }
 
   await prisma.result.delete({ where: { id } });
+  revalidatePath('/admin/academics');
   return NextResponse.json({ ok: true });
 }

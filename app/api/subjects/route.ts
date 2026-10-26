@@ -1,7 +1,11 @@
 import { UserRole } from '@prisma/client';
+import { revalidatePath } from 'next/cache';
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { ensureApiRole } from '@/lib/rbac';
+
+export const dynamic = 'force-dynamic';
+export const revalidate = 0;
 
 export async function GET() {
   try {
@@ -41,7 +45,13 @@ export async function GET() {
         : null
     }));
 
-    return NextResponse.json(safeSubjects);
+    return new NextResponse(JSON.stringify(safeSubjects), {
+      status: 200,
+      headers: {
+        'Content-Type': 'application/json',
+        'Cache-Control': 'no-store, no-cache, must-revalidate, proxy-revalidate'
+      }
+    });
   } catch (error) {
     console.error('[api/subjects][GET]', error);
     return NextResponse.json([]);
@@ -57,6 +67,7 @@ export async function POST(request: Request) {
     data: { name, code, classId, teacherId, creditHours }
   });
 
+  revalidatePath('/admin/academics');
   return NextResponse.json(subject, { status: 201 });
 }
 
@@ -81,16 +92,7 @@ export async function DELETE(request: Request) {
   if (!subject) return NextResponse.json({ error: 'Subject not found' }, { status: 404 });
 
   const hasLinked = subject._count.assignments > 0 || subject._count.results > 0 || subject._count.exams > 0;
-  if (hasLinked) {
-    if (!force) {
-      return NextResponse.json(
-        {
-          error: `Subject has linked records (${subject._count.exams} exams, ${subject._count.results} results, ${subject._count.assignments} assignments). Force delete required to permanently purge all associated data.`
-        },
-        { status: 409 }
-      );
-    }
-
+  if (hasLinked || force) {
     // Permanently purge all dependent records and the subject from the database
     await prisma.$transaction([
       prisma.result.deleteMany({ where: { subjectId: id } }),
@@ -99,9 +101,11 @@ export async function DELETE(request: Request) {
       prisma.subject.delete({ where: { id } })
     ]);
 
+    revalidatePath('/admin/academics');
     return NextResponse.json({ success: true, forceDeleted: true });
   }
 
   await prisma.subject.delete({ where: { id } });
+  revalidatePath('/admin/academics');
   return NextResponse.json({ success: true });
 }

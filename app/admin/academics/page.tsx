@@ -1,10 +1,11 @@
 import { UserRole } from '@prisma/client';
-import { unstable_cache } from 'next/cache';
 import { requireAuth } from '@/lib/auth';
 import { prisma } from '@/lib/prisma';
 import AdminAcademicsPageClient from './page.client';
 
 export const dynamic = 'force-dynamic';
+export const revalidate = 0;
+
 function isDatabaseConnectionError(error: unknown) {
   return (
     error instanceof Error &&
@@ -15,8 +16,65 @@ function isDatabaseConnectionError(error: unknown) {
   );
 }
 
-const getCachedAcademicsData = unstable_cache(
-  async () => {
+function parseExamTitle(rawTitle: unknown) {
+  const value = typeof rawTitle === 'string' ? rawTitle.trim() : '';
+  if (!value) return { title: 'Untitled Exam', examType: 'Custom' };
+  const match = value.match(/^\[(.+?)\]\s*(.*)$/);
+  if (!match) {
+    return { title: value, examType: 'Custom' };
+  }
+  return { examType: match[1].trim(), title: (match[2] ?? '').trim() || value };
+}
+
+function safeToIso(input: unknown) {
+  if (input instanceof Date && !Number.isNaN(input.getTime())) return input.toISOString();
+  if (typeof input === 'string') {
+    const parsed = new Date(input);
+    if (!Number.isNaN(parsed.getTime())) return parsed.toISOString();
+  }
+  return new Date().toISOString();
+}
+
+export default async function AdminAcademicsPage() {
+  await requireAuth([UserRole.ADMIN]);
+  let data: {
+    classes: Array<{
+      id: string;
+      name: string;
+      section: string;
+      roomNo: string | null;
+      academicYear: string;
+      _count: { students: number; subjects: number };
+    }>;
+    subjects: Array<{
+      id: string;
+      name: string;
+      code: string;
+      classId: string | null;
+      class: { name: string; section: string } | null;
+      teacher: { user: { fullName: string } } | null;
+    }>;
+    teachers: Array<{
+      id: string;
+      user: { fullName: string };
+    }>;
+    exams: Array<{
+      id: string;
+      title: string;
+      examDate: Date;
+      totalMarks: number;
+      passingMarks: number;
+      classId: string;
+      subjectId: string;
+      createdById: string;
+      class: { name: string; section: string };
+      subject: { name: string };
+      createdBy: { user: { fullName: string } } | null;
+      _count: { results: number };
+    }>;
+  } | null = null;
+
+  try {
     const [classes, subjects, teachers, exams] = await prisma.$transaction([
       prisma.class.findMany({
         select: {
@@ -63,36 +121,7 @@ const getCachedAcademicsData = unstable_cache(
       })
     ]);
 
-    return { classes, subjects, teachers, exams };
-  },
-  ['admin-academics-page-data'],
-  { revalidate: 30 }
-);
-
-function parseExamTitle(rawTitle: unknown) {
-  const value = typeof rawTitle === 'string' ? rawTitle.trim() : '';
-  if (!value) return { title: 'Untitled Exam', examType: 'Custom' };
-  const match = value.match(/^\[(.+?)\]\s*(.*)$/);
-  if (!match) {
-    return { title: value, examType: 'Custom' };
-  }
-  return { examType: match[1].trim(), title: (match[2] ?? '').trim() || value };
-}
-
-function safeToIso(input: unknown) {
-  if (input instanceof Date && !Number.isNaN(input.getTime())) return input.toISOString();
-  if (typeof input === 'string') {
-    const parsed = new Date(input);
-    if (!Number.isNaN(parsed.getTime())) return parsed.toISOString();
-  }
-  return new Date().toISOString();
-}
-
-export default async function AdminAcademicsPage() {
-  await requireAuth([UserRole.ADMIN]);
-  let data: Awaited<ReturnType<typeof getCachedAcademicsData>> | null = null;
-  try {
-    data = await getCachedAcademicsData();
+    data = { classes, subjects, teachers, exams };
   } catch (error) {
     console.error('[admin/academics] load failed', error);
     if (!isDatabaseConnectionError(error)) throw error;

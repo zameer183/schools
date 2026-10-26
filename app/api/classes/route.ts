@@ -278,6 +278,11 @@ export async function DELETE(request: Request) {
     const attendanceDeleted = await tx.attendance.deleteMany({ where: { classId: id } });
     const progressDeleted = await tx.studentProgress.deleteMany({ where: { classId: id } });
     const assignmentsDeleted = await tx.assignment.deleteMany({ where: { classId: id } });
+    const examsInClass = await tx.exam.findMany({ where: { classId: id }, select: { id: true } });
+    const examIds = examsInClass.map((e) => e.id);
+    if (examIds.length > 0) {
+      await tx.result.deleteMany({ where: { examId: { in: examIds } } });
+    }
     const examsDeleted = await tx.exam.deleteMany({ where: { classId: id } });
     const subjectsDeleted = await tx.subject.deleteMany({ where: { classId: id } });
     const linksDeleted = await tx.teacherClass.deleteMany({ where: { classId: id } });
