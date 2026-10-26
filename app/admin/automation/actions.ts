@@ -55,23 +55,133 @@ function getUtcDayRange(dateString?: string) {
 export async function getAutomationOverviewData(dateStr?: string): Promise<AutomationDashboardData> {
   await requireAuth([UserRole.ADMIN]);
 
-  const { start, end } = getUtcDayRange(dateStr);
+  try {
+    const { start, end } = getUtcDayRange(dateStr);
 
-  const [
-    pendingAggregate,
-    feeCandidates,
-    todayAbsentRows,
-    activeStudentsCount,
-    parentsCount,
-    recentCampaigns,
-  ] = await Promise.all([
-    prisma.fee.aggregate({
-      where: { status: { in: [PaymentStatus.PENDING, PaymentStatus.OVERDUE] } },
-      _sum: { amount: true },
-      _count: { _all: true },
-    }),
-    getFeeReminderCandidates(),
-    prisma.attendance.findMany({
+    const [
+      pendingAggregate,
+      feeCandidates,
+      todayAbsentRows,
+      activeStudentsCount,
+      parentsCount,
+      recentCampaigns,
+    ] = await Promise.all([
+      prisma.fee.aggregate({
+        where: { status: { in: [PaymentStatus.PENDING, PaymentStatus.OVERDUE] } },
+        _sum: { amount: true },
+        _count: { _all: true },
+      }),
+      getFeeReminderCandidates().catch((err) => {
+        console.error('[Automation] Failed to load fee reminder candidates:', err);
+        return [] as FeeReminderStudent[];
+      }),
+      prisma.attendance.findMany({
+        where: {
+          date: { gte: start, lte: end },
+          status: 'ABSENT',
+        },
+        include: {
+          student: {
+            select: {
+              id: true,
+              whatsApp: true,
+              guardianPhone: true,
+              fatherName: true,
+              schoolName: true,
+              user: { select: { fullName: true } },
+              class: { select: { name: true, section: true } },
+            },
+          },
+        },
+        orderBy: { student: { user: { fullName: 'asc' } } },
+      }).catch((err) => {
+        console.error('[Automation] Failed to load absent rows:', err);
+        return [];
+      }),
+      prisma.student.count({
+        where: { user: { isActive: true } },
+      }).catch(() => 0),
+      prisma.parent.count().catch(() => 0),
+      prisma.campaign.findMany({
+        take: 6,
+        orderBy: { createdAt: 'desc' },
+        include: {
+          _count: {
+            select: { items: true },
+          },
+        },
+      }).catch(() => []),
+    ]);
+
+    const candidatesWithWhatsApp = feeCandidates.filter((c) => c.hasWhatsApp).length;
+
+    const todayAbsents: AbsentStudentData[] = todayAbsentRows.map((row) => {
+      const rawPhone = row.student.whatsApp || row.student.guardianPhone;
+      const cleanPhone = cleanWhatsAppPhone(rawPhone);
+      return {
+        attendanceId: row.id,
+        studentId: row.student.id,
+        studentName: row.student.user.fullName,
+        className: row.student.class?.name || 'Unassigned',
+        section: row.student.class?.section || '-',
+        guardianName: row.student.fatherName || null,
+        guardianPhone: cleanPhone || null,
+        hasWhatsApp: Boolean(cleanPhone && cleanPhone.length >= 10),
+        remarks: row.remarks || null,
+      };
+    });
+
+    return {
+      stats: {
+        totalPendingAmount: Number(pendingAggregate._sum?.amount ?? 0),
+        pendingFeeCount: pendingAggregate._count?._all ?? 0,
+        studentsWithUnpaidFees: feeCandidates.length,
+        studentsWithWhatsApp: candidatesWithWhatsApp,
+        todayAbsentCount: todayAbsents.length,
+        totalActiveStudents: activeStudentsCount,
+        totalParents: parentsCount,
+        recentCampaignsCount: recentCampaigns.length,
+      },
+      feeCandidates,
+      todayAbsents,
+      recentCampaigns: recentCampaigns.map((c) => ({
+        id: c.id,
+        createdAt: c.createdAt.toISOString(),
+        type: c.type,
+        status: c.status,
+        totalStudents: c.totalStudents,
+        totalWithWhatsApp: c.totalWithWhatsApp,
+        totalSkipped: c.totalSkipped,
+        itemsCount: c._count?.items ?? 0,
+      })),
+    };
+  } catch (err) {
+    console.error('[Automation] getAutomationOverviewData fatal error:', err);
+    return {
+      stats: {
+        totalPendingAmount: 0,
+        pendingFeeCount: 0,
+        studentsWithUnpaidFees: 0,
+        studentsWithWhatsApp: 0,
+        todayAbsentCount: 0,
+        totalActiveStudents: 0,
+        totalParents: 0,
+        recentCampaignsCount: 0,
+      },
+      feeCandidates: [],
+      todayAbsents: [],
+      recentCampaigns: [],
+    };
+  }
+}
+
+export async function getAbsentStudentsByDateAction(dateStr: string): Promise<AbsentStudentData[]> {
+  await requireAuth([UserRole.ADMIN]);
+
+  try {
+    const { start, end } = getUtcDayRange(dateStr);
+
+    const rows = await prisma.attendance.findMany({
       where: {
         date: { gte: start, lte: end },
         status: 'ABSENT',
@@ -82,7 +192,7 @@ export async function getAutomationOverviewData(dateStr?: string): Promise<Autom
             id: true,
             whatsApp: true,
             guardianPhone: true,
-            guardianName: true,
+            fatherName: true,
             schoolName: true,
             user: { select: { fullName: true } },
             class: { select: { name: true, section: true } },
@@ -90,106 +200,27 @@ export async function getAutomationOverviewData(dateStr?: string): Promise<Autom
         },
       },
       orderBy: { student: { user: { fullName: 'asc' } } },
-    }),
-    prisma.student.count({
-      where: { user: { isActive: true } },
-    }),
-    prisma.parent.count(),
-    prisma.campaign.findMany({
-      take: 6,
-      orderBy: { createdAt: 'desc' },
-      include: {
-        _count: {
-          select: { items: true },
-        },
-      },
-    }),
-  ]);
+    });
 
-  const candidatesWithWhatsApp = feeCandidates.filter((c) => c.hasWhatsApp).length;
-
-  const todayAbsents: AbsentStudentData[] = todayAbsentRows.map((row) => {
-    const rawPhone = row.student.whatsApp || row.student.guardianPhone;
-    const cleanPhone = cleanWhatsAppPhone(rawPhone);
-    return {
-      attendanceId: row.id,
-      studentId: row.student.id,
-      studentName: row.student.user.fullName,
-      className: row.student.class?.name || 'Unassigned',
-      section: row.student.class?.section || '-',
-      guardianName: row.student.guardianName || null,
-      guardianPhone: cleanPhone || null,
-      hasWhatsApp: Boolean(cleanPhone && cleanPhone.length >= 10),
-      remarks: row.remarks || null,
-    };
-  });
-
-  return {
-    stats: {
-      totalPendingAmount: Number(pendingAggregate._sum.amount ?? 0),
-      pendingFeeCount: pendingAggregate._count._all,
-      studentsWithUnpaidFees: feeCandidates.length,
-      studentsWithWhatsApp: candidatesWithWhatsApp,
-      todayAbsentCount: todayAbsents.length,
-      totalActiveStudents: activeStudentsCount,
-      totalParents: parentsCount,
-      recentCampaignsCount: recentCampaigns.length,
-    },
-    feeCandidates,
-    todayAbsents,
-    recentCampaigns: recentCampaigns.map((c) => ({
-      id: c.id,
-      createdAt: c.createdAt.toISOString(),
-      type: c.type,
-      status: c.status,
-      totalStudents: c.totalStudents,
-      totalWithWhatsApp: c.totalWithWhatsApp,
-      totalSkipped: c.totalSkipped,
-      itemsCount: c._count.items,
-    })),
-  };
-}
-
-export async function getAbsentStudentsByDateAction(dateStr: string): Promise<AbsentStudentData[]> {
-  await requireAuth([UserRole.ADMIN]);
-  const { start, end } = getUtcDayRange(dateStr);
-
-  const rows = await prisma.attendance.findMany({
-    where: {
-      date: { gte: start, lte: end },
-      status: 'ABSENT',
-    },
-    include: {
-      student: {
-        select: {
-          id: true,
-          whatsApp: true,
-          guardianPhone: true,
-          guardianName: true,
-          schoolName: true,
-          user: { select: { fullName: true } },
-          class: { select: { name: true, section: true } },
-        },
-      },
-    },
-    orderBy: { student: { user: { fullName: 'asc' } } },
-  });
-
-  return rows.map((row) => {
-    const rawPhone = row.student.whatsApp || row.student.guardianPhone;
-    const cleanPhone = cleanWhatsAppPhone(rawPhone);
-    return {
-      attendanceId: row.id,
-      studentId: row.student.id,
-      studentName: row.student.user.fullName,
-      className: row.student.class?.name || 'Unassigned',
-      section: row.student.class?.section || '-',
-      guardianName: row.student.guardianName || null,
-      guardianPhone: cleanPhone || null,
-      hasWhatsApp: Boolean(cleanPhone && cleanPhone.length >= 10),
-      remarks: row.remarks || null,
-    };
-  });
+    return rows.map((row) => {
+      const rawPhone = row.student.whatsApp || row.student.guardianPhone;
+      const cleanPhone = cleanWhatsAppPhone(rawPhone);
+      return {
+        attendanceId: row.id,
+        studentId: row.student.id,
+        studentName: row.student.user.fullName,
+        className: row.student.class?.name || 'Unassigned',
+        section: row.student.class?.section || '-',
+        guardianName: row.student.fatherName || null,
+        guardianPhone: cleanPhone || null,
+        hasWhatsApp: Boolean(cleanPhone && cleanPhone.length >= 10),
+        remarks: row.remarks || null,
+      };
+    });
+  } catch (err) {
+    console.error('[Automation] getAbsentStudentsByDateAction error:', err);
+    return [];
+  }
 }
 
 export async function createFeeReminderCampaignAction(): Promise<{
