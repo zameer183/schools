@@ -1576,7 +1576,7 @@ export default function StudentProfileClient({
                 </div>
                 <div>
                   <h3 className="text-base font-bold text-[#0f172a]">Close Student Admission</h3>
-                  <p className="text-xs text-[#64748b]">طالب علم کو کلوز / موقوف کریں</p>
+                  <p className="text-xs text-[#64748b]">Inactivate student and preserve past records</p>
                 </div>
               </div>
               <button
@@ -1614,12 +1614,12 @@ export default function StudentProfileClient({
                   onChange={(e) => setCloseReason(e.target.value)}
                   className="mt-1 h-10 w-full rounded-xl bg-white border border-[#cbd5e1] px-3 text-xs sm:text-sm text-[#0f172a] outline-none focus:ring-2 focus:ring-amber-500/20 focus:border-amber-500"
                 >
-                  <option value="Completed Course / Graduated">Completed Course / Graduated (کورس مکمل)</option>
-                  <option value="Relocated / Moved">Relocated / Moved to Another City (رہائش کی تبدیلی)</option>
-                  <option value="Financial Constraints">Financial Constraints (مالی وجوہات)</option>
-                  <option value="Temporary Gap / Leave">Temporary Gap / Leave (عارضی چھٹی)</option>
-                  <option value="Personal / Family Reasons">Personal / Family Reasons (ذاتی وجوہات)</option>
-                  <option value="Disciplinary / Withdrawn">Disciplinary / Withdrawn (دیگر)</option>
+                  <option value="Completed Course / Graduated">Completed Course / Graduated</option>
+                  <option value="Relocated / Moved">Relocated / Moved to Another City</option>
+                  <option value="Financial Constraints">Financial Constraints</option>
+                  <option value="Temporary Gap / Leave">Temporary Gap / Leave</option>
+                  <option value="Personal / Family Reasons">Personal / Family Reasons</option>
+                  <option value="Disciplinary / Withdrawn">Disciplinary / Withdrawn</option>
                 </select>
               </div>
 
@@ -1678,7 +1678,7 @@ export default function StudentProfileClient({
                 </div>
                 <div>
                   <h3 className="text-base font-bold text-[#0f172a]">Re-open / Activate Student</h3>
-                  <p className="text-xs text-[#64748b]">طالب علم کو نئی تاریخ سے دوبارہ فعال کریں</p>
+                  <p className="text-xs text-[#64748b]">Reactivate student from a new effective date</p>
                 </div>
               </div>
               <button

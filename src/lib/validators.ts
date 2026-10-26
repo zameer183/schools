@@ -98,7 +98,7 @@ export const progressCreateSchema = z.object({
             ctx.addIssue({
               code: z.ZodIssueCode.custom,
               path: ['surahRanges', secKey, i, 'fromAyah'],
-              message: `سورت ${surah.name} میں کل ${surah.ayahs} آیات ہیں۔ آپ ${surah.ayahs} سے زیادہ آیت نمبر (${r.fromAyah}) درج نہیں کر سکتے۔ (You can't add more than extreme value ${surah.ayahs})`
+              message: `Surah ${surah.name} has ${surah.ayahs} ayahs. You cannot enter an ayah number (${r.fromAyah}) greater than ${surah.ayahs}. (You can't add more than extreme value: ${surah.ayahs})`
             });
           }
 
@@ -112,7 +112,7 @@ export const progressCreateSchema = z.object({
             ctx.addIssue({
               code: z.ZodIssueCode.custom,
               path: ['surahRanges', secKey, i, 'toAyah'],
-              message: `سورت ${surah.name} میں کل ${surah.ayahs} آیات ہیں۔ آپ ${surah.ayahs} سے زیادہ آیت نمبر (${r.toAyah}) درج نہیں کر سکتے۔ (You can't add more than extreme value ${surah.ayahs})`
+              message: `Surah ${surah.name} has ${surah.ayahs} ayahs. You cannot enter an ayah number (${r.toAyah}) greater than ${surah.ayahs}. (You can't add more than extreme value: ${surah.ayahs})`
             });
           }
 

@@ -473,7 +473,7 @@ export default function EnrollStudentPage() {
             {form2.whatsappNumber.trim() ? (
               <div className="rounded-xl border border-[#bbf7d0] bg-[#f0fdf4] p-4 text-left space-y-3">
                 <div className="flex items-center justify-between">
-                  <p className="text-xs font-bold text-[#15803d]">Share via WhatsApp / واٹس ایپ پر بھیجیں</p>
+                  <p className="text-xs font-bold text-[#15803d]">Share via WhatsApp</p>
                   <span className="text-[10px] font-semibold text-[#16a34a]">{form2.whatsappCode} {form2.whatsappNumber}</span>
                 </div>
                 <div className="grid grid-cols-2 gap-2">
@@ -487,7 +487,7 @@ export default function EnrollStudentPage() {
                     }}
                     className="flex items-center justify-center gap-1.5 rounded-lg bg-[#16a34a] py-2.5 px-3 text-xs font-bold text-white shadow-xs hover:bg-[#15803d] active:scale-[0.98]"
                   >
-                    <span>WhatsApp (سادہ)</span>
+                    <span>WhatsApp</span>
                   </button>
                   <button
                     type="button"
@@ -499,7 +499,7 @@ export default function EnrollStudentPage() {
                     }}
                     className="flex items-center justify-center gap-1.5 rounded-lg bg-[#004649] py-2.5 px-3 text-xs font-bold text-white shadow-xs hover:bg-[#1b5e62] active:scale-[0.98]"
                   >
-                    <span>WA Business (بزنس)</span>
+                    <span>WA Business</span>
                   </button>
                 </div>
               </div>

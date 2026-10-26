@@ -836,7 +836,7 @@ function ShareCredentialsModal({
                 onClick={onCancel}
                 className="rounded-xl border border-[#e2e8f0] py-2.5 text-sm font-semibold text-[#64748b] hover:bg-[#f8fafc]"
               >
-                Done / مکمل
+                Done
               </button>
             </div>
           </div>
@@ -870,7 +870,7 @@ function ShareCredentialsModal({
               {/* WhatsApp App Type Selection (Simple WhatsApp vs WhatsApp Business) */}
               <div className="space-y-1.5">
                 <label className="block text-[11px] font-semibold uppercase tracking-wider text-[#475569]">
-                  Select WhatsApp App / واٹس ایپ منتخب کریں
+                  Select WhatsApp Version
                 </label>
                 <div className="grid grid-cols-2 gap-2">
                   <button
@@ -887,7 +887,7 @@ function ShareCredentialsModal({
                     </span>
                     <div className="min-w-0">
                       <p className="text-xs font-bold leading-tight text-[#0f172a]">WhatsApp</p>
-                      <p className="text-[10px] text-[#16a34a] font-medium">Simple / سادہ</p>
+                      <p className="text-[10px] text-[#16a34a] font-medium">Standard</p>
                     </div>
                   </button>
 
@@ -905,7 +905,7 @@ function ShareCredentialsModal({
                     </span>
                     <div className="min-w-0">
                       <p className="text-xs font-bold leading-tight text-[#0f172a]">WA Business</p>
-                      <p className="text-[10px] text-[#004649] font-medium">Business / بزنس</p>
+                      <p className="text-[10px] text-[#004649] font-medium">Business</p>
                     </div>
                   </button>
                 </div>

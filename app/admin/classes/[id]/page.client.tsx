@@ -311,7 +311,7 @@ export default function ClassDetailsPageClient({ initialClass }: ClassDetailsPag
                 href="/admin/classes"
                 className="inline-flex items-center gap-1.5 rounded-full bg-white/10 px-3 py-1 text-xs font-semibold text-teal-200 backdrop-blur-sm transition hover:bg-white/20 hover:text-white"
               >
-                <ChevronLeft size={14} /> Back to Classes (کلاسز کی فہرست)
+                <ChevronLeft size={14} /> Back to Classes
               </Link>
 
               <div>
@@ -356,7 +356,7 @@ export default function ClassDetailsPageClient({ initialClass }: ClassDetailsPag
                 className="inline-flex items-center gap-2 rounded-2xl bg-white px-4 py-2.5 text-xs font-black text-teal-900 shadow-md transition hover:bg-teal-50 active:scale-95"
               >
                 <Plus size={15} className="stroke-[3]" />
-                <span>Enroll Student (+ طالب علم)</span>
+                <span>Enroll Student</span>
               </Link>
 
               <Link
@@ -388,7 +388,7 @@ export default function ClassDetailsPageClient({ initialClass }: ClassDetailsPag
                   {getInitials(classTeacher.user.fullName)}
                 </div>
                 <div>
-                  <p className="text-[10px] font-bold uppercase tracking-wider text-teal-200">Class Teacher (استاد محترم)</p>
+                  <p className="text-[10px] font-bold uppercase tracking-wider text-teal-200">Class Teacher</p>
                   <p className="text-sm font-black text-white">{classTeacher.user.fullName}</p>
                   <p className="text-xs text-teal-200/80">{classTeacher.user.email}</p>
                 </div>
@@ -475,11 +475,11 @@ export default function ClassDetailsPageClient({ initialClass }: ClassDetailsPag
         <div className="rounded-3xl border border-slate-200/80 bg-white p-5 shadow-sm sm:p-6">
           <div className="flex border-b border-slate-200/80 overflow-x-auto gap-2 pb-2">
             {[
-              { key: 'students', label: `All Students (طلباء - ${initialClass.students.length})`, icon: Users },
-              { key: 'attendance', label: 'Attendance (حاضری)', icon: Calendar },
-              { key: 'fees', label: 'Fees & Dues (فیس ریکارڈ)', icon: DollarSign },
-              { key: 'progress', label: 'Quran Progress (قرآنی رپورٹس)', icon: BookOpen },
-              { key: 'info', label: 'Class Info & Teachers (معلومات)', icon: GraduationCap }
+              { key: 'students', label: `All Students (${initialClass.students.length})`, icon: Users },
+              { key: 'attendance', label: 'Attendance', icon: Calendar },
+              { key: 'fees', label: 'Fees & Dues', icon: DollarSign },
+              { key: 'progress', label: 'Quran Progress', icon: BookOpen },
+              { key: 'info', label: 'Class Info & Teachers', icon: GraduationCap }
             ].map((tab) => {
               const Icon = tab.icon;
               const isActive = activeTab === tab.key;
@@ -523,8 +523,8 @@ export default function ClassDetailsPageClient({ initialClass }: ClassDetailsPag
                     className="h-11 rounded-2xl border border-slate-200 bg-slate-50 px-3.5 text-xs font-bold text-slate-700 outline-none transition focus:border-teal-600 focus:bg-white"
                   >
                     <option value="all">All Students ({initialClass.students.length})</option>
-                    <option value="paid">Paid Fees (فیس ادا شدہ)</option>
-                    <option value="pending">Pending Fees (بقایا فیس)</option>
+                    <option value="paid">Paid Fees</option>
+                    <option value="pending">Pending Fees</option>
                     <option value="low_attendance">Low Attendance (&lt;75%)</option>
                   </select>
                 </div>
@@ -831,9 +831,9 @@ export default function ClassDetailsPageClient({ initialClass }: ClassDetailsPag
                       const pending = getPendingFeesAmount(student.fees);
                       const phone = student.whatsApp || student.user.phone;
                       const reminderMsg = encodeURIComponent(
-                        `السلام علیکم! محترم سرپرست، طالب علم ${student.user.fullName} کی ماہانہ فیس بقایا ہے: ${formatCurrency(
+                        `Assalam-o-Alaikum! Respected Guardian, monthly fee pending for ${student.user.fullName}: ${formatCurrency(
                           pending
-                        )}۔ برائے مہربانی جلد از جلد ادا فرمائیں۔ شکریہ! - منارہ انسٹیٹیوٹ`
+                        )}. Please pay at your earliest convenience. Thank you! - Manarah Institute`
                       );
 
                       return (
@@ -881,7 +881,7 @@ export default function ClassDetailsPageClient({ initialClass }: ClassDetailsPag
             <div className="pt-5 space-y-6">
               <div className="flex flex-col gap-3 rounded-2xl border border-teal-200 bg-teal-50/50 p-4 sm:flex-row sm:items-center sm:justify-between">
                 <div>
-                  <h4 className="text-sm font-black text-teal-950">Daily Quran Progress Logs (روزانہ رپورٹس)</h4>
+                  <h4 className="text-sm font-black text-teal-950">Daily Quran Progress Logs</h4>
                   <p className="text-xs text-teal-800/80 mt-0.5">
                     Track lesson progression (Sabaq, Sabqi, and Manzil) for this class.
                   </p>

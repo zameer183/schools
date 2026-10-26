@@ -233,12 +233,10 @@ function Drawer({
               <input
                 value={form.name}
                 onChange={ff('name')}
-                placeholder="e.g. Grade 5 Quran / الصف الخامس"
+                placeholder="e.g. Grade 5 Quran"
                 required
-                dir="auto"
                 className={INPUT_CLS}
               />
-              <p className="mt-1 text-[10px] text-[#94A3B8]">Supports English and Arabic text</p>
             </div>
 
             <div className="grid grid-cols-2 gap-4">
@@ -247,9 +245,8 @@ function Drawer({
                 <input
                   value={form.section}
                   onChange={ff('section')}
-                  placeholder="A / أ"
+                  placeholder="e.g. A"
                   required
-                  dir="auto"
                   className={INPUT_CLS}
                 />
               </div>
@@ -270,8 +267,7 @@ function Drawer({
               <input
                 value={form.roomNo}
                 onChange={ff('roomNo')}
-                placeholder="e.g. R-101 / غرفة ١٠١"
-                dir="auto"
+                placeholder="e.g. R-101"
                 className={INPUT_CLS}
               />
             </div>

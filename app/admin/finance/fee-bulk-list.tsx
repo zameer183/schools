@@ -81,20 +81,20 @@ function getWhatsAppUrl(fee: SerializedFeeItem & { totalRemaining?: number; titl
 
   const text = isPaid
     ? [
-        'السلام علیکم،',
-        `محترم والدین، ${fee.studentName} کی فیس وصول ہو چکی ہے۔`,
-        `فیس: ${feeTitle}`,
-        `ادا شدہ رقم: ${formatCurrency(Math.max(fee.amount - fee.discount, 0))}`,
-        'آپ کے تعاون کا بہت شکریہ۔ جزاک اللہ خیراً!'
+        'Assalam-o-Alaikum,',
+        `Respected Parent, fee payment received for ${fee.studentName}.`,
+        `Fee: ${feeTitle}`,
+        `Paid Amount: ${formatCurrency(Math.max(fee.amount - fee.discount, 0))}`,
+        'Thank you for your cooperation! JazakAllah Khair.'
       ].join('\n')
     : [
-        'السلام علیکم،',
-        `محترم والدین، ${fee.studentName} (${fee.classLabel || 'طالب علم'}) کی فیس کی یاد دہانی:`,
-        `کل واجب الادا رقم: ${formatCurrency(remaining)}` + (monthCount > 1 ? ` (${monthCount} ماہ کی فیس واجب الادا ہے)` : ''),
+        'Assalam-o-Alaikum,',
+        `Respected Parent, fee reminder for ${fee.studentName} (${fee.classLabel || 'Student'}):`,
+        `Total Due: ${formatCurrency(remaining)}` + (monthCount > 1 ? ` (${monthCount} months pending)` : ''),
         ...(fee.unpaidMonths && fee.unpaidMonths.length > 1
-          ? ['تفصیل:', ...fee.unpaidMonths.map((m) => `• ${m.title}: باقی ${formatCurrency(m.remaining)}`)]
+          ? ['Details:', ...fee.unpaidMonths.map((m) => `• ${m.title}: Remaining ${formatCurrency(m.remaining)}`)]
           : []),
-        'برائے مہربانی فیس جلد از جلد جمع کروا دیں۔ جزاک اللہ خیراً!'
+        'Please clear the dues at your earliest convenience. JazakAllah Khair!'
       ].join('\n');
 
   return `https://wa.me/${recipient}?text=${encodeURIComponent(text)}`;
@@ -1027,8 +1027,8 @@ export function FeeBulkList({
                   onChange={(e) => setPayMethod(e.target.value)}
                   className="h-11 w-full rounded-xl border border-[#cbd5e1] bg-white px-3.5 text-xs sm:text-sm font-semibold text-[#0f172a] shadow-xs outline-none focus:border-[#004649] focus:ring-2 focus:ring-[#004649]/20"
                 >
-                  <option value="CASH">Cash in Hand (نقد کیش)</option>
-                  <option value="BANK_TRANSFER">Bank Transfer (بینک ٹرانسفر)</option>
+                  <option value="CASH">Cash in Hand</option>
+                  <option value="BANK_TRANSFER">Bank Transfer</option>
                   <option value="ONLINE">EasyPaisa / JazzCash / Mobile Wallet</option>
                   <option value="CARD">Debit / Credit Card</option>
                 </select>

@@ -102,9 +102,9 @@ type NotificationItem = {
 
 
 const sectionMeta: { key: SectionKey; title: string; titleUrdu: string; icon: string; subtitle: string }[] = [
-  { key: 'sabaq', title: 'Sabaq', titleUrdu: 'سبق (نیا سبق)', icon: '📘', subtitle: 'New daily lesson tracking and recitation fluency' },
-  { key: 'sabqi', title: 'Sabqi', titleUrdu: 'سبقی (حالیہ دہرائی)', icon: '📗', subtitle: 'Recent lessons revision assessment (Optional)' },
-  { key: 'manzil', title: 'Manzil', titleUrdu: 'منزل (پچھلی دہرائی)', icon: '📙', subtitle: 'Long-term revision and consolidation (Optional)' }
+  { key: 'sabaq', title: 'Sabaq', titleUrdu: 'Daily Lesson', icon: '📘', subtitle: 'New daily lesson tracking and recitation fluency' },
+  { key: 'sabqi', title: 'Sabqi', titleUrdu: 'Recent Revision', icon: '📗', subtitle: 'Recent lessons revision assessment (Optional)' },
+  { key: 'manzil', title: 'Manzil', titleUrdu: 'Major Revision', icon: '📙', subtitle: 'Long-term revision and consolidation (Optional)' }
 ];
 
 const kaifiyatOptions: { label: KaifiyatValue; shortLabel: string; stars: number; color: string; bg: string; border: string }[] = [
@@ -454,16 +454,16 @@ export default function TeacherProgressPage() {
     let suggestion = 'Select rating and record recitation details.';
 
     if (avg >= 4.5 && totalMistakes <= 2) {
-      overallPerformance = 'Excellent (ممتاز)';
+      overallPerformance = 'Excellent';
       suggestion = 'Strong progress & clear fluency. Continue forward lesson pace.';
     } else if (avg >= 3.5 && totalMistakes <= 4) {
-      overallPerformance = 'Good (بہتر)';
+      overallPerformance = 'Good';
       suggestion = 'Good recitation. Spend 5-10 minutes revising minor tajweed rules.';
     } else if (avg >= 2.5) {
-      overallPerformance = 'Average (مناسب)';
+      overallPerformance = 'Average';
       suggestion = 'Needs improvement in Tajweed & Hifz. Keep shorter ayaat for revision.';
     } else if (avg > 0) {
-      overallPerformance = 'Needs Revision (محتاجِ اعادہ)';
+      overallPerformance = 'Needs Revision';
       suggestion = 'Pause lesson forward progress. Consolidate current verses thoroughly.';
     }
 
@@ -640,10 +640,10 @@ export default function TeacherProgressPage() {
     if (num > surah.ayahs) {
       addNotice(
         'error',
-        `⚠️ سورت ${surah.name} میں کل ${surah.ayahs} آیات ہیں۔ آپ ${surah.ayahs} سے زیادہ آیت نمبر درج نہیں کر سکتے۔ (You can't add more than extreme value: ${surah.ayahs})`
+        `⚠️ Surah ${surah.name} has ${surah.ayahs} ayahs. You cannot enter an ayah number greater than ${surah.ayahs}. (Maximum limit: ${surah.ayahs})`
       );
     } else if (num < 1) {
-      addNotice('error', '⚠️ آیت نمبر کم از کم 1 ہونا چاہیے۔');
+      addNotice('error', '⚠️ Ayah number must be at least 1.');
     }
   };
 
@@ -765,14 +765,14 @@ export default function TeacherProgressPage() {
           return `${title} Range ${i + 1}: From Ayah must be at least 1.`;
         }
         if (fromNum > surah.ayahs) {
-          return `${title} Range ${i + 1}: سورت ${surah.name} میں کل ${surah.ayahs} آیات ہیں۔ آپ ${surah.ayahs} سے زیادہ آیت نمبر (${fromNum}) درج نہیں کر سکتے۔ (You can't add more than extreme value: ${surah.ayahs})`;
+          return `${title} Range ${i + 1}: Surah ${surah.name} has ${surah.ayahs} ayahs. You cannot enter an ayah number (${fromNum}) greater than ${surah.ayahs}. (Maximum limit: ${surah.ayahs})`;
         }
 
         if (!Number.isFinite(toNum) || toNum < 1) {
           return `${title} Range ${i + 1}: To Ayah must be at least 1.`;
         }
         if (toNum > surah.ayahs) {
-          return `${title} Range ${i + 1}: سورت ${surah.name} میں کل ${surah.ayahs} آیات ہیں۔ آپ ${surah.ayahs} سے زیادہ آیت نمبر (${toNum}) درج نہیں کر سکتے۔ (You can't add more than extreme value: ${surah.ayahs})`;
+          return `${title} Range ${i + 1}: Surah ${surah.name} has ${surah.ayahs} ayahs. You cannot enter an ayah number (${toNum}) greater than ${surah.ayahs}. (Maximum limit: ${surah.ayahs})`;
         }
 
         if (fromNum > toNum) {
@@ -1007,7 +1007,7 @@ export default function TeacherProgressPage() {
           <div className="space-y-1">
             <div className="inline-flex items-center gap-2 rounded-full bg-teal-400/15 px-3 py-1 text-xs font-semibold text-teal-200 backdrop-blur-sm">
               <BookOpenCheck className="h-3.5 w-3.5" />
-              <span>Daily Quran Progress Report · روزانہ تعلیمی رپورٹ</span>
+              <span>Daily Quran Progress Report</span>
             </div>
             <h1 className="text-2xl font-black tracking-tight text-white sm:text-3xl">
               Quran Recitation & Hifz Assessment
@@ -1289,18 +1289,18 @@ export default function TeacherProgressPage() {
 
                       const fromError = selectedSurah && fromNum !== null && Number.isFinite(fromNum) && (fromNum < 1 || fromNum > ayahCount)
                         ? fromNum > ayahCount
-                          ? `سورت ${selectedSurah.name} میں کل ${ayahCount} آیات ہیں۔ آپ ${ayahCount} سے زیادہ آیت نمبر (${fromNum}) درج نہیں کر سکتے۔ (You can't add more than extreme value: ${ayahCount})`
-                          : 'آیت نمبر کم از کم 1 ہونا چاہیے۔'
+                          ? `Surah ${selectedSurah.name} has ${ayahCount} ayahs. You cannot enter an ayah number (${fromNum}) greater than ${ayahCount}. (Maximum limit: ${ayahCount})`
+                          : 'Ayah number must be at least 1.'
                         : null;
 
                       const toError = selectedSurah && toNum !== null && Number.isFinite(toNum) && (toNum < 1 || toNum > ayahCount)
                         ? toNum > ayahCount
-                          ? `سورت ${selectedSurah.name} میں کل ${ayahCount} آیات ہیں۔ آپ ${ayahCount} سے زیادہ آیت نمبر (${toNum}) درج نہیں کر سکتے۔ (You can't add more than extreme value: ${ayahCount})`
-                          : 'آیت نمبر کم از کم 1 ہونا چاہیے۔'
+                          ? `Surah ${selectedSurah.name} has ${ayahCount} ayahs. You cannot enter an ayah number (${toNum}) greater than ${ayahCount}. (Maximum limit: ${ayahCount})`
+                          : 'Ayah number must be at least 1.'
                         : null;
 
                       const orderError = fromNum !== null && toNum !== null && Number.isFinite(fromNum) && Number.isFinite(toNum) && fromNum > toNum && !fromError && !toError
-                        ? `شروع کی آیت (${fromNum}) آخری آیت (${toNum}) سے بڑی نہیں ہو سکتی۔`
+                        ? `From Ayah (${fromNum}) cannot be greater than To Ayah (${toNum}).`
                         : null;
 
                       return (
@@ -1318,7 +1318,7 @@ export default function TeacherProgressPage() {
                                 {rangeIdx + 1}
                               </span>
                               <span className="text-xs font-bold text-slate-800">
-                                Range #{rangeIdx + 1} {rangeIdx > 0 && <span className="text-teal-700 font-semibold">(دوسرا نمبر رینج)</span>}
+                                Range #{rangeIdx + 1} {rangeIdx > 0 && <span className="text-teal-700 font-semibold">(Additional Range)</span>}
                               </span>
                               {selectedSurah && (
                                 <span className="rounded-full bg-slate-200/80 px-2 py-0.5 text-[10px] font-bold text-slate-700">
@@ -1341,7 +1341,7 @@ export default function TeacherProgressPage() {
                             {/* Surah dropdown */}
                             <div className="sm:col-span-6">
                               <label className="mb-1 block text-[11px] font-bold uppercase tracking-wider text-slate-500">
-                                Select Surah (سورت)
+                                Select Surah
                               </label>
                               <select
                                 value={selectedSurah ? `${selectedSurah.id}. ${selectedSurah.name}` : ''}
@@ -1362,7 +1362,7 @@ export default function TeacherProgressPage() {
                             <div className="sm:col-span-3">
                               <div className="mb-1 flex items-center justify-between">
                                 <label className="text-[11px] font-bold uppercase tracking-wider text-slate-500">
-                                  From Ayah (آیت سے)
+                                  From Ayah
                                 </label>
                                 {selectedSurah && (
                                   <span className="text-[10px] font-bold text-slate-400">1 - {ayahCount}</span>
@@ -1395,7 +1395,7 @@ export default function TeacherProgressPage() {
                             <div className="sm:col-span-3">
                               <div className="mb-1 flex items-center justify-between">
                                 <label className="text-[11px] font-bold uppercase tracking-wider text-slate-500">
-                                  To Ayah (آیت تک)
+                                  To Ayah
                                 </label>
                                 {selectedSurah && (
                                   <span className="text-[10px] font-bold text-slate-400">Max: {ayahCount}</span>
@@ -1470,14 +1470,14 @@ export default function TeacherProgressPage() {
                       className="inline-flex w-full items-center justify-center gap-2 rounded-2xl border-2 border-dashed border-teal-200 bg-teal-50/30 py-3 text-xs font-bold text-teal-800 transition hover:border-teal-400 hover:bg-teal-50"
                     >
                       <Plus className="h-4 w-4" />
-                      <span>+ Add Another Surah Range (دوسرا سورت رینج شامل کریں)</span>
+                      <span>+ Add Another Surah Range</span>
                     </button>
                   </div>
 
                   {/* ── Kaifiyat (Rating Cards) ── */}
                   <div className="space-y-2.5 pt-2">
                     <label className="block text-xs font-bold uppercase tracking-wider text-slate-600">
-                      Kaifiyat / Recitation Quality (کارکردگی / معیار) *
+                      Recitation Quality / Fluency *
                     </label>
 
                     <div className="grid grid-cols-2 gap-2.5 sm:grid-cols-4">
@@ -1517,7 +1517,7 @@ export default function TeacherProgressPage() {
                     <div className="rounded-2xl border border-slate-200 bg-slate-50/60 p-4">
                       <div className="mb-2 flex items-center justify-between">
                         <label className="text-xs font-bold uppercase tracking-wider text-slate-700">
-                          Tajweedi Mistakes (تجویدی غلطیاں)
+                          Tajweed Mistakes
                         </label>
                         <span className="text-xs font-black text-teal-800">
                           {formSection.tajweeditotal || '0'}
@@ -1573,7 +1573,7 @@ export default function TeacherProgressPage() {
                     <div className="rounded-2xl border border-slate-200 bg-slate-50/60 p-4">
                       <div className="mb-2 flex items-center justify-between">
                         <label className="text-xs font-bold uppercase tracking-wider text-slate-700">
-                          Hifz Mistakes (حفظ کی غلطیاں)
+                          Hifz Mistakes
                         </label>
                         <span className="text-xs font-black text-amber-800">
                           {formSection.hifztotal || '0'}
@@ -1762,7 +1762,7 @@ export default function TeacherProgressPage() {
               className="inline-flex h-12 w-full items-center justify-center gap-2 rounded-2xl bg-teal-700 px-7 text-xs font-black text-white shadow-lg shadow-teal-700/20 transition hover:bg-teal-800 active:scale-95 disabled:opacity-50 sm:w-auto"
             >
               <Check className="h-4 w-4 stroke-[3]" />
-              <span>{saving ? 'Saving...' : editingReportId ? 'Update Report' : 'Save Report (محفوظ کریں)'}</span>
+              <span>{saving ? 'Saving...' : editingReportId ? 'Update Report' : 'Save Report'}</span>
             </button>
 
             {/* Save & Move Next */}

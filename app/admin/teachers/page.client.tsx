@@ -233,7 +233,7 @@ function ShareModal({ teacher, onClose }: { teacher: TeacherItem; onClose: () =>
         {hasPhone && (
           <div className="mb-3 space-y-1.5">
             <label className="block text-[11px] font-semibold uppercase tracking-wider text-[#475569]">
-              WhatsApp App Type / واٹس ایپ کا انتخاب
+              WhatsApp Version
             </label>
             <div className="grid grid-cols-2 gap-2">
               <button
@@ -250,7 +250,7 @@ function ShareModal({ teacher, onClose }: { teacher: TeacherItem; onClose: () =>
                 </span>
                 <div className="min-w-0">
                   <p className="text-xs font-bold leading-tight text-[#0f172a]">WhatsApp</p>
-                  <p className="text-[10px] text-[#16a34a] font-medium">Simple / سادہ</p>
+                  <p className="text-[10px] text-[#16a34a] font-medium">Standard</p>
                 </div>
               </button>
 
@@ -268,7 +268,7 @@ function ShareModal({ teacher, onClose }: { teacher: TeacherItem; onClose: () =>
                 </span>
                 <div className="min-w-0">
                   <p className="text-xs font-bold leading-tight text-[#0f172a]">WA Business</p>
-                  <p className="text-[10px] text-[#004649] font-medium">Business / بزنس</p>
+                  <p className="text-[10px] text-[#004649] font-medium">Business</p>
                 </div>
               </button>
             </div>
@@ -335,7 +335,7 @@ function ShareModal({ teacher, onClose }: { teacher: TeacherItem; onClose: () =>
               onClick={onClose}
               className="w-full rounded-xl border border-[#e2e8f0] py-2 text-xs font-semibold text-[#6f7979] hover:bg-[#f8fafc]"
             >
-              Done / مکمل
+              Done
             </button>
           </div>
         ) : (
