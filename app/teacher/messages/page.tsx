@@ -98,7 +98,7 @@ const getCachedTeacherMessagesData = unstable_cache(
       return null;
     }
 
-    const [access, [inbox, sent]] = await Promise.all([
+    const [access, [inbox, sent], admins] = await Promise.all([
       getTeacherAccessMapByUserId(userId),
       prisma.$transaction([
         prisma.messageRecipient.findMany({
@@ -138,10 +138,22 @@ const getCachedTeacherMessagesData = unstable_cache(
           take: pageSize,
           skip
         })
-      ])
+      ]),
+      prisma.user.findMany({
+        where: { role: UserRole.ADMIN, isActive: true },
+        select: { id: true, fullName: true }
+      })
     ]);
 
     const recipientMap = new Map<string, RecipientOption>();
+    for (const admin of admins) {
+      recipientMap.set(admin.id, {
+        userId: admin.id,
+        fullName: `${admin.fullName} (School Admin)`,
+        className: 'Administration'
+      });
+    }
+
     for (const assignment of teacher.classAssignments) {
       const className = assignment.class ? `${assignment.class.name} - ${assignment.class.section}` : 'Student';
       for (const student of assignment.class?.students ?? []) {
@@ -161,7 +173,7 @@ const getCachedTeacherMessagesData = unstable_cache(
       access
     } satisfies TeacherMessagesPageData;
   },
-  ['teacher-messages-page-data'],
+  ['teacher-messages-page-data-v2'],
   { revalidate: 30 }
 );
 

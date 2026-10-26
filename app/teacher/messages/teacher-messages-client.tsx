@@ -263,10 +263,19 @@ export function TeacherMessagesClient({ messages, recipients }: TeacherMessagesC
   const [deletedMessageIds, setDeletedMessageIds] = useState<Set<string>>(new Set());
   const [composeSubject, setComposeSubject] = useState('');
   const [composeBody, setComposeBody] = useState('');
+  const [composeSearch, setComposeSearch] = useState('');
   const [selectedRecipients, setSelectedRecipients] = useState<Set<string>>(new Set());
   const [isComposeSending, setIsComposeSending] = useState(false);
   const [showMobileFilters, setShowMobileFilters] = useState(false);
   const [authError, setAuthError] = useState<string | null>(null);
+
+  const filteredRecipients = useMemo(() => {
+    if (!composeSearch.trim()) return recipients;
+    const q = composeSearch.toLowerCase();
+    return recipients.filter(
+      (r) => r.fullName.toLowerCase().includes(q) || r.className.toLowerCase().includes(q)
+    );
+  }, [recipients, composeSearch]);
 
   useEffect(() => {
     setMounted(true);
@@ -1038,34 +1047,45 @@ export function TeacherMessagesClient({ messages, recipients }: TeacherMessagesC
 
             <div className="max-h-[calc(88vh-88px)] space-y-6 overflow-y-auto px-6 py-6 pb-24">
               <div className="min-w-0">
-                <label className="mb-4 block text-sm font-medium uppercase tracking-[0.16em] text-[#8A94A3]">
-                  To - {selectedRecipients.size > 0 ? `${selectedRecipients.size} selected` : 'Select Students'}
+                <label className="mb-2 block text-sm font-medium uppercase tracking-[0.16em] text-[#8A94A3]">
+                  To - {selectedRecipients.size > 0 ? `${selectedRecipients.size} selected` : 'Select Recipients (Admin or Students)'}
                 </label>
-                {recipients.length === 0 ? (
-                  <p className="text-sm leading-snug text-[#64748B]">No students in your classes.</p>
+                <div className="mb-3">
+                  <div className="flex items-center gap-2 rounded-xl border border-[#CBD5E1] bg-[#F8FAFC] px-3 py-2 text-xs">
+                    <Search className="h-3.5 w-3.5 text-[#64748B]" />
+                    <input
+                      value={composeSearch}
+                      onChange={(e) => setComposeSearch(e.target.value)}
+                      placeholder="Search admin or student..."
+                      className="w-full bg-transparent text-sm text-[#111827] outline-none placeholder:text-[#94A3B8]"
+                    />
+                  </div>
+                </div>
+                {filteredRecipients.length === 0 ? (
+                  <p className="text-sm leading-snug text-[#64748B]">No recipients found.</p>
                 ) : (
-                  <div className="max-h-56 overflow-y-auto space-y-3">
-                    {recipients.map((recipient) => {
+                  <div className="max-h-56 overflow-y-auto space-y-2 pr-1">
+                    {filteredRecipients.map((recipient) => {
                       const checked = selectedRecipients.has(recipient.userId);
                       return (
                         <label
                           key={recipient.userId}
-                          className={`flex cursor-pointer items-center gap-4 rounded-2xl px-2 py-1 transition-colors ${
-                            checked ? 'bg-[#F0FCFA]' : 'hover:bg-[#F4F7F8]'
+                          className={`flex cursor-pointer items-center gap-3 rounded-2xl p-2 transition-colors ${
+                            checked ? 'bg-[#F0FCFA] border border-[#7BE4D4]' : 'hover:bg-[#F4F7F8] border border-transparent'
                           }`}
                         >
                           <input
                             type="checkbox"
                             checked={checked}
                             onChange={() => toggleRecipient(recipient.userId)}
-                            className="h-5 w-5 rounded border-[#94A3B8] accent-[#00507D]"
+                            className="h-4 w-4 rounded border-[#94A3B8] accent-[#00507D]"
                           />
-                          <div className={`flex h-11 w-11 items-center justify-center rounded-full text-sm font-black ${checked ? 'bg-[#BFE3FF] text-[#00507D]' : 'bg-[#7BE4D4] text-[#006A61]'}`}>
+                          <div className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-xs font-black ${checked ? 'bg-[#BFE3FF] text-[#00507D]' : 'bg-[#7BE4D4] text-[#006A61]'}`}>
                             {initials(recipient.fullName)}
                           </div>
                           <div className="min-w-0 flex-1">
-                            <p className="truncate text-base font-medium text-[#111827]">{recipient.fullName}</p>
-                            <p className="truncate text-sm text-[#8A94A3]">{recipient.className}</p>
+                            <p className="truncate text-sm font-semibold text-[#111827]">{recipient.fullName}</p>
+                            <p className="truncate text-xs text-[#8A94A3]">{recipient.className}</p>
                           </div>
                         </label>
                       );
@@ -1079,7 +1099,7 @@ export function TeacherMessagesClient({ messages, recipients }: TeacherMessagesC
                 <input
                   value={composeSubject}
                   onChange={(event) => setComposeSubject(event.target.value)}
-                  placeholder="e.g. Assignment Reminder"
+                  placeholder="e.g. Assignment Reminder / Query for Admin"
                   className="h-12 w-full rounded-xl border border-[#CBD5E1] bg-white px-4 text-base text-[#111827] outline-none focus:border-[#007A70] focus:ring-4 focus:ring-[#7BE4D4]/25"
                 />
               </div>
@@ -1104,7 +1124,7 @@ export function TeacherMessagesClient({ messages, recipients }: TeacherMessagesC
                 {isComposeSending
                   ? 'Sending...'
                   : selectedRecipients.size > 0
-                    ? `Send to ${selectedRecipients.size} student${selectedRecipients.size > 1 ? 's' : ''}`
+                    ? `Send to ${selectedRecipients.size} recipient${selectedRecipients.size > 1 ? 's' : ''}`
                     : 'Send Message'}
               </button>
             </div>

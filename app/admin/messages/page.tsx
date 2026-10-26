@@ -24,8 +24,47 @@ const getCachedAdminMessagesData = unstable_cache(
   async (userId: string, page: number) => {
     const pageSize = 50;
     const skip = (page - 1) * pageSize;
-    const [classes, sentMessages, receivedMessages] = await Promise.all([
-      prisma.class.findMany({ select: { id: true, name: true, section: true }, orderBy: [{ name: 'asc' }, { section: 'asc' }] }),
+    const [classes, teachers, students, sentMessages, receivedMessages] = await Promise.all([
+      prisma.class.findMany({
+        select: {
+          id: true,
+          name: true,
+          section: true,
+          _count: { select: { students: true } }
+        },
+        orderBy: [{ name: 'asc' }, { section: 'asc' }]
+      }),
+      prisma.teacher.findMany({
+        where: { user: { isActive: true } },
+        select: {
+          id: true,
+          userId: true,
+          employeeCode: true,
+          user: { select: { id: true, fullName: true, email: true } },
+          subjects: { select: { name: true } },
+          classAssignments: {
+            select: {
+              class: { select: { name: true, section: true } }
+            }
+          }
+        },
+        orderBy: { user: { fullName: 'asc' } }
+      }),
+      prisma.student.findMany({
+        where: { user: { isActive: true } },
+        select: {
+          id: true,
+          userId: true,
+          admissionNo: true,
+          classId: true,
+          user: { select: { id: true, fullName: true } },
+          class: { select: { id: true, name: true, section: true } }
+        },
+        orderBy: [
+          { class: { name: 'asc' } },
+          { user: { fullName: 'asc' } }
+        ]
+      }),
       prisma.message.findMany({
         include: {
           recipients: { include: { user: { select: { id: true, fullName: true, role: true } } } }
@@ -50,9 +89,9 @@ const getCachedAdminMessagesData = unstable_cache(
       })
     ]);
 
-    return { classes, sentMessages, receivedMessages };
+    return { classes, teachers, students, sentMessages, receivedMessages };
   },
-  ['admin-messages-page-data-v2'],
+  ['admin-messages-page-data-v4'],
   { revalidate: 20 }
 );
 
@@ -61,7 +100,49 @@ export default async function AdminMessagesPage({ searchParams }: AdminMessagesP
   const params = (await searchParams) ?? {};
   const presetRecipientId = params.recipientId?.trim() ?? '';
   const page = Math.max(1, parseInt(params.page ?? '1') || 1);
-  const { classes, sentMessages, receivedMessages } = await getCachedAdminMessagesData(session.id, page);
+
+  let rawData: Awaited<ReturnType<typeof getCachedAdminMessagesData>> = {
+    classes: [],
+    teachers: [],
+    students: [],
+    sentMessages: [],
+    receivedMessages: []
+  };
+
+  try {
+    rawData = await getCachedAdminMessagesData(session.id, page);
+  } catch (error) {
+    console.error('[admin/messages] data loading error:', error);
+  }
+
+  const { classes, teachers, students, sentMessages, receivedMessages } = rawData;
+
+  const serializedTeachers = teachers.map((teacher) => ({
+    id: teacher.id,
+    userId: teacher.userId,
+    fullName: teacher.user.fullName,
+    email: teacher.user.email,
+    employeeCode: teacher.employeeCode,
+    subjects: teacher.subjects.map((s) => s.name),
+    classes: teacher.classAssignments.map((ca) => `${ca.class.name} - ${ca.class.section}`)
+  }));
+
+  const serializedStudents = students.map((student) => ({
+    id: student.id,
+    userId: student.userId,
+    admissionNo: student.admissionNo,
+    classId: student.classId,
+    fullName: student.user.fullName,
+    className: student.class ? `${student.class.name} - ${student.class.section}` : 'Unassigned Class',
+    section: student.class?.section ?? ''
+  }));
+
+  const serializedClasses = classes.map((c) => ({
+    id: c.id,
+    name: c.name,
+    section: c.section,
+    studentCount: c._count.students
+  }));
 
   const serializedSent = sentMessages.map((message) => ({
     id: message.id,
@@ -97,7 +178,9 @@ export default async function AdminMessagesPage({ searchParams }: AdminMessagesP
 
   return (
     <AdminMessagingWorkspace
-      classes={classes}
+      classes={serializedClasses}
+      teachers={serializedTeachers}
+      students={serializedStudents}
       receivedMessages={serializedReceived}
       sentMessages={serializedSent}
       presetRecipientId={presetRecipientId}
