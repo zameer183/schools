@@ -104,7 +104,7 @@ export async function GET() {
                   }
                 }
               },
-              orderBy: { createdAt: 'asc' },
+              orderBy: [{ isClassLead: 'desc' }, { createdAt: 'desc' }],
               take: 1
             },
             _count: { select: { students: true } }
@@ -121,7 +121,7 @@ export async function GET() {
                   }
                 }
               },
-              orderBy: { createdAt: 'asc' },
+              orderBy: [{ isClassLead: 'desc' }, { createdAt: 'desc' }],
               take: 1
             },
             _count: { select: { students: true } }
@@ -171,6 +171,8 @@ export async function POST(request: Request) {
     revalidatePath('/admin/students');
     revalidatePath('/admin/attendance');
     revalidatePath('/admin/academics');
+    revalidatePath('/admin/reports');
+    revalidatePath('/admin/reports/individual-complete');
     return NextResponse.json(created, { status: 201 });
   } catch {
     return NextResponse.json(
@@ -202,7 +204,7 @@ export async function PATCH(request: Request) {
         }
       });
 
-      await tx.teacherClass.deleteMany({ where: { classId: id, isClassLead: true } });
+      await tx.teacherClass.deleteMany({ where: { classId: id } });
 
       if (typeof classTeacherId === 'string' && classTeacherId.trim().length > 0) {
         await tx.teacherClass.upsert({
@@ -228,6 +230,8 @@ export async function PATCH(request: Request) {
     revalidatePath('/admin/students');
     revalidatePath('/admin/attendance');
     revalidatePath('/admin/academics');
+    revalidatePath('/admin/reports');
+    revalidatePath('/admin/reports/individual-complete');
     return NextResponse.json(updated);
   } catch {
     return NextResponse.json(

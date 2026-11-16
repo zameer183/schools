@@ -233,7 +233,31 @@ async function loadFeesViaPrisma(studentId: string): Promise<FeesPayload | null>
 
   if (!student) return null;
 
-  const serializedFees = fees.map((f) => ({
+  const joinMonth = student.joinDate
+    ? new Date(student.joinDate.getFullYear(), student.joinDate.getMonth(), 1)
+    : null;
+
+  const validFees = fees.filter((f) => {
+    if (!joinMonth) return true;
+    const paid = f.payments.reduce((s, p) => s + Number(p.amountPaid), 0);
+    if (paid > 0) return true;
+    const feeDate = f.dueDate instanceof Date ? f.dueDate : new Date(f.dueDate);
+    const feeMonth = new Date(feeDate.getFullYear(), feeDate.getMonth(), 1);
+    return feeMonth >= joinMonth;
+  });
+
+  if (joinMonth) {
+    prisma.fee.deleteMany({
+      where: {
+        studentId: id,
+        payments: { none: {} },
+        status: { in: ['PENDING', 'OVERDUE', 'PARTIAL'] },
+        dueDate: { lt: joinMonth }
+      }
+    }).catch(() => {});
+  }
+
+  const serializedFees = validFees.map((f) => ({
     id: f.id,
     title: f.title,
     dueDate: f.dueDate instanceof Date ? f.dueDate.toISOString() : f.dueDate,

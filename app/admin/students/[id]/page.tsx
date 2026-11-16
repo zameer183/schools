@@ -506,12 +506,35 @@ async function loadProfileViaPrisma(id: string): Promise<ViewModel | null> {
   const examsById = new Map(exams.map((exam) => [exam.id, exam]));
   const teachersById = new Map(teachers.map((teacher) => [teacher.id, teacher]));
 
-  const collectedFee = fees.reduce(
+  const joinMonth = student.joinDate
+    ? new Date(student.joinDate.getFullYear(), student.joinDate.getMonth(), 1)
+    : null;
+
+  const validFees = fees.filter((fee) => {
+    if (!joinMonth) return true;
+    const totalPaid = fee.payments.reduce((sum, p) => sum + Number(p.amountPaid), 0);
+    if (totalPaid > 0) return true;
+    const feeMonth = new Date(fee.dueDate.getFullYear(), fee.dueDate.getMonth(), 1);
+    return feeMonth >= joinMonth;
+  });
+
+  if (joinMonth) {
+    prisma.fee.deleteMany({
+      where: {
+        studentId: id,
+        payments: { none: {} },
+        status: { in: ['PENDING', 'OVERDUE', 'PARTIAL'] },
+        dueDate: { lt: joinMonth }
+      }
+    }).catch(() => {});
+  }
+
+  const collectedFee = validFees.reduce(
     (sum, fee) => sum + fee.payments.reduce((paymentSum, payment) => paymentSum + Number(payment.amountPaid), 0),
     0
   );
-  const currentFee = fees[0] ?? null;
-  const dueFee = fees.reduce((sum, fee) => {
+  const currentFee = validFees[0] ?? null;
+  const dueFee = validFees.reduce((sum, fee) => {
     const net = Number(fee.amount) - Number(fee.discount);
     const paid = fee.payments.reduce((sumPayment, payment) => sumPayment + Number(payment.amountPaid), 0);
     return sum + Math.max(net - paid, 0);
@@ -559,7 +582,7 @@ async function loadProfileViaPrisma(id: string): Promise<ViewModel | null> {
         }
       };
     }),
-    fees: fees.map((fee) => ({
+    fees: validFees.map((fee) => ({
       id: fee.id,
       title: fee.title,
       dueDate: fee.dueDate.toISOString(),

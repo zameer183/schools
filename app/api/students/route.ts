@@ -891,6 +891,24 @@ export async function PATCH(request: Request) {
       }
     }
 
+    const effectiveStartDate = fromDate
+      ? new Date(fromDate)
+      : joinDate
+        ? new Date(joinDate)
+        : (studentUpdate.joinDate as Date | null | undefined);
+
+    if (effectiveStartDate && !isNaN(effectiveStartDate.getTime())) {
+      const cutoffMonth = new Date(effectiveStartDate.getFullYear(), effectiveStartDate.getMonth(), 1);
+      await prisma.fee.deleteMany({
+        where: {
+          studentId: id,
+          payments: { none: {} },
+          status: { in: ['PENDING', 'OVERDUE', 'PARTIAL'] },
+          dueDate: { lt: cutoffMonth }
+        }
+      }).catch((err) => console.error('[students/patch] fee cleanup failed', err));
+    }
+
     const ops: Promise<unknown>[] = [];
 
     if (Object.keys(studentUpdate).length > 0) {

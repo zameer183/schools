@@ -19,6 +19,7 @@ export default async function ClassDetailsPage({ params }: ClassDetailsPageProps
     include: {
       subjects: { select: { id: true, name: true, code: true } },
       teacherLinks: {
+        orderBy: [{ isClassLead: 'desc' }, { createdAt: 'desc' }],
         include: {
           teacher: {
             select: {

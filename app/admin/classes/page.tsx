@@ -18,7 +18,7 @@ export default async function AdminClassesPage() {
               }
             }
           },
-          orderBy: { createdAt: 'asc' },
+          orderBy: [{ isClassLead: 'desc' }, { createdAt: 'desc' }],
           take: 1
         },
         _count: { select: { students: true } }
