@@ -30,7 +30,7 @@ async function findUserViaSupabaseRest(email: string): Promise<LoginUser | null>
   if (!supabaseUrl || !serviceRoleKey) return null;
 
   const url = new URL('/rest/v1/User', supabaseUrl);
-  url.searchParams.set('email', `eq.${email}`);
+  url.searchParams.set('email', `ilike.${email}`);
   url.searchParams.set('select', 'id,email,fullName,role,isActive,passwordHash');
   url.searchParams.set('limit', '1');
 
@@ -140,7 +140,11 @@ export async function POST(request: Request) {
       }
     }
 
-    const user = await prisma.user.findUnique({ where: { email: parsed.data.email } });
+    const user = await prisma.user.findFirst({
+      where: {
+        email: { equals: parsed.data.email, mode: 'insensitive' }
+      }
+    });
     if (!user) {
       if (process.env.NODE_ENV === 'development') {
         console.warn('[auth/login] user-not-found', {

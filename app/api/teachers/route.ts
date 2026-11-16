@@ -137,7 +137,7 @@ async function handlePutViaRest(body: Record<string, unknown>) {
   if (fullName !== undefined) userUpdate.fullName = fullName;
   if (phone !== undefined) userUpdate.phone = phone === '' ? null : phone;
   if (isActive !== undefined) userUpdate.isActive = Boolean(isActive);
-  if (email !== undefined && email !== '') userUpdate.email = email;
+  if (email !== undefined && email !== '') userUpdate.email = String(email).trim().toLowerCase();
   if (typeof password === 'string' && password.length > 0) {
     if (password.length < 6) {
       return NextResponse.json({ error: 'Password must be at least 6 characters.' }, { status: 400 });
@@ -350,7 +350,7 @@ export async function POST(request: Request) {
     const created = await prisma.$transaction(async (tx) => {
       const user = await tx.user.create({
         data: {
-          email,
+          email: String(email).trim().toLowerCase(),
           fullName,
           role: UserRole.TEACHER,
           phone: phone || null,
@@ -466,11 +466,11 @@ export async function PUT(request: Request) {
     if (isActive !== undefined) userUpdate.isActive = Boolean(isActive);
     if (email !== undefined && email !== '') {
       const existing = await prisma.user.findFirst({
-        where: { email, NOT: { id: teacher.userId } },
+        where: { email: { equals: String(email).trim().toLowerCase(), mode: 'insensitive' }, NOT: { id: teacher.userId } },
         select: { id: true },
       });
       if (existing) return NextResponse.json({ error: 'Email already in use.' }, { status: 409 });
-      userUpdate.email = email;
+      userUpdate.email = String(email).trim().toLowerCase();
     }
     if (typeof password === 'string' && password.length > 0) {
       if (password.length < 6)

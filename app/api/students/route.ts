@@ -592,7 +592,7 @@ export async function POST(request: Request) {
     const created = await prisma.$transaction(async (tx) => {
       const user = await tx.user.create({
         data: {
-          email: payload.data.email,
+          email: payload.data.email.trim().toLowerCase(),
           fullName: payload.data.fullName,
           phone: payload.data.phone,
           role: UserRole.STUDENT,
@@ -826,13 +826,13 @@ export async function PATCH(request: Request) {
     }
     if (email !== undefined && email !== '') {
       const existing = await prisma.user.findFirst({
-        where: { email, NOT: { id: student.userId } },
+        where: { email: { equals: String(email).trim().toLowerCase(), mode: 'insensitive' }, NOT: { id: student.userId } },
         select: { id: true }
       });
       if (existing) {
         return NextResponse.json({ error: 'Email is already in use by another account.' }, { status: 409 });
       }
-      userUpdate.email = email;
+      userUpdate.email = String(email).trim().toLowerCase();
     }
     if (typeof password === 'string' && password.length > 0) {
       if (password.length < 6) {

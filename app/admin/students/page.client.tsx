@@ -114,7 +114,12 @@ type EditFormState = {
 type StatusFilter = 'all' | 'active' | 'inactive' | 'pending';
 
 const BASE_PAGE_SIZE = 25;
-const APP_LOGIN_URL = `${process.env.NEXT_PUBLIC_APP_URL ?? 'https://schools-plum.vercel.app'}/login`;
+const getAppLoginUrl = () => {
+  if (typeof window !== 'undefined' && window.location?.origin) {
+    return `${window.location.origin}/login`;
+  }
+  return `${process.env.NEXT_PUBLIC_APP_URL ?? 'https://schools-two.vercel.app'}/login`;
+};
 const SESSION_EXPIRED_MESSAGE = 'Your session has expired. Please log in again as administrator.';
 
 const emptyEditForm: EditFormState = {
@@ -682,7 +687,10 @@ function ShareCredentialsModal({
   student: StudentItem;
   onCancel: () => void;
 }) {
-  const [password, setPassword] = useState('');
+  const defaultInitialPwd = student.user?.fullName
+    ? `${student.user.fullName.trim().split(/\s+/)[0]}@123`
+    : 'Pass@123';
+  const [password, setPassword] = useState(defaultInitialPwd);
   const [showPwd, setShowPwd] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
@@ -747,7 +755,7 @@ function ShareCredentialsModal({
         `Your online profile successfully generated on\n` +
         `Manarah Institute\n\n` +
         `Here is your app link\n\n` +
-        `ANDROID:\n${APP_LOGIN_URL}\n\n` +
+        `ANDROID:\n${getAppLoginUrl()}\n\n` +
         `Here is your Institute gmail\n\n` +
         `${creds.email}\n\n` +
         `Here is your password\n\n` +
@@ -820,7 +828,7 @@ function ShareCredentialsModal({
                 onClick={() => {
                   openWhatsAppDirect({
                     phone: shareTarget,
-                    message: `Your online profile successfully generated on\nManarah Institute\n\nHere is your app link\n\nANDROID:\n${APP_LOGIN_URL}\n\nHere is your Institute gmail\n\n${student.user.email}\n\nHere is your password\n\n${password}`,
+                    message: `Your online profile successfully generated on\nManarah Institute\n\nHere is your app link\n\nANDROID:\n${getAppLoginUrl()}\n\nHere is your Institute gmail\n\n${student.user.email}\n\nHere is your password\n\n${password}`,
                     clientType: appType,
                   });
                 }}
@@ -965,7 +973,7 @@ Manarah Institute
 Here is your app link
 
 ANDROID:
-${APP_LOGIN_URL}
+${getAppLoginUrl()}
 
 Here is your Institute gmail
 
@@ -1221,7 +1229,7 @@ export default function AdminStudentsPageClient({
       const payload: Record<string, string | number | boolean | string[] | null> = { id: form.id };
       for (const [key, value] of Object.entries(rest)) {
         if (typeof value === 'string') {
-          if (value.trim() !== '') payload[key] = value;
+          if (value.trim() !== '') payload[key] = key === 'email' ? value.trim().toLowerCase() : value;
         } else if (typeof value === "boolean") {
           payload[key] = value;
         }

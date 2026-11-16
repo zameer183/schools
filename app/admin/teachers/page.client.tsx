@@ -147,9 +147,19 @@ function DeleteModal({
   );
 }
 
+const getAppLoginUrl = () => {
+  if (typeof window !== 'undefined' && window.location?.origin) {
+    return `${window.location.origin}/login`;
+  }
+  return 'https://schools-two.vercel.app/login';
+};
+
 // ── Share Credentials Modal ───────────────────────────────────────────────────
 function ShareModal({ teacher, onClose }: { teacher: TeacherItem; onClose: () => void }) {
-  const [password, setPassword] = useState('');
+  const defaultInitialPwd = teacher.user.fullName
+    ? `${teacher.user.fullName.trim().split(/\s+/)[0]}@123`
+    : 'Pass@123';
+  const [password, setPassword] = useState(defaultInitialPwd);
   const [showPwd, setShowPwd] = useState(false);
   const [saving, setSaving] = useState(false);
   const [done, setDone] = useState(false);
@@ -168,7 +178,7 @@ function ShareModal({ teacher, onClose }: { teacher: TeacherItem; onClose: () =>
   const hasPhone = rawPhone.length >= 7;
   const avatarBg = avatarColor(teacher.user.fullName);
 
-  const msg = `Your online profile successfully generated on\nManarah Institute\n\nHere is your app link\n\nANDROID:\n${APP_LOGIN_URL}\n\nHere is your Institute gmail\n\n${teacher.user.email}\n\nHere is your password\n\n${password}`;
+  const msg = `Your online profile successfully generated on\nManarah Institute\n\nHere is your app link\n\nANDROID:\n${getAppLoginUrl()}\n\nHere is your Institute gmail\n\n${teacher.user.email}\n\nHere is your password\n\n${password}`;
 
   const handleShare = async () => {
     setSaving(true);
@@ -439,7 +449,6 @@ const INITIAL_FORM: DrawerForm = {
 };
 
 const STEPS = ['Identity', 'Classes & Access', 'Compensation'];
-const APP_LOGIN_URL = 'https://schools-plum.vercel.app/login';
 
 function Drawer({
   open, editId, form, setForm, classes, saving, error, onClose, onSave,
@@ -877,8 +886,8 @@ export default function AdminTeachersPageClient({
       const isEdit = Boolean(editId);
       const payload = {
         ...(isEdit ? { id: editId } : {}),
-        fullName: form.fullName,
-        email: form.email,
+        fullName: form.fullName.trim(),
+        email: form.email.trim().toLowerCase(),
         ...(form.password ? { password: form.password } : {}),
         phone: form.phone,
         employeeCode: form.employeeCode,
