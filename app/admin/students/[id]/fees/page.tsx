@@ -257,7 +257,23 @@ async function loadFeesViaPrisma(studentId: string): Promise<FeesPayload | null>
     }).catch(() => {});
   }
 
-  const serializedFees = validFees.map((f) => ({
+  const seenMonths = new Set<string>();
+  const deduplicatedFees: typeof validFees = [];
+  for (const f of validFees) {
+    const feeDate = f.dueDate instanceof Date ? f.dueDate : new Date(f.dueDate);
+    const mKey = `${feeDate.getFullYear()}-${feeDate.getMonth()}`;
+    const paid = f.payments.reduce((s, p) => s + Number(p.amountPaid), 0);
+    if (paid > 0) {
+      deduplicatedFees.push(f);
+    } else if (!seenMonths.has(mKey)) {
+      seenMonths.add(mKey);
+      deduplicatedFees.push(f);
+    } else {
+      prisma.fee.delete({ where: { id: f.id } }).catch(() => {});
+    }
+  }
+
+  const serializedFees = deduplicatedFees.map((f) => ({
     id: f.id,
     title: f.title,
     dueDate: f.dueDate instanceof Date ? f.dueDate.toISOString() : f.dueDate,

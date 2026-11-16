@@ -200,6 +200,16 @@ export async function runFeeAutomation(targetDate = new Date(), filterStudentId?
     const feeCategory = latestTuitionFee?.feeCategory || 'TUITION';
     const feeType = latestTuitionFee?.feeType || 'MONTHLY';
 
+    // Clean up unpaid phantom fees prior to the student's start month
+    await prisma.fee.deleteMany({
+      where: {
+        studentId: student.id,
+        payments: { none: {} },
+        status: { in: [PaymentStatus.PENDING, PaymentStatus.OVERDUE, PaymentStatus.PARTIAL] },
+        dueDate: { lt: studentStartMonth }
+      }
+    }).catch(() => {});
+
     // Iterate month-by-month from studentStartMonth up to currentMonthStart
     let year = studentStartMonth.getUTCFullYear();
     let month = studentStartMonth.getUTCMonth();
@@ -208,12 +218,14 @@ export async function runFeeAutomation(targetDate = new Date(), filterStudentId?
 
     while (year < endYear || (year === endYear && month <= endMonth)) {
       const monthStart = new Date(Date.UTC(year, month, 1, 0, 0, 0, 0));
-      const monthEnd = new Date(Date.UTC(year, month + 1, 0, 23, 59, 59, 999));
       const monthLabel = monthStart.toLocaleString('en-US', { month: 'long', year: 'numeric', timeZone: 'UTC' });
 
       const existing = student.fees.some((f) => {
         const d = new Date(f.dueDate);
-        return d >= monthStart && d <= monthEnd;
+        return (
+          (d.getFullYear() === year && d.getMonth() === month) ||
+          (d.getUTCFullYear() === year && d.getUTCMonth() === month)
+        );
       });
 
       if (existing) {

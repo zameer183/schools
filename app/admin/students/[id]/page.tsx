@@ -529,12 +529,28 @@ async function loadProfileViaPrisma(id: string): Promise<ViewModel | null> {
     }).catch(() => {});
   }
 
-  const collectedFee = validFees.reduce(
+  const seenMonths = new Set<string>();
+  const deduplicatedFees: typeof validFees = [];
+  for (const f of validFees) {
+    const feeDate = f.dueDate instanceof Date ? f.dueDate : new Date(f.dueDate);
+    const mKey = `${feeDate.getFullYear()}-${feeDate.getMonth()}`;
+    const paid = f.payments.reduce((s, p) => s + Number(p.amountPaid), 0);
+    if (paid > 0) {
+      deduplicatedFees.push(f);
+    } else if (!seenMonths.has(mKey)) {
+      seenMonths.add(mKey);
+      deduplicatedFees.push(f);
+    } else {
+      prisma.fee.delete({ where: { id: f.id } }).catch(() => {});
+    }
+  }
+
+  const collectedFee = deduplicatedFees.reduce(
     (sum, fee) => sum + fee.payments.reduce((paymentSum, payment) => paymentSum + Number(payment.amountPaid), 0),
     0
   );
-  const currentFee = validFees[0] ?? null;
-  const dueFee = validFees.reduce((sum, fee) => {
+  const currentFee = deduplicatedFees[0] ?? null;
+  const dueFee = deduplicatedFees.reduce((sum, fee) => {
     const net = Number(fee.amount) - Number(fee.discount);
     const paid = fee.payments.reduce((sumPayment, payment) => sumPayment + Number(payment.amountPaid), 0);
     return sum + Math.max(net - paid, 0);
@@ -582,7 +598,7 @@ async function loadProfileViaPrisma(id: string): Promise<ViewModel | null> {
         }
       };
     }),
-    fees: validFees.map((fee) => ({
+    fees: deduplicatedFees.map((fee) => ({
       id: fee.id,
       title: fee.title,
       dueDate: fee.dueDate.toISOString(),
