@@ -1,8 +1,8 @@
 import Link from 'next/link';
-import { unstable_cache } from 'next/cache';
 import { prisma } from '@/lib/prisma';
 import { PrintButton } from '@/components/reports/print-button';
 import CsvDownloadButton from './csv-download-button';
+import IndividualCompleteFilter, { FilterStudent } from './individual-complete-filter';
 
 export const dynamic = 'force-dynamic';
 
@@ -61,8 +61,13 @@ const SURAH_NAMES: Record<number, string> = {
 type SectionData = { range: string; kaifiyat: string; tajweed: string; hifz: string };
 type SimpleClass = { id: string; name: string; section: string };
 type ClassTeacherLink = { isClassLead: boolean; teacher: { user: { fullName: string } } };
-type ReportStudent = { id: string; user: { fullName: string }; admissionNo: string | null; };
-type ReportSelectedStudent = ReportStudent & { class: (SimpleClass & { teacherLinks: ClassTeacherLink[] }) | null; classId?: string | null; rollNumber?: string | null; fatherName?: string | null; };
+type ReportStudent = { id: string; user: { fullName: string }; admissionNo: string | null };
+type ReportSelectedStudent = ReportStudent & {
+  class: (SimpleClass & { teacherLinks: ClassTeacherLink[] }) | null;
+  classId?: string | null;
+  rollNumber?: string | null;
+  fatherName?: string | null;
+};
 type ReportAttendance = { date: Date; status: 'PRESENT' | 'ABSENT' | 'LATE' | 'EXCUSED' };
 type ReportProgress = {
   id: string;
@@ -79,13 +84,14 @@ type ReportResult = {
 };
 type ReportLoadData = {
   classes: SimpleClass[];
-  students: ReportStudent[];
+  allStudents: FilterStudent[];
   selectedClassId: string;
   selectedStudentId: string;
   selectedStudent: ReportSelectedStudent | null;
   attendanceRows: ReportAttendance[];
   progressRows: ReportProgress[];
   resultRows: ReportResult[];
+  teacherName: string;
 };
 
 function parseSectionFromNotes(
@@ -237,105 +243,178 @@ function toDate(value: string | Date) {
   return value instanceof Date ? value : new Date(value);
 }
 
-function toSelectedStudent(student: ReportStudent, classItem: (SimpleClass & { teacherLinks: ClassTeacherLink[] }) | null): ReportSelectedStudent {
+function toSelectedStudent(
+  student: ReportStudent,
+  classItem: (SimpleClass & { teacherLinks: ClassTeacherLink[] }) | null
+): ReportSelectedStudent {
   return { ...student, class: classItem };
 }
 
-const getCachedIndividualCompleteReportData = unstable_cache(
-  async (classId?: string, studentId?: string, from?: string, to?: string): Promise<ReportLoadData> => {
-    const now = new Date();
-    const monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
-    const fromDate = parseDate(from, monthStart);
-    fromDate.setHours(0, 0, 0, 0);
-    const toDateBoundary = parseDate(to, now);
-    toDateBoundary.setHours(23, 59, 59, 999);
+async function loadReportViaPrisma(params: {
+  classId?: string;
+  studentId?: string;
+  from?: string;
+  to?: string;
+}): Promise<ReportLoadData> {
+  const now = new Date();
+  const monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
+  const fromDate = parseDate(params.from, monthStart);
+  fromDate.setHours(0, 0, 0, 0);
+  const toDateBoundary = parseDate(params.to, now);
+  toDateBoundary.setHours(23, 59, 59, 999);
 
-    const classes = await prisma.class.findMany({
-      select: { id: true, name: true, section: true },
-      orderBy: [{ name: 'asc' }, { section: 'asc' }]
+  const classes = await prisma.class.findMany({
+    select: { id: true, name: true, section: true },
+    orderBy: [{ name: 'asc' }, { section: 'asc' }]
+  });
+
+  const rawStudents = await prisma.student.findMany({
+    select: {
+      id: true,
+      admissionNo: true,
+      classId: true,
+      user: { select: { fullName: true } }
+    }
+  });
+
+  // Strict alphabetical order A to Z
+  const allStudents: FilterStudent[] = rawStudents
+    .map((s) => ({
+      id: s.id,
+      fullName: s.user?.fullName?.trim() || 'Unknown Student',
+      admissionNo: s.admissionNo,
+      classId: s.classId
+    }))
+    .sort((a, b) => a.fullName.localeCompare(b.fullName, undefined, { sensitivity: 'base' }));
+
+  let selectedClassId = params.classId && classes.some((c) => c.id === params.classId) ? params.classId : 'all';
+
+  if (params.studentId && selectedClassId === 'all') {
+    const matchedStudent = allStudents.find((s) => s.id === params.studentId);
+    if (matchedStudent?.classId && classes.some((c) => c.id === matchedStudent.classId)) {
+      selectedClassId = matchedStudent.classId;
+    }
+  }
+
+  const filteredStudents =
+    selectedClassId === 'all' ? allStudents : allStudents.filter((s) => s.classId === selectedClassId);
+
+  const selectedStudentId =
+    params.studentId && filteredStudents.some((s) => s.id === params.studentId)
+      ? params.studentId
+      : filteredStudents[0]?.id ?? allStudents[0]?.id ?? '';
+
+  const selectedStudentRaw = selectedStudentId
+    ? await prisma.student.findUnique({
+        where: { id: selectedStudentId },
+        select: {
+          id: true,
+          classId: true,
+          rollNumber: true,
+          fatherName: true,
+          admissionNo: true,
+          user: { select: { fullName: true } }
+        }
+      })
+    : null;
+
+  const targetClassId = selectedStudentRaw?.classId || (selectedClassId !== 'all' ? selectedClassId : null);
+  const selectedClassRaw = targetClassId
+    ? classes.find((classItem) => classItem.id === targetClassId) ?? null
+    : null;
+
+  let teacherName = '-';
+  if (targetClassId) {
+    const classTeacherLink = await prisma.teacherClass.findFirst({
+      where: { classId: targetClassId },
+      orderBy: [{ isClassLead: 'desc' }, { createdAt: 'asc' }],
+      select: { isClassLead: true, teacher: { select: { user: { select: { fullName: true } } } } }
     });
+    if (classTeacherLink?.teacher?.user?.fullName) {
+      teacherName = classTeacherLink.teacher.user.fullName;
+    }
+  }
 
-    const selectedClassId = classId && classes.some((c) => c.id === classId) ? classId : 'all';
-    const selectedClassFilter = selectedClassId !== 'all' ? { classId: selectedClassId } : {};
-
-    const students = await prisma.student.findMany({
-      where: selectedClassFilter,
-      select: { id: true, admissionNo: true, user: { select: { fullName: true } } },
-      orderBy: { createdAt: 'desc' },
-      take: 1000
+  // Fallback: If no teacher link found on class, check if student progress records have a teacher
+  if (teacherName === '-' && selectedStudentRaw) {
+    const progressWithTeacher = await prisma.studentProgress.findFirst({
+      where: { studentId: selectedStudentRaw.id, teacher: { user: { fullName: { not: '' } } } },
+      orderBy: { date: 'desc' },
+      select: { teacher: { select: { user: { select: { fullName: true } } } } }
     });
+    if (progressWithTeacher?.teacher?.user?.fullName) {
+      teacherName = progressWithTeacher.teacher.user.fullName;
+    }
+  }
 
-    const selectedStudentId = studentId && students.some((s) => s.id === studentId) ? studentId : students[0]?.id ?? '';
-    const selectedStudentRaw = selectedStudentId ? await prisma.student.findUnique({
-      where: { id: selectedStudentId },
-      select: {
-        id: true,
-        classId: true,
-        rollNumber: true,
-        fatherName: true,
-        admissionNo: true,
-        user: { select: { fullName: true } }
+  const selectedClassWithTeacher = selectedClassRaw
+    ? {
+        ...selectedClassRaw,
+        teacherLinks: teacherName !== '-' ? [{ isClassLead: true, teacher: { user: { fullName: teacherName } } }] : []
       }
-    }) : null;
-    const selectedClassRaw =
-      selectedStudentRaw?.classId ? classes.find((classItem) => classItem.id === selectedStudentRaw.classId) ?? null : null;
+    : null;
 
-    const selectedClassTeacherLinks = selectedClassRaw
-      ? await prisma.teacherClass
-          .findFirst({
-            where: { classId: selectedClassRaw.id },
-            orderBy: { isClassLead: 'desc' },
-            select: { isClassLead: true, teacher: { select: { user: { select: { fullName: true } } } } }
-          })
-          .then((link) => (link ? [link] : []))
-      : [];
+  const selectedStudent = selectedStudentRaw
+    ? toSelectedStudent(
+        {
+          id: selectedStudentRaw.id,
+          admissionNo: selectedStudentRaw.admissionNo,
+          user: { fullName: selectedStudentRaw.user.fullName }
+        },
+        selectedClassWithTeacher
+      )
+    : null;
 
-    const selectedStudent = selectedStudentRaw
-      ? toSelectedStudent(selectedStudentRaw, selectedClassRaw ? { ...selectedClassRaw, teacherLinks: selectedClassTeacherLinks } : null)
-      : null;
+  const [attendanceRows, progressRows, resultRows] = selectedStudent
+    ? await Promise.all([
+        prisma.attendance.findMany({
+          where: { studentId: selectedStudent.id, date: { gte: fromDate, lte: toDateBoundary } },
+          select: { date: true, status: true },
+          orderBy: { date: 'asc' }
+        }),
+        prisma.studentProgress.findMany({
+          where: { studentId: selectedStudent.id, date: { gte: fromDate, lte: toDateBoundary } },
+          select: {
+            id: true,
+            date: true,
+            surahRanges: { select: { sectionKey: true, surahId: true, fromAyah: true, toAyah: true } },
+            tajweeditotal: true,
+            hifzTotal: true,
+            notes: true
+          },
+          orderBy: { date: 'asc' }
+        }),
+        prisma.result.findMany({
+          where: { studentId: selectedStudent.id, exam: { examDate: { gte: fromDate, lte: toDateBoundary } } },
+          select: {
+            marksObtained: true,
+            exam: { select: { examDate: true, title: true, totalMarks: true } },
+            subject: { select: { name: true } }
+          },
+          orderBy: { exam: { examDate: 'asc' } }
+        })
+      ])
+    : [[], [], []];
 
-    const [attendanceRows, progressRows, resultRows] = selectedStudent
-      ? await Promise.all([
-          prisma.attendance.findMany({
-            where: { studentId: selectedStudent.id, date: { gte: fromDate, lte: toDateBoundary } },
-            select: { date: true, status: true },
-            orderBy: { date: 'asc' }
-          }),
-          prisma.studentProgress.findMany({
-            where: { studentId: selectedStudent.id, date: { gte: fromDate, lte: toDateBoundary } },
-            select: {
-              id: true,
-              date: true,
-              surahRanges: { select: { sectionKey: true, surahId: true, fromAyah: true, toAyah: true } },
-              tajweeditotal: true,
-              hifzTotal: true,
-              notes: true
-            },
-            orderBy: { date: 'asc' }
-          }),
-          prisma.result.findMany({
-            where: { studentId: selectedStudent.id, exam: { examDate: { gte: fromDate, lte: toDateBoundary } } },
-            select: {
-              marksObtained: true,
-              exam: { select: { examDate: true, title: true, totalMarks: true } },
-              subject: { select: { name: true } }
-            },
-            orderBy: { exam: { examDate: 'asc' } }
-          })
-        ])
-      : [[], [], []];
-
-    return { classes, students, selectedClassId, selectedStudentId, selectedStudent, attendanceRows, progressRows, resultRows };
-  },
-  ['admin-individual-complete-report'],
-  { revalidate: 60 }
-);
-
-async function loadReportViaPrisma(params: { classId?: string; studentId?: string; from?: string; to?: string }): Promise<ReportLoadData> {
-  return getCachedIndividualCompleteReportData(params.classId, params.studentId, params.from, params.to);
+  return {
+    classes,
+    allStudents,
+    selectedClassId,
+    selectedStudentId,
+    selectedStudent,
+    attendanceRows,
+    progressRows,
+    resultRows,
+    teacherName
+  };
 }
 
-async function loadReportViaRest(params: { classId?: string; studentId?: string; from?: string; to?: string }): Promise<ReportLoadData> {
+async function loadReportViaRest(params: {
+  classId?: string;
+  studentId?: string;
+  from?: string;
+  to?: string;
+}): Promise<ReportLoadData> {
   const now = new Date();
   const monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
   const fromDate = parseDate(params.from, monthStart);
@@ -344,7 +423,6 @@ async function loadReportViaRest(params: { classId?: string; studentId?: string;
   toDateBoundary.setHours(23, 59, 59, 999);
 
   const classes = await supabaseRest<SimpleClass>('Class', { select: 'id,name,section', order: 'name.asc,section.asc' });
-  const selectedClassId = params.classId && classes.some((c) => c.id === params.classId) ? params.classId : 'all';
 
   const studentRows = await supabaseRest<{
     id: string;
@@ -352,10 +430,9 @@ async function loadReportViaRest(params: { classId?: string; studentId?: string;
     rollNumber: string | null;
     fatherName: string | null;
     userId: string;
+    admissionNo: string | null;
   }>('Student', {
-    select: 'id,classId,rollNumber,fatherName,userId',
-    ...(selectedClassId !== 'all' ? { classId: `eq.${selectedClassId}` } : {}),
-    order: 'createdAt.desc'
+    select: 'id,classId,rollNumber,fatherName,userId,admissionNo'
   });
 
   const studentUserIds = Array.from(new Set(studentRows.map((student) => student.userId).filter(Boolean)));
@@ -363,13 +440,34 @@ async function loadReportViaRest(params: { classId?: string; studentId?: string;
     ? await supabaseRest<{ id: string; fullName: string }>('User', { select: 'id,fullName', id: inFilter(studentUserIds) }).catch(() => [])
     : [];
   const studentUsersById = new Map(studentUsers.map((user) => [user.id, user]));
-  const students: ReportStudent[] = studentRows.map((student) => ({
-    id: student.id,
-    admissionNo: (student as any).admissionNo ?? null,
-    user: { fullName: studentUsersById.get(student.userId)?.fullName ?? 'Unknown Student' }
-  }));
 
-  const selectedStudentId = students.some((student) => student.id === params.studentId) ? params.studentId ?? '' : students[0]?.id ?? '';
+  // Strict alphabetical order A to Z
+  const allStudents: FilterStudent[] = studentRows
+    .map((student) => ({
+      id: student.id,
+      admissionNo: student.admissionNo ?? null,
+      classId: student.classId ?? null,
+      fullName: studentUsersById.get(student.userId)?.fullName?.trim() ?? 'Unknown Student'
+    }))
+    .sort((a, b) => a.fullName.localeCompare(b.fullName, undefined, { sensitivity: 'base' }));
+
+  let selectedClassId = params.classId && classes.some((c) => c.id === params.classId) ? params.classId : 'all';
+
+  if (params.studentId && selectedClassId === 'all') {
+    const matchedStudent = allStudents.find((s) => s.id === params.studentId);
+    if (matchedStudent?.classId && classes.some((c) => c.id === matchedStudent.classId)) {
+      selectedClassId = matchedStudent.classId;
+    }
+  }
+
+  const filteredStudents =
+    selectedClassId === 'all' ? allStudents : allStudents.filter((s) => s.classId === selectedClassId);
+
+  const selectedStudentId =
+    params.studentId && filteredStudents.some((s) => s.id === params.studentId)
+      ? params.studentId
+      : filteredStudents[0]?.id ?? allStudents[0]?.id ?? '';
+
   let selectedStudentRaw = null;
   if (selectedStudentId) {
     const raw = await supabaseRest<any>('Student', { select: 'id,classId,rollNumber,fatherName,userId,admissionNo', id: `eq.${selectedStudentId}`, limit: '1' }).then(r => r[0]);
@@ -378,34 +476,49 @@ async function loadReportViaRest(params: { classId?: string; studentId?: string;
       selectedStudentRaw = { ...raw, user: { fullName: u?.fullName ?? '' } };
     }
   }
-  const selectedClassRaw = selectedStudentRaw?.classId ? classes.find((classItem) => classItem.id === selectedStudentRaw.classId) ?? null : null;
 
-  const selectedClassTeacherLinks = selectedClassRaw
-    ? await supabaseRest<{ teacherId: string; classId: string; isClassLead: boolean }>('TeacherClass', {
-        select: 'teacherId,classId,isClassLead',
-        classId: `eq.${selectedClassRaw.id}`,
-        order: 'isClassLead.desc',
-        limit: '1'
-      })
-        .catch(() => [])
-        .then(async (teacherLinks) => {
-          if (teacherLinks.length === 0) return [];
-          const teacher = await supabaseRest<{ id: string; userId: string }>('Teacher', {
-            select: 'id,userId',
-            id: inFilter([teacherLinks[0].teacherId])
-          }).catch(() => []);
-          const teacherUser = teacher.length
-            ? await supabaseRest<{ id: string; fullName: string }>('User', { select: 'id,fullName', id: inFilter([teacher[0].userId]) }).catch(() => [])
-            : [];
-          return teacherLinks.map((link) => ({
-            isClassLead: Boolean(link.isClassLead),
-            teacher: { user: { fullName: teacherUser[0]?.fullName ?? 'Unknown Teacher' } }
-          }));
-        })
-    : [];
+  const targetClassId = selectedStudentRaw?.classId || (selectedClassId !== 'all' ? selectedClassId : null);
+  const selectedClassRaw = targetClassId ? classes.find((classItem) => classItem.id === targetClassId) ?? null : null;
+
+  let teacherName = '-';
+  if (targetClassId) {
+    const teacherLinks = await supabaseRest<{ teacherId: string; classId: string; isClassLead: boolean }>('TeacherClass', {
+      select: 'teacherId,classId,isClassLead',
+      classId: `eq.${targetClassId}`,
+      order: 'isClassLead.desc',
+      limit: '1'
+    }).catch(() => []);
+
+    if (teacherLinks.length > 0) {
+      const teacher = await supabaseRest<{ id: string; userId: string }>('Teacher', {
+        select: 'id,userId',
+        id: inFilter([teacherLinks[0].teacherId])
+      }).catch(() => []);
+      const teacherUser = teacher.length
+        ? await supabaseRest<{ id: string; fullName: string }>('User', { select: 'id,fullName', id: inFilter([teacher[0].userId]) }).catch(() => [])
+        : [];
+      if (teacherUser[0]?.fullName) {
+        teacherName = teacherUser[0].fullName;
+      }
+    }
+  }
+
+  const selectedClassWithTeacher = selectedClassRaw
+    ? {
+        ...selectedClassRaw,
+        teacherLinks: teacherName !== '-' ? [{ isClassLead: true, teacher: { user: { fullName: teacherName } } }] : []
+      }
+    : null;
 
   const selectedStudent = selectedStudentRaw
-    ? toSelectedStudent(selectedStudentRaw, selectedClassRaw ? { ...selectedClassRaw, teacherLinks: selectedClassTeacherLinks } : null)
+    ? toSelectedStudent(
+        {
+          id: selectedStudentRaw.id,
+          admissionNo: selectedStudentRaw.admissionNo,
+          user: { fullName: selectedStudentRaw.user.fullName }
+        },
+        selectedClassWithTeacher
+      )
     : null;
 
   const attendanceRowsRaw = selectedStudent
@@ -512,7 +625,17 @@ async function loadReportViaRest(params: { classId?: string; studentId?: string;
     })
     .filter((row): row is ReportResult => Boolean(row));
 
-  return { classes, students, selectedClassId, selectedStudentId, selectedStudent, attendanceRows, progressRows, resultRows };
+  return {
+    classes,
+    allStudents,
+    selectedClassId,
+    selectedStudentId,
+    selectedStudent,
+    attendanceRows,
+    progressRows,
+    resultRows,
+    teacherName
+  };
 }
 
 export default async function IndividualCompleteReportPage({ searchParams }: PageProps) {
@@ -520,35 +643,38 @@ export default async function IndividualCompleteReportPage({ searchParams }: Pag
 
   let classes: SimpleClass[] = [];
   let selectedClassId = 'all';
-  let students: ReportStudent[] = [];
+  let allStudents: FilterStudent[] = [];
   let selectedStudentId = '';
   let selectedStudent: ReportSelectedStudent | null = null;
   let attendanceRows: ReportAttendance[] = [];
   let progressRows: ReportProgress[] = [];
   let resultRows: ReportResult[] = [];
+  let teacherName = '-';
 
   try {
     const data = await loadReportViaPrisma(params);
     classes = data.classes;
     selectedClassId = data.selectedClassId;
-    students = data.students;
+    allStudents = data.allStudents;
     selectedStudentId = data.selectedStudentId;
     selectedStudent = data.selectedStudent;
     attendanceRows = data.attendanceRows;
     progressRows = data.progressRows;
     resultRows = data.resultRows;
+    teacherName = data.teacherName;
   } catch (error) {
     console.error('[admin/reports/individual-complete] prisma load failed', error);
     try {
       const data = await loadReportViaRest(params);
       classes = data.classes;
       selectedClassId = data.selectedClassId;
-      students = data.students;
+      allStudents = data.allStudents;
       selectedStudentId = data.selectedStudentId;
       selectedStudent = data.selectedStudent;
       attendanceRows = data.attendanceRows;
       progressRows = data.progressRows;
       resultRows = data.resultRows;
+      teacherName = data.teacherName;
     } catch (restError) {
       console.error('[admin/reports/individual-complete] rest fallback failed', restError);
       if (!canUseFallback(error)) {
@@ -615,7 +741,6 @@ export default async function IndividualCompleteReportPage({ searchParams }: Pag
     rowCount++;
   }
 
-  const teacherName = selectedStudent?.class?.teacherLinks[0]?.teacher.user.fullName ?? '-';
   const totalPresent = rows.filter((row) => row.attendance === 'P').length;
   const totalAbsent = rows.filter((row) => row.attendance === 'A').length;
   const totalLeave = rows.filter((row) => row.attendance === 'L').length;
@@ -630,42 +755,14 @@ export default async function IndividualCompleteReportPage({ searchParams }: Pag
         <h1 className="mt-2 text-2xl font-bold text-[#0f172a]">Individual Complete Report</h1>
         <p className="mt-1 text-sm text-[#64748b]">Date-wise complete sheet with attendance, sabq/sabqi/manzil, and test/exam notes.</p>
 
-        <form className="mt-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-5" method="get">
-          <label className="text-xs font-semibold text-[#64748b] lg:col-span-1">
-            Class
-            <select name="classId" defaultValue={selectedClassId} className="mt-1 h-10 w-full rounded-xl border border-[#E2E8F0] bg-white px-3 text-sm text-[#0F172A] focus:border-[#1F5A5C] focus:outline-none focus:ring-1 focus:ring-[#1F5A5C] transition">
-              <option value="all">All Classes</option>
-              {classes.map((classItem) => (
-                <option key={classItem.id} value={classItem.id}>
-                  {classItem.name} {classItem.section}
-                </option>
-              ))}
-            </select>
-          </label>
-          <label className="text-xs font-semibold text-[#64748b] lg:col-span-2">
-            Student
-            <select name="studentId" defaultValue={selectedStudentId} className="mt-1 h-10 w-full rounded-xl border border-[#E2E8F0] bg-white px-3 text-sm text-[#0F172A] focus:border-[#1F5A5C] focus:outline-none focus:ring-1 focus:ring-[#1F5A5C] transition">
-              {students.map((student) => (
-                <option key={student.id} value={student.id}>
-                  {student.user.fullName}
-                </option>
-              ))}
-            </select>
-          </label>
-          <label className="text-xs font-semibold text-[#64748b]">
-            From
-            <input type="date" name="from" defaultValue={trimToDateInput(fromDate)} className="mt-1 h-10 w-full rounded-xl border border-[#E2E8F0] bg-white px-3 text-sm text-[#0F172A] focus:border-[#1F5A5C] focus:outline-none focus:ring-1 focus:ring-[#1F5A5C] transition" />
-          </label>
-          <label className="text-xs font-semibold text-[#64748b]">
-            To
-            <input type="date" name="to" defaultValue={trimToDateInput(toDateBoundary)} className="mt-1 h-10 w-full rounded-xl border border-[#E2E8F0] bg-white px-3 text-sm text-[#0F172A] focus:border-[#1F5A5C] focus:outline-none focus:ring-1 focus:ring-[#1F5A5C] transition" />
-          </label>
-          <div className="sm:col-span-2 lg:col-span-5">
-            <button type="submit" className="h-10 w-full rounded-xl bg-gradient-to-br from-[#1F5A5C] to-[#2D7578] text-sm font-semibold text-white">
-              Apply
-            </button>
-          </div>
-        </form>
+        <IndividualCompleteFilter
+          classes={classes}
+          allStudents={allStudents}
+          initialClassId={selectedClassId}
+          initialStudentId={selectedStudentId}
+          initialFrom={trimToDateInput(fromDate)}
+          initialTo={trimToDateInput(toDateBoundary)}
+        />
       </div>
 
       {selectedStudent ? (
