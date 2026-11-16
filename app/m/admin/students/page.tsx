@@ -13,7 +13,7 @@ const STATUS_STYLES = {
 export default async function MobileAdminStudentsPage() {
   const [students, totals] = await Promise.all([
     prisma.student.findMany({
-      orderBy: { admissionNo: 'asc' },
+      orderBy: { user: { fullName: 'asc' } },
       take: 30,
       include: {
         user: { select: { fullName: true } },

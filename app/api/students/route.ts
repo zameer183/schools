@@ -460,7 +460,7 @@ export async function GET(request: Request) {
           admissionNo: true,
           user: { select: { fullName: true } }
         },
-        orderBy: { createdAt: 'desc' }
+        orderBy: { user: { fullName: 'asc' } }
       });
 
       return NextResponse.json(students.map((student) => ({
@@ -481,7 +481,7 @@ export async function GET(request: Request) {
           user: { select: { fullName: true, email: true } },
           class: { select: { id: true, name: true, section: true } }
         },
-        orderBy: { createdAt: 'desc' }
+        orderBy: { user: { fullName: 'asc' } }
       });
 
       return NextResponse.json(students);
@@ -498,7 +498,7 @@ export async function GET(request: Request) {
           user: { select: { fullName: true, email: true } },
           class: { select: { id: true, name: true, section: true } }
         },
-        orderBy: { createdAt: 'desc' }
+        orderBy: { user: { fullName: 'asc' } }
       });
 
       return NextResponse.json(students);
@@ -515,7 +515,7 @@ export async function GET(request: Request) {
           class: { select: { id: true, name: true, section: true } },
           attendance: { select: { status: true } }
         },
-        orderBy: { createdAt: 'desc' }
+        orderBy: { user: { fullName: 'asc' } }
       });
 
       return NextResponse.json(students);
@@ -542,7 +542,7 @@ export async function GET(request: Request) {
           take: 1
         }
       },
-      orderBy: { createdAt: 'desc' }
+      orderBy: { user: { fullName: 'asc' } }
     });
     const extraClassIdsByStudentId = await getExtraClassIdsViaPrisma(students.map((student) => student.id));
     return NextResponse.json(students.map((student) => ({
@@ -808,7 +808,7 @@ export async function PATCH(request: Request) {
     if (statusRemarks !== undefined) {
       studentUpdate.statusRemarks = statusRemarks || null;
     }
-    if (isActive === false && leaveDate === undefined && !student.leaveDate) {
+    if (isActive === false && leaveDate === undefined && !(student as any).leaveDate) {
       studentUpdate.leaveDate = new Date();
     }
 

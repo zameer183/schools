@@ -1099,7 +1099,11 @@ export default function AdminStudentsPageClient({
     return () => media.removeEventListener('change', sync);
   }, []);
 
-  const filteredStudents = students;
+  const filteredStudents = useMemo(() => {
+    return [...students].sort((a, b) =>
+      (a.user?.fullName || '').localeCompare(b.user?.fullName || '', undefined, { sensitivity: 'base' })
+    );
+  }, [students]);
   const PAGE_SIZE = pageSize;
   const totalPages  = Math.max(1, Math.ceil(filteredStudents.length / PAGE_SIZE));
   const pagedStudents = filteredStudents.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);

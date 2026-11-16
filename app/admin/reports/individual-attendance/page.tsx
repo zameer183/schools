@@ -40,7 +40,7 @@ export default async function IndividualAttendanceReportPage({ searchParams }: P
       admissionNo: true,
       user: { select: { fullName: true } }
     },
-    orderBy: { createdAt: 'desc' }
+    orderBy: { user: { fullName: 'asc' } }
   });
 
   const selectedStudentId = students.some((s) => s.id === params.studentId)

@@ -37,7 +37,7 @@ export default async function IndividualFinanceReportPage({ searchParams }: Page
       admissionNo: true,
       user: { select: { fullName: true } }
     },
-    orderBy: { createdAt: 'desc' }
+    orderBy: { user: { fullName: 'asc' } }
   });
 
   const selectedStudentId = students.some((s) => s.id === params.studentId) ? params.studentId ?? '' : students[0]?.id ?? '';

@@ -1,5 +1,6 @@
 import React from 'react';
-export const revalidate = 3600;
+export const dynamic = 'force-dynamic';
+export const revalidate = 0;
 import { DashboardRouteLoading } from '@/components/ui/dashboard-route-loading';
 import { PageHeader } from '@/components/ui';
 import { UserRole } from '@prisma/client';
@@ -56,7 +57,7 @@ function deriveCanonicalFeeStatus(params: {
   return toCanonicalFeeStatus(params.rawStatus);
 }
 
-async function getPaginatedStudentsData(where: any, skip: number, take: number, monthStart: Date) {
+async function getPaginatedStudentsData(where: any, monthStart: Date) {
   const [totalStudents, active, pendingFees, newThisMonth, students, classes] = await Promise.all([
     prisma.student.count({ where }),
     prisma.student.count({ where: { user: { isActive: true } } }),
@@ -82,8 +83,7 @@ async function getPaginatedStudentsData(where: any, skip: number, take: number, 
           orderBy: [{ createdAt: 'desc' }], take: 1
         }
       },
-      orderBy: { createdAt: 'desc' },
-      skip, take
+      orderBy: { user: { fullName: 'asc' } }
     }),
     prisma.class.findMany({
       select: { id: true, name: true, section: true },
@@ -102,7 +102,6 @@ async function StudentListContent(props: { searchParams: Promise<{ [key: string]
   const statusFilter = (searchParams.status as string) || 'all';
   const view = (searchParams.view as string) || 'grid';
   const pageSize = view === 'grid' ? 12 : 25;
-  const skip = (page - 1) * pageSize;
 
   const monthStart = new Date();
   monthStart.setDate(1);
@@ -119,7 +118,7 @@ async function StudentListContent(props: { searchParams: Promise<{ [key: string]
     where.user = { ...where.user, fullName: { contains: search, mode: 'insensitive' } };
   }
 
-  const data = await getPaginatedStudentsData(where, skip, pageSize, monthStart);
+  const data = await getPaginatedStudentsData(where, monthStart);
   const { totalStudents, active, pendingFees, newThisMonth, students, classes } = data;
   
   const normalizedStudents = students.map((student) => {
